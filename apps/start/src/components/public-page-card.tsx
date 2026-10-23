@@ -24,9 +24,7 @@ export function PublicPageCard({
             <LogoSquare className="mb-4 size-12" />
             <div className="font-semibold text-xl">{title}</div>
             {description && (
-              <div className="text-lg text-muted-foreground leading-normal">
-                {description}
-              </div>
+              <div className="text-muted-foreground">{description}</div>
             )}
           </div>
           {!!children && <div className="mt-6">{children}</div>}

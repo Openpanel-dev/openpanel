@@ -26,7 +26,7 @@ export function FilterOperatorSelect({
   children,
 }: FilterOperatorSelectProps) {
   const trigger = children ?? (
-    <Button className="whitespace-nowrap" variant="outline">
+    <Button className="whitespace-nowrap" size="sm" variant="input">
       {operatorsShort[value]}
     </Button>
   );

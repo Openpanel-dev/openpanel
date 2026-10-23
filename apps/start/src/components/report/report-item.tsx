@@ -105,7 +105,7 @@ export function ReportItem({
 
   return (
     <div className="card group flex h-full flex-col">
-      <div className="tile-header flex items-center justify-between border-border border-b p-4 leading-none hover:bg-muted/50 [&_svg]:hover:opacity-100">
+      <div className="tile-header flex items-center justify-between border-border border-b p-4 hover:bg-muted/50 [&_svg]:hover:opacity-100">
         <div
           className="-m-4 flex-1 cursor-pointer p-4"
           onClick={(event) => {
@@ -257,7 +257,7 @@ export function ReportItemReadOnly({
 
   return (
     <div className="card group flex h-full flex-col">
-      <div className="flex items-center justify-between border-border border-b p-4 leading-none">
+      <div className="flex items-center justify-between border-border border-b p-4">
         <div className="flex-1">
           <div className="font-medium">{report.name}</div>
           {chartRange !== null && (

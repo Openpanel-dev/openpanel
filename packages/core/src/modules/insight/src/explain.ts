@@ -3,28 +3,14 @@
 // sub-segment drove the delta and which off-platform event might correlate. It
 // narrates the internal decomposition, not invented external causes; the caller
 // gathers the data.
-import { betterAgent, defineAgent } from '@better-agent/core';
+import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
-import { ALLOWED_MODELS, resolveModel } from '../../assistant/src/providers';
-
-// gpt-4.1 (larger, non-reasoning) synthesizes the supplied breakdown well
-// without reasoning-option plumbing.
-const EXPLAIN_MODEL_ID = 'gpt-4-1';
+import { resolveOpenAITaskModel } from '../../assistant/src/providers';
 
 // Preferred model and fallback are both OpenAI — see enrich.ts.
 const EXPLAIN_PROVIDER = 'openai';
-
-function explainModel(config: CoreConfig) {
-  const entry =
-    ALLOWED_MODELS.find((m) => m.id === EXPLAIN_MODEL_ID) ??
-    ALLOWED_MODELS.find((m) => m.group === 'OpenAI');
-  if (!entry) {
-    throw new Error('No OpenAI model available for insight explanation');
-  }
-  return resolveModel(config, entry);
-}
 
 export interface BreakdownComparison {
   column: string;
@@ -77,10 +63,6 @@ const explanationSchema = z.object({
   confidence: z.enum(['low', 'medium', 'high']),
 });
 
-const explanationJsonSchema = z.toJSONSchema(explanationSchema, {
-  target: 'draft-07',
-});
-
 const INSTRUCTION = `You explain WHY an analytics metric changed for a website/product owner.
 
 You receive: the insight (what changed); a dailySeries — the segment's own per-day values for the current window vs the baseline window; a decomposition of the change across dimensions (referrer, country, device, utm_source) as current-vs-baseline session breakdowns; and any manual references (off-platform events the owner logged) near the window.
@@ -99,41 +81,19 @@ Produce:
 
 Be honest and precise. You can only see what's in the data: explain the shape and the internal decomposition (which segment moved, when), not external causes you can't observe. If the data doesn't clearly explain it, say so and set confidence low. Never invent numbers or dates.`;
 
-let _app: ReturnType<typeof betterAgent> | null = null;
-function getApp(config: CoreConfig) {
-  if (_app) {
-    return _app;
-  }
-  const agent = defineAgent({
-    name: 'insight-explain',
-    description: 'Explains why an insight changed (one-shot).',
-    model: explainModel(config),
-    contextSchema: z.object({}),
-    outputSchema: {
-      schema: explanationJsonSchema,
-      name: 'insight_explanation',
-      strict: true,
-    },
-    instruction: () => INSTRUCTION,
-    tools: () => [],
-    maxSteps: 1,
-    // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-  } as any);
-  _app = betterAgent({ agents: [agent] });
-  return _app;
-}
-
 export async function generateInsightExplanation(
   config: CoreConfig,
   input: ExplainInsightInput
 ): Promise<InsightExplanation | null> {
-  const result = (await callProvider(EXPLAIN_PROVIDER, () =>
-    getApp(config).run('insight-explain', {
-      input: JSON.stringify(input),
-      context: {},
-      // biome-ignore lint/suspicious/noExplicitAny: same dodge as enrich.ts
-    } as any)
-  )) as { structured?: InsightExplanation };
+  const result = await callProvider(EXPLAIN_PROVIDER, () =>
+    generateText({
+      model: resolveOpenAITaskModel(config, 'standard'),
+      instructions: INSTRUCTION,
+      prompt: JSON.stringify(input),
+      reasoning: 'low',
+      output: Output.object({ schema: explanationSchema }),
+    })
+  );
 
-  return result.structured ?? null;
+  return result.output ?? null;
 }

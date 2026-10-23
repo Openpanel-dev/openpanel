@@ -10,6 +10,7 @@ import { path } from 'ramda';
 import type { DbScope } from '../../../cacheable-per-deps';
 import { verifyClientSecret as verifyClientSecretHash } from '../../../shared/client-secret';
 import { headerValue, type IngestHeaders } from '../../../shared/headers';
+import { isOriginAllowed } from '../../../shared/origin-allowed';
 import {
   getClientByIdCached,
   type IServiceClientWithProject,
@@ -33,10 +34,6 @@ const verifiedInProcess = new LRUCache<string, true>({
   ttl: VERIFY_LOCAL_CACHE_TTL_MS,
 });
 const REDACTED_SECRET_EDGE_LENGTH = 5;
-const DOMAIN_PROTOCOL = /https?:\/\//;
-const DOMAIN_TRAILING_SLASH = /\/$/;
-const DOMAIN_DOT = /\./g;
-const DOMAIN_WILDCARD = /\*/g;
 
 export interface IngestAuthErrorPayload {
   clientId?: string;
@@ -72,34 +69,6 @@ export type IngestAuthOutcome =
       payload: IngestAuthErrorPayload;
       secretVerified: boolean;
     };
-
-const cleanDomain = (domain: string) =>
-  domain
-    .replace('www.', '')
-    .replace(DOMAIN_PROTOCOL, '')
-    .replace(DOMAIN_TRAILING_SLASH, '');
-
-function isOriginAllowed(cors: string[], origin: string | undefined): boolean {
-  const domainAllowed = cors.find((domain) => {
-    const cleanedDomain = cleanDomain(domain);
-    // support wildcard domains `*.foo.com`
-    if (cleanedDomain.includes('*')) {
-      const regex = new RegExp(
-        `${cleanedDomain.replace(DOMAIN_DOT, '\\.').replace(DOMAIN_WILDCARD, '.+?')}`
-      );
-
-      return regex.test(origin || '');
-    }
-
-    return cleanedDomain === cleanDomain(origin || '');
-  });
-
-  if (domainAllowed) {
-    return true;
-  }
-
-  return cors.includes('*') && !!origin;
-}
 
 /**
  * Only successful verifications are cached: the key embeds the caller-supplied

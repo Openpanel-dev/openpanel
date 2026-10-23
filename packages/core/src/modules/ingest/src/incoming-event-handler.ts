@@ -35,6 +35,30 @@ const GLOBAL_PROPERTIES = ['__path', '__referrer', '__timestamp', '__revenue'];
 /** How far before the event `session_start` is stamped, so it sorts first. */
 const SESSION_START_OFFSET_MS = 100;
 
+const SESSION_UTM_KEYS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_content',
+  'utm_term',
+] as const;
+
+// UTM tags live on the landing URL only, so without this every later event in
+// the session reports no campaign. The event's own tags win over the session's.
+function inheritSessionUtm(
+  properties: Record<string, unknown>,
+  session: IClickhouseSession
+): Record<string, unknown> {
+  const ownQuery = properties.__query as Record<string, unknown> | undefined;
+  const query = { ...ownQuery };
+  for (const key of SESSION_UTM_KEYS) {
+    if (!query[key] && session[key]) {
+      query[key] = session[key];
+    }
+  }
+  return { ...properties, __query: query };
+}
+
 // Strip empty/nullish from B, then deep-merge over A.
 const merge = <A, B>(a: Partial<A>, b: Partial<B>): A & B =>
   mergeDeepRight(a, reject(anyPass([isEmpty, isNil]))(b)) as A & B;
@@ -274,12 +298,15 @@ async function ingestIncomingEvent(
     ? null
     : parseReferrer(getProperty('__referrer'));
   const utmReferrer = getReferrerWithQuery(query);
+  // A client may send its own `__query` (for example first-touch utm tags it
+  // persisted); the URL's query wins over it so a tagged landing is never lost.
+  const clientQuery = properties.__query as Record<string, unknown> | undefined;
   // Typed as a plain record so `omit`'s key set is `string`, not the two
   // literal keys the spread would otherwise infer.
   const eventProperties: Record<string, unknown> = {
     ...properties,
     __hash: hash,
-    __query: query,
+    __query: clientQuery || query ? { ...clientQuery, ...query } : undefined,
   };
   const sdkName = headers['openpanel-sdk-name'];
   const sdkVersion = headers['openpanel-sdk-version'];
@@ -335,6 +362,9 @@ async function ingestIncomingEvent(
       // describe a row that does not exist.
       deviceId: session?.device_id || deviceId,
       sessionId: session?.id || sessionId,
+      properties: session
+        ? inheritSessionUtm(baseEvent.properties, session)
+        : baseEvent.properties,
       referrer: session?.referrer ?? undefined,
       referrerName: session?.referrer_name ?? undefined,
       referrerType: session?.referrer_type ?? undefined,
@@ -418,16 +448,19 @@ async function ingestIncomingEvent(
     });
   }
 
-  // Inherit referrer fields from the canonical session for the actual event.
-  // For 'extend' this preserves the original session's referrer across
-  // mid-session events; for 'new' / 'boundary' it's the event's own referrer
+  // Inherit referrer and UTM from the canonical session for the actual event.
+  // For 'extend' this preserves the original session's attribution across
+  // mid-session events; for 'new' / 'boundary' it's the event's own
   // (which `ingest` just stored on the fresh session).
   const finalPayload: IServiceCreateEventPayload = session
-    ? merge(baseEvent, {
-        referrer: session.current.referrer,
-        referrerName: session.current.referrer_name,
-        referrerType: session.current.referrer_type,
-      } as Partial<IServiceCreateEventPayload>)
+    ? {
+        ...merge(baseEvent, {
+          referrer: session.current.referrer,
+          referrerName: session.current.referrer_name,
+          referrerType: session.current.referrer_type,
+        } as Partial<IServiceCreateEventPayload>),
+        properties: inheritSessionUtm(baseEvent.properties, session.current),
+      }
     : baseEvent;
 
   return createEventAndNotify(

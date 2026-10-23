@@ -104,7 +104,7 @@ export function GscBreakdownTable({
               render(item) {
                 return (
                   <div className="min-w-0 overflow-hidden">
-                    <span className="block truncate font-mono text-xs">
+                    <span className="block truncate text-xs tabular-nums">
                       {String(item[breakdownKey])}
                     </span>
                   </div>
@@ -117,7 +117,7 @@ export function GscBreakdownTable({
               getSortValue: (item) => item.clicks as number,
               render(item) {
                 return (
-                  <span className="font-mono font-semibold text-xs">
+                  <span className="font-semibold text-xs tabular-nums">
                     {(item.clicks as number).toLocaleString()}
                   </span>
                 );
@@ -129,7 +129,7 @@ export function GscBreakdownTable({
               getSortValue: (item) => item.impressions as number,
               render(item) {
                 return (
-                  <span className="font-mono font-semibold text-xs">
+                  <span className="font-semibold text-xs tabular-nums">
                     {(item.impressions as number).toLocaleString()}
                   </span>
                 );
@@ -141,7 +141,7 @@ export function GscBreakdownTable({
               getSortValue: (item) => item.ctr as number,
               render(item) {
                 return (
-                  <span className="font-mono font-semibold text-xs">
+                  <span className="font-semibold text-xs tabular-nums">
                     {((item.ctr as number) * 100).toFixed(1)}%
                   </span>
                 );
@@ -153,7 +153,7 @@ export function GscBreakdownTable({
               getSortValue: (item) => item.position as number,
               render(item) {
                 return (
-                  <span className="font-mono font-semibold text-xs">
+                  <span className="font-semibold text-xs tabular-nums">
                     {(item.position as number).toFixed(1)}
                   </span>
                 );

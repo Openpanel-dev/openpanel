@@ -271,7 +271,10 @@ test('range and interval controls on a shared dashboard drive the chart queries'
     await visitor.page
       .getByRole('button', { name: 'Last 7 days', exact: true })
       .click();
-    await visitor.page.getByRole('menuitem', { name: /^Last 30 days/ }).click();
+    await visitor.page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Last 30 days/ })
+      .click();
     await expect
       .poll(() =>
         chartRequests.some((r) => r.range === '30d' && r.status === 200)

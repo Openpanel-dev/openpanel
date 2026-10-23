@@ -23,7 +23,7 @@ function EventBadge({
   return (
     <Tooltiper
       content={
-        <div className="col gap-2 font-mono">
+        <div className="col gap-2 tabular-nums">
           {event.filters.map((filter) => (
             <div key={filter.id}>
               {filter.name} {filter.operator} {JSON.stringify(filter.value)}
@@ -81,7 +81,7 @@ export function RuleCard({
             <div className="col gap-2">
               {rule.config.events.map((event, index) => (
                 <div
-                  className="row items-center gap-2 font-mono"
+                  className="row items-center gap-2 tabular-nums"
                   key={event.id}
                 >
                   <ColorSquare>{index + 1}</ColorSquare>

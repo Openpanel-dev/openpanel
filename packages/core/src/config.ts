@@ -36,6 +36,16 @@ export interface AuthConfig {
   google: OAuthClientConfig;
   /** The same Google client, redirected at the Search Console callback. */
   googleGsc: OAuthClientConfig;
+  /**
+   * DEV_LOGIN: a one-click sign-in for a local box, as `email/password`. The
+   * loader refuses it under NODE_ENV=production, so it is never set there.
+   */
+  devLogin: DevLoginConfig | undefined;
+}
+
+export interface DevLoginConfig {
+  email: string;
+  password: string;
 }
 
 export interface CookieConfig {

@@ -34,7 +34,7 @@ export function useGroupColumns(): ColumnDef<IServiceGroupWithStats>[] {
       accessorKey: 'id',
       header: 'ID',
       cell: ({ row }) => (
-        <span className="font-mono text-muted-foreground text-xs">
+        <span className="text-muted-foreground text-xs tabular-nums">
           {row.original.id}
         </span>
       ),

@@ -76,7 +76,7 @@ export function BarLabels({
               className="ml-auto flex items-center justify-end gap-1.5 pl-2"
               style={{ width: margin.right }}
             >
-              <span className="font-mono font-semibold text-sm">
+              <span className="font-semibold text-sm tabular-nums">
                 {number.short(row.count)}
               </span>
               {comparesPrevious && !row.previous && row.count > 0 && (

@@ -15,6 +15,10 @@ over HTTP and asserting state in **both ClickHouse and Redis**:
   rung, and reports the max sustainable ingest throughput and where the knee is.
   Full knob list, the knee definition and what the numbers do NOT cover:
   **`docs/BENCHMARK_HARNESS.md`**.
+- `ingest-load.ts` (`e2e:ingest-load`) — **bulk throughput**: N devices × M
+  events through `/track`, timed from the first request until every business
+  event is in ClickHouse and every buffer is empty, with the Redis command and
+  CPU cost of the run. See "Ingest load" below.
 
 ## What it covers
 
@@ -66,6 +70,38 @@ endpoint, so it never waits for the 5-minute reaper cron.
 - Overridable: `E2E_API_URL` (default `:3333`), `E2E_WORKER_URL` (default `:9999`).
 - The harness and the stack **must share the same `SESSION_TIMEOUT_MS`** — the
   harness derives its idle waits from it.
+
+## Ingest load (`ingest-load.ts`)
+
+The run behind "100,000 events in 27 s" in #560, reproducible against any
+running api + worker pair (self-hosted installs included):
+
+```bash
+# From apps/api. API_URL, REDIS_URL, CLICKHOUSE_URL and the Kafka settings come
+# from the environment; the write client from .seed.json or --client/--secret.
+bun run e2e:ingest-load -- --devices 5000 --per-device 20 --concurrency 100
+```
+
+Knobs: `--devices`, `--per-device`, `--concurrency`, `--properties N` (custom
+properties per event, the last one an array), `--identified` (a `profileId`
+per device), `--project`, `--client`/`--secret`, `--label`, `--out`.
+
+It refuses to start unless Kafka lag is zero and all three buffers are empty,
+then prints one line per second (`sent`, Kafka lag, buffer lengths, business
+events in ClickHouse) and ends with:
+
+- the marks: `sendDone`, `kafkaDrained`, `eventsInClickhouse` (business events
+  only, `session_start`/`session_end` excluded), `buffersDrained`;
+- the Redis `INFO commandstats` delta over the run, as calls per event and
+  share of Redis time, and the `INFO cpu` delta as CPU milliseconds per event
+  (main thread and snapshot forks separately) — a number that compares across
+  machines where "% of a core" does not;
+- a verification: event rows and unique ids, `session_start` rows, and
+  sessions whose signed rows do not net to one.
+
+The timer starts at the first request and excludes process startup and the
+consumer-group join. Peak buffer lengths are reported so a run that only looks
+fast because a buffer was still filling is visible as such.
 
 ## P1 baseline — measured throughput (2026-09-02)
 

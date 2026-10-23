@@ -5,7 +5,7 @@ export const zOnboardingProject = z
   .object({
     organization: z.string().optional(),
     organizationId: z.string().optional(),
-    project: z.string().min(3),
+    project: z.string().min(3, 'Use at least 3 characters'),
     domain: z.string().url().or(z.literal('').or(z.null())),
     cors: z.array(z.string()).default([]),
     website: z.boolean(),

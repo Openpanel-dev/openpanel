@@ -8,9 +8,9 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { ProjectScopePicker } from '@/components/settings/project-scope-picker';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type EditMemberProps = IServiceMember;
@@ -74,7 +74,7 @@ export default function EditMember(member: EditMemberProps) {
           projects={projects}
         />
 
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
@@ -94,7 +94,7 @@ export default function EditMember(member: EditMemberProps) {
           >
             Save
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </div>
     </ModalContent>
   );

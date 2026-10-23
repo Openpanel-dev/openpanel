@@ -121,7 +121,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
       </head>
-      <body className="grainy min-h-screen bg-def-100 font-sans text-base leading-normal antialiased">
+      <body className="grainy min-h-screen bg-def-100 font-sans text-sm antialiased">
         <OpIdentify />
         <Providers>{children}</Providers>
         <ThemeScriptOnce />

@@ -1,64 +1,108 @@
-import { BanIcon, InfoIcon } from 'lucide-react';
-import { forwardRef } from 'react';
+import { InfoIcon } from 'lucide-react';
+import { forwardRef, useId } from 'react';
 import type { InputProps } from '../ui/input';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Tooltiper } from '../ui/tooltip';
+import { cn } from '@/utils/cn';
 
 interface WithLabel {
   children: React.ReactNode;
   label: string;
+  /** The control's id, so the label and message point at it; defaults to the label text. */
+  id?: string;
   error?: string | undefined;
+  /** Shown under the field; replaced by the error while there is one. */
+  hint?: React.ReactNode;
   info?: React.ReactNode;
+  /** Rendered at the right end of the label row, e.g. a "Forgot password?" link. */
+  action?: React.ReactNode;
   className?: string;
 }
 type InputWithLabelProps = InputProps & Omit<WithLabel, 'children'>;
+
+/** Spaces would split an aria-describedby reference, so the id is made of one token. */
+export function fieldMessageId(fieldId: string) {
+  return `${fieldId.replace(/\s+/g, '-')}-message`;
+}
 
 export const WithLabel = ({
   children,
   className,
   label,
+  id,
+  hint,
   info,
+  action,
   error,
 }: WithLabel) => {
+  const message = error ?? hint;
+  const fieldId = id ?? label;
+  const labelElement = (
+    <Label className="mb-0 flex items-center gap-1" htmlFor={fieldId}>
+      {label}
+      {info && (
+        <Tooltiper content={info}>
+          <InfoIcon className="text-muted-foreground" size={14} />
+        </Tooltiper>
+      )}
+    </Label>
+  );
   return (
-    <div className={className}>
-      <div className="mb-2 flex items-end justify-between">
-        <Label
-          className="mb-0 flex flex-1 shrink-0 items-center gap-1 whitespace-nowrap"
-          htmlFor={label}
-        >
-          {label}
-          {info && (
-            <Tooltiper content={info}>
-              <InfoIcon size={14} />
-            </Tooltiper>
-          )}
-        </Label>
-        {error && (
-          <Tooltiper
-            align="end"
-            asChild
-            content={error}
-            tooltipClassName="max-w-80 leading-normal"
-          >
-            <div className="flex items-center gap-1 text-destructive leading-none">
-              Issues
-              <BanIcon size={14} />
-            </div>
-          </Tooltiper>
-        )}
-      </div>
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      {action ? (
+        <div className="flex items-center justify-between gap-2">
+          {labelElement}
+          {action}
+        </div>
+      ) : (
+        labelElement
+      )}
       {children}
+      {message && (
+        <p
+          aria-live="polite"
+          className={cn(
+            'text-xs',
+            error ? 'text-destructive' : 'text-muted-foreground'
+          )}
+          data-slot={error ? 'field-error' : 'field-hint'}
+          id={fieldMessageId(fieldId)}
+        >
+          {message}
+        </p>
+      )}
     </div>
   );
 };
 
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
-  (props, ref) => {
+  ({ className, label, hint, info, action, error, ...inputProps }, ref) => {
+    const hasMessage = Boolean(error ?? hint);
+    const generatedId = useId();
+    // A caller's own id and description are kept; the message is added to them.
+    const fieldId = inputProps.id ?? generatedId;
+    const describedBy =
+      [inputProps['aria-describedby'], hasMessage && fieldMessageId(fieldId)]
+        .filter(Boolean)
+        .join(' ') || undefined;
     return (
-      <WithLabel {...props}>
-        <Input id={props.label} ref={ref} {...props} />
+      <WithLabel
+        action={action}
+        className={className}
+        error={error}
+        hint={hint}
+        id={fieldId}
+        info={info}
+        label={label}
+      >
+        <Input
+          error={error}
+          ref={ref}
+          {...inputProps}
+          aria-describedby={describedBy}
+          id={fieldId}
+        />
       </WithLabel>
     );
   }

@@ -42,7 +42,7 @@ test('report builder ranges: bucket counts at the edges', async ({ page }) => {
   await closeSidebar(page);
   const pickRange = (current: string, next: RegExp) => async () => {
     await page.getByRole('button', { name: current, exact: true }).click();
-    await page.getByRole('menuitem', { name: next }).click();
+    await page.getByRole('dialog').getByRole('button', { name: next }).click();
   };
   const month = await bucketsAfter(page, async () => {
     await addEvent(page, 'screen_view');

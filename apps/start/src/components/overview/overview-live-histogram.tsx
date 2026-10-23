@@ -76,7 +76,7 @@ export function OverviewLiveHistogram({
     <MetricCardShell>
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
-          <span className="truncate font-medium text-[10px] text-muted-foreground uppercase tracking-wider">
+          <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             Live · 30 min
           </span>
           <span className="relative flex h-2 w-2 items-center justify-center">
@@ -96,12 +96,12 @@ export function OverviewLiveHistogram({
             />
           </span>
         </div>
-        <div className="mt-1 flex items-baseline gap-0.5 leading-none">
+        <div className="-my-0.5 flex items-baseline gap-0.5 leading-none">
           <span className="truncate font-mono font-semibold text-foreground text-xl tabular-nums tracking-tight">
             {number.short(displayCount)}
           </span>
         </div>
-        <div className="mt-0.5 flex items-center justify-between gap-2 truncate text-[11px] text-muted-foreground leading-none">
+        <div className="mt-0.5 flex items-center justify-between gap-2 truncate text-2xs text-muted-foreground leading-none">
           <span className="truncate">{displayLabel}</span>
           {referrers.length > 0 && (
             <div className="flex shrink-0 items-center gap-1.5">
@@ -112,7 +112,7 @@ export function OverviewLiveHistogram({
                   title={`${ref.referrer} · ${ref.count}`}
                 >
                   <SerieIcon name={ref.referrer} />
-                  <span className="font-mono tabular-nums">{ref.count}</span>
+                  <span className="tabular-nums">{ref.count}</span>
                 </div>
               ))}
             </div>

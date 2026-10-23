@@ -12,6 +12,10 @@ import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import {
+  MARKERS_MAX_POINTS,
+  POINT_MARKER,
+} from '@/components/report-chart/common/time-series';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -143,6 +147,8 @@ export function OverviewLineChart({
               dataKey={`${series.key}:pageviews`}
               fadeEdges="left"
               key={series.key}
+              markers={POINT_MARKER}
+              showMarkers={chartData.length <= MARKERS_MAX_POINTS}
               stroke={series.color}
               strokeWidth={1.5}
             />

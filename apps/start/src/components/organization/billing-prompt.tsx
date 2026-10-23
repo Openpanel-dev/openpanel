@@ -272,12 +272,12 @@ export default function BillingPrompt({
         <div className="col gap-3 p-6 md:p-8">
           <Badge variant={copy.badge.variant}>{copy.badge.label}</Badge>
           <h1 className="font-semibold text-2xl">{copy.title}</h1>
-          <p className="text-muted-foreground leading-relaxed">{copy.lead}</p>
+          <p className="text-muted-foreground">{copy.lead}</p>
         </div>
 
         <div className="row gap-3 px-6 md:px-8">
           <div className="col flex-1 gap-1 rounded-md bg-def-200 p-4">
-            <div className="font-bold font-mono text-2xl">
+            <div className="font-bold text-2xl tabular-nums">
               {number.short(eventsCount)}
             </div>
             <div className="text-muted-foreground text-sm">
@@ -295,7 +295,7 @@ export default function BillingPrompt({
             }
             return (
               <div className="col flex-1 gap-1 rounded-md bg-def-200 p-4">
-                <div className="font-bold font-mono text-2xl">
+                <div className="font-bold text-2xl tabular-nums">
                   {formatDate(date)}
                 </div>
                 <div className="text-muted-foreground text-sm">

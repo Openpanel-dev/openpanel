@@ -1,6 +1,11 @@
 import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { describe, expect, test } from 'vitest';
-import reducer, { removeEvent, setReport } from './reportSlice';
+import reducer, {
+  changeConversionYAxisScale,
+  changeFunnelWindow,
+  removeEvent,
+  setReport,
+} from './reportSlice';
 
 const event = (id: string) => ({
   id,
@@ -37,5 +42,27 @@ describe('breakdown step', () => {
   test('is kept while it still points at a step', () => {
     const state = reducer(funnelWithStep(2), removeEvent({ id: 'c' }));
     expect(state.breakdowns[0]?.step).toBe(2);
+  });
+});
+
+describe('conversion y-axis scale', () => {
+  test('lives on the funnel options next to the funnel window', () => {
+    const withWindow = reducer(funnelWithStep(2), changeFunnelWindow(48));
+    const state = reducer(withWindow, changeConversionYAxisScale('auto'));
+    expect(state.options).toEqual({
+      type: 'funnel',
+      funnelGroup: undefined,
+      funnelWindow: 48,
+      yAxisScale: 'auto',
+    });
+  });
+
+  test('is unset for the fixed default', () => {
+    const auto = reducer(funnelWithStep(2), changeConversionYAxisScale('auto'));
+    const state = reducer(auto, changeConversionYAxisScale(undefined));
+    expect(state.options?.type).toBe('funnel');
+    expect(
+      state.options?.type === 'funnel' ? state.options.yAxisScale : 'wrong'
+    ).toBeUndefined();
   });
 });

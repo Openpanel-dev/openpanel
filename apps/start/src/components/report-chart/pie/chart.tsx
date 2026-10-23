@@ -90,7 +90,7 @@ export function Chart({ series }: Props) {
                       hoveredIndex === null ? null : slices[hoveredIndex];
                     return (
                       <div className="col max-w-[80%] items-center text-center">
-                        <div className="font-mono font-semibold text-lg">
+                        <div className="font-semibold text-lg tabular-nums">
                           {number.short(value)}
                         </div>
                         <div className="w-full truncate text-muted-foreground text-xs">
@@ -134,10 +134,10 @@ export function Chart({ series }: Props) {
                   <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
                     <SerieName name={slice.names} />
                   </div>
-                  <span className="font-mono font-semibold">
+                  <span className="font-semibold tabular-nums">
                     {number.short(slice.value)}
                   </span>
-                  <span className="w-12 text-right font-mono text-muted-foreground">
+                  <span className="w-12 text-right text-muted-foreground tabular-nums">
                     {slice.share}%
                   </span>
                 </button>

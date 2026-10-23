@@ -33,11 +33,11 @@ function liveNodeUrl(): { base: string; withDatabase: string } {
 
 const { base: LIVE_BASE_URL, withDatabase: LIVE_NODE_URL } = liveNodeUrl();
 
-async function bootstrapTestDatabase(): Promise<boolean> {
+async function liveNodeReachable(): Promise<boolean> {
   try {
     const response = await fetch(LIVE_BASE_URL, {
       method: 'POST',
-      body: `CREATE DATABASE IF NOT EXISTS ${CLICKHOUSE_TEST_DATABASE}`,
+      body: 'SELECT 1',
     });
     return response.ok;
   } catch {
@@ -55,9 +55,6 @@ async function deadNodeIsRefused(): Promise<boolean> {
     return true;
   }
 }
-
-const clickhouseReachable = await bootstrapTestDatabase();
-const failoverIsReal = await deadNodeIsRefused();
 
 // `bun test` shares one process and one `process.env` across every file in
 // the run, unlike vitest's per-file env reset. Whichever file first calls
@@ -92,6 +89,21 @@ process.env.CLICKHOUSE_REQUEST_TIMEOUT_MS = String(
 // Without this the dead node is sin-binned after the first failure and later
 // cases never exercise the retry at all.
 process.env.CLICKHOUSE_UNHEALTHY_MARK_MS = '0';
+
+const clickhouseReachable = await liveNodeReachable();
+const failoverIsReal = await deadNodeIsRefused();
+
+// This file may be the first in its shard to touch ClickHouse, and
+// `ch.insert` below needs the schema. Only reachability decides the skip
+// above; a broken bootstrap throws here instead of silently skipping. Runs
+// after the env is pinned because importing the bootstrap evaluates the
+// client module, and that evaluation is what reads the two-node list.
+if (clickhouseReachable) {
+  const { bootstrapTestDatabases } = await import(
+    '../../../../test/bootstrap-databases'
+  );
+  await bootstrapTestDatabases();
+}
 
 afterAll(() => {
   restoreClickhouseEnv();

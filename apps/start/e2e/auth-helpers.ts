@@ -41,7 +41,7 @@ export async function submitSignIn(
 ): Promise<Response> {
   await waitForSignInSlot();
   await page.getByLabel('Email').fill(credentials.email);
-  await page.getByLabel('Password').fill(credentials.password);
+  await page.getByLabel('Password', { exact: true }).fill(credentials.password);
   const answer = page.waitForResponse((response) =>
     response.url().includes('/trpc/auth.signInEmail')
   );

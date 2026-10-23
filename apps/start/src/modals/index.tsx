@@ -26,8 +26,6 @@ import EditGroup from './edit-group';
 import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
-import EventDetails from './event-details';
-import Instructions from './Instructions';
 import InsightDetails from './insight-details';
 import MoveReport from './move-report';
 import OverviewChartDetails from './overview-chart-details';
@@ -59,7 +57,6 @@ const modals = {
   EditEvent,
   CustomEvent,
   EditMember,
-  EventDetails,
   InsightDetails,
   EditClient,
   AddProject,
@@ -79,7 +76,6 @@ const modals = {
   ShareReportModal,
   AddReference,
   ViewChartUsers,
-  Instructions,
   DateRangerPicker,
   DateTimePicker,
   OverviewChartDetails,

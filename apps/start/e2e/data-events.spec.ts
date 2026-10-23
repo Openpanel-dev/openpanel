@@ -156,61 +156,65 @@ test.describe('events list', () => {
     expect(problems).toEqual([]);
   });
 
-  test('details modal shows properties and links to the profile', async ({
+  test('details drawer shows properties and links to the profile', async ({
     page,
   }) => {
     const problems = watch(page);
     await open(page, `${SHOP}/events/events?events=purchase`);
     await rows(page).first().locator('button[title="purchase"]').click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Properties')).toBeVisible();
-    await expect(dialog.getByText('Information')).toBeVisible();
-    await expect(dialog.getByText('All events for purchase')).toBeVisible();
+    const drawer = page.getByRole('complementary', { name: 'Event details' });
+    await expect(page).toHaveURL(/[?&]event=/);
+    await expect(drawer.getByText('Properties')).toBeVisible();
+    await expect(drawer.getByText('Information')).toBeVisible();
+    await expect(drawer.getByText('All events for purchase')).toBeVisible();
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: `${SHOTS}/event-details.png` });
 
-    await dialog.getByRole('button', { name: 'Detailed' }).click();
-    await expect(dialog.getByText('Session Id')).toBeVisible();
-    await dialog.getByRole('button', { name: 'View JSON' }).click();
-    await expect(
-      dialog.getByRole('button', { name: 'View Table' })
-    ).toBeVisible();
-    await page.screenshot({ path: `${SHOTS}/event-details-detailed.png` });
+    await drawer.getByRole('button', { name: 'Raw' }).click();
+    await expect(drawer.getByText('"sessionId"')).toBeVisible();
+    await page.screenshot({ path: `${SHOTS}/event-details-raw.png` });
+    await drawer.getByRole('button', { name: 'Pretty' }).click();
 
-    await dialog.locator('a[href*="/profiles/"]').click();
+    await drawer.locator('a[href*="/profiles/"]').click();
     await expect(page).toHaveURL(/\/profiles\/[^/]+/);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(
+      page.getByRole('complementary', { name: 'Event details' })
+    ).toHaveCount(0);
     await expect(page.getByText('Profile Information')).toBeVisible();
     await page.waitForLoadState('networkidle');
+    // The drawer lives in the URL, so back lands on the list with it open again.
     await page.goBack();
-    await expect(page).toHaveURL(/events\?events=purchase/);
+    await expect(page).toHaveURL(/[?&]events=purchase/);
+    await expect(page).toHaveURL(/[?&]event=/);
+    await expect(drawer).toHaveCount(1);
     expect(problems).toEqual([]);
   });
 
-  test('clicking a property in the details modal filters by it', async ({
+  test('clicking a property in the details drawer filters by it', async ({
     page,
   }) => {
     await open(page, `${SHOP}/events/events?events=purchase`);
     await rows(page).first().locator('button[title]').click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Properties')).toBeVisible();
-    await dialog.getByText('Payment', { exact: true }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const drawer = page.getByRole('complementary', { name: 'Event details' });
+    await expect(drawer.getByText('Properties')).toBeVisible();
+    await drawer.getByText('Payment', { exact: true }).click();
+    // The list filters beside the drawer; the drawer stays open.
     await expect(page).toHaveURL(/f=properties\.payment/);
+    await expect(drawer).toHaveCount(1);
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: `${SHOTS}/events-filter-by-property.png` });
     await expect(rows(page).first()).toBeVisible();
   });
 
-  test('"Show all" in the details modal filters by the event name', async ({
+  test('"Show all" in the details drawer filters by the event name', async ({
     page,
   }) => {
     await open(page, `${SHOP}/events`);
     await rows(page).first().locator('button[title]').click();
-    const dialog = page.getByRole('dialog');
-    await dialog.getByRole('button', { name: 'Show all' }).click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page).toHaveURL(/events=/);
+    const drawer = page.getByRole('complementary', { name: 'Event details' });
+    await drawer.getByRole('button', { name: 'Show all' }).click();
+    await expect(page).toHaveURL(/[?&]events=/);
+    await expect(drawer).toHaveCount(1);
   });
 
   test('the Session ID column can be switched on and links to the session', async ({

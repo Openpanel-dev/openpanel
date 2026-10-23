@@ -232,7 +232,7 @@ export function ReplayTimeline({ events }: { events: IServiceEvent[] }) {
                   <div className="absolute top-1/2 left-0 h-4 w-px -translate-x-1/2 -translate-y-1/2 bg-foreground/30" />
                   <motion.div
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute bottom-6 left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-[10px] text-background tabular-nums shadow"
+                    className="absolute bottom-6 left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-foreground px-1.5 py-0.5 text-2xs text-background tabular-nums shadow"
                     exit={{ opacity: 0, y: 16, scale: 0.5 }}
                     initial={{ opacity: 0, y: 16, scale: 0.5 }}
                     transition={{ duration: 0.2 }}

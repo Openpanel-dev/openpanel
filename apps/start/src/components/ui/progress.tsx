@@ -30,7 +30,7 @@ const Progress = React.forwardRef<
       }}
     />
     {value && size !== 'sm' && (
-      <div className="absolute top-0 bottom-0 z-5 flex items-center px-2 font-medium font-mono text-sm">
+      <div className="absolute top-0 bottom-0 z-5 flex items-center px-2 font-medium text-sm tabular-nums">
         <div>{round(value, 2)}%</div>
       </div>
     )}

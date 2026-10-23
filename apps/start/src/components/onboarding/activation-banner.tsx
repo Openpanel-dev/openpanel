@@ -164,17 +164,17 @@ export default function ActivationBanner() {
 
       <div className="@5xl:row col relative @5xl:items-center @5xl:justify-between @5xl:gap-10 gap-6 @5xl:p-6 p-4 @5xl:px-8">
         <div className="row @5xl:contents min-w-0 flex-wrap items-start justify-between gap-4">
-          <div className="col min-w-0 gap-1">
-            <div className="row items-center gap-2 font-mono text-muted-foreground text-xs uppercase tracking-widest">
+          <div className="col min-w-0">
+            <div className="row items-center gap-1.5 text-3xs text-muted-foreground uppercase tabular-nums tracking-wider">
               Setup funnel
               <span className="text-emerald-600 dark:text-emerald-500">
                 {doneCount}/{steps.length}
               </span>
             </div>
-            <div className="font-medium text-lg leading-tight">
-              {headline.title}
+            <div className="font-semibold text-base">{headline.title}</div>
+            <div className="mt-0.5 text-muted-foreground text-sm">
+              {headline.sub}
             </div>
-            <div className="text-muted-foreground text-sm">{headline.sub}</div>
           </div>
 
           <div className="row @5xl:hidden shrink-0 items-center gap-2">

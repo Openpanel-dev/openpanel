@@ -13,6 +13,8 @@ import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
 
+const TOOLTIP_MIN_WIDTH = 168;
+
 export type OPTooltipUnit =
   | 'currency'
   | 'min'
@@ -61,7 +63,7 @@ export interface OPChartTooltipProps<T extends Record<string, unknown>>
   rows: (point: T) => OPTooltipRow[];
   /** Render extra content below the rows (e.g. referrer breakdown). */
   extra?: (point: T) => ReactNode;
-  /** Min width of the tooltip card. Default 200. */
+  /** Min width of the tooltip card. Default 168. */
   minWidth?: number;
   /** When set, references matching the hovered date are listed below the rows. */
   references?: OPReferenceItem[] | null;
@@ -78,7 +80,7 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   title,
   rows,
   extra,
-  minWidth = 200,
+  minWidth = TOOLTIP_MIN_WIDTH,
   references,
   referencesLimit = 3,
   spikes,
@@ -161,7 +163,7 @@ function OPTooltipBody<T extends Record<string, unknown>>({
   return (
     <OPTooltipCard style={{ minWidth }}>
       {resolvedTitle != null && (
-        <div className="flex justify-between gap-8 text-muted-foreground">
+        <div className="flex justify-between gap-6 text-muted-foreground text-xs">
           <div>{resolvedTitle}</div>
         </div>
       )}
@@ -356,15 +358,13 @@ function OPAnnotationRow({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-foreground text-foreground">
+      <div className="mt-px flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-full border border-foreground text-foreground">
         {icon}
       </div>
       <div className="col min-w-0 flex-1 gap-0.5">
-        <div className="truncate font-medium text-sm leading-tight">
-          {title}
-        </div>
+        <div className="truncate font-medium">{title}</div>
         {description && (
-          <div className="truncate text-muted-foreground text-xs leading-snug">
+          <div className="truncate text-muted-foreground text-xs">
             {description}
           </div>
         )}
@@ -384,7 +384,7 @@ export function OPTooltipCard({
 }) {
   return (
     <div
-      className={cn('col gap-2 p-3 text-foreground', className)}
+      className={cn('col gap-1.5 p-2.5 text-foreground text-sm', className)}
       style={style}
     >
       {children}
@@ -406,8 +406,8 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
 
   return (
     <div className="flex gap-2">
-      <div className="w-[3px] rounded-full" style={{ background: row.color }} />
-      <div className="col min-w-0 flex-1 gap-1">
+      <div className="w-0.5 rounded-full" style={{ background: row.color }} />
+      <div className="col min-w-0 flex-1 gap-0.5">
         <div className="flex min-w-0 items-center gap-1">
           {row.icon && (
             <span className="flex shrink-0 items-center">{row.icon}</span>
@@ -415,7 +415,7 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
           <span className="truncate font-medium">{row.label}</span>
         </div>
         {hasValue && (
-          <div className="flex items-center justify-between gap-8 font-medium font-mono">
+          <div className="flex items-center justify-between gap-6 font-medium tabular-nums">
             <div className="row items-baseline gap-1">
               <span>{formatValue(row.value!)}</span>
               {showPrev && (
@@ -436,10 +436,10 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
         )}
 
         {row.sub && row.sub.length > 0 && (
-          <div className="col gap-1 text-sm">
+          <div className="col gap-0.5 text-xs">
             {row.sub.map((s, i) => (
               <div
-                className="flex justify-between gap-8 font-medium font-mono"
+                className="flex justify-between gap-6 font-medium tabular-nums"
                 key={`${typeof s.label === 'string' ? s.label : i}-${i}`}
               >
                 <span className="text-muted-foreground">{s.label}</span>

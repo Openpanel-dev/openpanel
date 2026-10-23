@@ -212,3 +212,4 @@ packages/db/src/code-migrations/*.sql
 
 # local working list of open issues
 ISSUES.md
+test-results/

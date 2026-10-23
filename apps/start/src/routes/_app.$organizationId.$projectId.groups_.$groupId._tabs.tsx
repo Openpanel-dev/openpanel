@@ -58,16 +58,7 @@ function Component() {
     trpc.group.byId.queryOptions({ id: groupId, projectId })
   );
 
-  useEntityPageContext(
-    'groupDetail',
-    { groupId },
-    group.data
-      ? {
-          name: group.data.name,
-          type: group.data.type,
-        }
-      : undefined
-  );
+  useEntityPageContext('group', { groupId });
 
   const deleteMutation = useMutation(
     trpc.group.delete.mutationOptions({

@@ -36,7 +36,8 @@ const DESKTOP_VIEWPORT = { width: 1280, height: 720 };
 const RECOVERY_CODE_COUNT = 10;
 const RECOVERY_CODE_PATTERN = /[A-Z2-9]{5}-[A-Z2-9]{5}/g;
 const TOTP_SECRET_PATTERN = /[A-Z2-7]{32}/;
-const FRAMEWORK_COUNT = 15;
+const FRAMEWORK_COUNT = 17;
+const WEBSITE_FRAMEWORK_COUNT = 8;
 const EVENT_ARRIVAL_TIMEOUT_MS = 45_000;
 
 interface ProjectState {
@@ -133,33 +134,25 @@ test('sign-up validates every field before it calls the API', async ({
   });
   await gotoHydrated(page, '/onboarding');
   await expect(
-    page.getByRole('heading', { name: 'Start tracking in minutes' })
+    page.getByRole('heading', { name: 'Create your account' })
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
     'href',
     '/login'
   );
 
+  const fieldErrors = page.locator('[data-slot="field-error"]');
   const submit = page.getByRole('button', { name: 'Create account' });
   await submit.click();
-  await expect(page.getByText('Issues')).toHaveCount(5);
+  await expect(fieldErrors).toHaveCount(4);
 
   await page.getByLabel('First name').fill('E2E');
   await page.getByLabel('Last name').fill('Auth');
   await page.getByLabel('Email').fill(`e2e-auth-${RUN_ID}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill('short');
-  await page.getByLabel('Confirm password').fill('short');
   await submit.click();
-  await expect(page.getByText('Issues')).toHaveCount(2);
-
-  await page.getByLabel('Password', { exact: true }).fill('long-enough-1');
-  await page.getByLabel('Confirm password').fill('long-enough-2');
-  await submit.click();
-  await expect(page.getByText('Issues')).toHaveCount(1);
-  await page.getByText('Issues').hover();
-  await expect(page.getByRole('tooltip')).toContainText(
-    'Passwords do not match'
-  );
+  await expect(fieldErrors).toHaveCount(1);
+  await expect(fieldErrors.first()).toContainText('8');
   await page.screenshot({ path: `${SHOTS_DIR}/sign-up-validation.png` });
 
   expect(signUpRequests).toBe(0);
@@ -178,8 +171,7 @@ test('sign up creates the account and opens the project step', async ({
   await page.getByLabel('Last name').fill('Auth');
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
-  await page.getByLabel('Confirm password').fill(password);
-  await page.getByLabel('Confirm password').press('Enter');
+  await page.getByLabel('Password', { exact: true }).press('Enter');
 
   // No organization yet: `/` forwards to the project step.
   await expect(page).toHaveURL(/\/onboarding\/project$/, { timeout: 20_000 });
@@ -200,7 +192,6 @@ test('signing up again with the same email is refused', async ({ page }) => {
   await page.getByLabel('Last name').fill('Twin');
   await page.getByLabel('Email').fill(state.email);
   await page.getByLabel('Password', { exact: true }).fill('another-password');
-  await page.getByLabel('Confirm password').fill('another-password');
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(toast(page, 'User already exists')).toBeVisible();
   await expect(page).toHaveURL(/\/onboarding$/);
@@ -220,35 +211,38 @@ test('the project step validates the workspace, the name, the type and the domai
     }
   });
   await gotoHydrated(page, '/onboarding/project');
-  await expect(page.getByText('Create project')).toBeVisible();
-  // Nothing to reuse yet.
+  await expect(
+    page.getByRole('heading', { name: 'Create your first project' })
+  ).toBeVisible();
+  // Nothing to reuse yet, so there is no workspace switch.
   await expect(
     page.getByRole('button', { name: 'Use existing workspace' })
-  ).toBeDisabled();
+  ).toHaveCount(0);
 
-  const next = page.getByRole('button', { name: 'Next' });
-  await next.click();
+  const fieldErrors = page.locator('[data-slot="field-error"]');
+  const create = page.getByRole('button', { name: 'Create project' });
+  await create.click();
   await expect(
-    page.getByText('At least one type must be selected')
+    page.getByText('Pick at least one thing to track')
   ).toBeVisible();
-  await expect(page.getByText('Issues')).toHaveCount(2);
+  // The project name, and the workspace name that follows it.
+  await expect(fieldErrors).toHaveCount(2);
 
-  await page.getByLabel('Workspace name').fill(`E2E auth ${RUN_ID}`);
-  await page.getByLabel('Your first project name').fill('ab');
-  await page.getByText('Website', { exact: true }).click();
-  await next.click();
-  // Too short a name, and a website needs its domain.
-  await expect(page.getByText('Issues')).toHaveCount(2);
+  await page.getByLabel('Project name').fill('ab');
+  await page.getByRole('button', { name: /^Website/ }).click();
+  await create.click();
+  // Too short a name, and a website needs its URL.
+  await expect(fieldErrors).toHaveCount(2);
   await page.screenshot({
     path: `${SHOTS_DIR}/onboarding-project-invalid.png`,
   });
 
   // App and backend projects have no domain to ask for.
-  await page.getByText('Website', { exact: true }).click();
-  await expect(page.getByLabel('Domain')).toBeHidden();
-  await page.getByText('App', { exact: true }).click();
-  await next.click();
-  await expect(page.getByText('Issues')).toHaveCount(1);
+  await page.getByRole('button', { name: /^Website/ }).click();
+  await expect(page.getByLabel('Website URL')).toBeHidden();
+  await page.getByRole('button', { name: /^App/ }).click();
+  await create.click();
+  await expect(fieldErrors).toHaveCount(1);
 
   expect(projectRequests).toBe(0);
   expect(issues.unexpected()).toEqual([]);
@@ -261,6 +255,7 @@ test('the timezone picker searches and keeps the choice', async ({
 }) => {
   await continueAsUser(context, baseURL);
   await gotoHydrated(page, '/onboarding/project');
+  await page.getByRole('button', { name: 'Change' }).click();
   const timezone = page.getByRole('combobox').first();
   // Defaults to the browser's zone.
   await expect(timezone).toHaveText(/\w+\/\w+|UTC/);
@@ -289,39 +284,40 @@ test('a website project leads to the connect step with its one-time credentials'
   const issues = watchIssues(page);
   const organizationName = `E2E auth ${RUN_ID}`;
   await gotoHydrated(page, '/onboarding/project');
+  await page.getByLabel('Project name').fill(`E2E auth web ${RUN_ID}`);
+  await page.getByRole('button', { name: /^Website/ }).click();
+
+  // A bare host becomes an origin, and that origin is allowed by default.
+  const domain = `e2e-auth-${RUN_ID}.example.com`;
+  await page.getByLabel('Website URL').fill(domain);
+  await page.getByLabel('Website URL').blur();
+  await expect(page.getByLabel('Website URL')).toHaveValue(`https://${domain}`);
+  await page.getByText('Also track other domains').click();
+  await expect(page.locator(`[data-tag="https://${domain}"]`)).toBeVisible();
+
+  // The workspace is named after the project until it is edited.
+  await page.getByRole('button', { name: 'Change' }).click();
+  await expect(page.getByLabel('Workspace name')).toHaveValue(
+    `E2E auth web ${RUN_ID}`
+  );
   await page.getByLabel('Workspace name').fill(organizationName);
   await page.getByRole('combobox').first().click();
   await page.getByPlaceholder(/search/i).fill('UTC');
   await page.getByRole('option', { name: 'UTC', exact: true }).click();
-  await page
-    .getByLabel('Your first project name')
-    .fill(`E2E auth web ${RUN_ID}`);
-  await page.getByText('Website', { exact: true }).click();
-
-  // A bare host becomes an origin, and that origin is allowed by default.
-  const domain = `e2e-auth-${RUN_ID}.example.com`;
-  await page.getByLabel('Domain').fill(domain);
-  await page.getByLabel('Domain').blur();
-  await expect(page.getByLabel('Domain')).toHaveValue(`https://${domain}`);
-  await page
-    .getByText('will be allowed. Do you want to allow any other?')
-    .click();
-  await expect(
-    page.getByText(`https://${domain}`, { exact: true }).last()
-  ).toBeVisible();
   await page.screenshot({
     path: `${SHOTS_DIR}/onboarding-project-website.png`,
+    fullPage: true,
   });
 
   const created = page.waitForResponse((response) =>
     response.url().includes('/trpc/onboarding.project')
   );
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Create project' }).click();
   const client = (await (await created).json()).result.data.json;
   await expect(page).toHaveURL(
     new RegExp(`/onboarding/${client.projectId}/connect$`)
   );
-  await expect(page.getByText('Client credentials')).toBeVisible();
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
   writeState({
     organizationId: client.organizationId,
     organizationName,
@@ -332,56 +328,82 @@ test('a website project leads to the connect step with its one-time credentials'
     },
   });
 
+  // The secret and the MCP token are only known right after creation. The
+  // token belongs to a separate read-only client, so it is not derived from
+  // the write client's secret.
   await expect(page.getByText(client.id).first()).toBeVisible();
   await expect(page.getByText(client.secret)).toBeVisible();
-  await expect(
-    page.getByText(btoa(`${client.id}:${client.secret}`))
-  ).toBeVisible();
+  // The assistant card is collapsed until asked for.
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await page.getByRole('button', { name: /Connect an AI assistant/ }).click();
+  await expect(page.getByText(client.mcpToken)).toBeVisible();
+  expect(client.mcpToken).not.toBe(btoa(`${client.id}:${client.secret}`));
+
+  // Manual setup starts with the script tag for a website, with the real client id.
+  await page.getByRole('tab', { name: 'Manual setup' }).click();
   await expect(page.locator('code').first()).toContainText(
     `clientId: '${client.id}'`
   );
-  await expect(
-    page.locator('button').filter({ has: page.locator('.font-semibold') })
-  ).toHaveCount(FRAMEWORK_COUNT);
   await page.screenshot({
     path: `${SHOTS_DIR}/onboarding-connect.png`,
     fullPage: true,
   });
 
-  // Each framework opens its instructions next to the page.
-  for (const framework of ['Next.js', 'Rest API', 'iOS (swift)']) {
-    await page.getByRole('button', { name: framework, exact: true }).click();
-    const sheet = page.getByRole('dialog');
-    await expect(sheet.locator(`iframe[title="${framework}"]`)).toBeVisible();
-    await sheet.getByRole('button', { name: 'Close' }).first().click();
-    await expect(sheet).toBeHidden();
-  }
+  // The framework dropdown suggests the website SDKs first and lists the rest.
+  const frameworkSelect = page.getByRole('combobox', { name: 'Framework' });
+  await frameworkSelect.click();
+  await expect(
+    page.getByRole('group', { name: 'For websites' }).getByRole('option')
+  ).toHaveCount(WEBSITE_FRAMEWORK_COUNT);
+  await expect(page.getByRole('option')).toHaveCount(FRAMEWORK_COUNT);
+
+  // Each framework shows its own snippet and links to its guide.
+  await page.getByRole('option', { name: 'Next.js' }).click();
+  await expect(page.locator('code').first()).toContainText('@openpanel/nextjs');
+  await expect(
+    page.getByRole('link', { name: 'Full Next.js guide' })
+  ).toHaveAttribute('href', 'https://openpanel.dev/docs/sdks/nextjs');
+  await frameworkSelect.click();
+  await page.getByRole('option', { name: 'iOS (swift)' }).click();
+  await expect(page.locator('code').last()).toContainText(
+    `clientSecret: "${client.secret}"`
+  );
 
   // The secret is stored hashed: after a reload in a new tab it cannot be shown again.
   await page.evaluate(() => sessionStorage.clear());
   await page.reload();
-  await expect(page.getByText('Client credentials')).toBeVisible();
+  await waitForHydration(page);
+  await expect(page.getByText(client.id).first()).toBeVisible();
   await expect(page.getByText(client.secret)).toHaveCount(0);
-  await expect(page.getByText('is only shown once')).toBeVisible();
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await expect(page.getByText('Secrets are shown once')).toBeVisible();
   expect(issues.unexpected()).toEqual([]);
 });
 
-// Open defect: TanStack's `Link` builds its href from `to`, so a LinkButton's
-// `href` is dropped and `target="_blank"` links open the page you are already on.
-test('"More details" in the framework instructions links to the docs', async ({
+test('the AI prompt carries the client id and the chosen framework guide', async ({
   page,
   context,
   baseURL,
 }) => {
   const state = await continueAsUser(context, baseURL);
-  await gotoHydrated(page, `/onboarding/${state.webProject?.id}/connect`);
-  await page.getByRole('button', { name: 'Next.js', exact: true }).click();
+  const project = state.webProject;
+  if (!project) {
+    throw new Error('The website project was not created; see its failure.');
+  }
+  await gotoHydrated(page, `/onboarding/${project.id}/connect`);
+  const prompt = page.locator('pre');
+  await expect(prompt).toContainText(`Client ID: ${project.clientId}`);
+  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks');
+
+  await page.getByRole('combobox', { name: 'Framework (optional)' }).click();
+  await page.getByRole('option', { name: 'Next.js' }).click();
+  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks/nextjs');
   await expect(
-    page.getByRole('dialog').getByRole('link', { name: 'More details' })
-  ).toHaveAttribute('href', /^https:\/\/openpanel\.dev\/docs/);
+    page.getByRole('link', { name: 'Open in Cursor' })
+  ).toHaveAttribute('href', /^cursor:\/\//);
 });
 
-test('the verify step turns green when the first event arrives', async ({
+test('the install step turns green when the first event arrives', async ({
   page,
   context,
   baseURL,
@@ -393,29 +415,30 @@ test('the verify step turns green when the first event arrives', async ({
   }
   const issues = watchIssues(page);
   await gotoHydrated(page, `/onboarding/${project.id}/connect`);
-  await page.getByRole('link', { name: 'Next' }).click();
-  await expect(page).toHaveURL(new RegExp(`/onboarding/${project.id}/verify$`));
-  await expect(page.getByText('Waiting for events')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Skip for now' })).toBeVisible();
-
-  await page.getByRole('button', { name: 'No events received?' }).click();
-  await expect(page.getByText('Ensure client ID is correct')).toBeVisible();
-  await expect(page.getByText(project.clientId).first()).toBeVisible();
-  await page.getByRole('button', { name: 'Personal curl example' }).click();
-  await expect(page.locator('code').last()).toContainText(
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Skip for now, I will install later' })
+  ).toBeVisible();
+  // Troubleshooting lives behind a quiet link inside the listener.
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const troubleshooting = page.getByRole('dialog', {
+    name: 'Not seeing events?',
+  });
+  await expect(
+    troubleshooting.getByText('Is the client ID the one for this project?')
+  ).toBeVisible();
+  await expect(
+    troubleshooting.getByText(project.clientId).first()
+  ).toBeVisible();
+  await expect(troubleshooting.locator('code').last()).toContainText(
     `openpanel-client-id: ${project.clientId}`
   );
   await page.screenshot({
-    path: `${SHOTS_DIR}/onboarding-verify-waiting.png`,
+    path: `${SHOTS_DIR}/onboarding-connect-waiting.png`,
     fullPage: true,
   });
-
-  // Back and forward keep the step.
-  await page.getByRole('link', { name: 'Back' }).click();
-  await expect(page).toHaveURL(/\/connect$/);
-  await page.goBack();
-  await expect(page).toHaveURL(/\/verify$/);
-  await expect(page.getByText('Waiting for events')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(troubleshooting).toHaveCount(0);
 
   expect(
     trackEvent(
@@ -423,22 +446,23 @@ test('the verify step turns green when the first event arrives', async ({
       'e2e_auth_first_event'
     )
   ).toBe('200');
-  await expect(page.getByText('Successfully connected')).toBeVisible({
+  await expect(page.getByText('Connected! Events are coming in.')).toBeVisible({
     timeout: EVENT_ARRIVAL_TIMEOUT_MS,
   });
   await expect(page.getByText('e2e_auth_first_event')).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Skip for now' })).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: 'Skip for now, I will install later' })
+  ).toHaveCount(0);
   await page.screenshot({
-    path: `${SHOTS_DIR}/onboarding-verify-connected.png`,
+    path: `${SHOTS_DIR}/onboarding-connect-connected.png`,
   });
 
-  await page.getByRole('link', { name: 'Your dashboard' }).click();
+  await page.getByRole('link', { name: 'Open dashboard' }).first().click();
   await expect(page).toHaveURL(
     new RegExp(`/${state.organizationId}/${project.id}$`)
   );
   expect(issues.unexpected()).toEqual([]);
 });
-
 test('an app and backend project can be added to the existing workspace', async ({
   page,
   context,
@@ -448,24 +472,23 @@ test('an app and backend project can be added to the existing workspace', async 
   const issues = watchIssues(page);
   await gotoHydrated(page, '/onboarding/project');
   // With a workspace in hand, reusing it is the default.
-  await expect(page.getByLabel('Workspace name')).toHaveCount(0);
-  await page.getByRole('combobox').click();
+  await expect(
+    page.getByRole('button', { name: 'Use existing workspace' })
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('combobox', { name: 'Which workspace?' }).click();
   await page.getByRole('option', { name: state.organizationName }).click();
-  await page
-    .getByLabel('Your first project name')
-    .fill(`E2E auth server ${RUN_ID}`);
-  await page.getByText('App', { exact: true }).click();
-  await page.getByText('Backend / API', { exact: true }).click();
-  await expect(page.getByLabel('Domain')).toBeHidden();
+  await page.getByLabel('Project name').fill(`E2E auth server ${RUN_ID}`);
+  await page.getByRole('button', { name: /^App/ }).click();
+  await page.getByRole('button', { name: /^Backend \/ API/ }).click();
+  await expect(page.getByLabel('Website URL')).toBeHidden();
 
   const created = page.waitForResponse((response) =>
     response.url().includes('/trpc/onboarding.project')
   );
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Create project' }).click();
   const client = (await (await created).json()).result.data.json;
   expect(client.organizationId).toBe(state.organizationId);
-  await expect(page.getByText('Client credentials')).toBeVisible();
-  await expect(page.getByText(client.secret)).toBeVisible();
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
   writeState({
     serverProject: {
       id: client.projectId,
@@ -474,17 +497,22 @@ test('an app and backend project can be added to the existing workspace', async 
     },
   });
 
-  await page.getByRole('link', { name: 'Next' }).click();
-  await expect(page).toHaveURL(/\/verify$/);
-  await page.getByRole('button', { name: 'Personal curl example' }).click();
-  // A backend project gets a server-side example, with the real secret while it is known.
-  const example = page.locator('code').last();
-  await expect(example).toContainText('"name":"test_event"');
+  // Server platforms get the secret in their snippets while it is known.
+  await page.getByRole('tab', { name: 'Manual setup' }).click();
+  await expect(page.locator('code').last()).toContainText(
+    `clientSecret: '${client.secret}'`
+  );
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const example = page.getByRole('dialog').locator('code').last();
+  await expect(example).toContainText('"name":"openpanel_test_event"');
   await expect(example).toContainText(
     `openpanel-client-secret: ${client.secret}`
   );
+  await page.keyboard.press('Escape');
 
-  await page.getByRole('link', { name: 'Skip for now' }).click();
+  await page
+    .getByRole('link', { name: 'Skip for now, I will install later' })
+    .click();
   await expect(page).toHaveURL(
     new RegExp(`/${state.organizationId}/${client.projectId}$`)
   );
@@ -501,7 +529,6 @@ test('the onboarding steps fit a phone screen', async ({
   for (const [name, path] of [
     ['project', '/onboarding/project'],
     ['connect', `/onboarding/${state.webProject?.id}/connect`],
-    ['verify', `/onboarding/${state.webProject?.id}/verify`],
     ['account', `/${state.organizationId}/account`],
     ['two-factor', `/${state.organizationId}/account/two-factor`],
   ] as const) {
