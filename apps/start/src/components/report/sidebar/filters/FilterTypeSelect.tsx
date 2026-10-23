@@ -19,7 +19,7 @@ export function FilterTypeSelect({
   children,
 }: FilterTypeSelectProps) {
   const trigger = children ?? (
-    <Button className="whitespace-nowrap" variant="outline">
+    <Button className="whitespace-nowrap" size="sm" variant="input">
       {filterValueTypes[value ?? 'string']}
     </Button>
   );

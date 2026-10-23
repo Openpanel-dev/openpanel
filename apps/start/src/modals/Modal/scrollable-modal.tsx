@@ -25,7 +25,7 @@ export function ScrollableModal({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   return (
     <ScrollableModalContext.Provider value={{ scrollAreaRef }}>
-      <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0">
+      <ModalContent bodyClassName="flex flex-col gap-0 p-0">
         <div className="flex-shrink-0 p-6">{header}</div>
         <VirtualScrollArea
           className={cn(

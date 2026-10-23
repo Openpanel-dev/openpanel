@@ -53,7 +53,7 @@ export function ProjectMapper({
         </Button>
       </div>
       {fields.length === 0 && (
-        <p className="text-muted-foreground text-sm leading-normal">
+        <p className="text-muted-foreground text-sm">
           Map source project IDs to your OpenPanel projects. If you skip mapping
           all data will be imported to your current project.
         </p>
@@ -70,6 +70,7 @@ export function ProjectMapper({
                   </Label>
                   <Input
                     placeholder="e.g., abc123"
+                    size="sm"
                     {...register(`projectMapper.${index}.from`)}
                     className="mt-1"
                   />

@@ -1,6 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { SaveIcon } from 'lucide-react';
+import { useId } from 'react';
 import type { SubmitHandler } from 'react-hook-form';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
@@ -8,14 +9,31 @@ import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { CreateClientSuccess } from '@/components/clients/create-client-success';
+import {
+  fieldMessageId,
+  InputWithLabel,
+  WithLabel,
+} from '@/components/forms/input-with-label';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
+
+type ClientType = 'write' | 'read' | 'root';
+
+const CLIENT_TYPE_ITEMS: { value: ClientType; label: string }[] = [
+  { value: 'write', label: 'Write (for ingestion)' },
+  { value: 'read', label: 'Read (access export API)' },
+  { value: 'root', label: 'Root (access export API)' },
+];
+
+const CLIENT_TYPE_HINTS: Record<ClientType, string> = {
+  write: 'The default client type, used for ingesting data',
+  read: "Can read this project's data from the export API",
+  root: "Can read any project's data from the export API",
+};
 
 const validation = z.object({
   name: z.string().min(1),
@@ -24,13 +42,19 @@ const validation = z.object({
 
 type IForm = z.infer<typeof validation>;
 
-export default function AddClient() {
+export interface AddClientProps {
+  name?: string;
+  type?: IForm['type'];
+}
+
+export default function AddClient({ name, type }: AddClientProps = {}) {
+  const clientTypeId = useId();
   const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
     defaultValues: {
-      name: '',
-      type: 'write',
+      name: name ?? '',
+      type: type ?? 'write',
     },
   });
   const queryClient = useQueryClient();
@@ -86,58 +110,35 @@ export default function AddClient() {
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit(onSubmit)}
           >
-            <div>
-              <Label>Client name</Label>
-              <Input
-                error={form.formState.errors.name?.message}
-                placeholder="Eg. My App Client"
-                {...form.register('name')}
-              />
-            </div>
+            <InputWithLabel
+              error={form.formState.errors.name?.message}
+              label="Client name"
+              placeholder="Eg. My App Client"
+              {...form.register('name')}
+            />
 
-            <div>
-              <Controller
-                control={form.control}
-                name="type"
-                render={({ field }) => {
-                  return (
-                    <div>
-                      <Label>Type of client</Label>
-                      <Combobox
-                        {...field}
-                        className="w-full"
-                        items={[
-                          {
-                            value: 'write',
-                            label: 'Write (for ingestion)',
-                          },
-                          {
-                            value: 'read',
-                            label: 'Read (access export API)',
-                          },
-                          {
-                            value: 'root',
-                            label: 'Root (access export API)',
-                          },
-                        ]}
-                        onChange={(value) => {
-                          field.onChange(value);
-                        }}
-                        placeholder="Select a project"
-                      />
-                      <p className="mt-2 text-muted-foreground text-sm">
-                        {field.value === 'write' &&
-                          'Write: Is the default client type and is used for ingestion of data'}
-                        {field.value === 'read' &&
-                          'Read: You can access the current projects data from the export API'}
-                        {field.value === 'root' &&
-                          'Root: You can access any projects data from the export API'}
-                      </p>
-                    </div>
-                  );
-                }}
-              />
-            </div>
+            <Controller
+              control={form.control}
+              name="type"
+              render={({ field }) => (
+                <WithLabel
+                  hint={CLIENT_TYPE_HINTS[field.value]}
+                  id={clientTypeId}
+                  label="Type of client"
+                >
+                  <Combobox
+                    {...field}
+                    aria-describedby={fieldMessageId(clientTypeId)}
+                    className="w-full"
+                    id={clientTypeId}
+                    items={CLIENT_TYPE_ITEMS}
+                    onChange={field.onChange}
+                    placeholder="Select a client type"
+                    variant="input"
+                  />
+                </WithLabel>
+              )}
+            />
             <DialogFooter>
               <Button
                 onClick={() => popModal()}

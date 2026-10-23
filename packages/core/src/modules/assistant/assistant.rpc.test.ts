@@ -54,6 +54,7 @@ test('models returns no models and a null default with no provider keys set', as
     providers: { openai: false, anthropic: false },
     models: [],
     defaultModelId: null,
+    canChooseModel: false,
   });
 });
 
@@ -61,6 +62,6 @@ test('models filters to the configured provider and prefers the recorded default
   const caller = await callerWith(TEST_SESSION, { openai: 'sk-test' });
   const result = await caller.models();
   expect(result.providers).toEqual({ openai: true, anthropic: false });
-  expect(result.models.every((m) => m.group === 'OpenAI')).toBe(true);
-  expect(result.defaultModelId).toBe('gpt-4-1-mini');
+  expect(result.models.every((m) => m.provider === 'openai')).toBe(true);
+  expect(result.defaultModelId).toBe('gpt-6-1-sol');
 });

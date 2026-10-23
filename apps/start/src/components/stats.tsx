@@ -49,7 +49,7 @@ export function StatsCard({
       <div className="row justify-between gap-4">
         <div
           className={cn(
-            'font-mono leading-snug',
+            'tabular-nums',
             size === 'sm' ? 'font-medium text-sm' : 'font-bold text-lg'
           )}
         >

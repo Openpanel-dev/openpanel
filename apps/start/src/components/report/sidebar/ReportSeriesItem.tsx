@@ -4,11 +4,12 @@ import type {
 } from '@openpanel/core/modules/report/report.constants';
 import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
-import { DatabaseIcon, FilterIcon, type LucideIcon } from 'lucide-react';
+import { DatabaseIcon, FilterIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import { changeEvent } from '../reportSlice';
 import { FiltersList } from './filters/FiltersList';
 import { PropertiesCombobox } from './PropertiesCombobox';
+import { BuilderChip } from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
 import { useDispatch } from '@/redux';
 
@@ -44,7 +45,7 @@ export function ReportSeriesItem({
 
   return (
     <div {...props}>
-      <div className="group flex items-center gap-2 p-2">
+      <div className="group flex items-center gap-2 px-3 py-2.5">
         {renderDragHandle ? (
           renderDragHandle(index)
         ) : (
@@ -57,9 +58,10 @@ export function ReportSeriesItem({
 
       {/* Segment and Filter buttons - only for events */}
       {chartEvent && (showSegment || showAddFilter) && (
-        <div className="flex gap-2 p-2 pt-0">
+        <div className="flex flex-wrap gap-1 px-3 pb-2.5 pl-10">
           {showSegment && (
             <ReportSegment
+              className="h-7 px-2 text-muted-foreground text-xs hover:text-foreground"
               onChange={(segment) => {
                 dispatch(
                   changeEvent({
@@ -68,7 +70,9 @@ export function ReportSeriesItem({
                   })
                 );
               }}
+              size="sm"
               value={chartEvent.segment}
+              variant="ghost"
             />
           )}
           {showAddFilter && (
@@ -112,12 +116,12 @@ export function ReportSeriesItem({
               }}
             >
               {(setOpen) => (
-                <SmallButton
+                <BuilderChip
                   icon={FilterIcon}
                   onClick={() => setOpen((p) => !p)}
                 >
                   Add filter
-                </SmallButton>
+                </BuilderChip>
               )}
             </PropertiesCombobox>
           )}
@@ -137,14 +141,14 @@ export function ReportSeriesItem({
               }}
             >
               {(setOpen) => (
-                <SmallButton
+                <BuilderChip
                   icon={DatabaseIcon}
                   onClick={() => setOpen((p) => !p)}
                 >
                   {chartEvent.property
                     ? `Property: ${chartEvent.property}`
                     : 'Select property'}
-                </SmallButton>
+                </BuilderChip>
               )}
             </PropertiesCombobox>
           )}
@@ -157,25 +161,5 @@ export function ReportSeriesItem({
         <FiltersList event={chartEvent} skipNameFilter={isSelectManyEvents} />
       )}
     </div>
-  );
-}
-
-function SmallButton({
-  children,
-  icon: Icon,
-  ...props
-}: {
-  children: React.ReactNode;
-  icon: LucideIcon;
-} & React.ButtonHTMLAttributes<HTMLButtonElement>) {
-  return (
-    <button
-      className="flex min-w-0 items-center gap-1 rounded-md border border-border bg-card p-1 px-2 text-left font-medium text-sm leading-none"
-      type="button"
-      {...props}
-    >
-      <Icon className="shrink-0" size={12} />
-      <span className="truncate">{children}</span>
-    </button>
   );
 }

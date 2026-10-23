@@ -42,7 +42,7 @@ export default function App() {
     for (const id of u.groupIds) {
       const meta = PRESET_GROUPS.find((g) => g.id === id);
       if (meta) {
-        op.upsertGroup({ id, ...meta });
+        op.upsertGroup(meta);
       }
     }
   }
@@ -212,6 +212,24 @@ export default function App() {
           />
         </Routes>
       </main>
+
+      {/* Exercises the SDK's automatic trackers (trackAttributes, trackOutgoingLinks). */}
+      <footer className="sdk-fixtures">
+        <button
+          data-cta-target="docs"
+          data-testid="sdk-fixture-data-track"
+          data-track="testbed_cta"
+          type="button"
+        >
+          data-track button
+        </button>
+        <a
+          data-testid="sdk-fixture-outgoing-link"
+          href="https://openpanel.dev/"
+        >
+          Outgoing link
+        </a>
+      </footer>
     </div>
   );
 }

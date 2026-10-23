@@ -192,20 +192,7 @@ function Component() {
 
   const [layout, setLayout] = useDashboardLayout(filteredReports);
 
-  const dashboardPrimer = useMemo(
-    () => ({
-      name: dashboard?.name,
-      reportCount: reports.length,
-      reports: reports.map((r) => ({
-        id: r.id,
-        name: r.name,
-        chartType: r.chartType,
-      })),
-    }),
-    [dashboard?.name, reports]
-  );
-
-  useDashboardPageContext(dashboardId, dashboardPrimer);
+  useDashboardPageContext(dashboardId);
 
   const saveLayout = useCallback(
     (newLayout: Layout) => {

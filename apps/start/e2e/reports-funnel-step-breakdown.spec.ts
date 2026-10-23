@@ -39,7 +39,7 @@ test('a funnel breaks down by a property that only exists on its last step', asy
   }
 
   const sheet = await openSidebar(page);
-  await sheet.getByRole('button', { name: 'Select breakdown' }).click();
+  await sheet.getByRole('button', { name: 'Add breakdown' }).click();
   await page.getByRole('menuitem', { name: 'Event properties' }).click();
   await page.getByPlaceholder('Search').last().fill('payment');
   await page

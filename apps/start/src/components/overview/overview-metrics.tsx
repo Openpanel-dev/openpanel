@@ -14,6 +14,10 @@ import { OPSeriesDots } from '../charts/op-series-dots';
 import { OPChartTooltip } from '../charts/op-tooltip';
 import { XAxis } from '../charts/x-axis';
 import { YAxis } from '../charts/y-axis';
+import {
+  MARKERS_MAX_POINTS,
+  POINT_MARKER,
+} from '../report-chart/common/time-series';
 import { Skeleton } from '../skeleton';
 import { Button } from '../ui/button';
 import { OverviewLiveHistogram } from './overview-live-histogram';
@@ -143,7 +147,7 @@ export default function OverviewMetrics({
 
       <div className="card p-4">
         <div className="-mt-1 flex items-center justify-between">
-          <div className="font-medium text-muted-foreground text-sm">
+          <div className="font-medium text-3xs text-muted-foreground uppercase tracking-wider">
             {activeMetric.title}
           </div>
           {import.meta.env.DEV && (
@@ -338,6 +342,7 @@ function Chart({
 
   const dashFromIndex = useDashedTail({ data, range, interval });
   const primaryColor = isRevenueTab ? REVENUE_COLOR : getChartColor(0);
+  const showMarkers = chartData.length <= MARKERS_MAX_POINTS;
 
   return (
     <ComposedChart
@@ -362,22 +367,31 @@ function Chart({
         fillOpacity={0.18}
         gradientToOpacity={0}
         key={activeMetric.key}
+        markers={POINT_MARKER}
+        showMarkers={showMarkers}
         stroke={primaryColor}
         strokeWidth={2}
       />
 
       <Line
+        animate={false}
         curve={curveMonotoneX}
         dataKey={`prev_${activeMetric.key}`}
         key={`prev-${activeMetric.key}`}
+        markers={POINT_MARKER}
+        showMarkers={showMarkers}
         stroke={PREV_LINE_COLOR}
         strokeWidth={2}
       />
 
       {showRevenue && (
         <Line
+          animate={false}
           curve={curveMonotoneX}
           dataKey="revenue_norm"
+          key={`revenue-${activeMetric.key}`}
+          markers={POINT_MARKER}
+          showMarkers={showMarkers}
           stroke={REVENUE_COLOR}
           strokeWidth={1.5}
         />

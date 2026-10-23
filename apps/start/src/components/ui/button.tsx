@@ -8,7 +8,7 @@ import { Spinner, type SpinnerProps } from './spinner';
 import { cn } from '@/utils/cn';
 
 const buttonVariants = cva(
-  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium ring-offset-background transition-all hover:translate-y-[-0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex flex-shrink-0 select-none items-center justify-center whitespace-nowrap rounded-md font-medium text-sm ring-offset-background transition-all hover:translate-y-[-0.5px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
   {
     variants: {
       variant: {
@@ -19,19 +19,22 @@ const buttonVariants = cva(
         outline:
           'border border-input bg-card hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-def-100 text-secondary-foreground hover:bg-def-100/80',
+        input:
+          'rounded-lg bg-def-200 font-normal text-foreground hover:translate-y-0 hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-8 rounded-md px-2',
-        lg: 'h-11 rounded-md px-8',
+        default: 'h-9 px-3.5',
+        sm: 'h-8 rounded-md px-2.5',
+        lg: 'h-10 rounded-md px-6',
+        xl: 'h-11 rounded-lg px-6 text-base',
         icon: 'h-8 w-8',
       },
     },
     defaultVariants: {
       variant: 'default',
-      size: 'sm',
+      size: 'default',
     },
   }
 );
@@ -59,13 +62,15 @@ function fixHeight({
   if (autoHeight) {
     switch (size) {
       case 'lg':
+        return 'h-auto min-h-10 py-2';
+      case 'xl':
         return 'h-auto min-h-11 py-2';
       case 'icon':
         return 'h-auto min-h-8 py-1';
-      case 'default':
-        return 'h-auto min-h-10 py-2';
-      default:
+      case 'sm':
         return 'h-auto min-h-8 py-1';
+      default:
+        return 'h-auto min-h-9 py-1.5';
     }
   }
   return '';
@@ -96,7 +101,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Icon = loading ? null : (icon ?? null);
 
     // Determine spinner size based on button size
-    const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+    const spinnerSize = size === 'lg' || size === 'xl' ? 'md' : 'sm';
 
     // With `asChild`, Radix's <Slot> merges props onto a single child element
     // and calls React.Children.only. Injecting a spinner/icon as extra siblings
@@ -196,7 +201,7 @@ const LinkButton = ({
   const Icon = loading ? null : (icon ?? null);
 
   // Determine spinner size based on button size
-  const spinnerSize = size === 'lg' ? 'md' : size === 'icon' ? 'sm' : 'sm';
+  const spinnerSize = size === 'lg' || size === 'xl' ? 'md' : 'sm';
 
   return (
     <Link

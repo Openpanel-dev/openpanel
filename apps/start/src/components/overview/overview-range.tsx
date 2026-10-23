@@ -9,12 +9,14 @@ export function OverviewRange() {
     setEndDate,
     endDate,
     startDate,
+    interval,
     setInterval,
   } = useOverviewOptions();
 
   return (
     <TimeWindowPicker
       endDate={endDate}
+      interval={interval}
       onChange={setRange}
       onEndDateChange={setEndDate}
       onIntervalChange={setInterval}

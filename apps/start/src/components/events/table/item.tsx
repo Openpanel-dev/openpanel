@@ -2,6 +2,7 @@ import type { IServiceEvent } from '@openpanel/core';
 import { memo } from 'react';
 import { Skeleton } from '../../skeleton';
 import { EventIcon } from '../event-icon';
+import { useEventDrawer } from '../use-event-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tooltiper } from '@/components/ui/tooltip';
@@ -18,6 +19,7 @@ interface EventItemProps {
 
 export const EventItem = memo<EventItemProps>(
   ({ event, viewOptions, className }) => {
+    const { openEvent } = useEventDrawer();
     let url: string | null = '';
     if (event.path && event.origin) {
       if (viewOptions.origin !== false && event.origin) {
@@ -48,19 +50,11 @@ export const EventItem = memo<EventItemProps>(
           )}
           data-slot="inner"
           onClick={() => {
-            pushModal('EventDetails', {
-              id: event.id,
-              projectId: event.projectId,
-              createdAt: event.createdAt,
-            });
+            openEvent({ id: event.id, createdAt: event.createdAt });
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
-              pushModal('EventDetails', {
-                id: event.id,
-                projectId: event.projectId,
-                createdAt: event.createdAt,
-              });
+              openEvent({ id: event.id, createdAt: event.createdAt });
             }
           }}
         >
@@ -78,7 +72,7 @@ export const EventItem = memo<EventItemProps>(
             >
               <EventIcon meta={event.meta} name={event.name} size="sm" />
             </button>
-            <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm leading-normal">
+            <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm">
               {event.name === 'screen_view' ? (
                 <>
                   <span className="mr-2 text-muted-foreground">Visit:</span>
@@ -134,7 +128,7 @@ export const EventItem = memo<EventItemProps>(
             className="border-neutral-200 border-t bg-def-100 p-4 py-2"
             data-slot="extra"
           >
-            <pre className="text-sm leading-tight">
+            <pre className="text-xs">
               {JSON.stringify(event.properties, null, 2)}
             </pre>
           </div>
@@ -171,7 +165,7 @@ function Pill({
   return (
     <Tooltiper
       className={cn(
-        'inline-flex h-6 shrink-0 items-center gap-2 whitespace-nowrap rounded-full font-mono @3xl:text-muted-foreground text-xs',
+        'inline-flex h-6 shrink-0 items-center gap-2 whitespace-nowrap rounded-full @3xl:text-muted-foreground text-xs tabular-nums',
         className
       )}
       content={children}

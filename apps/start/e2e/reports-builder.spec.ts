@@ -53,7 +53,7 @@ test('linear report: build, compare with the API, save, reload, edit, update', a
     await addEvent(page, 'purchase');
     await addEvent(page, 'add_to_cart');
     const sheet = await openSidebar(page);
-    await sheet.getByRole('button', { name: 'Select breakdown' }).click();
+    await sheet.getByRole('button', { name: 'Add breakdown' }).click();
     await page.getByRole('menuitem', { name: 'Event properties' }).click();
     await page.getByPlaceholder('Search').last().fill('device');
     await page

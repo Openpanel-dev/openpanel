@@ -127,11 +127,10 @@ test('custom range through the date picker and the "last days" input', async ({
   await dismissFeedbackPrompt(page);
 
   await page.getByRole('button', { name: 'Last 7 days', exact: true }).click();
-  await page.getByRole('menuitem', { name: /^Custom range/ }).click();
   const picker = page.getByRole('dialog');
   await expect(picker.getByRole('button', { name: 'Cancel' })).toBeVisible();
-  // Nothing is selected yet, so there is nothing to confirm.
-  await expect(picker.getByRole('button', { name: /^Select / })).toHaveCount(0);
+  // Nothing is picked yet, so there is nothing to apply.
+  await expect(picker.getByRole('button', { name: 'Apply' })).toBeDisabled();
   await shot(page, 'chart-datepicker-empty', false);
 
   // The October grid repeats the last September days, hence `first()`.
@@ -144,14 +143,14 @@ test('custom range through the date picker and the "last days" input', async ({
     .first()
     .click();
   await shot(page, 'chart-datepicker-selected', false);
-  await picker.getByRole('button', { name: /^Select / }).click();
+  await picker.getByRole('button', { name: 'Apply' }).click();
 
   await expect(page).toHaveURL(/range=custom/);
   const search = new URL(page.url()).searchParams;
   expect(search.get('start')).toBe('2026-09-22 00:00:00');
   expect(search.get('end')).toBe('2026-09-28 23:59:59');
   await expect(
-    page.getByRole('button', { name: 'Custom range', exact: true })
+    page.getByRole('button', { name: '22 sep – 28 sep', exact: true })
   ).toBeVisible();
   await expect(
     page.getByRole('button', { name: 'Day', exact: true })
@@ -172,17 +171,17 @@ test('custom range through the date picker and the "last days" input', async ({
   await page.reload();
   await overviewReady(page);
   await expect(
-    page.getByRole('button', { name: 'Custom range', exact: true })
+    page.getByRole('button', { name: '22 sep – 28 sep', exact: true })
   ).toBeVisible();
   await expect(metricCard(page, 'Sessions')).toContainText(
     compactNumber(Number(custom.metrics.total_sessions))
   );
 
   // "Last days" input
-  await page.getByRole('button', { name: 'Custom range', exact: true }).click();
-  const days = page.getByRole('spinbutton', {
-    name: 'Number of days for custom date filter',
-  });
+  await page
+    .getByRole('button', { name: '22 sep – 28 sep', exact: true })
+    .click();
+  const days = page.getByRole('spinbutton', { name: 'Number of days' });
   await days.fill('3');
   await days.press('Enter');
   await expect(page).toHaveURL(/start=/);
@@ -202,7 +201,7 @@ test('custom range through the date picker and the "last days" input', async ({
 
   // Out-of-range values are ignored.
   const urlBefore = page.url();
-  await page.getByRole('button', { name: 'Custom range', exact: true }).click();
+  await page.getByRole('button', { name: /^\d+ \w+ – \d+ \w+$/ }).click();
   await days.fill('0');
   await days.press('Enter');
   await days.fill('366');

@@ -18,9 +18,11 @@ export function PageHeader({
   return (
     <div className={cn('col md:row gap-2', className)}>
       <div className={'flex-1 space-y-1'}>
-        <h1 className="font-semibold text-2xl">{title}</h1>
+        <h1 className="font-semibold text-xl">{title}</h1>
         {description && (
-          <p className="font-medium text-muted-foreground">{description}</p>
+          <p className="font-medium text-base text-muted-foreground">
+            {description}
+          </p>
         )}
         {children}
       </div>

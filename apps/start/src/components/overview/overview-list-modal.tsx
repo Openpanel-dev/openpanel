@@ -117,7 +117,10 @@ export function OverviewListModal<T extends OverviewListItem>({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <ModalContent className="!max-h-[90vh] flex flex-col gap-0 p-0 sm:max-w-2xl">
+    <ModalContent
+      bodyClassName="flex flex-col gap-0 p-0"
+      className="sm:max-w-2xl"
+    >
       <div className="flex-shrink-0 border-border border-b">
         <div className="p-6 pb-4">
           <DialogTitle className="mb-4 font-semibold text-lg">
@@ -202,7 +205,7 @@ export function OverviewListModal<T extends OverviewListItem>({
                   {hasRevenue && (
                     <div className="flex items-center justify-end gap-2">
                       <span
-                        className="font-mono font-semibold text-sm"
+                        className="font-semibold text-sm tabular-nums"
                         style={{ color: '#3ba974' }}
                       >
                         {(item.revenue ?? 0) > 0
@@ -216,13 +219,13 @@ export function OverviewListModal<T extends OverviewListItem>({
                   )}
 
                   {hasPageviews && (
-                    <div className="text-right font-mono font-semibold text-sm">
+                    <div className="text-right font-semibold text-sm tabular-nums">
                       {number.short(item.pageviews)}
                     </div>
                   )}
 
                   {showSessions && (
-                    <div className="text-right font-mono font-semibold text-sm">
+                    <div className="text-right font-semibold text-sm tabular-nums">
                       {number.short(item.sessions)}
                     </div>
                   )}

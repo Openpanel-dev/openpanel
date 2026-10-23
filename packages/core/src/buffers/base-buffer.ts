@@ -45,6 +45,13 @@ const DEFAULT_CH_INSERT_CONCURRENCY = 5;
 /** One cron run drains as many batches as fit before the next run is due. */
 const DRAIN_TIME_BUDGET_MS = 8000;
 
+/**
+ * The flush lock is refreshed this many times per TTL. The TTL only has to
+ * outlive a crashed worker; a live flush keeps extending it, so a slow
+ * ClickHouse can never let a second flush start on the same list.
+ */
+const LOCK_KEEPALIVE_PER_TTL = 3;
+
 const releaseLockScript = defineRedisScript(`
 if redis.call("get", KEYS[1]) == ARGV[1] then
   return redis.call("del", KEYS[1])
@@ -53,7 +60,15 @@ else
 end
 `);
 
-export type FlushPhaseTimings = {
+const extendLockScript = defineRedisScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("expire", KEYS[1], ARGV[2])
+else
+  return 0
+end
+`);
+
+export interface FlushPhaseTimings {
   lrangeMs?: number;
   /** Time spent in CH SELECT(s) during flush (e.g. profile-buffer's
    *  fetch-existing-profile-for-merge step). Only buffers that read CH
@@ -65,7 +80,7 @@ export type FlushPhaseTimings = {
   trimMs?: number;
   /** Total time spent inside onFlush (subclass-specific processing) */
   onFlushMs?: number;
-};
+}
 
 const FLUSH_PHASES = [
   'lrangeMs',
@@ -78,7 +93,7 @@ const FLUSH_PHASES = [
 
 export type FlushTrigger = 'add' | 'cron';
 
-export type FlushObservation = {
+export interface FlushObservation {
   buffer: string;
   /**
    * - `success`: flush ran and completed without error
@@ -97,11 +112,11 @@ export type FlushObservation = {
   llenAtStart?: number;
   phases?: FlushPhaseTimings;
   err?: unknown;
-};
+}
 
 export type FlushObserver = (obs: FlushObservation) => void;
 
-export type AddObservation = {
+export interface AddObservation {
   buffer: string;
   durationMs: number;
   /** True if the add was a no-op (e.g. cached-and-skipped). When set,
@@ -110,7 +125,7 @@ export type AddObservation = {
   skipped?: boolean;
   /** Free-form reason label for skipped adds (e.g. 'cached'). */
   skipReason?: string;
-};
+}
 
 export type AddObserver = (obs: AddObservation) => void;
 
@@ -118,7 +133,21 @@ export class BaseBuffer {
   name: string;
   logger: Logger;
   lockKey: string;
+  /** Seconds. How long a crashed worker's lock blocks the next flush. */
   lockTimeout = 60;
+  /**
+   * Set by the keepalive when the lock is no longer this flush's: expired
+   * (Redis unreachable for longer than the TTL) or taken by someone else.
+   * `drainBatches` stops before its next batch, because two flushes on one
+   * list insert the same batch twice and then trim a batch nobody inserted.
+   */
+  private lockLost = false;
+  /**
+   * One flush per buffer per process. The Redis lock keeps workers apart; this
+   * keeps the cron's concurrent runs apart, so `lockLost` always describes the
+   * one flush this instance is running.
+   */
+  private flushInFlight = false;
   onFlush: () => Promise<void> | void;
   enableParallelProcessing: boolean;
 
@@ -263,7 +292,7 @@ export class BaseBuffer {
   }
 
   protected chunks<T>(items: T[], size: number) {
-    const chunks = [];
+    const chunks: T[][] = [];
     for (let i = 0; i < items.length; i += size) {
       chunks.push(items.slice(i, i + size));
     }
@@ -356,7 +385,7 @@ export class BaseBuffer {
     processBatch: () => Promise<number>
   ): Promise<void> {
     const deadline = performance.now() + DRAIN_TIME_BUDGET_MS;
-    while (performance.now() < deadline) {
+    while (performance.now() < deadline && !this.lockLost) {
       const processed = await processBatch();
       if (processed < batchSize) {
         return;
@@ -405,6 +434,51 @@ export class BaseBuffer {
 
   private async releaseLock(lockId: string): Promise<void> {
     await releaseLockScript(getRedisCache(), [this.lockKey], [lockId]);
+  }
+
+  /** Returns the function that ends the keepalive for this flush. */
+  private keepLockAlive(lockId: string): () => void {
+    const intervalMs = (this.lockTimeout * 1000) / LOCK_KEEPALIVE_PER_TTL;
+    let ownershipLost = false;
+    // A renewal still in flight when the flush ends must not touch the flag
+    // of the next flush, which may already hold a new lock.
+    let stopped = false;
+    const interval = setInterval(async () => {
+      if (stopped || ownershipLost) {
+        return;
+      }
+      try {
+        const extended = await extendLockScript(
+          getRedisCache(),
+          [this.lockKey],
+          [lockId, String(this.lockTimeout)]
+        );
+        if (stopped || extended === 1) {
+          return;
+        }
+        ownershipLost = true;
+        this.lockLost = true;
+        this.logger.error(
+          { lockKey: this.lockKey },
+          'flush lock lost mid-flush; stopping before the next batch'
+        );
+      } catch (error) {
+        if (stopped) {
+          return;
+        }
+        // A failed call says nothing about ownership: the key may still be
+        // ours, so keep renewing for the batch in flight and start no new one.
+        this.lockLost = true;
+        this.logger.error(
+          { err: error, lockKey: this.lockKey },
+          'flush lock could not be extended; stopping before the next batch'
+        );
+      }
+    }, intervalMs);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
   }
 
   /**
@@ -526,6 +600,29 @@ export class BaseBuffer {
       return;
     }
 
+    if (this.flushInFlight) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'locked',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+    this.flushInFlight = true;
+    try {
+      await this.flushUnderLock(trigger, startedAt, llenAtStart);
+    } finally {
+      this.flushInFlight = false;
+    }
+  }
+
+  private async flushUnderLock(
+    trigger: FlushTrigger,
+    startedAt: number,
+    llenAtStart: number | undefined
+  ): Promise<void> {
     const lockId = generateSecureId('lock');
     const acquired = await getRedisCache().set(
       this.lockKey,
@@ -546,6 +643,8 @@ export class BaseBuffer {
       return;
     }
 
+    this.lockLost = false;
+    const stopKeepAlive = this.keepLockAlive(lockId);
     const onFlushStarted = performance.now();
     try {
       await this.onFlush();
@@ -576,6 +675,7 @@ export class BaseBuffer {
         err: error,
       });
     } finally {
+      stopKeepAlive();
       await this.releaseLock(lockId);
     }
   }

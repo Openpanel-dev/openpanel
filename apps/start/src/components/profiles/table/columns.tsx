@@ -128,7 +128,7 @@ export function useColumns(type: 'profiles' | 'power-users') {
           <div className="flex flex-wrap gap-1">
             {groups.map((g) => (
               <ProjectLink
-                className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs hover:underline"
+                className="rounded bg-muted px-1.5 py-0.5 text-xs tabular-nums hover:underline"
                 key={g}
                 params={{ groupId: g }}
                 to="/groups/$groupId"

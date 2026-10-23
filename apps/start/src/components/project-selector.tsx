@@ -73,7 +73,7 @@ export default function ProjectSelector({
       <DropdownMenuTrigger asChild>
         <Button
           aria-expanded={open}
-          className="flex min-w-0 flex-1 items-center justify-start"
+          className="flex h-9 min-w-0 flex-1 items-center justify-start"
           role="combobox"
           size={'sm'}
           variant="outline"

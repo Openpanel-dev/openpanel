@@ -7,24 +7,42 @@ import {
   timeWindows,
 } from '@openpanel/core/modules/report/report.constants';
 import { bind } from 'bind-event-listener';
-import { addDays, endOfDay, format, startOfDay, subDays } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { endOfDay, isSameDay, startOfDay, subDays, subMonths } from 'date-fns';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
+import { Button, type ButtonProps } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { InputEnter } from '@/components/ui/input-enter';
-import { pushModal, useOnPushModal } from '@/modals';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/utils/cn';
+import { formatDate, formatDateTime } from '@/utils/date';
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
+import {
+  canStepTimeWindow,
+  formatTimeWindowBoundary,
+  resolveTimeWindow,
+  type StepDirection,
+  stepTimeWindow,
+  type TimeWindowBounds,
+} from '@/utils/time-window';
+
+const MAX_CUSTOM_DAYS = 365;
+const DESKTOP_MONTHS = 2;
+const MOBILE_MONTHS = 1;
+const COLLISION_PADDING = 16;
+
+const PRESET_GROUPS: IChartRange[][] = [
+  ['30min', 'lastHour', 'last24h'],
+  ['today', 'yesterday', '7d', '30d'],
+  ['3m', '6m', '12m'],
+  ['monthToDate', 'lastMonth', 'yearToDate', 'lastYear'],
+];
 
 interface Props {
   value: IChartRange;
@@ -32,10 +50,25 @@ interface Props {
   onStartDateChange: (date: string) => void;
   onEndDateChange: (date: string) => void;
   onIntervalChange: (interval: IInterval) => void;
+  /** The interval in effect; stepping keeps it since the window length does not change. */
+  interval?: IInterval | null;
   endDate: string | null;
   startDate: string | null;
   className?: string;
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
 }
+
+function formatWindowLabel(bounds: TimeWindowBounds): string {
+  if (bounds.unit === 'minute') {
+    return `${formatDateTime(bounds.start)} – ${formatDateTime(bounds.end)}`;
+  }
+  if (isSameDay(bounds.start, bounds.end)) {
+    return formatDate(bounds.start);
+  }
+  return `${formatDate(bounds.start)} – ${formatDate(bounds.end)}`;
+}
+
 export function TimeWindowPicker({
   value,
   onChange,
@@ -44,53 +77,101 @@ export function TimeWindowPicker({
   endDate,
   onEndDateChange,
   onIntervalChange,
+  interval,
   className,
+  variant = 'outline',
+  size,
 }: Props) {
-  const isDateRangerPickerOpen = useRef(false);
-  useOnPushModal('DateRangerPicker', (open) => {
-    isDateRangerPickerOpen.current = open;
-  });
-  const timeWindow = timeWindows[value ?? '30d'];
+  const { isBelowSm } = useBreakpoint('sm');
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<DateRange | undefined>();
   const [customDaysKey, setCustomDaysKey] = useState(0);
 
-  const handleCustomDays = useCallback(
-    (raw: string) => {
-      const days = Number(raw);
-      if (!Number.isInteger(days) || days < 1 || days > 365) {
-        return;
-      }
-      const now = new Date();
-      const start = startOfDay(subDays(now, days - 1));
-      const end = startOfDay(addDays(now, 1));
-      onStartDateChange(format(start, 'yyyy-MM-dd HH:mm:ss'));
-      onEndDateChange(format(end, 'yyyy-MM-dd HH:mm:ss'));
+  const isCustom = value === 'custom';
+  const bounds = useMemo(
+    () => resolveTimeWindow(value, startDate, endDate),
+    [value, startDate, endDate]
+  );
+  const triggerLabel = isCustom
+    ? formatWindowLabel(bounds)
+    : timeWindows[value]?.label;
+
+  const applyBounds = useCallback(
+    (next: TimeWindowBounds, nextInterval: IInterval | null | undefined) => {
+      onStartDateChange(formatTimeWindowBoundary(next.start));
+      onEndDateChange(formatTimeWindowBoundary(next.end));
       onChange('custom');
-      const interval = getDefaultIntervalByDates(
-        start.toISOString(),
-        end.toISOString()
-      );
-      if (interval) {
-        onIntervalChange(interval);
+      const resolvedInterval =
+        nextInterval ??
+        getDefaultIntervalByDates(
+          next.start.toISOString(),
+          next.end.toISOString()
+        );
+      if (resolvedInterval) {
+        onIntervalChange(resolvedInterval);
       }
-      setCustomDaysKey((k) => k + 1);
-      setOpen(false);
     },
     [onChange, onStartDateChange, onEndDateChange, onIntervalChange]
   );
 
-  const handleCustom = useCallback(() => {
-    pushModal('DateRangerPicker', {
-      onChange: ({ startDate, endDate, interval }) => {
-        onStartDateChange(format(startOfDay(startDate), 'yyyy-MM-dd HH:mm:ss'));
-        onEndDateChange(format(endOfDay(endDate), 'yyyy-MM-dd HH:mm:ss'));
-        onChange('custom');
-        onIntervalChange(interval);
+  // Radix only reports its own dismissals, so every close path drops the draft here.
+  const close = useCallback(() => {
+    setDraft(undefined);
+    setOpen(false);
+  }, []);
+
+  const selectPreset = useCallback(
+    (range: IChartRange) => {
+      onChange(range);
+      close();
+    },
+    [onChange, close]
+  );
+
+  const applyDraft = useCallback(() => {
+    if (!(draft?.from && draft.to)) {
+      return;
+    }
+    applyBounds(
+      {
+        start: startOfDay(draft.from),
+        end: endOfDay(draft.to),
+        unit: 'day',
+        size: 0,
       },
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-    });
-  }, [startDate, endDate]);
+      null
+    );
+    close();
+  }, [draft, applyBounds, close]);
+
+  const applyCustomDays = useCallback(
+    (raw: string) => {
+      const days = Number(raw);
+      if (!Number.isInteger(days) || days < 1 || days > MAX_CUSTOM_DAYS) {
+        return;
+      }
+      const now = new Date();
+      applyBounds(
+        {
+          start: startOfDay(subDays(now, days - 1)),
+          end: endOfDay(now),
+          unit: 'day',
+          size: days,
+        },
+        null
+      );
+      setCustomDaysKey((key) => key + 1);
+      close();
+    },
+    [applyBounds, close]
+  );
+
+  const step = useCallback(
+    (direction: StepDirection) => {
+      applyBounds(stepTimeWindow(bounds, direction), interval);
+    },
+    [bounds, interval, applyBounds]
+  );
 
   useEffect(() => {
     return bind(document, {
@@ -99,180 +180,175 @@ export function TimeWindowPicker({
         if (shouldIgnoreKeypress(event)) {
           return;
         }
-
-        if (isDateRangerPickerOpen.current) {
+        const match = Object.values(timeWindows).find(
+          (window) => event.key === window.shortcut.toLowerCase()
+        );
+        if (!match) {
           return;
         }
-
-        const match = Object.values(timeWindows).find(
-          (tw) => event.key === tw.shortcut.toLowerCase()
-        );
-        if (match?.key === 'custom') {
-          handleCustom();
-        } else if (match) {
-          onChange(match.key);
+        if (match.key === 'custom') {
+          setOpen(true);
+          return;
         }
+        selectPreset(match.key);
       },
     });
-  }, [handleCustom]);
+  }, [selectPreset]);
+
+  const selectedRange: DateRange | undefined = draft ?? {
+    from: bounds.start,
+    to: bounds.end,
+  };
+  const canApply = Boolean(draft?.from && draft?.to);
+  const canStepNext = canStepTimeWindow(bounds, 'next');
+  const stepperSize = size === 'sm' ? 'sm' : 'default';
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className={cn('justify-start', className)}
-          icon={CalendarIcon}
-          variant="outline"
+    <div className="flex items-center gap-1">
+      <Popover
+        onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : close())}
+        open={open}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            className={cn('justify-start', className)}
+            icon={CalendarIcon}
+            size={size}
+            variant={variant}
+          >
+            {triggerLabel}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="max-h-(--radix-popover-content-available-height) w-auto max-w-[calc(100vw-2rem)] overflow-y-auto p-0"
+          collisionPadding={COLLISION_PADDING}
+          portal
         >
-          {timeWindow?.label}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Time window</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['30min'].key)}>
-            {timeWindows['30min'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['30min'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.lastHour.key)}>
-            {timeWindows.lastHour.label}
-            <DropdownMenuShortcut>
-              {timeWindows.lastHour.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.last24h.key)}>
-            {timeWindows.last24h.label}
-            <DropdownMenuShortcut>
-              {timeWindows.last24h.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.today.key)}>
-            {timeWindows.today.label}
-            <DropdownMenuShortcut>
-              {timeWindows.today.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.yesterday.key)}>
-            {timeWindows.yesterday.label}
-            <DropdownMenuShortcut>
-              {timeWindows.yesterday.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['7d'].key)}>
-            {timeWindows['7d'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['7d'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['30d'].key)}>
-            {timeWindows['30d'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['30d'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['3m'].key)}>
-            {timeWindows['3m'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['3m'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['6m'].key)}>
-            {timeWindows['6m'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['6m'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows['12m'].key)}>
-            {timeWindows['12m'].label}
-            <DropdownMenuShortcut>
-              {timeWindows['12m'].shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => onChange(timeWindows.monthToDate.key)}
-          >
-            {timeWindows.monthToDate.label}
-            <DropdownMenuShortcut>
-              {timeWindows.monthToDate.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.lastMonth.key)}>
-            {timeWindows.lastMonth.label}
-            <DropdownMenuShortcut>
-              {timeWindows.lastMonth.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => onChange(timeWindows.yearToDate.key)}
-          >
-            {timeWindows.yearToDate.label}
-            <DropdownMenuShortcut>
-              {timeWindows.yearToDate.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onChange(timeWindows.lastYear.key)}>
-            {timeWindows.lastYear.label}
-            <DropdownMenuShortcut>
-              {timeWindows.lastYear.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          {/** biome-ignore lint/a11y/noNoninteractiveElementInteractions: none */}
-          {/** biome-ignore lint/a11y/noStaticElementInteractions: none */}
-          <div
-            className="flex items-center gap-4 rounded-sm px-2 py-1.5"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => e.stopPropagation()}
-          >
-            <span className="whitespace-nowrap">Last days</span>
-            <InputEnter
-              aria-label="Number of days for custom date filter"
-              className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              inputMode="numeric"
-              key={customDaysKey}
-              max={365}
-              min={1}
-              onChangeValue={handleCustomDays}
-              placeholder="X days"
-              step={1}
-              type="number"
-              value=""
-            />
+          <div className="flex flex-col sm:flex-row">
+            <div className="col gap-2 border-b p-2 sm:w-44 sm:border-r sm:border-b-0">
+              <div className="flex items-center gap-2 px-2 pt-1">
+                <span className="text-muted-foreground text-sm">Last</span>
+                <InputEnter
+                  aria-label="Number of days"
+                  className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  inputMode="numeric"
+                  key={customDaysKey}
+                  max={MAX_CUSTOM_DAYS}
+                  min={1}
+                  onChangeValue={applyCustomDays}
+                  placeholder="N"
+                  step={1}
+                  type="number"
+                  value=""
+                />
+                <span className="text-muted-foreground text-sm">days</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 sm:flex sm:flex-col">
+                {PRESET_GROUPS.map((group) => (
+                  <div className="col" key={group[0]}>
+                    {group.map((range) => {
+                      const preset = timeWindows[range];
+                      const isActive = value === range;
+                      return (
+                        <button
+                          className={cn(
+                            'flex h-7 items-center justify-between rounded-md px-2 text-left text-sm hover:bg-accent hover:text-accent-foreground',
+                            isActive && 'bg-accent font-medium'
+                          )}
+                          key={range}
+                          onClick={() => selectPreset(range)}
+                          type="button"
+                        >
+                          <span>{preset.label}</span>
+                          <kbd
+                            aria-hidden
+                            className="hidden rounded border border-border bg-def-200 px-1 font-mono text-2xs text-muted-foreground sm:inline"
+                          >
+                            {preset.shortcut}
+                          </kbd>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="col justify-between gap-3 p-3">
+              <Calendar
+                captionLayout="dropdown"
+                className="p-0"
+                defaultMonth={subMonths(
+                  bounds.start,
+                  isBelowSm ? 0 : DESKTOP_MONTHS - 1
+                )}
+                disabled={{ after: endOfDay(new Date()) }}
+                mode="range"
+                numberOfMonths={isBelowSm ? MOBILE_MONTHS : DESKTOP_MONTHS}
+                onSelect={(range, day) => {
+                  // The current window is shown for orientation; the first
+                  // click starts a new pick instead of stretching it.
+                  setDraft(draft ? range : { from: day, to: undefined });
+                }}
+                selected={selectedRange}
+              />
+              <div className="flex items-center justify-between gap-4 border-t pt-3">
+                <span className="text-muted-foreground text-sm">
+                  {draft?.from
+                    ? formatWindowLabel({
+                        start: draft.from,
+                        end: draft.to ?? draft.from,
+                        unit: 'day',
+                        size: 0,
+                      })
+                    : formatWindowLabel(bounds)}
+                </span>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={close}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    disabled={!canApply}
+                    onClick={applyDraft}
+                    size="sm"
+                    type="button"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => handleCustom()}>
-            {timeWindows.custom.label}
-            <DropdownMenuShortcut>
-              {timeWindows.custom.shortcut}
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </PopoverContent>
+      </Popover>
+      <div className="flex items-center">
+        <Button
+          aria-label="Previous period"
+          className={cn(className, 'rounded-r-none px-2')}
+          onClick={() => step('previous')}
+          size={stepperSize}
+          type="button"
+          variant={variant}
+        >
+          <ChevronLeftIcon className="size-4" />
+        </Button>
+        <Button
+          aria-label="Next period"
+          className={cn(className, '-ml-px rounded-l-none px-2')}
+          disabled={!canStepNext}
+          onClick={() => step('next')}
+          size={stepperSize}
+          type="button"
+          variant={variant}
+        >
+          <ChevronRightIcon className="size-4" />
+        </Button>
+      </div>
+    </div>
   );
 }

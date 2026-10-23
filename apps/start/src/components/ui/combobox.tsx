@@ -33,11 +33,19 @@ export interface ComboboxProps<T> {
   searchable?: boolean;
   icon?: LucideIcon;
   size?: ButtonProps['size'];
+  /** `input` makes the trigger look like a form field; use it inside forms. */
+  variant?: ButtonProps['variant'];
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
   error?: string;
   disabled?: boolean;
+  /**
+   * Let a label and a hint point at the built-in trigger. A custom trigger
+   * passed as `children` carries its own id and description.
+   */
+  id?: string;
+  'aria-describedby'?: string;
 }
 
 export type ExtendedComboboxProps<T> = Omit<
@@ -58,10 +66,13 @@ export function Combobox<T extends string>({
   searchable,
   icon: Icon,
   size,
+  variant = 'outline',
   align = 'start',
   portal,
   error,
   disabled,
+  id,
+  'aria-describedby': describedBy,
 }: ComboboxProps<T>) {
   const [open, setOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
@@ -76,16 +87,20 @@ export function Combobox<T extends string>({
       <PopoverTrigger asChild>
         {children ?? (
           <Button
+            aria-describedby={describedBy}
             aria-expanded={open}
+            aria-invalid={error ? true : undefined}
             className={cn(
               'justify-between',
-              !!error && 'border-destructive',
+              !!error &&
+                'border-destructive aria-invalid:ring-1 aria-invalid:ring-destructive',
               className
             )}
             disabled={disabled}
+            id={id}
             role="combobox"
             size={size}
-            variant="outline"
+            variant={variant}
           >
             <div className="flex min-w-0 items-center">
               {Icon ? <Icon className="mr-2 shrink-0" size={16} /> : null}

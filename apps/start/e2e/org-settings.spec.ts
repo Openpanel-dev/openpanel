@@ -105,7 +105,7 @@ test('a too short name gets a readable validation message', async ({
   await page.getByLabel('Name').fill('A');
   await saveButton(page).click();
   const toast = page.locator('[data-sonner-toast]').first();
-  const inlineError = page.getByText('Issues');
+  const inlineError = page.locator('[data-slot="field-error"]');
   await expect(toast.or(inlineError).first()).toBeVisible();
   await shot(page, 'settings-short-name');
   expect((await getOrganization(page, seed.organizationId)).name).toBe(

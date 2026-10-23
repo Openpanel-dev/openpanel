@@ -80,6 +80,7 @@ a one-line fix does not need the full suite, a query or ingest change always doe
 | tRPC procedure / REST route (`packages/core`) | Call it (recipes below) with seeded ids and check the JSON; for auth changes, try the wrong role too | `bun test --isolate` in `packages/core` for that module |
 | ClickHouse query / chart / overview | Run old and new against the seeded data and diff results; check the numbers on the dashboard match a manual query | `packages/core` tests for the module; `bun run --filter @openpanel/db test` if you touched `packages/db` |
 | Ingest / worker / buffers / sessions | `bun run send journey --project acme-shop` (live events through Kafka → worker → ClickHouse), then query `events`/`sessions`/`profiles` for that session id | `packages/core` ingest + buffer tests, `apps/api/e2e/` for session lifecycle |
+| SDK (`packages/sdks/*`) | `/sdk-testbed`: drive `apps/testbed` in a real browser against *your* API and read the rows in ClickHouse (`bun run --filter @openpanel/testbed e2e`); extend the spec for new behaviour | `bun run --filter @openpanel/web test`, `bun run --filter "./packages/sdks/*" typecheck`; a release goes through the SDKs workflow (`.github/workflows/sdks.yml`) |
 | MCP tools (`packages/core/src/modules/mcp`) | Call the product's MCP against *your* API and data: as the `openpanel` MCP server if one is configured for you, else over HTTP (`.seed.json` → `mcp.url`, recipe below); compare its answer with a direct query | `packages/core` mcp tests |
 | Schema / migration | `bun run --filter @openpanel/db migrate:deploy` on your isolated database, then `bun run seed --reset` and the seed tests (`bun run --filter @openpanel/seed test`) | `bun run typecheck` |
 | Anything shared (`packages/shared`, `packages/db`, config, deps) | — | `bun run typecheck` and `bun run test` in full |
@@ -155,6 +156,31 @@ tables). A plain `IN (subquery)` on a distributed table silently returns per-sha
 results — use `GLOBAL IN` or a join. Never commit ClickHouse SQL you have not run
 against your worktree's database; when replacing a query, diff old and new results
 on the same data.
+
+## Migrations
+
+The api starts serving the moment its container starts; only Prisma runs before it.
+ClickHouse code migrations run while it serves, always all pending ones, always in
+file order:
+
+- With `AUTOMATIC_MIGRATIONS=true` (self-hosted installs) the api applies them itself
+  once it is listening, one process at a time (`startCodeMigrations` in
+  `packages/core/src/modules/code-migration/`).
+- Without it (cloud), the operator runs `migrate:deploy` (or
+  `bun ./scripts/migrate-code.ts` in `packages/db`) against the running deployment.
+  A file name as argument runs just that one.
+
+So until every migration has landed, the new code runs against the old schema, and a
+long data move holds back every migration numbered after it. Write migrations so that:
+
+- each one is safe to rerun from any point: a process can die mid-way and another one
+  resumes it, and a failed one is retried (`IF NOT EXISTS`, `IF EXISTS`, check before
+  you swap);
+- a data move stays correct while ingestion and the dashboard read and write the
+  table. If the write path reads the table back (the profile buffer does), copy before
+  you swap; otherwise swap first and copy after (`28-sessions-sort-key-id.ts`);
+- a schema change the new code needs comes before a long data move in the same
+  release, so it lands in seconds rather than after the copy.
 
 ## Code style
 

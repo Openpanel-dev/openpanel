@@ -28,7 +28,7 @@ import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
 const TOOLTIP_SERIES_LIMIT = 3;
-const MARKERS_MAX_POINTS = 8;
+export const MARKERS_MAX_POINTS = 8;
 const PREVIOUS_PERIOD_OPACITY = '30%';
 
 /** Small point markers for sparse series; bklit's default ring is sized for hero charts. */

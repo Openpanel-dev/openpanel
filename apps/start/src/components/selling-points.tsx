@@ -30,7 +30,7 @@ function SellingPoint({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="mb-2 font-bold text-6xl text-white drop-shadow-2xl drop-shadow-highlight">
+          <h2 className="mb-2 font-bold text-5xl text-white drop-shadow-2xl drop-shadow-highlight">
             {title}
           </h2>
         </motion.div>
@@ -39,7 +39,7 @@ function SellingPoint({
           initial={{ opacity: 0, y: 20 }}
           transition={{ duration: 0.6 }}
         >
-          <p className="text-lg text-white/70 leading-relaxed">{description}</p>
+          <p className="text-lg text-white/70">{description}</p>
         </motion.div>
       </div>
     </div>

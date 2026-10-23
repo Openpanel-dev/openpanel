@@ -13,7 +13,6 @@ import {
 } from '../../rpc/base';
 import { TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps } from '../../services';
-import { pageContextSchema } from '../assistant/assistant.constants';
 import { getConversionEventNames } from '../event/event.service';
 import { getReferrerSpikes } from '../insight/insight.service';
 import {
@@ -129,6 +128,20 @@ function getCurrentAndPrevious<
     };
   };
 }
+
+/** What the command bar tells the model about the current view. */
+const zFilterCommandPageContext = z.object({
+  filters: z
+    .object({
+      range: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      interval: z.string().optional(),
+      eventNames: z.array(z.string()).optional(),
+      eventFilters: z.array(z.record(z.string(), z.unknown())).optional(),
+    })
+    .optional(),
+});
 
 export const overviewRouter = createTRPCRouter({
   liveVisitors: overviewProcedure
@@ -394,7 +407,7 @@ export const overviewRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         query: z.string().min(1).max(500),
-        pageContext: pageContextSchema.optional(),
+        pageContext: zFilterCommandPageContext.optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

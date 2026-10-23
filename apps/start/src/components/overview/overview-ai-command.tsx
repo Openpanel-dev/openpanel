@@ -2,8 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { Loader2Icon, SparklesIcon } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { applyFilterCommandToUrl } from '../chat/tool-handlers';
 import { Input } from '../ui/input';
+import { applyFilterCommandToUrl } from './filter-command-url';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useAppParams } from '@/hooks/use-app-params';
 import {
@@ -23,7 +23,7 @@ import { cn } from '@/utils/cn';
  * page header, `w-full` inside a filter sheet).
  */
 export function OverviewAICommand({ className }: { className?: string }) {
-  const { projectId, organizationId } = useAppParams();
+  const { projectId } = useAppParams();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   const [eventNames] = useEventQueryNamesFilter();
   const [eventFilters] = useEventQueryFilters();
@@ -77,8 +77,6 @@ export function OverviewAICommand({ className }: { className?: string }) {
       projectId,
       query,
       pageContext: {
-        page: 'overview',
-        route: { projectId, organizationId },
         filters: {
           range,
           startDate: startDate ?? undefined,

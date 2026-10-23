@@ -6,11 +6,11 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { FiltersBuilder } from '@/components/filters/FiltersBuilder';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
@@ -132,14 +132,14 @@ export default function CustomEvent({ customEvent }: CustomEventProps = {}) {
             </div>
           ))}
         </div>
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
           <Button disabled={!isValid} loading={isPending} type="submit">
             Save
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

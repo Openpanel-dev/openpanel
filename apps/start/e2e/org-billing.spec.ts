@@ -14,7 +14,7 @@ const SLOW_DEV_SERVER_TIMEOUT_MS = 150_000;
 test.setTimeout(SLOW_DEV_SERVER_TIMEOUT_MS);
 
 // Plan rows start a real checkout when there is no current plan, so none is clicked.
-test('billing renders plans, usage and the FAQ without errors', async ({
+test('billing renders plans, the usage breakdown and the FAQ without errors', async ({
   page,
   seed,
 }) => {
@@ -40,8 +40,27 @@ test('billing renders plans, usage and the FAQ without errors', async ({
   await page.getByRole('button', { name: 'Yearly' }).click();
   await expect(yearlyPlan).toBeVisible();
 
-  await expect(page.getByText('Usage', { exact: true })).toBeVisible();
-  await expect(page.getByText('Limit', { exact: true })).toBeVisible();
+  // The usage breakdown: one stacked bar per day split by project, and the
+  // event-name donut, each with a share table listing the seeded projects
+  // and the most frequent names.
+  await expect(page.getByText('Events per project')).toBeVisible();
+  await expect(page.getByText('Events by name')).toBeVisible();
+  // No plan yet, so both widgets fall back to a trailing window.
+  await expect(page.getByText(/Last 30 days ·/)).toHaveCount(2);
+  for (const project of seed.projects) {
+    await expect(page.getByText(project.name, { exact: true })).toBeVisible();
+  }
+  await expect(page.getByText('screen_view', { exact: true })).toBeVisible();
+  await expect(page.getByText('Other', { exact: true })).toBeVisible();
+
+  // Selecting a project narrows the donut to that project's names.
+  const firstProject = seed.projects[0]!;
+  await page.getByRole('button', { name: firstProject.name }).click();
+  await expect(
+    page.getByText(new RegExp(`^${firstProject.name} · Last 30 days`))
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'All projects' }).click();
+  await expect(page.getByText(/^All projects · Last 30 days/)).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/NaN|undefined/);
 
   const question = page.getByRole('button', {
@@ -57,8 +76,12 @@ test('billing renders plans, usage and the FAQ without errors', async ({
   expect(apiFailures(problems)).toEqual([]);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  const overflow = await page.evaluate(
-    () => document.documentElement.scrollWidth - window.innerWidth
-  );
-  expect(overflow).toBeLessThanOrEqual(0);
+  // The charts re-measure asynchronously after a resize.
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth
+      )
+    )
+    .toBeLessThanOrEqual(0);
 });

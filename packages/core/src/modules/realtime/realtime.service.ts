@@ -19,9 +19,10 @@ import { getProfiles } from '../profile/profile.service';
 
 const REALTIME_WINDOW_MINUTES = 30;
 const ACTIVE_SESSIONS_LIMIT = 50;
-const PATHS_LIMIT = 50;
-const REFERRALS_LIMIT = 50;
-const GEO_LIMIT = 50;
+const RECENT_SESSIONS_LIMIT = 30;
+const SESSION_START_EVENT = 'session_start';
+const TOP_SOURCES_LIMIT = 8;
+const MS_PER_MINUTE = 60_000;
 const COORDINATES_QUERY_LIMIT = 5000;
 const COORDINATES_CLUSTER_TARGET = 500;
 const MAP_BADGE_TOP_LIMIT = 3;
@@ -373,7 +374,7 @@ export async function getRealtimeActiveSessions(
   const rows = await chQuery<IClickhouseEvent>(
     deps,
     sql`SELECT
-      name, session_id, created_at, path, origin, referrer, referrer_name,
+      id, name, session_id, created_at, path, origin, referrer, referrer_name,
       country, city, region, os, os_version, browser, browser_version,
       device
     FROM ${sql.id(TABLE_NAMES.events)}
@@ -385,46 +386,132 @@ export async function getRealtimeActiveSessions(
   return rows.map(transformEvent);
 }
 
-export function getRealtimePaths(deps: ServiceDeps, projectId: string) {
-  return chQuery<{
-    origin: string;
-    path: string;
-    count: number;
-    avg_duration: number;
-    unique_sessions: number;
-  }>(
+/** The latest sessions to start, newest first: one `session_start` row each. */
+export async function getRealtimeRecentSessions(
+  deps: ServiceDeps,
+  projectId: string
+) {
+  const rows = await chQuery<IClickhouseEvent>(
     deps,
-    sql`SELECT origin, path, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND path != ${sql.string('')} AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY path, origin ORDER BY count DESC LIMIT ${sql.uint64(PATHS_LIMIT)}`,
-    CLIX_SESSION_TIMEZONE
+    sql`SELECT
+      id, name, session_id, profile_id, created_at, path, origin, referrer,
+      referrer_name, country, city, region, os, os_version, browser,
+      browser_version, device
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND name = ${sql.string(SESSION_START_EVENT)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+    ORDER BY created_at DESC
+    LIMIT ${sql.uint64(RECENT_SESSIONS_LIMIT)}`
   );
+  return rows.map(transformEvent);
 }
 
-export function getRealtimeReferrals(deps: ServiceDeps, projectId: string) {
-  return chQuery<{
+export interface RealtimeTopSources {
+  referrers: Array<{ name: string; sessions: number }>;
+  countries: Array<{ country: string; sessions: number }>;
+}
+
+/** Top referrers and top countries from one scan of the window. */
+export async function getRealtimeTopSources(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<RealtimeTopSources> {
+  const rows = await chQuery<{
     referrer_name: string;
-    count: number;
-    avg_duration: number;
-    unique_sessions: number;
+    country: string;
+    sessions: number;
+    is_referrer_row: number;
+    is_country_row: number;
   }>(
     deps,
-    sql`SELECT referrer_name, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND referrer_name IS NOT NULL AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(REFERRALS_LIMIT)}`,
-    CLIX_SESSION_TIMEZONE
+    sql`SELECT
+      referrer_name,
+      country,
+      uniq(session_id) AS sessions,
+      grouping(country) AS is_referrer_row,
+      grouping(referrer_name) AS is_country_row
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+    GROUP BY GROUPING SETS ((referrer_name), (country))
+    HAVING (is_referrer_row = 1 AND referrer_name != ${sql.string('')})
+      OR (is_country_row = 1 AND country != ${sql.string('')})
+    ORDER BY sessions DESC
+    LIMIT ${sql.uint64(TOP_SOURCES_LIMIT)} BY is_referrer_row, is_country_row`
   );
+
+  return {
+    referrers: rows
+      .filter((row) => row.is_referrer_row === 1)
+      .map((row) => ({ name: row.referrer_name, sessions: row.sessions })),
+    countries: rows
+      .filter((row) => row.is_country_row === 1)
+      .map((row) => ({ country: row.country, sessions: row.sessions })),
+  };
 }
 
-export function getRealtimeGeo(deps: ServiceDeps, projectId: string) {
-  return chQuery<{
-    country: string;
-    city: string;
-    count: number;
-    avg_duration: number;
-    unique_sessions: number;
+export interface RealtimeHistogram {
+  /** Distinct sessions across the whole window. */
+  totalSessions: number;
+  /** One entry per minute of the window, oldest first, empty minutes included. */
+  minutes: Array<{ minute: string; sessions: number; visitors: number }>;
+}
+
+/** Per-minute activity for the window, with the window total from the same scan. */
+export async function getRealtimeHistogram(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<RealtimeHistogram> {
+  const windowStart = since();
+  const rows = await chQuery<{
+    minute: string;
+    sessions: number;
+    visitors: number;
+    is_total: number;
   }>(
     deps,
-    sql`SELECT country, city, COUNT(*) as count, COUNT(DISTINCT session_id) as unique_sessions, round(avg(duration)/1000, 2) as avg_duration FROM ${sql.id(TABLE_NAMES.events)} WHERE project_id = ${sql.string(projectId)} AND created_at >= ${sql.string(formatClickhouseDate(since()))} GROUP BY country, city ORDER BY count DESC LIMIT ${sql.uint64(GEO_LIMIT)}`,
+    sql`SELECT
+      toStartOfMinute(created_at) AS minute,
+      uniq(session_id) AS sessions,
+      uniq(profile_id) AS visitors,
+      grouping(minute) AS is_total
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(windowStart))}
+    GROUP BY GROUPING SETS ((minute), ())`,
     CLIX_SESSION_TIMEZONE
   );
+
+  const byMinute = new Map<number, { sessions: number; visitors: number }>();
+  let totalSessions = 0;
+  for (const row of rows) {
+    if (row.is_total === 1) {
+      totalSessions = row.sessions;
+      continue;
+    }
+    byMinute.set(Date.parse(`${row.minute.replace(' ', 'T')}Z`), {
+      sessions: row.sessions,
+      visitors: row.visitors,
+    });
+  }
+
+  const minutes: RealtimeHistogram['minutes'] = [];
+  const firstMinute =
+    Math.floor(windowStart.getTime() / MS_PER_MINUTE) * MS_PER_MINUTE;
+  const lastMinute = Math.floor(Date.now() / MS_PER_MINUTE) * MS_PER_MINUTE;
+  for (let at = firstMinute; at <= lastMinute; at += MS_PER_MINUTE) {
+    const counts = byMinute.get(at);
+    minutes.push({
+      minute: new Date(at).toISOString(),
+      sessions: counts?.sessions ?? 0,
+      visitors: counts?.visitors ?? 0,
+    });
+  }
+
+  return { totalSessions, minutes };
 }
+
 // Each resolves to an unsubscribe function; nothing here is HTTP- or ws-library-specific.
 
 export function getActiveVisitorCount(
@@ -514,14 +601,14 @@ export function createRealtimeService(
       projectId: string
     ): ReturnType<typeof getRealtimeActiveSessions> =>
       getRealtimeActiveSessions(deps, projectId),
-    getPaths: (projectId: string): ReturnType<typeof getRealtimePaths> =>
-      getRealtimePaths(deps, projectId),
-    getReferrals: (
+    getRecentSessions: (
       projectId: string
-    ): ReturnType<typeof getRealtimeReferrals> =>
-      getRealtimeReferrals(deps, projectId),
-    getGeo: (projectId: string): ReturnType<typeof getRealtimeGeo> =>
-      getRealtimeGeo(deps, projectId),
+    ): ReturnType<typeof getRealtimeRecentSessions> =>
+      getRealtimeRecentSessions(deps, projectId),
+    getTopSources: (projectId: string): Promise<RealtimeTopSources> =>
+      getRealtimeTopSources(deps, projectId),
+    getHistogram: (projectId: string): Promise<RealtimeHistogram> =>
+      getRealtimeHistogram(deps, projectId),
     getActiveVisitorCount: (projectId: string): Promise<number> =>
       getActiveVisitorCount(deps, projectId),
   };

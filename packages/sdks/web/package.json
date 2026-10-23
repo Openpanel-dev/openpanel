@@ -1,28 +1,36 @@
 {
   "name": "@openpanel/web",
-  "version": "1.4.1-local",
+  "version": "1.4.2-local",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "directory": "packages/sdks/web"
+  },
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/web.mdx"
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "typecheck": "tsc --noEmit",
-    "test": "bun test src/resolve-replay-recorder.test.ts src/replay-bundle.test.ts src/replay-iife.test.ts"
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
   },
   "exports": {
     ".": "./index.ts",
     "./replay": "./src/replay/index.ts"
   },
   "dependencies": {
-    "@openpanel/sdk": "workspace:1.3.1-local",
+    "@openpanel/sdk": "workspace:1.3.2-local",
     "@rrweb/types": "2.0.0-alpha.20",
     "rrweb": "2.0.0-alpha.20"
   },
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
+    "@types/jsdom": "30.0.0",
     "@types/node": "catalog:",
+    "bun-types": "1.4.0",
+    "jsdom": "26.1.0",
     "tsup": "7.3.0",
     "typescript": "catalog:"
   }
