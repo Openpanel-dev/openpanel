@@ -26,6 +26,20 @@ const safeRead = (key: string) => {
   }
 };
 
+/** Drops every stored onboarding credential, e.g. when the account signs out. */
+export function forgetOnboardingKeys() {
+  try {
+    const stale = Object.keys(sessionStorage).filter(
+      (key) => key.startsWith(SECRET_KEY) || key.startsWith(MCP_TOKEN_KEY)
+    );
+    for (const key of stale) {
+      sessionStorage.removeItem(key);
+    }
+  } catch {
+    // Storage unavailable: nothing was stored either.
+  }
+}
+
 const safeWrite = (key: string, value: string) => {
   try {
     sessionStorage.setItem(key, value);

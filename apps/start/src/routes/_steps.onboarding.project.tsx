@@ -10,7 +10,7 @@ import {
   ServerIcon,
   SmartphoneIcon,
 } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import {
   Controller,
   type SubmitErrorHandler,
@@ -192,6 +192,7 @@ function Component() {
   const [workspaceEdited, setWorkspaceEdited] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showCorsInput, setShowCorsInput] = useState(false);
+  const autoOrigin = useRef<string | null>(null);
 
   useEffect(() => {
     trackFunnel('onboarding_project_viewed', { hasWorkspaces });
@@ -400,7 +401,19 @@ function Component() {
                 return;
               }
               form.setValue('domain', value, { shouldValidate: true });
-              if (form.getValues().cors.length === 0) {
+              // The origin added for the website follows the website; the
+              // ones the user added by hand stay.
+              const cors = form.getValues().cors;
+              const previous = autoOrigin.current;
+              autoOrigin.current = value;
+              if (previous && cors.includes(previous)) {
+                form.setValue(
+                  'cors',
+                  cors.map((origin) => (origin === previous ? value : origin))
+                );
+                return;
+              }
+              if (cors.length === 0) {
                 form.setValue('cors', [value]);
               }
             }}
