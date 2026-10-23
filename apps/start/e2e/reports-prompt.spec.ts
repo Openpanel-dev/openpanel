@@ -32,18 +32,16 @@ test('an empty report is drafted from a description and can be saved', async ({
   const chat = await trpcQuery<ChatModels>(page, 'chat.models', undefined);
   test.skip(chat.models.length === 0, 'no AI provider configured on the API');
 
-  const heading = page.getByRole('heading', {
-    name: 'What do you want to see?',
-  });
-  await expect(heading).toBeVisible({ timeout: 30_000 });
+  const promptBox = page.getByLabel('Describe the report');
+  await expect(promptBox).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
   await shot(page, 'prompt-empty');
 
-  await page
-    .getByLabel('Describe the report')
-    .fill('Purchases per day for the last 7 days, split by device');
+  await promptBox.fill(
+    'Purchases per day for the last 7 days, split by device'
+  );
   await page.keyboard.press('Enter');
-  await expect(heading).toBeHidden({ timeout: DRAFT_TIMEOUT });
+  await expect(promptBox).toBeHidden({ timeout: DRAFT_TIMEOUT });
   await waitForChart(page);
   await shot(page, 'prompt-drafted');
 
@@ -70,21 +68,14 @@ test('a request with no matching events explains what is tracked instead', async
   const chat = await trpcQuery<ChatModels>(page, 'chat.models', undefined);
   test.skip(chat.models.length === 0, 'no AI provider configured on the API');
 
-  const heading = page.getByRole('heading', {
-    name: 'What do you want to see?',
-  });
-  await expect(heading).toBeVisible({ timeout: 30_000 });
-  await page
-    .getByLabel('Describe the report')
-    .fill('unicorn sightings by moon phase');
+  const promptBox = page.getByLabel('Describe the report');
+  await expect(promptBox).toBeVisible({ timeout: 30_000 });
+  await promptBox.fill('unicorn sightings by moon phase');
   await page.keyboard.press('Enter');
   const notice = page.getByRole('status').filter({ hasText: /./ }).last();
-  await expect(notice).not.toHaveText(
-    /Enter to generate|Reading|Drafting|Almost/,
-    {
-      timeout: DRAFT_TIMEOUT,
-    }
-  );
-  await expect(heading).toBeVisible();
+  await expect(notice).not.toHaveText(/Reading|Drafting|Almost/, {
+    timeout: DRAFT_TIMEOUT,
+  });
+  await expect(promptBox).toBeVisible();
   await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
 });

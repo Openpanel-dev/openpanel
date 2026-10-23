@@ -1,13 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
-import { ArrowUpIcon, SparklesIcon } from 'lucide-react';
+import { ArrowUpIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { applyDraft } from './reportSlice';
 import { Button } from '@/components/ui/button';
-import { SheetTrigger } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import { useAppParams } from '@/hooks/use-app-params';
-import { useEventNames } from '@/hooks/use-event-names';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { useDispatch } from '@/redux';
 import { cn } from '@/utils/cn';
@@ -19,38 +17,6 @@ const BUSY_STATUS = [
   'Almost there…',
 ] as const;
 const BUSY_STATUS_STEP_MS = 3500;
-const MAX_EXAMPLES = 4;
-/** Automatic events make poor examples; a custom event reads like the user's own data. */
-const AUTOMATIC_EVENTS = new Set([
-  'screen_view',
-  'session_start',
-  'session_end',
-]);
-const GENERIC_EXAMPLES = [
-  'Unique visitors per day for the last 30 days',
-  'Page views by country, last 7 days',
-  'Top referrers this month',
-  'Sessions per week over the last 3 months, by device',
-];
-
-function examplePrompts(eventNames: string[]): string[] {
-  const custom = eventNames.filter((name) => !AUTOMATIC_EVENTS.has(name));
-  const [first, second] = custom;
-  if (!first) {
-    return GENERIC_EXAMPLES;
-  }
-  const examples = [
-    `Daily ${first} for the last 30 days`,
-    `Unique users with ${first} per week, last 3 months`,
-    `${first} by country, last 7 days`,
-  ];
-  if (second) {
-    examples.push(`Funnel from ${first} to ${second}`);
-  } else if (eventNames.includes('screen_view')) {
-    examples.push(`Funnel from screen_view to ${first}`);
-  }
-  return examples.slice(0, MAX_EXAMPLES);
-}
 
 function useBusyStatus(busy: boolean): string | null {
   const [index, setIndex] = useState(0);
@@ -67,12 +33,11 @@ function useBusyStatus(busy: boolean): string | null {
   return busy ? BUSY_STATUS[index] : null;
 }
 
-/** The empty editor: describe the report in words and the model drafts it from the project's events. */
+/** The empty editor: say what you want and the model drafts a starting point from the project's events. */
 export function ReportPrompt() {
   const { projectId } = useAppParams();
   const dispatch = useDispatch();
   const trpc = useTRPC();
-  const eventNames = useEventNames({ projectId, anyEvents: false });
   const [text, setText] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -97,8 +62,8 @@ export function ReportPrompt() {
     textareaRef.current?.focus();
   }, []);
 
-  const submit = (prompt: string) => {
-    const value = prompt.trim();
+  const submit = () => {
+    const value = text.trim();
     if (!value || busy) {
       return;
     }
@@ -107,23 +72,17 @@ export function ReportPrompt() {
   };
 
   return (
-    <div className="card flex flex-col items-center px-4 py-12 md:py-16">
-      <div className="flex size-11 items-center justify-center rounded-full bg-highlight/10 text-highlight">
-        <SparklesIcon className="size-5" />
-      </div>
-      <h2 className="mt-5 text-center font-semibold text-2xl">
-        What do you want to see?
-      </h2>
-      <p className="mt-2 max-w-md text-center text-muted-foreground">
-        Describe the chart in plain words. The events, filters and chart type
-        come from what this project tracks.
+    <div className="card flex flex-col items-center px-4 py-16 md:py-24">
+      <p className="max-w-lg text-center text-muted-foreground">
+        To get you going, just say what you want to see and we'll generate a
+        good starting point.
       </p>
 
       <form
-        className="mt-8 w-full max-w-2xl"
+        className="mt-6 w-full max-w-2xl"
         onSubmit={(event) => {
           event.preventDefault();
-          submit(text);
+          submit();
         }}
       >
         <div
@@ -145,7 +104,7 @@ export function ReportPrompt() {
             onKeyDown={(event) => {
               if (event.key === 'Enter' && !event.shiftKey) {
                 event.preventDefault();
-                submit(text);
+                submit();
               }
             }}
             placeholder="Unique visitors per day for the last 30 days, split by device"
@@ -158,7 +117,7 @@ export function ReportPrompt() {
               aria-live="polite"
               className="min-w-0 truncate text-muted-foreground text-xs"
             >
-              {status ?? 'Enter to generate, Shift+Enter for a new line'}
+              {status}
             </span>
             <Button
               aria-label="Generate report"
@@ -185,37 +144,6 @@ export function ReportPrompt() {
           {notice}
         </p>
       )}
-
-      <div className="mt-4 flex w-full max-w-2xl flex-wrap justify-center gap-2">
-        {examplePrompts(eventNames.map((event) => event.name)).map(
-          (example) => (
-            <button
-              className="rounded-full border bg-card px-3 py-1.5 text-left text-sm transition-colors hover:bg-def-100 disabled:opacity-50 dark:hover:bg-def-200"
-              disabled={busy}
-              key={example}
-              onClick={() => {
-                setText(example);
-                submit(example);
-              }}
-              type="button"
-            >
-              {example}
-            </button>
-          )
-        )}
-      </div>
-
-      <p className="mt-8 text-muted-foreground text-sm">
-        Prefer to build it yourself?{' '}
-        <SheetTrigger asChild>
-          <button
-            className="font-medium text-foreground underline-offset-4 hover:underline"
-            type="button"
-          >
-            Pick the events by hand
-          </button>
-        </SheetTrigger>
-      </p>
     </div>
   );
 }
