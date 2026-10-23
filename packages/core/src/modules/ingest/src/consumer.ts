@@ -482,6 +482,10 @@ export interface EventsConsumerDeps {
   batch: Omit<EventsBatchHandlerDeps, 'topic'>;
 }
 
+/**
+ * Start consumption with explicit batch offset resolution. Separate stop and
+ * disconnect hooks let shutdown flush rows buffered outside Kafka batches.
+ */
 export async function startKafkaEventsConsumer(
   deps: EventsConsumerDeps
 ): Promise<KafkaConsumerHandle> {

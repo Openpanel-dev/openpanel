@@ -138,6 +138,7 @@ export class EventBuffer extends BaseBuffer {
 
   private readonly queueKey = 'event_buffer:queue';
 
+  /** Keep ClickHouse insertion and queue trimming inside the base flush lock. */
   constructor(deps: BufferDeps) {
     super(deps, {
       name: 'event',

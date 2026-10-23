@@ -242,6 +242,10 @@ const parseRevenue = (revenue: unknown): number | undefined => {
   return undefined;
 };
 
+/**
+ * Attach delivery coordinates to diagnostics before handling an envelope, so
+ * repeated business rows can be traced to the Kafka record that produced them.
+ */
 export async function incomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,
