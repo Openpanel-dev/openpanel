@@ -146,7 +146,10 @@ test('public share: create from the modal, open logged out, then make private', 
     await visitor.page
       .getByRole('button', { name: 'Last 7 days', exact: true })
       .click();
-    await visitor.page.getByRole('menuitem', { name: /^Last 30 days/ }).click();
+    await visitor.page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Last 30 days/ })
+      .click();
     const month = await fetchStats(page, PROJECT, { range: '30d' });
     await expect(metricCard(visitor.page, 'Sessions')).toContainText(
       compactNumber(Number(month.metrics.total_sessions))

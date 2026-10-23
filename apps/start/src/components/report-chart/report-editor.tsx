@@ -93,6 +93,7 @@ export default function ReportEditor({
               <TimeWindowPicker
                 className={TOOLBAR_TRIGGER_CLASS}
                 endDate={report.endDate}
+                interval={report.interval}
                 onChange={(value) => {
                   dispatch(changeDateRanges(value));
                 }}
