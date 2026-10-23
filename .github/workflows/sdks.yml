@@ -76,7 +76,7 @@ jobs:
         run: bun run --filter './packages/sdks/*' typecheck
 
       - name: Test the SDKs
-        run: bun run --filter @openpanel/web test
+        run: bun run --filter @openpanel/sdk test && bun run --filter @openpanel/web test
 
       # Releasing @openpanel/sdk takes every other SDK with it, so this one
       # dry run builds all of them exactly as a release would. The version

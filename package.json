@@ -58,7 +58,7 @@
   "scripts": {
     "test": "bun run test:core && bun run test:rest",
     "test:core": "bun run --filter @openpanel/core test",
-    "test:rest": "bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter @openpanel/seed test && bun run --filter @openpanel/web test && bun run --filter start test && bun run --filter @openpanel/release test && vitest run && bun test tooling/gates/conformance",
+    "test:rest": "bun run --filter @openpanel/db test && bun run --filter @openpanel/api test && bun run --filter @openpanel/seed test && bun run --filter @openpanel/sdk test && bun run --filter @openpanel/web test && bun run --filter start test && bun run --filter @openpanel/release test && vitest run && bun test tooling/gates/conformance",
     "gen:bots": "bun run --filter @openpanel/core gen:bots",
     "gen:referrers": "bun run --filter @openpanel/core gen:referrers",
     "dock:up": "docker compose up -d",
