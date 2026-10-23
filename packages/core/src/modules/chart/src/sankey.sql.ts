@@ -95,7 +95,7 @@ function sessionEventCte(
   const filters = event.whereClause
     ? sql` AND ${event.whereClause}`
     : sql.empty;
-  return sql`SELECT session_id FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(input.projectId)} AND name = ${sql.string(event.name)} AND created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})${filters} GROUP BY session_id`;
+  return sql`SELECT session_id FROM ${sql.id(CHART_TABLE.events)} WHERE project_id = ${sql.string(input.projectId)} AND session_id != '' AND name = ${sql.string(event.name)} AND created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})${filters} GROUP BY session_id`;
 }
 
 interface ModeConfig {
@@ -169,7 +169,7 @@ export function sankeySessionPathsQuery(input: SankeyPathsInput): SqlFragment {
   const eventsExpr =
     input.mode === 'after' ? TRUNCATE_AT_REPEAT : sql`events_sliced`;
 
-  return sql`WITH ${anchors}events_deduped_cte AS (WITH ordered_events AS (SELECT session_id, name as event_name, created_at FROM ${sql.id(CHART_TABLE.events)} WHERE ${dateRange(input)}${eventNameFilter(input)} ORDER BY session_id ASC, created_at ASC) SELECT session_id, ${DEDUPE_CONSECUTIVE} FROM ordered_events GROUP BY session_id), events_sliced_cte AS (SELECT session_id, ${eventsSlice} as events_sliced FROM events_deduped_cte HAVING ${having}) SELECT session_id, ${eventsExpr} as events, events[1] as entry_event FROM events_sliced_cte HAVING length(events) >= ${sql.uint64(MIN_PATH_LENGTH)}`;
+  return sql`WITH ${anchors}events_deduped_cte AS (WITH ordered_events AS (SELECT session_id, name as event_name, created_at FROM ${sql.id(CHART_TABLE.events)} WHERE ${dateRange(input)} AND session_id != ''${eventNameFilter(input)} ORDER BY session_id ASC, created_at ASC) SELECT session_id, ${DEDUPE_CONSECUTIVE} FROM ordered_events GROUP BY session_id), events_sliced_cte AS (SELECT session_id, ${eventsSlice} as events_sliced FROM events_deduped_cte HAVING ${having}) SELECT session_id, ${eventsExpr} as events, events[1] as entry_event FROM events_sliced_cte HAVING length(events) >= ${sql.uint64(MIN_PATH_LENGTH)}`;
 }
 
 /**
