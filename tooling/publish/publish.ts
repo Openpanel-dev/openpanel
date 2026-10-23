@@ -128,6 +128,7 @@ const findDependents = (
   return Array.from(dependents);
 };
 
+/** Rewrite workspace metadata and entry points for the package being released. */
 const updatePackageJsonForRelease = (
   packages: Record<string, PackageInfo>,
   name: string,
@@ -159,6 +160,9 @@ const updatePackageJsonForRelease = (
       module: './dist/index.js',
       types: './dist/index.d.ts',
       files: ['dist', 'README.md', 'LICENSE'],
+      ...(name === '@openpanel/web'
+        ? { typesVersions: { '*': { replay: ['./dist/src/replay.d.ts'] } } }
+        : {}),
       exports:
         name === '@openpanel/web'
           ? {

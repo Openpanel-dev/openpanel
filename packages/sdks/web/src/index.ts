@@ -387,9 +387,7 @@ export class OpenPanel extends OpenPanelBase {
     if (!this.isServer()) {
       try {
         sessionStorage.removeItem('openpanel-pending-revenues');
-      } catch {
-        // Storage can be unavailable in restricted browser contexts.
-      }
+      } catch {}
     }
   }
 
@@ -401,9 +399,7 @@ export class OpenPanel extends OpenPanelBase {
           'openpanel-pending-revenues',
           JSON.stringify(this.pendingRevenues)
         );
-      } catch {
-        // The in-memory queue remains usable when storage is unavailable.
-      }
+      } catch {}
     }
   }
 }

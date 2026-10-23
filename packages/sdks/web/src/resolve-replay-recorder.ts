@@ -7,6 +7,7 @@ export type SessionReplayRecorder = (
   sendChunk: (payload: SessionReplayChunkPayload) => void
 ) => void;
 
+/** Use the supplied recorder, or load the CDN recorder in script-tag builds only. */
 export async function resolveSessionReplayRecorder(options: {
   recorder?: SessionReplayRecorder;
   isIifeBuild: boolean;
