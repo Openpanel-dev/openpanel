@@ -57,7 +57,6 @@ const NEW_TABLE = `sessions_new_${SUFFIX}`;
 const OLD_TABLE = `sessions_${SUFFIX}`;
 const DISTRIBUTION_HASH =
   'cityHash64(project_id, toString(toStartOfHour(created_at)))';
-const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000;
 
 const COLUMNS = [
   '`id` String',
@@ -118,10 +117,6 @@ function latestVersionSelect(column: string) {
     return 'max(version) AS v_version';
   }
   return `argMax(${column}, version) AS v_${column}`;
-}
-
-function toDay(date: Date) {
-  return date.toISOString().slice(0, 10);
 }
 
 function dayRange(day: string) {
@@ -207,25 +202,19 @@ ENGINE = Distributed('{cluster}', currentDatabase(), ${OLD_TABLE}_replicated, ${
   return { sqls, isSwapped, isCopyDone: false };
 }
 
+/**
+ * The days that hold sessions, newest first. Taken from the data rather than
+ * a calendar range, so a stray old or future-dated `created_at` neither adds
+ * empty days nor falls outside the copy. The old table no longer changes
+ * after the swap, so this is exactly the set to copy.
+ */
 async function getDaysToCopy(source: string) {
   const response = await chMigrationClient.query({
-    query: `SELECT toString(min(toDate(created_at))) AS first_day FROM ${source} WHERE created_at > '1970-01-01'`,
+    query: `SELECT DISTINCT toString(toDate(created_at)) AS day FROM ${source} WHERE created_at > '1970-01-01' ORDER BY day DESC`,
     format: 'JSONEachRow',
   });
-  const [row] = await response.json<{ first_day: string }>();
-  const firstDay = row?.first_day;
-  if (!firstDay || firstDay.startsWith('1970')) {
-    return [];
-  }
-
-  const first = Date.parse(`${firstDay}T00:00:00Z`);
-  // Through tomorrow (UTC) so rows stamped slightly ahead are still copied.
-  const last =
-    Date.parse(`${toDay(new Date())}T00:00:00Z`) + MILLISECONDS_PER_DAY;
-  const dayCount = (last - first) / MILLISECONDS_PER_DAY + 1;
-  return Array.from({ length: dayCount }, (_, index) =>
-    toDay(new Date(last - index * MILLISECONDS_PER_DAY))
-  );
+  const rows = await response.json<{ day: string }>();
+  return rows.map((row) => row.day);
 }
 
 /** Runs in the background once the api is up; see the rerun notes above. */
