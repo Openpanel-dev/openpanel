@@ -62,6 +62,7 @@ describe.skipIf(process.env.RUN_KAFKA_REBALANCE_TESTS !== '1')(
           const redis = getRedisCache();
           const children: ReturnType<typeof Bun.spawn>[] = [];
           const logs: Promise<string>[] = [];
+          /** Keep worker memory separate so deduplication must cross Redis. */
           const startWorker = (worker: number) => {
             const child = Bun.spawn(
               [

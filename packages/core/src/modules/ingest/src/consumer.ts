@@ -255,6 +255,10 @@ export function createEventsBatchHandler(
    * or it is dead-lettered and dropped — there is no third outcome, which is
    * why the batch loop below has no unresolvable-message branch.
    */
+  /**
+   * Give legacy envelopes a repeatable identity before handler retries; poison
+   * records keep the existing dead-letter-and-drop delivery contract.
+   */
   const processMessage = async (
     message: KafkaMessage,
     partition: number
@@ -341,6 +345,10 @@ export function createEventsBatchHandler(
     await sleep(delayMs);
   };
 
+  /**
+   * Drain keyed handlers and their durability window before returning control
+   * to KafkaJS, including when a heartbeat interrupts the batch for rebalance.
+   */
   const eachBatch = async ({
     batch,
     resolveOffset,

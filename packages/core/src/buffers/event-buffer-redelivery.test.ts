@@ -5,6 +5,7 @@ import type { IClickhouseEvent } from '../modules/event/event.service';
 import { EventBuffer } from './event-buffer';
 
 const redis = getRedisCache();
+/** Minimal row whose project and id exercise the Redis deduplication scope. */
 const event = (
   id: string,
   projectId = 'redelivery-project'

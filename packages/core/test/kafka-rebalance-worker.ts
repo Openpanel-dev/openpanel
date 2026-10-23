@@ -41,6 +41,7 @@ const handler = createEventsBatchHandler({
   maxAttempts: 1,
   initialRetryMs: 10,
   maxRetryMs: 25,
+  /** Record deliveries independently of the queue that deduplication changes. */
   handleEvent: async (payload, delivery) => {
     await redis.rpush(
       traceKey,
