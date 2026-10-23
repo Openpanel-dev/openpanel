@@ -9,6 +9,15 @@ import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import Syntax from '@/components/syntax';
 import { buttonVariants } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
@@ -19,7 +28,7 @@ const TEST_EVENT_NAME = 'openpanel_test_event';
 // project's client and allowed origins, so it finds most causes by itself.
 function diagnoseQuestion(project: IServiceProjectWithClients): string {
   if (project.domain) {
-    return `No events have arrived from ${project.domain} after installing OpenPanel. Diagnose the install.`;
+    return `No events have arrived for ${project.domain} after installing OpenPanel. Diagnose the install.`;
   }
   const kinds = project.types.length > 0 ? project.types.join(' and ') : 'app';
   return `No events have arrived from my ${kinds} project after installing OpenPanel. Check what has reached the project and what could block events.`;
@@ -32,6 +41,42 @@ function normalizeOrigins(values: string[]) {
     .map((value) =>
       value === '*' || /^https?:\/\//.test(value) ? value : `https://${value}`
     );
+}
+
+/** A quiet link under the listener that opens the troubleshooting checks. */
+export function InstallTroubleshootingDialog({
+  project,
+  context,
+}: {
+  project: IServiceProjectWithClients;
+  context: SnippetContext;
+}) {
+  return (
+    <Dialog
+      onOpenChange={(open) =>
+        trackFunnel('onboarding_troubleshooting_toggled', {
+          projectId: project.id,
+          open,
+        })
+      }
+    >
+      <DialogTrigger className="text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline">
+        I'm not receiving events
+      </DialogTrigger>
+      <DialogPortal>
+        <DialogContent className="sm:max-w-2xl" showCloseButton>
+          <DialogHeader>
+            <DialogTitle>Not seeing events?</DialogTitle>
+            <DialogDescription>
+              The checks that solve most installs, in the order they usually
+              apply.
+            </DialogDescription>
+          </DialogHeader>
+          <InstallTroubleshooting context={context} project={project} />
+        </DialogContent>
+      </DialogPortal>
+    </Dialog>
+  );
 }
 
 /** The checks that resolve most "no events" reports, in the order they usually apply. */

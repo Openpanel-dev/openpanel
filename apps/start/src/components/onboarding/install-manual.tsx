@@ -1,6 +1,6 @@
 import type { Framework } from '@openpanel/sdk-info';
 import { ExternalLinkIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { FrameworkPicker, frameworksFor } from './framework-picker';
 import {
   getInstallSnippets,
@@ -22,6 +22,7 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
   const [framework, setFramework] = useState<Framework>(
     () => frameworksFor(projectTypes).suggested[0]!
   );
+  const frameworkLabelId = useId();
   const snippets = getInstallSnippets(framework, context);
   const secretMissing = usesClientSecret(framework) && !context.clientSecret;
 
@@ -38,18 +39,17 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
 
   return (
     <div className="col gap-6">
-      <FrameworkPicker
-        onChange={select}
-        onToggleAll={(open) =>
-          trackFunnel('onboarding_frameworks_show_all_toggled', {
-            projectId,
-            method: 'manual',
-            open,
-          })
-        }
-        projectTypes={projectTypes}
-        value={framework}
-      />
+      <div className="row flex-wrap items-center gap-3">
+        <span className="font-medium" id={frameworkLabelId}>
+          Framework
+        </span>
+        <FrameworkPicker
+          labelId={frameworkLabelId}
+          onChange={select}
+          projectTypes={projectTypes}
+          value={framework}
+        />
+      </div>
 
       <div className="col gap-5">
         {snippets.map((snippet, index) => (

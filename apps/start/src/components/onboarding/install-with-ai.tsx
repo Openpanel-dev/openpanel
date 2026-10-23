@@ -1,6 +1,6 @@
 import type { Framework } from '@openpanel/sdk-info';
 import { CopyIcon, SparklesIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import {
   buildAiInstallPrompt,
   CURSOR_PROMPT_DEEPLINK,
@@ -25,6 +25,7 @@ export function InstallWithAi({
   context,
 }: Props) {
   const [framework, setFramework] = useState<Framework | null>(null);
+  const frameworkLabelId = useId();
   const prompt = useMemo(
     () =>
       buildAiInstallPrompt({ projectName, projectTypes, framework, context }),
@@ -42,10 +43,14 @@ export function InstallWithAi({
 
   return (
     <div className="col gap-6">
-      <div className="col gap-3">
-        <div className="font-medium">Which framework? (optional)</div>
+      <div className="row flex-wrap items-center gap-3">
+        <span className="font-medium" id={frameworkLabelId}>
+          Framework{' '}
+          <span className="font-normal text-muted-foreground">(optional)</span>
+        </span>
         <FrameworkPicker
           allowNone
+          labelId={frameworkLabelId}
           onChange={(next) => {
             trackFunnel('onboarding_ai_framework_selected', {
               projectId,
@@ -53,13 +58,6 @@ export function InstallWithAi({
             });
             setFramework(next);
           }}
-          onToggleAll={(open) =>
-            trackFunnel('onboarding_frameworks_show_all_toggled', {
-              projectId,
-              method: 'ai',
-              open,
-            })
-          }
           projectTypes={projectTypes}
           value={framework}
         />

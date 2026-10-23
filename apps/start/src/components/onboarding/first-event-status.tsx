@@ -53,11 +53,14 @@ export function FirstEventStatus({
   events,
   className,
   children,
+  help,
 }: {
   events: IServiceEvent[];
   className?: string;
   /** Shown beside the headline, e.g. the "Open dashboard" button once connected. */
   children?: React.ReactNode;
+  /** Shown under the waiting text, e.g. a way into troubleshooting. */
+  help?: React.ReactNode;
 }) {
   const isVerified = events.length > 0;
   return (
@@ -102,6 +105,7 @@ export function FirstEventStatus({
               ? 'Your setup works. Open the dashboard whenever you are ready.'
               : 'Install the snippet, open your site or app once, and this turns green by itself.'}
           </p>
+          {!isVerified && help && <div className="mt-2">{help}</div>}
         </div>
         {children && <div className="@md:ml-auto shrink-0">{children}</div>}
       </div>

@@ -11,15 +11,9 @@ import {
 } from '@/components/onboarding/first-event-status';
 import { InstallGuide } from '@/components/onboarding/install-guide';
 import type { SnippetContext } from '@/components/onboarding/install-snippets';
-import { InstallTroubleshooting } from '@/components/onboarding/install-troubleshooting';
+import { InstallTroubleshootingDialog } from '@/components/onboarding/install-troubleshooting';
 import { McpConnect } from '@/components/onboarding/mcp-connect';
 import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { LinkButton } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import {
@@ -129,7 +123,12 @@ function Component() {
         title="Install OpenPanel"
       />
       <aside className={sidebarPlacement}>
-        <FirstEventStatus events={events}>
+        <FirstEventStatus
+          events={events}
+          help={
+            <InstallTroubleshootingDialog context={context} project={project} />
+          }
+        >
           {isVerified && (
             <LinkButton
               className="w-full"
@@ -175,25 +174,6 @@ function Component() {
           projectName={project.name}
           projectTypes={project.types}
         />
-        <Accordion
-          className="rounded-xl border px-5"
-          collapsible
-          onValueChange={(value) =>
-            trackFunnel('onboarding_troubleshooting_toggled', {
-              projectId,
-              open: value === 'troubleshooting',
-              verified: isVerified,
-            })
-          }
-          type="single"
-        >
-          <AccordionItem value="troubleshooting">
-            <AccordionTrigger>Not seeing events?</AccordionTrigger>
-            <AccordionContent>
-              <InstallTroubleshooting context={context} project={project} />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
         <div className="row items-center justify-between gap-4 border-t pt-8">
           <span className="text-muted-foreground">
             {isVerified

@@ -1,12 +1,19 @@
 import { Link } from '@tanstack/react-router';
 import { BotIcon, CopyIcon, ExternalLinkIcon, ZapIcon } from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
 
 const SERVER_NAME = 'openpanel';
+const PANEL = 'mcp';
 
 interface Connection {
   endpoint: string;
@@ -170,63 +177,84 @@ export function McpConnect({
   };
 
   return (
-    <section className="col gap-4 rounded-xl border p-5">
-      <div className="row items-center gap-2">
-        <BotIcon className="text-muted-foreground" size={16} />
-        <h2 className="font-semibold text-base">Connect an AI assistant</h2>
-      </div>
-      {connection ? (
-        <>
-          <p className="text-muted-foreground text-sm">
-            Give Cursor, Claude or ChatGPT read access to this project over MCP
-            and ask it questions instead of building reports.
-          </p>
-          <ul className="col divide-y">
-            {HOSTS.map((host) => (
-              <li
-                className="row items-center justify-between gap-3 py-2.5"
-                key={host.key}
-              >
-                <div className="col">
-                  <span className="font-medium text-sm">{host.label}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {KIND_CAPTIONS[host.kind]}
-                  </span>
-                </div>
-                {renderAction(host, connection)}
-              </li>
-            ))}
-          </ul>
-          <CopyInput
-            label="MCP token"
-            onCopy={() =>
-              trackFunnel('onboarding_credentials_copied', {
+    <Accordion
+      className="rounded-xl border"
+      collapsible
+      onValueChange={(value) =>
+        trackFunnel('onboarding_mcp_connect_toggled', {
+          projectId,
+          open: value === PANEL,
+          hadToken: Boolean(mcpToken),
+        })
+      }
+      type="single"
+    >
+      <AccordionItem className="border-b-0" value={PANEL}>
+        <AccordionTrigger className="gap-4 rounded-xl p-5 text-left">
+          <span className="col gap-1.5">
+            <span className="row items-center gap-2">
+              <BotIcon className="shrink-0 text-muted-foreground" size={16} />
+              <span className="font-semibold text-base">
+                Connect an AI assistant
+              </span>
+            </span>
+            <span className="font-normal text-muted-foreground text-sm">
+              Give Cursor, Claude or ChatGPT read access to this project over
+              MCP and ask it questions instead of building reports.
+            </span>
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="col gap-4 px-5 pb-5">
+          {connection ? (
+            <>
+              <ul className="col divide-y">
+                {HOSTS.map((host) => (
+                  <li
+                    className="row items-center justify-between gap-3 py-2.5"
+                    key={host.key}
+                  >
+                    <div className="col">
+                      <span className="font-medium text-sm">{host.label}</span>
+                      <span className="text-muted-foreground text-xs">
+                        {KIND_CAPTIONS[host.kind]}
+                      </span>
+                    </div>
+                    {renderAction(host, connection)}
+                  </li>
+                ))}
+              </ul>
+              <CopyInput
+                label="MCP token"
+                onCopy={() =>
+                  trackFunnel('onboarding_credentials_copied', {
+                    projectId,
+                    what: 'mcpToken',
+                  })
+                }
+                value={connection.token}
+              />
+            </>
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              The MCP token was shown once when the project was created. Create
+              another MCP client to connect an assistant.
+            </p>
+          )}
+          <Link
+            className="self-start text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
+            onClick={() =>
+              trackFunnel('onboarding_mcp_settings_clicked', {
                 projectId,
-                what: 'mcpToken',
+                hadToken: Boolean(mcpToken),
               })
             }
-            value={connection.token}
-          />
-        </>
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          The MCP token was shown once when the project was created. Create
-          another MCP client to connect an assistant.
-        </p>
-      )}
-      <Link
-        className="text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
-        onClick={() =>
-          trackFunnel('onboarding_mcp_settings_clicked', {
-            projectId,
-            hadToken: Boolean(mcpToken),
-          })
-        }
-        params={{ organizationId, projectId }}
-        to="/$organizationId/$projectId/settings/mcp"
-      >
-        Windsurf, Raycast and config files in Settings → MCP
-      </Link>
-    </section>
+            params={{ organizationId, projectId }}
+            to="/$organizationId/$projectId/settings/mcp"
+          >
+            Windsurf, Raycast and config files in Settings → MCP
+          </Link>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }

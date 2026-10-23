@@ -333,6 +333,9 @@ test('a website project leads to the connect step with its one-time credentials'
   // the write client's secret.
   await expect(page.getByText(client.id).first()).toBeVisible();
   await expect(page.getByText(client.secret)).toBeVisible();
+  // The assistant card is collapsed until asked for.
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await page.getByRole('button', { name: /Connect an AI assistant/ }).click();
   await expect(page.getByText(client.mcpToken)).toBeVisible();
   expect(client.mcpToken).not.toBe(btoa(`${client.id}:${client.secret}`));
 
@@ -341,21 +344,27 @@ test('a website project leads to the connect step with its one-time credentials'
   await expect(page.locator('code').first()).toContainText(
     `clientId: '${client.id}'`
   );
-  await expect(page.getByRole('radio')).toHaveCount(WEBSITE_FRAMEWORK_COUNT);
-  await page.getByText(`Show all ${FRAMEWORK_COUNT} frameworks`).click();
-  await expect(page.getByRole('radio')).toHaveCount(FRAMEWORK_COUNT);
   await page.screenshot({
     path: `${SHOTS_DIR}/onboarding-connect.png`,
     fullPage: true,
   });
 
+  // The framework dropdown suggests the website SDKs first and lists the rest.
+  const frameworkSelect = page.getByRole('combobox', { name: 'Framework' });
+  await frameworkSelect.click();
+  await expect(
+    page.getByRole('group', { name: 'For websites' }).getByRole('option')
+  ).toHaveCount(WEBSITE_FRAMEWORK_COUNT);
+  await expect(page.getByRole('option')).toHaveCount(FRAMEWORK_COUNT);
+
   // Each framework shows its own snippet and links to its guide.
-  await page.getByRole('radio', { name: 'Next.js' }).click();
+  await page.getByRole('option', { name: 'Next.js' }).click();
   await expect(page.locator('code').first()).toContainText('@openpanel/nextjs');
   await expect(
     page.getByRole('link', { name: 'Full Next.js guide' })
   ).toHaveAttribute('href', 'https://openpanel.dev/docs/sdks/nextjs');
-  await page.getByRole('radio', { name: 'iOS (swift)' }).click();
+  await frameworkSelect.click();
+  await page.getByRole('option', { name: 'iOS (swift)' }).click();
   await expect(page.locator('code').last()).toContainText(
     `clientSecret: "${client.secret}"`
   );
@@ -386,7 +395,8 @@ test('the AI prompt carries the client id and the chosen framework guide', async
   await expect(prompt).toContainText(`Client ID: ${project.clientId}`);
   await expect(prompt).toContainText('https://openpanel.dev/docs/sdks');
 
-  await page.getByRole('radio', { name: 'Next.js' }).click();
+  await page.getByRole('combobox', { name: 'Framework (optional)' }).click();
+  await page.getByRole('option', { name: 'Next.js' }).click();
   await expect(prompt).toContainText('https://openpanel.dev/docs/sdks/nextjs');
   await expect(
     page.getByRole('link', { name: 'Open in Cursor' })
@@ -409,18 +419,26 @@ test('the install step turns green when the first event arrives', async ({
   await expect(
     page.getByRole('link', { name: 'Skip for now, I will install later' })
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Not seeing events?' }).click();
+  // Troubleshooting lives behind a quiet link inside the listener.
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const troubleshooting = page.getByRole('dialog', {
+    name: 'Not seeing events?',
+  });
   await expect(
-    page.getByText('Is the client ID the one for this project?')
+    troubleshooting.getByText('Is the client ID the one for this project?')
   ).toBeVisible();
-  await expect(page.getByText(project.clientId).first()).toBeVisible();
-  await expect(page.locator('code').last()).toContainText(
+  await expect(
+    troubleshooting.getByText(project.clientId).first()
+  ).toBeVisible();
+  await expect(troubleshooting.locator('code').last()).toContainText(
     `openpanel-client-id: ${project.clientId}`
   );
   await page.screenshot({
     path: `${SHOTS_DIR}/onboarding-connect-waiting.png`,
     fullPage: true,
   });
+  await page.keyboard.press('Escape');
+  await expect(troubleshooting).toHaveCount(0);
 
   expect(
     trackEvent(
@@ -484,12 +502,13 @@ test('an app and backend project can be added to the existing workspace', async 
   await expect(page.locator('code').last()).toContainText(
     `clientSecret: '${client.secret}'`
   );
-  await page.getByRole('button', { name: 'Not seeing events?' }).click();
-  const example = page.locator('code').last();
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const example = page.getByRole('dialog').locator('code').last();
   await expect(example).toContainText('"name":"openpanel_test_event"');
   await expect(example).toContainText(
     `openpanel-client-secret: ${client.secret}`
   );
+  await page.keyboard.press('Escape');
 
   await page
     .getByRole('link', { name: 'Skip for now, I will install later' })

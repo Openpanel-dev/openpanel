@@ -1,6 +1,14 @@
 import { type Framework, frameworks } from '@openpanel/sdk-info';
 import { WandSparklesIcon } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/utils/cn';
 
 type ProjectType = 'website' | 'app' | 'backend';
@@ -11,14 +19,22 @@ interface Props {
   onChange: (framework: Framework | null) => void;
   /** Offer a "detect it for me" option, selected when `value` is null. */
   allowNone?: boolean;
-  onToggleAll?: (showAll: boolean) => void;
+  /** Id of the visible label, so the trigger has an accessible name. */
+  labelId?: string;
+  className?: string;
 }
 
 const GENERIC_FRAMEWORK_KEY = 'rest';
+const DETECT_OPTION = 'auto';
+const PLATFORM_LABELS: Record<ProjectType, string> = {
+  website: 'websites',
+  app: 'apps',
+  backend: 'backends',
+};
 
 /**
- * Frameworks matching the project's platforms come first; the rest hide
- * behind "Show all". The HTTP API fits every platform, so it goes last among
+ * Frameworks matching the project's platforms come first; the rest sit in
+ * a second group. The HTTP API fits every platform, so it goes last among
  * the suggestions and never becomes the default.
  */
 export function frameworksFor(projectTypes: ProjectType[]) {
@@ -38,88 +54,74 @@ export function frameworksFor(projectTypes: ProjectType[]) {
   return { suggested, others };
 }
 
+function suggestedLabel(projectTypes: ProjectType[]) {
+  if (projectTypes.length === 0) {
+    return 'Frameworks';
+  }
+  return `For ${projectTypes.map((type) => PLATFORM_LABELS[type]).join(' and ')}`;
+}
+
 export function FrameworkPicker({
   projectTypes,
   value,
   onChange,
   allowNone,
-  onToggleAll,
+  labelId,
+  className,
 }: Props) {
   const { suggested, others } = frameworksFor(projectTypes);
-  const [showAll, setShowAll] = useState(
-    () => value !== null && others.includes(value)
-  );
-  const visible = showAll ? [...suggested, ...others] : suggested;
+  const selected = value?.key ?? (allowNone ? DETECT_OPTION : undefined);
+
+  const select = (key: string) => {
+    if (key === DETECT_OPTION) {
+      onChange(null);
+      return;
+    }
+    const framework = frameworks.find((candidate) => candidate.key === key);
+    if (framework) {
+      onChange(framework);
+    }
+  };
 
   return (
-    <div className="col gap-3">
-      <div
-        aria-label="Framework"
-        className="grid grid-cols-2 gap-2 sm:grid-cols-3"
-        role="radiogroup"
+    <Select onValueChange={select} value={selected}>
+      <SelectTrigger
+        aria-labelledby={labelId}
+        className={cn('w-full sm:w-64', className)}
       >
+        <SelectValue placeholder="Pick a framework" />
+      </SelectTrigger>
+      <SelectContent>
         {allowNone && (
-          <FrameworkOption
-            Icon={WandSparklesIcon}
-            label="Detect it for me"
-            onSelect={() => onChange(null)}
-            selected={value === null}
-          />
+          <SelectItem value={DETECT_OPTION}>
+            <WandSparklesIcon className="size-4 shrink-0" />
+            Detect it for me
+          </SelectItem>
         )}
-        {visible.map((framework) => (
-          <FrameworkOption
-            Icon={framework.IconComponent}
-            key={framework.key}
-            label={framework.name}
-            onSelect={() => onChange(framework)}
-            selected={value?.key === framework.key}
-          />
-        ))}
-      </div>
-      {others.length > 0 && (
-        <button
-          className="self-start text-muted-foreground text-sm hover:text-foreground hover:underline"
-          onClick={() => {
-            onToggleAll?.(!showAll);
-            setShowAll((current) => !current);
-          }}
-          type="button"
-        >
-          {showAll
-            ? 'Show fewer frameworks'
-            : `Show all ${suggested.length + others.length} frameworks`}
-        </button>
-      )}
-    </div>
+        <SelectGroup>
+          <SelectLabel>{suggestedLabel(projectTypes)}</SelectLabel>
+          {suggested.map((framework) => (
+            <FrameworkItem framework={framework} key={framework.key} />
+          ))}
+        </SelectGroup>
+        {others.length > 0 && (
+          <SelectGroup>
+            <SelectLabel>Other frameworks</SelectLabel>
+            {others.map((framework) => (
+              <FrameworkItem framework={framework} key={framework.key} />
+            ))}
+          </SelectGroup>
+        )}
+      </SelectContent>
+    </Select>
   );
 }
 
-function FrameworkOption({
-  Icon,
-  label,
-  selected,
-  onSelect,
-}: {
-  Icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  selected: boolean;
-  onSelect: () => void;
-}) {
+function FrameworkItem({ framework }: { framework: Framework }) {
   return (
-    <button
-      aria-checked={selected}
-      className={cn(
-        'row items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-        selected
-          ? 'bg-foreground text-background'
-          : 'bg-def-200 text-foreground hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60'
-      )}
-      onClick={onSelect}
-      role="radio"
-      type="button"
-    >
-      <Icon className="size-5 shrink-0" />
-      <span className="truncate font-medium">{label}</span>
-    </button>
+    <SelectItem value={framework.key}>
+      <framework.IconComponent className="size-4 shrink-0" />
+      {framework.name}
+    </SelectItem>
   );
 }
