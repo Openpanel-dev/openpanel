@@ -2,6 +2,7 @@ interface ConstantsLike {
   getWebViewUserAgentAsync: () => Promise<string | null>;
 }
 
+/** Narrow Expo export objects to those with a callable User-Agent helper. */
 function hasUserAgentHelper(value: unknown): value is ConstantsLike {
   return (
     value !== null &&
@@ -11,6 +12,7 @@ function hasUserAgentHelper(value: unknown): value is ConstantsLike {
   );
 }
 
+/** Resolve either Expo export shape and omit the optional header on failure. */
 export async function getWebViewUserAgent(
   module: unknown
 ): Promise<string | null> {

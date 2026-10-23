@@ -87,6 +87,7 @@ export class OpenPanel extends OpenPanelBase {
     this.loadPersistedQueue();
   }
 
+  /** Refresh app metadata while treating Android install attribution as optional. */
   private async setDefaultProperties() {
     let referrer: string | undefined;
     if (Platform.OS === 'android') {
