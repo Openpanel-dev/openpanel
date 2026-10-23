@@ -9,10 +9,7 @@ import { FrameworkPicker } from './framework-picker';
 import type { SnippetContext } from './install-snippets';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { clipboard } from '@/utils/clipboard';
-import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
-
-const PROMPT_PREVIEW_LINES = 14;
 
 interface Props {
   projectId: string;
@@ -28,18 +25,11 @@ export function InstallWithAi({
   context,
 }: Props) {
   const [framework, setFramework] = useState<Framework | null>(null);
-  const [expanded, setExpanded] = useState(false);
   const prompt = useMemo(
     () =>
       buildAiInstallPrompt({ projectName, projectTypes, framework, context }),
     [projectName, projectTypes, framework, context]
   );
-  const lines = prompt.split('\n');
-  const isLong = lines.length > PROMPT_PREVIEW_LINES;
-  const shown =
-    expanded || !isLong
-      ? prompt
-      : lines.slice(0, PROMPT_PREVIEW_LINES).join('\n');
 
   const copyPrompt = () => {
     trackFunnel('onboarding_ai_prompt_copied', {
@@ -76,32 +66,9 @@ export function InstallWithAi({
       </div>
 
       <div className="col gap-3">
-        <div className="relative rounded-xl bg-def-200 dark:bg-def-300">
-          <pre
-            className={cn(
-              'scrollbar-thin max-h-[26rem] overflow-auto whitespace-pre-wrap break-words p-5 font-mono text-[13px] leading-relaxed',
-              isLong && 'pb-12'
-            )}
-          >
-            {shown}
-            {isLong && !expanded && '\n…'}
-          </pre>
-          {isLong && (
-            <button
-              className="absolute right-3 bottom-3 rounded-md bg-background px-2 py-1 text-muted-foreground text-xs shadow-sm hover:text-foreground"
-              onClick={() => {
-                trackFunnel('onboarding_ai_prompt_expanded', {
-                  projectId,
-                  open: !expanded,
-                });
-                setExpanded((current) => !current);
-              }}
-              type="button"
-            >
-              {expanded ? 'Show less' : 'Show full prompt'}
-            </button>
-          )}
-        </div>
+        <pre className="scrollbar-thin max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-def-200 p-4 font-mono text-xs leading-relaxed dark:bg-def-300">
+          {prompt}
+        </pre>
         <div className="row flex-wrap gap-2">
           <Button icon={CopyIcon} onClick={copyPrompt} size="xl">
             Copy prompt

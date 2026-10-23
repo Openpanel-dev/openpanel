@@ -36,7 +36,6 @@ export type FunnelEvent =
   | 'onboarding_framework_guide_clicked'
   | 'onboarding_snippet_copied'
   | 'onboarding_ai_framework_selected'
-  | 'onboarding_ai_prompt_expanded'
   | 'onboarding_ai_prompt_copied'
   | 'onboarding_ai_prompt_opened_in_cursor'
   | 'onboarding_credentials_copied'

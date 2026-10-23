@@ -1,6 +1,7 @@
 import type { Framework } from '@openpanel/sdk-info';
 import {
   curlSnippet,
+  getInstallSnippets,
   type SnippetContext,
   scriptTagSnippet,
   usesClientSecret,
@@ -12,85 +13,145 @@ const TRACK_API_URL = 'https://openpanel.dev/docs/api/track';
 export const CURSOR_PROMPT_DEEPLINK =
   'cursor://anysphere.cursor-deeplink/prompt?text=';
 
+type ProjectType = 'website' | 'app' | 'backend';
+
 export interface AiPromptInput {
   projectName: string;
-  projectTypes: ('website' | 'app' | 'backend')[];
+  projectTypes: ProjectType[];
   /** Null means "let the agent detect the framework". */
   framework: Framework | null;
   context: SnippetContext;
 }
 
-const TYPE_LABELS: Record<AiPromptInput['projectTypes'][number], string> = {
+const TYPE_LABELS: Record<ProjectType, string> = {
   website: 'a website',
   app: 'a mobile app',
   backend: 'a backend service',
 };
 
+// What to install per platform when the agent has to pick itself. Kept to
+// the packages we publish so it cannot invent one.
+const PACKAGES_BY_TYPE: Record<ProjectType, string[]> = {
+  website: [
+    'Next.js: @openpanel/nextjs (render <OpenPanelComponent clientId="…" /> in the root layout)',
+    'Nuxt: @openpanel/nuxt (add the module and an `openpanel` block to nuxt.config)',
+    'Astro: @openpanel/astro (render <OpenPanelComponent /> in the layout head)',
+    'React, Vue, Svelte, Remix or any other browser app: @openpanel/web (one shared `new OpenPanel({ clientId })` instance)',
+    'Plain HTML or no build step: the script tag at the end of this prompt',
+  ],
+  app: [
+    'React Native / Expo: @openpanel/react-native plus expo-application and expo-constants',
+    'iOS: Swift package https://github.com/Openpanel-dev/swift-sdk',
+    'Android: dev.openpanel:openpanel',
+  ],
+  backend: [
+    'Node or Bun: @openpanel/sdk; Express: @openpanel/express (middleware)',
+    'Python: pip install openpanel; Ruby: gem openpanel-sdk; Rust: cargo add openpanel-sdk',
+    `Anything else: POST to the track API (${TRACK_API_URL})`,
+  ],
+};
+
 function describeTarget(input: AiPromptInput): string {
   const types = input.projectTypes.map((type) => TYPE_LABELS[type]);
-  const target = types.length > 0 ? types.join(' and ') : 'an application';
-  return input.framework
-    ? `${target} built with ${input.framework.name}`
-    : target;
+  return types.length > 0 ? types.join(' and ') : 'an application';
 }
 
-function guideLines(input: AiPromptInput): string[] {
+function needsSecret(input: AiPromptInput): boolean {
   if (input.framework) {
-    return [
-      `Follow the ${input.framework.name} guide: ${input.framework.href}`,
-      `The full documentation index is at ${DOCS_INDEX_URL} if you need anything else.`,
-    ];
+    return usesClientSecret(input.framework);
   }
-  return [
-    `Detect the framework from this repository, then follow the matching guide from ${SDK_OVERVIEW_URL} (documentation index: ${DOCS_INDEX_URL}).`,
-    `If no SDK matches, use the script tag below on a website, or the HTTP API (${TRACK_API_URL}) anywhere else.`,
-  ];
+  return input.projectTypes.some((type) => type !== 'website');
 }
 
-function credentialLines(input: AiPromptInput): string[] {
-  const lines = [`Client ID: ${input.context.clientId}`];
-  const needsSecret = input.framework
-    ? usesClientSecret(input.framework)
-    : !input.projectTypes.includes('website') || input.projectTypes.length > 1;
-  if (needsSecret) {
+function contextLines(input: AiPromptInput): string[] {
+  const lines = [
+    `- OpenPanel project: "${input.projectName}" (${describeTarget(input)})`,
+    `- Client ID: ${input.context.clientId} (public; fine to ship to a browser)`,
+  ];
+  if (needsSecret(input)) {
     lines.push(
-      `Client secret: ${input.context.clientSecret ?? 'ask me for it, it is not in this prompt'}`,
-      'The secret is only for server or native code. Read both values from environment variables (OPENPANEL_CLIENT_ID, OPENPANEL_CLIENT_SECRET) and never commit the secret or ship it to a browser.'
+      `- Client secret: ${input.context.clientSecret ?? 'ask me for it before you start'} (server and native code only; read it from an environment variable, never commit it or send it to a browser)`
     );
   }
   if (input.context.apiUrl) {
     lines.push(
-      `This is a self-hosted instance. Point the SDK at the API URL ${input.context.apiUrl} (the "apiUrl" option).`
+      `- API URL: ${input.context.apiUrl} (self-hosted instance; pass it as the \`apiUrl\` option)`
+    );
+  }
+  lines.push(
+    input.framework
+      ? `- Guide: ${input.framework.href} (every doc: ${DOCS_INDEX_URL})`
+      : `- Guides: ${SDK_OVERVIEW_URL} (every doc: ${DOCS_INDEX_URL})`
+  );
+  return lines;
+}
+
+function installSteps(input: AiPromptInput): string[] {
+  if (input.framework) {
+    const snippets = getInstallSnippets(input.framework, input.context);
+    if (snippets.length === 0) {
+      return [
+        `1. Install the ${input.framework.name} SDK as described in the guide above, using the package manager this repository already uses.`,
+        '2. Initialize it once, where the app starts, with the credentials above.',
+      ];
+    }
+    return snippets.map(
+      (snippet, index) =>
+        `${index + 1}. ${snippet.title}${index === 0 ? ' (use the package manager this repository already uses)' : ''}:\n${indent(snippet.code)}`
+    );
+  }
+  const packages = input.projectTypes.flatMap((type) => PACKAGES_BY_TYPE[type]);
+  return [
+    '1. Detect the framework from this repository and pick the matching OpenPanel package:',
+    ...packages.map((line) => `   - ${line}`),
+    '2. Install it with the package manager this repository already uses, then initialize it once, where the app starts, with the credentials above. Follow its guide for the exact code.',
+  ];
+}
+
+function verificationStep(input: AiPromptInput, number: number): string[] {
+  const lines = [
+    `${number}. Make one event reach OpenPanel: start the app and open a screen, or send a test request. The OpenPanel dashboard is open and shows the first event as soon as it arrives.`,
+  ];
+  if (needsSecret(input) && input.context.clientSecret) {
+    lines.push(
+      '   Test request:',
+      indent(curlSnippet(input.context, 'openpanel_test_event'))
     );
   }
   return lines;
 }
 
+function indent(code: string): string {
+  return code
+    .split('\n')
+    .map((line) => `   ${line}`)
+    .join('\n');
+}
+
 function fallbackSnippet(input: AiPromptInput): string[] {
-  const isWebsiteOnly =
-    input.projectTypes.length === 1 && input.projectTypes[0] === 'website';
-  if (input.framework || !isWebsiteOnly) {
-    if (input.framework) {
-      return [];
-    }
-    return ['', 'HTTP API example:', curlSnippet(input.context, 'my_event')];
+  const includesWebsite = input.projectTypes.includes('website');
+  if (input.framework || !includesWebsite) {
+    return [];
   }
-  return ['', 'Script tag fallback:', scriptTagSnippet(input.context)];
+  return ['', 'Script tag for plain HTML:', scriptTagSnippet(input.context)];
 }
 
 export function buildAiInstallPrompt(input: AiPromptInput): string {
-  const lines = [
-    `Install OpenPanel analytics in this project. It is ${describeTarget(input)}, tracked in the OpenPanel project "${input.projectName}".`,
+  const steps = installSteps(input);
+  const nextNumber = input.framework
+    ? steps.length + 1
+    : steps.filter((line) => /^\d+\. /.test(line)).length + 1;
+  return [
+    'Set up OpenPanel analytics in this repository.',
     '',
-    ...guideLines(input),
+    'Context',
+    ...contextLines(input),
     '',
-    ...credentialLines(input),
-    '',
-    'What to do:',
-    '1. Install the SDK with the package manager this repository already uses.',
-    '2. Initialize it once, where the app starts, with the credentials above. Keep automatic screen view tracking on; do not add custom events yet.',
-    '3. Run the app (or send one request) so at least one event reaches OpenPanel, then tell me what you changed. The OpenPanel dashboard is open and waiting for the first event.',
+    'Steps',
+    ...steps,
+    `${nextNumber}. Keep automatic screen view tracking on. Do not add custom events and do not change unrelated files.${needsSecret(input) ? ' The snippet shows the secret inline for clarity; move it to an environment variable before committing.' : ''}`,
+    ...verificationStep(input, nextNumber + 1),
+    `${nextNumber + 2}. Reply with the files you changed and anything I still have to do (environment variables, restart).`,
     ...fallbackSnippet(input),
-  ];
-  return lines.join('\n');
+  ].join('\n');
 }
