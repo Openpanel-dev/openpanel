@@ -93,7 +93,14 @@ type ProviderOptions = NonNullable<
   Parameters<typeof streamText>[0]['providerOptions']
 >;
 
-/** Reasoning summaries are off by default on both providers; the chat shows them. */
+/**
+ * Reasoning summaries are off by default on both providers; the chat shows them.
+ *
+ * Anthropic binds each thinking block to the conversation prefix that produced
+ * it and rejects the whole request when that prefix changed (the system prompt
+ * carries today's date and the launch hint, so it can). `drop_block` makes the
+ * API drop the stale blocks instead of failing the turn.
+ */
 export function reasoningProviderOptions(
   entry: ChatModelEntry
 ): ProviderOptions {
@@ -102,7 +109,11 @@ export function reasoningProviderOptions(
   }
   return {
     anthropic: {
-      thinking: { type: 'adaptive' as const, display: 'summarized' as const },
+      thinking: {
+        type: 'adaptive' as const,
+        display: 'summarized' as const,
+        blockBinding: { prefixMismatchBehavior: 'drop_block' as const },
+      },
     },
   };
 }
