@@ -303,6 +303,33 @@ describe('incomingEvent', () => {
     expect(Object.keys(query)).toHaveLength(3);
   });
 
+  test('keeps a client-sent __query and lets the URL query win over it', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'screen_view',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: {
+            __path: 'https://example.com/?utm_source=google',
+            __query: { utm_source: 'meta', utm_campaign: 'first_touch' },
+          },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find(
+      (a) => a.name === 'screen_view'
+    );
+    expect(event!.properties).toMatchObject({
+      __query: { utm_source: 'google', utm_campaign: 'first_touch' },
+    });
+  });
+
   test("keeps the event's own utm over the session's", async () => {
     const { deps, createEvent, ingest } = ctx;
     ingest.mockResolvedValueOnce({
