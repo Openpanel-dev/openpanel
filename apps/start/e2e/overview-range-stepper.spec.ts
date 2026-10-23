@@ -65,14 +65,20 @@ test('on a phone the presets sit above a single-month calendar', async ({
   await shot(page, 'range-picker-mobile', false);
 });
 
+// The stepper reads the browser clock, so the dated expectations below pin it.
+const PINNED_NOW = new Date(2026, 9, 23, 14, 30, 0);
+
 test('the arrows step the window by its own length and stop at today', async ({
   page,
 }) => {
+  await page.clock.setFixedTime(PINNED_NOW);
   await gotoOverview(page, PROJECT, '?range=7d');
   await dismissFeedbackPrompt(page);
 
-  // "Last 7 days" on 2026-10-23 is Oct 16 – Oct 23, the same eight days the API uses.
-  await page.getByRole('button', { name: 'Next period' }).isDisabled();
+  // "Last 7 days" on the pinned 2026-10-23 is Oct 16 – Oct 23, the same eight days the API uses.
+  await expect(
+    page.getByRole('button', { name: 'Next period' })
+  ).toBeDisabled();
   await page.getByRole('button', { name: 'Previous period' }).click();
   await expect(page).toHaveURL(/range=custom/);
   expect(searchParams(page).get('start')).toBe('2026-10-08 00:00:00');
@@ -98,6 +104,7 @@ test('the arrows step the window by its own length and stop at today', async ({
 });
 
 test('stepping a calendar month keeps whole months', async ({ page }) => {
+  await page.clock.setFixedTime(PINNED_NOW);
   await gotoOverview(page, PROJECT, '?range=lastMonth');
   await dismissFeedbackPrompt(page);
 

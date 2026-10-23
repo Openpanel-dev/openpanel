@@ -114,13 +114,18 @@ export function TimeWindowPicker({
     [onChange, onStartDateChange, onEndDateChange, onIntervalChange]
   );
 
+  // Radix only reports its own dismissals, so every close path drops the draft here.
+  const close = useCallback(() => {
+    setDraft(undefined);
+    setOpen(false);
+  }, []);
+
   const selectPreset = useCallback(
     (range: IChartRange) => {
       onChange(range);
-      setDraft(undefined);
-      setOpen(false);
+      close();
     },
-    [onChange]
+    [onChange, close]
   );
 
   const applyDraft = useCallback(() => {
@@ -136,9 +141,8 @@ export function TimeWindowPicker({
       },
       null
     );
-    setDraft(undefined);
-    setOpen(false);
-  }, [draft, applyBounds]);
+    close();
+  }, [draft, applyBounds, close]);
 
   const applyCustomDays = useCallback(
     (raw: string) => {
@@ -157,9 +161,9 @@ export function TimeWindowPicker({
         null
       );
       setCustomDaysKey((key) => key + 1);
-      setOpen(false);
+      close();
     },
-    [applyBounds]
+    [applyBounds, close]
   );
 
   const step = useCallback(
@@ -202,12 +206,7 @@ export function TimeWindowPicker({
   return (
     <div className="flex items-center gap-1">
       <Popover
-        onOpenChange={(nextOpen) => {
-          setOpen(nextOpen);
-          if (!nextOpen) {
-            setDraft(undefined);
-          }
-        }}
+        onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : close())}
         open={open}
       >
         <PopoverTrigger asChild>
@@ -306,7 +305,7 @@ export function TimeWindowPicker({
                 </span>
                 <div className="flex gap-2">
                   <Button
-                    onClick={() => setOpen(false)}
+                    onClick={close}
                     size="sm"
                     type="button"
                     variant="outline"
