@@ -260,6 +260,10 @@ export async function incomingEvent(
   return await ingestIncomingEvent(jobPayload, deps, logger);
 }
 
+/**
+ * Project an envelope into business and session rows. Keep derived row ids
+ * distinct from the triggering event so redelivery deduplication preserves both.
+ */
 async function ingestIncomingEvent(
   jobPayload: IncomingEventPayload,
   deps: IncomingEventDeps,

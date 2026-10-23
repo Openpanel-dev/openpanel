@@ -390,6 +390,11 @@ export class EventBuffer extends BaseBuffer {
     }
   }
 
+  /**
+   * Atomically enqueue consumer rows with expiring delivery markers. A row
+   * already marked is durable too, so its redelivery can pass the flush gate.
+   * Other producers keep the unconditional RPUSH path.
+   */
   private async enqueueEvents(events: IClickhouseEvent[]): Promise<void> {
     const redis = getRedisCache();
     const hasRedeliverableEvents = events.some(

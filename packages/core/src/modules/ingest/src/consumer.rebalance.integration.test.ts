@@ -17,6 +17,7 @@ import { EventBuffer } from '../../../buffers/event-buffer';
 const INPUT_COUNT = 2000;
 const DEADLINE_MS = 60_000;
 
+/** Bound startup and lag polling so a stalled test service fails the case. */
 async function waitUntil(check: () => Promise<boolean>): Promise<void> {
   const deadline = Date.now() + DEADLINE_MS;
   while (Date.now() < deadline) {
