@@ -4,7 +4,7 @@ import CopyInput from '@/components/forms/copy-input';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
-import { op } from '@/utils/op';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 const SERVER_NAME = 'openpanel';
 
@@ -116,7 +116,11 @@ export function McpConnect({
     : null;
 
   const track = (host: Host) =>
-    op.track('onboarding_mcp_connect_clicked', { projectId, host: host.key });
+    trackFunnel('onboarding_mcp_connect_clicked', {
+      projectId,
+      host: host.key,
+      kind: host.kind,
+    });
 
   const renderAction = (host: Host, current: Connection) => {
     if (host.kind === 'install') {
@@ -193,7 +197,16 @@ export function McpConnect({
               </li>
             ))}
           </ul>
-          <CopyInput label="MCP token" value={connection.token} />
+          <CopyInput
+            label="MCP token"
+            onCopy={() =>
+              trackFunnel('onboarding_credentials_copied', {
+                projectId,
+                what: 'mcpToken',
+              })
+            }
+            value={connection.token}
+          />
         </>
       ) : (
         <p className="text-muted-foreground text-sm">
@@ -203,6 +216,12 @@ export function McpConnect({
       )}
       <Link
         className="text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
+        onClick={() =>
+          trackFunnel('onboarding_mcp_settings_clicked', {
+            projectId,
+            hadToken: Boolean(mcpToken),
+          })
+        }
         params={{ organizationId, projectId }}
         to="/$organizationId/$projectId/settings/mcp"
       >

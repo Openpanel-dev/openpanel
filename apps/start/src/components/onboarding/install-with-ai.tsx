@@ -10,7 +10,7 @@ import type { SnippetContext } from './install-snippets';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
-import { op } from '@/utils/op';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 const PROMPT_PREVIEW_LINES = 14;
 
@@ -42,9 +42,10 @@ export function InstallWithAi({
       : lines.slice(0, PROMPT_PREVIEW_LINES).join('\n');
 
   const copyPrompt = () => {
-    op.track('onboarding_ai_prompt_copied', {
+    trackFunnel('onboarding_ai_prompt_copied', {
       projectId,
       framework: framework?.key ?? 'auto',
+      promptLength: prompt.length,
     });
     clipboard(prompt, 'Paste it into your coding assistant');
   };
@@ -55,7 +56,20 @@ export function InstallWithAi({
         <div className="font-medium">Which framework? (optional)</div>
         <FrameworkPicker
           allowNone
-          onChange={setFramework}
+          onChange={(next) => {
+            trackFunnel('onboarding_ai_framework_selected', {
+              projectId,
+              framework: next?.key ?? 'auto',
+            });
+            setFramework(next);
+          }}
+          onToggleAll={(open) =>
+            trackFunnel('onboarding_frameworks_show_all_toggled', {
+              projectId,
+              method: 'ai',
+              open,
+            })
+          }
           projectTypes={projectTypes}
           value={framework}
         />
@@ -75,7 +89,13 @@ export function InstallWithAi({
           {isLong && (
             <button
               className="absolute right-3 bottom-3 rounded-md bg-background px-2 py-1 text-muted-foreground text-xs shadow-sm hover:text-foreground"
-              onClick={() => setExpanded((current) => !current)}
+              onClick={() => {
+                trackFunnel('onboarding_ai_prompt_expanded', {
+                  projectId,
+                  open: !expanded,
+                });
+                setExpanded((current) => !current);
+              }}
               type="button"
             >
               {expanded ? 'Show less' : 'Show full prompt'}
@@ -90,7 +110,7 @@ export function InstallWithAi({
             className={buttonVariants({ variant: 'outline', size: 'xl' })}
             href={`${CURSOR_PROMPT_DEEPLINK}${encodeURIComponent(prompt)}`}
             onClick={() =>
-              op.track('onboarding_ai_prompt_opened_in_cursor', {
+              trackFunnel('onboarding_ai_prompt_opened_in_cursor', {
                 projectId,
                 framework: framework?.key ?? 'auto',
               })

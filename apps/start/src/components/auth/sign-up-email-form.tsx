@@ -1,13 +1,18 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignUpEmail } from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import {
+  type SubmitErrorHandler,
+  type SubmitHandler,
+  useForm,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { PasswordInput } from './password-input';
 import { useTRPC } from '@/integrations/trpc/react';
+import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 const validator = zSignUpEmail;
 type IForm = z.infer<typeof validator>;
@@ -21,10 +26,18 @@ export function SignUpEmailForm({
   const mutation = useMutation(
     trpc.auth.signUpEmail.mutationOptions({
       async onSuccess() {
+        trackFunnel('auth_signup_succeeded', {
+          provider: 'email',
+          hasInvite: Boolean(inviteId),
+        });
         toast.success('Successfully signed up');
         window.location.href = '/';
       },
       onError(error) {
+        trackFunnel('auth_signup_failed', {
+          provider: 'email',
+          reason: failureReason(error),
+        });
         toast.error(error.message);
       },
     })
@@ -33,16 +46,23 @@ export function SignUpEmailForm({
     resolver: zodResolver(validator),
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
+    trackFunnel('auth_provider_clicked', { page: 'signup', provider: 'email' });
     mutation.mutate({
       ...values,
       inviteId,
+    });
+  };
+  const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
+    trackFunnel('auth_form_invalid', {
+      page: 'signup',
+      fields: Object.keys(errors),
     });
   };
   return (
     <form
       className="col gap-5"
       method="post"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <InputWithLabel

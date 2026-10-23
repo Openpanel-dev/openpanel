@@ -1,6 +1,7 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
 import { Or } from '@/components/auth/or';
@@ -10,6 +11,7 @@ import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useTRPC } from '@/integrations/trpc/react';
+import { trackFunnel } from '@/utils/funnel-tracking';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/login')({
@@ -43,6 +45,17 @@ function LoginPage() {
     'last-auth-provider',
     null
   );
+  useEffect(() => {
+    trackFunnel('auth_page_viewed', {
+      page: 'login',
+      hasInvite: Boolean(inviteId),
+      hadError: Boolean(error),
+      google: providers.google,
+      github: providers.github,
+      lastProvider,
+    });
+  }, [inviteId, error, providers.google, providers.github, lastProvider]);
+
   const signUpHref = inviteId
     ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
     : '/onboarding';

@@ -1,6 +1,7 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { AlertCircleIcon, MailOpenIcon } from 'lucide-react';
+import { useEffect } from 'react';
 import { z } from 'zod';
 import { AuthHeading } from '@/components/auth/auth-shell';
 import { Or } from '@/components/auth/or';
@@ -9,6 +10,7 @@ import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useTRPC } from '@/integrations/trpc/react';
+import { trackFunnel } from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -63,6 +65,16 @@ function Component() {
       }
     )
   );
+  useEffect(() => {
+    trackFunnel('auth_page_viewed', {
+      page: 'signup',
+      hasInvite: Boolean(inviteId),
+      inviteExpired: invite?.isExpired ?? null,
+      google: providers.google,
+      github: providers.github,
+    });
+  }, [inviteId, invite?.isExpired, providers.google, providers.github]);
+
   const signInHref = inviteId
     ? `/login?inviteId=${encodeURIComponent(inviteId)}`
     : '/login';

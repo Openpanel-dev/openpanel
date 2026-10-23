@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { useTRPC } from '@/integrations/trpc/react';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 export type OAuthProvider = 'google' | 'github';
 
@@ -79,7 +80,14 @@ export function SignInOAuth({
       <Button
         className="w-full gap-3 border-def-300 bg-background hover:bg-def-100 dark:hover:bg-def-200"
         loading={mutation.isPending}
-        onClick={() => mutation.mutate({ provider, inviteId })}
+        onClick={() => {
+          trackFunnel('auth_provider_clicked', {
+            page: type === 'sign-in' ? 'login' : 'signup',
+            provider,
+            isLastUsed: Boolean(isLastUsed),
+          });
+          mutation.mutate({ provider, inviteId });
+        }}
         size="xl"
         variant="outline"
       >

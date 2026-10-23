@@ -1,7 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignInEmail } from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import {
+  type SubmitErrorHandler,
+  type SubmitHandler,
+  useForm,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
@@ -10,6 +14,7 @@ import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
@@ -25,6 +30,10 @@ export function SignInEmailForm({
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
       async onSuccess(data) {
+        trackFunnel('auth_signin_succeeded', {
+          provider: 'email',
+          totpRequired: data.type === 'totp_required',
+        });
         if (data.type === 'totp_required') {
           window.location.href = '/verify';
           return;
@@ -33,6 +42,10 @@ export function SignInEmailForm({
         window.location.href = '/';
       },
       onError(error) {
+        trackFunnel('auth_signin_failed', {
+          provider: 'email',
+          reason: failureReason(error),
+        });
         toast.error(error.message);
       },
     })
@@ -45,9 +58,20 @@ export function SignInEmailForm({
     },
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
+    trackFunnel('auth_provider_clicked', {
+      page: 'login',
+      provider: 'email',
+      isLastUsed: Boolean(isLastUsed),
+    });
     mutation.mutate({
       ...values,
       inviteId,
+    });
+  };
+  const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
+    trackFunnel('auth_form_invalid', {
+      page: 'login',
+      fields: Object.keys(errors),
     });
   };
 
@@ -55,7 +79,7 @@ export function SignInEmailForm({
     <form
       className="col gap-5"
       method="post"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
     >
       <InputWithLabel
         {...form.register('email')}
@@ -72,11 +96,12 @@ export function SignInEmailForm({
         action={
           <button
             className="text-muted-foreground text-sm transition-colors hover:text-foreground hover:underline"
-            onClick={() =>
+            onClick={() => {
+              trackFunnel('auth_forgot_password_clicked');
               pushModal('RequestPasswordReset', {
                 email: form.getValues('email'),
-              })
-            }
+              });
+            }}
             type="button"
           >
             Forgot password?

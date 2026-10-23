@@ -13,6 +13,7 @@ import {
 import { useEffect, useId, useState } from 'react';
 import {
   Controller,
+  type SubmitErrorHandler,
   type SubmitHandler,
   useForm,
   useWatch,
@@ -33,7 +34,11 @@ import { Label } from '@/components/ui/label';
 import { useClientSecret, useMcpToken } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { op } from '@/utils/op';
+import {
+  failureReason,
+  trackFunnel,
+  useSecondsOnStep,
+} from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
 
 const validateSearch = z.object({
@@ -119,11 +124,28 @@ function Component() {
   const [, setSecret] = useClientSecret();
   const [, setMcpToken] = useMcpToken();
   const navigate = useNavigate();
+  const secondsOnStep = useSecondsOnStep();
   const mutation = useMutation(
     trpc.onboarding.project.mutationOptions({
-      onError: handleError,
-      onSuccess(res) {
-        op.track('onboarding_project_created', { projectId: res.projectId });
+      onError(error) {
+        trackFunnel('onboarding_project_create_failed', {
+          reason: failureReason(error),
+        });
+        handleError(error);
+      },
+      onSuccess(res, input) {
+        trackFunnel('onboarding_project_created', {
+          projectId: res.projectId,
+          types: [
+            input.website && 'website',
+            input.app && 'app',
+            input.backend && 'backend',
+          ].filter((type): type is string => Boolean(type)),
+          hasDomain: Boolean(input.domain),
+          extraDomains: Math.max(0, (input.cors ?? []).length - 1),
+          createdWorkspace: Boolean(input.organization),
+          secondsOnStep: secondsOnStep(),
+        });
         queryClient.invalidateQueries(trpc.organization.list.queryFilter());
         setSecret(res.secret);
         setMcpToken(res.mcpToken);
@@ -169,6 +191,10 @@ function Component() {
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showCorsInput, setShowCorsInput] = useState(false);
 
+  useEffect(() => {
+    trackFunnel('onboarding_project_viewed', { hasWorkspaces });
+  }, [hasWorkspaces]);
+
   // The workspace is the billing unit, not something a new user should have
   // to name before seeing a single chart: it follows the project name until
   // they edit it themselves.
@@ -207,6 +233,11 @@ function Component() {
     }
     mutation.mutate({ ...values, organizationId });
   };
+  const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
+    trackFunnel('onboarding_project_invalid', {
+      fields: Object.keys(errors),
+    });
+  };
 
   const typeError =
     form.formState.errors.website?.message ??
@@ -214,7 +245,7 @@ function Component() {
     form.formState.errors.backend?.message;
 
   return (
-    <form className="col" onSubmit={form.handleSubmit(onSubmit)}>
+    <form className="col" onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
       <OnboardingHeading
         className="mb-10"
         description="A project is one website, app or service you want to track. You can add more later."
@@ -238,7 +269,12 @@ function Component() {
                     : 'text-muted-foreground hover:text-foreground'
                 )}
                 key={option.label}
-                onClick={() => setUseExistingWorkspace(option.existing)}
+                onClick={() => {
+                  trackFunnel('onboarding_workspace_mode_changed', {
+                    mode: option.existing ? 'existing' : 'new',
+                  });
+                  setUseExistingWorkspace(option.existing);
+                }}
                 type="button"
               >
                 {option.label}
@@ -307,9 +343,13 @@ function Component() {
                     : 'bg-def-200 hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60'
                 )}
                 key={key}
-                onClick={() =>
-                  form.setValue(key, !active, { shouldValidate: true })
-                }
+                onClick={() => {
+                  trackFunnel('onboarding_project_type_toggled', {
+                    type: key,
+                    selected: !active,
+                  });
+                  form.setValue(key, !active, { shouldValidate: true });
+                }}
                 type="button"
               >
                 <Icon size={22} strokeWidth={1.75} />
@@ -366,7 +406,12 @@ function Component() {
           {domain && (
             <button
               className="self-start text-muted-foreground text-sm hover:text-foreground hover:underline"
-              onClick={() => setShowCorsInput((open) => !open)}
+              onClick={() => {
+                trackFunnel('onboarding_extra_domains_toggled', {
+                  open: !showCorsInput,
+                });
+                setShowCorsInput((open) => !open);
+              }}
               type="button"
             >
               Also track other domains (staging, localhost…)
@@ -412,7 +457,12 @@ function Component() {
             </div>
             <button
               className="shrink-0 text-sm underline-offset-4 hover:underline"
-              onClick={() => setShowWorkspaceSettings((open) => !open)}
+              onClick={() => {
+                trackFunnel('onboarding_workspace_settings_toggled', {
+                  open: !showWorkspaceSettings,
+                });
+                setShowWorkspaceSettings((open) => !open);
+              }}
               type="button"
             >
               {showWorkspaceSettings ? 'Done' : 'Change'}

@@ -28,7 +28,7 @@ import {
   useMcpToken,
 } from '@/hooks/use-client-secret';
 import { useTRPC } from '@/integrations/trpc/react';
-import { op } from '@/utils/op';
+import { trackFunnel, useSecondsOnStep } from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -64,11 +64,27 @@ function Component() {
   );
   const [secret] = useClientSecret();
   const [mcpToken] = useMcpToken();
-  const { events, isVerified } = useFirstEvents(projectId);
+  const secondsOnStep = useSecondsOnStep();
+  const { events, isVerified } = useFirstEvents(projectId, secondsOnStep);
+  const hasSecret = isRealClientSecret(secret);
 
   useEffect(() => {
-    op.track('onboarding_connect_viewed', { projectId });
+    trackFunnel('onboarding_connect_viewed', {
+      projectId,
+      types: project?.types ?? [],
+      hasSecret,
+      hasMcpToken: Boolean(mcpToken),
+    });
+    // Once per visit: the keys do not change while the page is open.
   }, [projectId]);
+
+  const openDashboard = (from: 'status' | 'footer') =>
+    trackFunnel('onboarding_dashboard_opened', {
+      projectId,
+      verified: isVerified,
+      from,
+      secondsOnStep: secondsOnStep(),
+    });
 
   if (!(project && client)) {
     return (
@@ -84,7 +100,7 @@ function Component() {
   // server stores hashes). Snippets fall back to a placeholder without them.
   const context: SnippetContext = {
     clientId: client.id,
-    clientSecret: isRealClientSecret(secret) ? secret : null,
+    clientSecret: hasSecret ? secret : null,
     apiUrl: isSelfHosted ? apiUrl : null,
   };
   const dashboard = {
@@ -92,13 +108,14 @@ function Component() {
     params: { organizationId: project.organizationId, projectId: project.id },
   } as const;
 
-  // One DOM copy of the sidebar: it sits under the heading on small screens
-  // and becomes the sticky right column on large ones.
+  // One DOM copy of the sidebar: under the heading on small screens, the
+  // right column on large ones. The second grid row is 1fr so the sidebar's
+  // extra height lands below the left stack instead of between its blocks.
   const sidebarPlacement =
-    'col gap-5 lg:col-start-2 lg:row-span-4 lg:row-start-1';
+    'col gap-5 lg:col-start-2 lg:row-span-2 lg:row-start-1';
 
   return (
-    <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-x-12">
+    <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-12">
       <OnboardingHeading
         className="lg:col-start-1"
         description={
@@ -114,7 +131,12 @@ function Component() {
       <aside className={sidebarPlacement}>
         <FirstEventStatus events={events}>
           {isVerified && (
-            <LinkButton className="w-full" size="lg" {...dashboard}>
+            <LinkButton
+              className="w-full"
+              onClick={() => openDashboard('status')}
+              size="lg"
+              {...dashboard}
+            >
               Open dashboard
             </LinkButton>
           )}
@@ -123,6 +145,7 @@ function Component() {
           clientId={client.id}
           clientSecret={context.clientSecret}
           mcpToken={mcpToken}
+          projectId={project.id}
         />
         <McpConnect
           apiUrl={apiUrl}
@@ -133,46 +156,59 @@ function Component() {
         {!isVerified && (
           <Link
             className="text-center text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
-            onClick={() => op.track('onboarding_skipped', { projectId })}
+            onClick={() =>
+              trackFunnel('onboarding_skipped', {
+                projectId,
+                secondsOnStep: secondsOnStep(),
+              })
+            }
             {...dashboard}
           >
             Skip for now, I will install later
           </Link>
         )}
       </aside>
-      <div className="lg:col-start-1">
+      <div className="col gap-10 lg:col-start-1">
         <InstallGuide
           context={context}
           projectId={project.id}
           projectName={project.name}
           projectTypes={project.types}
         />
-      </div>
-      <Accordion
-        className="rounded-xl border px-5 lg:col-start-1"
-        collapsible
-        type="single"
-      >
-        <AccordionItem value="troubleshooting">
-          <AccordionTrigger>Not seeing events?</AccordionTrigger>
-          <AccordionContent>
-            <InstallTroubleshooting context={context} project={project} />
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-      <div className="row items-center justify-between gap-4 border-t pt-8 lg:col-start-1">
-        <span className="text-muted-foreground">
-          {isVerified
-            ? 'You are all set.'
-            : 'The dashboard fills up as soon as events arrive.'}
-        </span>
-        <LinkButton
-          size="xl"
-          variant={isVerified ? 'default' : 'outline'}
-          {...dashboard}
+        <Accordion
+          className="rounded-xl border px-5"
+          collapsible
+          onValueChange={(value) =>
+            trackFunnel('onboarding_troubleshooting_toggled', {
+              projectId,
+              open: value === 'troubleshooting',
+              verified: isVerified,
+            })
+          }
+          type="single"
         >
-          Open dashboard
-        </LinkButton>
+          <AccordionItem value="troubleshooting">
+            <AccordionTrigger>Not seeing events?</AccordionTrigger>
+            <AccordionContent>
+              <InstallTroubleshooting context={context} project={project} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        <div className="row items-center justify-between gap-4 border-t pt-8">
+          <span className="text-muted-foreground">
+            {isVerified
+              ? 'You are all set.'
+              : 'The dashboard fills up as soon as events arrive.'}
+          </span>
+          <LinkButton
+            onClick={() => openDashboard('footer')}
+            size="xl"
+            variant={isVerified ? 'default' : 'outline'}
+            {...dashboard}
+          >
+            Open dashboard
+          </LinkButton>
+        </div>
       </div>
     </div>
   );

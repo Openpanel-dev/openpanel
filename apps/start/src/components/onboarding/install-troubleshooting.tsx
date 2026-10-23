@@ -7,6 +7,7 @@ import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import Syntax from '@/components/syntax';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 const TEST_EVENT_NAME = 'openpanel_test_event';
 
@@ -71,12 +72,15 @@ export function InstallTroubleshooting({
           </p>
           <WithLabel label="Allowed domains">
             <TagInput
-              onChange={(values) =>
-                updateProject.mutate({
-                  id: project.id,
-                  cors: normalizeOrigins(values),
-                })
-              }
+              onChange={(values) => {
+                const cors = normalizeOrigins(values);
+                trackFunnel('onboarding_allowed_domains_updated', {
+                  projectId: project.id,
+                  count: cors.length,
+                  wildcard: cors.includes('*'),
+                });
+                updateProject.mutate({ id: project.id, cors });
+              }}
               placeholder="Add a domain and press Enter"
               renderTag={(tag) => (tag === '*' ? 'Any domain' : tag)}
               value={project.cors ?? []}
@@ -95,18 +99,38 @@ export function InstallTroubleshooting({
         <Syntax
           code={curlSnippet(context, TEST_EVENT_NAME)}
           language="bash"
+          onCopy={() =>
+            trackFunnel('onboarding_test_curl_copied', {
+              projectId: project.id,
+            })
+          }
           wrapLines
         />
       </li>
       <li className="text-muted-foreground">
         Still stuck? Write to{' '}
-        <a className="underline" href="mailto:hello@openpanel.dev">
+        <a
+          className="underline"
+          href="mailto:hello@openpanel.dev"
+          onClick={() =>
+            trackFunnel('onboarding_support_link_clicked', {
+              projectId: project.id,
+              target: 'email',
+            })
+          }
+        >
           hello@openpanel.dev
         </a>{' '}
         or join the{' '}
         <a
           className="underline"
           href="https://go.openpanel.dev/discord"
+          onClick={() =>
+            trackFunnel('onboarding_support_link_clicked', {
+              projectId: project.id,
+              target: 'discord',
+            })
+          }
           rel="noreferrer"
           target="_blank"
         >

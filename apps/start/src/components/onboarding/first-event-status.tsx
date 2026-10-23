@@ -7,13 +7,13 @@ import useWS from '@/hooks/use-ws';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { timeAgo } from '@/utils/date';
-import { op } from '@/utils/op';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 const FALLBACK_POLL_MS = 10_000;
 const SHOWN_EVENTS = 5;
 
 /** The project's latest events, refreshed live while the user installs the SDK. */
-export function useFirstEvents(projectId: string) {
+export function useFirstEvents(projectId: string, secondsOnStep: () => number) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data } = useQuery(
@@ -32,10 +32,18 @@ export function useFirstEvents(projectId: string) {
   const events = data?.data ?? [];
   const isVerified = events.length > 0;
 
+  const firstEvent = events.at(-1);
   useEffect(() => {
     if (isVerified) {
-      op.track('onboarding_first_event_verified', { projectId });
+      trackFunnel('onboarding_first_event_verified', {
+        projectId,
+        secondsOnStep: secondsOnStep(),
+        eventCount: events.length,
+        firstEventName: firstEvent?.name ?? null,
+        sdk: firstEvent?.sdkName || null,
+      });
     }
+    // Fires once, when the status flips; later refetches must not repeat it.
   }, [isVerified, projectId]);
 
   return { events, isVerified };

@@ -4,6 +4,7 @@ import { LogoSquare } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/utils/cn';
+import { trackFunnel } from '@/utils/funnel-tracking';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps')({
@@ -41,7 +42,12 @@ function OnboardingLayout() {
         <Button
           icon={LogOutIcon}
           loading={logout.isPending}
-          onClick={() => logout.mutate()}
+          onClick={() => {
+            trackFunnel('onboarding_signed_out', {
+              step: isWide ? 'install' : 'project',
+            });
+            logout.mutate();
+          }}
           size="sm"
           variant="ghost"
         >

@@ -3,7 +3,7 @@ import { InstallManual } from './install-manual';
 import type { SnippetContext } from './install-snippets';
 import { InstallWithAi } from './install-with-ai';
 import { cn } from '@/utils/cn';
-import { op } from '@/utils/op';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 type InstallMethod = 'ai' | 'manual';
 type ProjectType = 'website' | 'app' | 'backend';
@@ -40,7 +40,10 @@ export function InstallGuide({
   const [method, setMethod] = useState<InstallMethod>(defaultMethod);
 
   const select = (next: InstallMethod) => {
-    op.track('onboarding_install_method_selected', { projectId, method: next });
+    trackFunnel('onboarding_install_method_selected', {
+      projectId,
+      method: next,
+    });
     setMethod(next);
   };
 

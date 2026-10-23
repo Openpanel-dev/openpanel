@@ -8,7 +8,7 @@ import {
   usesClientSecret,
 } from './install-snippets';
 import Syntax from '@/components/syntax';
-import { op } from '@/utils/op';
+import { trackFunnel } from '@/utils/funnel-tracking';
 
 type ProjectType = 'website' | 'app' | 'backend';
 
@@ -29,7 +29,7 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
     if (!next) {
       return;
     }
-    op.track('onboarding_framework_selected', {
+    trackFunnel('onboarding_framework_selected', {
       projectId,
       framework: next.key,
     });
@@ -40,6 +40,13 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
     <div className="col gap-6">
       <FrameworkPicker
         onChange={select}
+        onToggleAll={(open) =>
+          trackFunnel('onboarding_frameworks_show_all_toggled', {
+            projectId,
+            method: 'manual',
+            open,
+          })
+        }
         projectTypes={projectTypes}
         value={framework}
       />
@@ -57,6 +64,13 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
               className="border"
               code={snippet.code}
               language={snippet.language}
+              onCopy={() =>
+                trackFunnel('onboarding_snippet_copied', {
+                  projectId,
+                  framework: framework.key,
+                  step: index + 1,
+                })
+              }
               wrapLines={snippet.language === 'markdown'}
             />
           </div>
@@ -77,6 +91,12 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
         <a
           className="row items-center gap-1.5 self-start text-sm underline hover:text-foreground"
           href={framework.href}
+          onClick={() =>
+            trackFunnel('onboarding_framework_guide_clicked', {
+              projectId,
+              framework: framework.key,
+            })
+          }
           rel="noreferrer"
           target="_blank"
         >

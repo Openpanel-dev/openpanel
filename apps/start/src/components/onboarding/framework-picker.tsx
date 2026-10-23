@@ -11,6 +11,7 @@ interface Props {
   onChange: (framework: Framework | null) => void;
   /** Offer a "detect it for me" option, selected when `value` is null. */
   allowNone?: boolean;
+  onToggleAll?: (showAll: boolean) => void;
 }
 
 const GENERIC_FRAMEWORK_KEY = 'rest';
@@ -42,6 +43,7 @@ export function FrameworkPicker({
   value,
   onChange,
   allowNone,
+  onToggleAll,
 }: Props) {
   const { suggested, others } = frameworksFor(projectTypes);
   const [showAll, setShowAll] = useState(
@@ -77,7 +79,10 @@ export function FrameworkPicker({
       {others.length > 0 && (
         <button
           className="self-start text-muted-foreground text-sm hover:text-foreground hover:underline"
-          onClick={() => setShowAll((current) => !current)}
+          onClick={() => {
+            onToggleAll?.(!showAll);
+            setShowAll((current) => !current);
+          }}
           type="button"
         >
           {showAll
