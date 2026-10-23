@@ -14,7 +14,9 @@ const SAMPLE_VALUES_PER_PROPERTY = 12;
 /** Tracking internals the model never needs sample values for. */
 const INTERNAL_PROPERTY_PREFIX = '__';
 
-export function discoveryTools(ctx: ChatToolContext) {
+export function discoveryTools(
+  ctx: Pick<ChatToolContext, 'deps' | 'projectId'>
+) {
   const { deps, projectId } = ctx;
 
   return {

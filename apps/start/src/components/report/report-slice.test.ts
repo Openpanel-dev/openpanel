@@ -1,8 +1,10 @@
 import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { describe, expect, test } from 'vitest';
 import reducer, {
+  applyDraft,
   changeConversionYAxisScale,
   changeFunnelWindow,
+  ready,
   removeEvent,
   setReport,
 } from './reportSlice';
@@ -64,5 +66,32 @@ describe('conversion y-axis scale', () => {
     expect(
       state.options?.type === 'funnel' ? state.options.yAxisScale : 'wrong'
     ).toBeUndefined();
+  });
+});
+
+describe('applyDraft', () => {
+  test('loads the draft as unsaved work with the editor defaults filled in', () => {
+    const state = reducer(
+      reducer(undefined, ready()),
+      applyDraft({
+        projectId: 'project',
+        name: 'Purchases by device',
+        chartType: 'linear',
+        interval: 'day',
+        range: '7d',
+        previous: false,
+        metric: 'sum',
+        series: [event('A')],
+        breakdowns: [{ id: '1', name: 'device' }],
+      })
+    );
+    expect(state.dirty).toBe(true);
+    expect(state.ready).toBe(true);
+    expect(state.name).toBe('Purchases by device');
+    expect(state.range).toBe('7d');
+    expect(state.startDate).toBeNull();
+    expect(state.lineType).toBe('monotone');
+    expect(state.globalFilters).toEqual([]);
+    expect(state.series).toHaveLength(1);
   });
 });

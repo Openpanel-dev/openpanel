@@ -182,6 +182,16 @@ export const zChatRequest = z.object({
 
 export type ChatRequest = z.infer<typeof zChatRequest>;
 
+const MAX_REPORT_PROMPT_LENGTH = 1000;
+
+/** The report editor's prompt box: a description of the chart the user wants. */
+export const zReportDraftRequest = z.object({
+  projectId: z.string().min(1),
+  prompt: z.string().trim().min(1).max(MAX_REPORT_PROMPT_LENGTH),
+});
+
+export type ReportDraftRequest = z.infer<typeof zReportDraftRequest>;
+
 export const zChatMessageMetadata = z.object({
   modelId: z.string().optional(),
   createdAt: z.number().optional(),
@@ -267,7 +277,7 @@ export const CHAT_ROUTES = {
     path: '/reports',
     label: 'Report editor',
     description:
-      'Build a new chart by hand: pick events, breakdowns, chart type.',
+      'Build a new chart: describe it in words, or pick events, breakdowns and chart type by hand.',
   },
   report: {
     path: '/reports/:reportId',

@@ -3,10 +3,12 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { LanguageModel, streamText } from 'ai';
 import type { CoreConfig } from '../../../config';
-import type {
-  ChatModelEntry,
-  ChatProvider,
-  ConfiguredProviders,
+import {
+  CHAT_MODELS,
+  type ChatModelEntry,
+  type ChatProvider,
+  type ConfiguredProviders,
+  getDefaultChatModelId,
 } from '../assistant.constants';
 
 /** Cheap models for titles and the one-shot filter command. */
@@ -75,6 +77,19 @@ export function resolveChatModel(
   entry: ChatModelEntry
 ): LanguageModel {
   return modelFor(config, entry.provider, entry.modelId);
+}
+
+/** The model the chat runs by default; for one-shot work that needs the chat's judgement, like drafting a report. */
+export function resolveDefaultChatModel(config: CoreConfig): {
+  model: LanguageModel;
+  entry: ChatModelEntry;
+} | null {
+  const id = getDefaultChatModelId(configuredProviders(config));
+  const entry = CHAT_MODELS.find((model) => model.id === id);
+  if (!entry) {
+    return null;
+  }
+  return { model: resolveChatModel(config, entry), entry };
 }
 
 /** The cheapest configured model, for titles and the filter command. */

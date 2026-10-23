@@ -137,7 +137,7 @@ export interface ChartToolOutput {
 
 /** Builds the engine config from the model's flattened input, or a structured error the model can fix. */
 export function buildReportConfig(
-  ctx: ChatToolContext,
+  ctx: Pick<ChatToolContext, 'projectId'>,
   input: ChartInput
 ):
   | { config: IReportInput & { name: string } }
