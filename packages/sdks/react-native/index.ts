@@ -5,8 +5,9 @@ import type {
 } from '@openpanel/sdk';
 import { OpenPanel as OpenPanelBase } from '@openpanel/sdk';
 import * as Application from 'expo-application';
-import Constants from 'expo-constants';
+import * as ExpoConstants from 'expo-constants';
 import { AppState, Platform } from 'react-native';
+import { getWebViewUserAgent } from './user-agent';
 
 export * from '@openpanel/sdk';
 
@@ -59,7 +60,7 @@ export class OpenPanel extends OpenPanelBase {
       sdkVersion: process.env.REACT_NATIVE_VERSION!,
     });
 
-    this.api.addHeader('User-Agent', Constants.getWebViewUserAgentAsync());
+    this.api.addHeader('User-Agent', getWebViewUserAgent(ExpoConstants));
     this.storage = options.storage;
 
     if (options.networkInfo) {
@@ -86,14 +87,21 @@ export class OpenPanel extends OpenPanelBase {
     this.loadPersistedQueue();
   }
 
+  /** Refresh app metadata while treating Android install attribution as optional. */
   private async setDefaultProperties() {
+    let referrer: string | undefined;
+    if (Platform.OS === 'android') {
+      try {
+        referrer = await Application.getInstallReferrerAsync();
+      } catch {
+        // Install attribution is optional when the native service is unavailable.
+      }
+    }
+
     this.setGlobalProperties({
       __version: Application.nativeApplicationVersion,
       __buildNumber: Application.nativeBuildVersion,
-      __referrer:
-        Platform.OS === 'android'
-          ? await Application.getInstallReferrerAsync()
-          : undefined,
+      ...(referrer === undefined ? {} : { __referrer: referrer }),
     });
   }
 
