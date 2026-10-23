@@ -1,34 +1,8 @@
-import {
-  BarChart3Icon,
-  type LucideIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-} from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { ChatPreview } from './chat-preview';
 import { cn } from '@/utils/cn';
 
 const ROTATE_EVERY_MS = 7000;
-
-const FEATURES: { Icon: LucideIcon; title: string; description: string }[] = [
-  {
-    Icon: BarChart3Icon,
-    title: 'Web and product analytics in one place',
-    description:
-      'Traffic, sources, funnels, retention and user profiles without stitching tools together.',
-  },
-  {
-    Icon: ShieldCheckIcon,
-    title: 'Your data stays yours',
-    description:
-      'Open source and privacy friendly. Run it on our cloud or on your own servers.',
-  },
-  {
-    Icon: SparklesIcon,
-    title: 'Ask questions, get charts',
-    description:
-      'Chat with your data in the dashboard, or plug your AI assistant in over MCP.',
-  },
-];
 
 const TESTIMONIALS: { quote: string; author: string; site?: string }[] = [
   {
@@ -84,27 +58,18 @@ export function AuthShowcase() {
         aria-hidden="true"
         className="pointer-events-none absolute -top-40 -right-40 size-[32rem] rounded-full bg-highlight/10 blur-3xl"
       />
-      <div className="col relative max-w-lg gap-10">
-        <h2 className="font-semibold text-3xl leading-tight tracking-tight xl:text-4xl">
-          Understand what people do in your product, not just how many showed
-          up.
+      <div className="col relative min-h-0 max-w-lg flex-1 gap-6">
+        <h2 className="font-semibold text-3xl leading-tight tracking-tight">
+          Ask your analytics a question. Get the chart back.
         </h2>
-        <ul className="col gap-6">
-          {FEATURES.map(({ Icon, title, description }) => (
-            <li className="row items-start gap-4" key={title}>
-              <span className="center-center mt-0.5 size-9 shrink-0 rounded-lg bg-background text-foreground shadow-sm">
-                <Icon size={18} strokeWidth={1.75} />
-              </span>
-              <div className="col gap-0.5">
-                <div className="font-medium text-base">{title}</div>
-                <p className="text-muted-foreground text-sm">{description}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <p className="text-base text-muted-foreground">
+          Web and product analytics in one place, open source, and a chat that
+          answers with charts.
+        </p>
+        <ChatPreview className="min-h-0 flex-1" />
       </div>
 
-      <figure className="col relative mt-12 max-w-lg gap-5 rounded-xl bg-background p-6 shadow-sm">
+      <figure className="col relative mt-8 max-w-lg shrink-0 gap-5 rounded-xl bg-background p-6 shadow-sm">
         <blockquote
           className="fade-in animate-in text-base leading-relaxed duration-500 motion-reduce:animate-none"
           key={testimonial.author}
