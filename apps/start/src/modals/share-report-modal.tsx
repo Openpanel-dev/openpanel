@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
@@ -175,7 +175,7 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
           size="large"
           type={password === STORED_PASSWORD_PLACEHOLDER ? 'text' : 'password'}
         />
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
@@ -183,7 +183,7 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
           <Button type="submit">
             {isShared ? 'Update' : 'Make it public'}
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

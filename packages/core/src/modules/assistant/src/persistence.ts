@@ -1,103 +1,120 @@
-import type { ConversationStore } from '@better-agent/core';
-import type { ConversationItem } from '@better-agent/core/providers';
 import type { ServiceDeps } from '../../../services';
-import { chatRunContext } from './run-context';
+import type { AssistantUIMessage } from './message';
 
-// Built from the route's deps and closing over them: `ConversationStore`'s
-// load/save signatures leave no room for a `Ctx`.
+const NULL_CHARACTER = '\u0000';
 
-/**
- * Prisma-backed `ConversationStore`: one `ConversationItem` per `ChatMessage`
- * row, the whole item in `parts`.
- *
- * Better Agent hands over the full item list on every save and prior items are
- * immutable, so when the list is not shorter than the stored count only the
- * tail is inserted; otherwise (edit, retry) the rows are rewritten. The cursor
- * is `updatedAt`; a single writer per conversation is assumed, not checked.
- */
-function roleOf(item: ConversationItem): string {
-  if (item.type === 'message') {
-    return item.role;
+/** Postgres json cannot hold NUL, and tool outputs echo raw event data. */
+export function stripNullCharacters<T>(value: T): T {
+  if (typeof value === 'string') {
+    return value.replaceAll(NULL_CHARACTER, '') as T;
   }
-  return item.type;
+  if (Array.isArray(value)) {
+    return value.map(stripNullCharacters) as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    // fromEntries defines own properties, so a "__proto__" key survives.
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        stripNullCharacters(key),
+        stripNullCharacters(entry),
+      ])
+    ) as T;
+  }
+  return value;
 }
 
-function itemToRow(conversationId: string, item: ConversationItem) {
-  return {
-    conversationId,
-    role: roleOf(item),
-    // Prisma types the column as `unknown[]` but it stores one `ConversationItem`.
-    // biome-ignore lint/suspicious/noExplicitAny: see comment above
-    parts: item as any,
-  };
+/** Rows are one UI message each; `parts` is the message's parts array. */
+export async function loadMessages(
+  deps: ServiceDeps,
+  conversationId: string
+): Promise<AssistantUIMessage[]> {
+  const rows = await deps.db.chatMessage.findMany({
+    where: { conversationId },
+    orderBy: { createdAt: 'asc' },
+  });
+  return rows.map((row) => ({
+    id: row.id,
+    role: row.role as AssistantUIMessage['role'],
+    parts: row.parts as AssistantUIMessage['parts'],
+    metadata: (row.metadata ?? undefined) as AssistantUIMessage['metadata'],
+  }));
 }
 
-export function createConversationStore(deps: ServiceDeps): ConversationStore {
-  const db = deps.db;
-  return {
-    async load({ conversationId }) {
-      const conv = await db.conversation.findUnique({
-        where: { id: conversationId },
-        include: {
-          messages: { orderBy: { createdAt: 'asc' } },
+export async function saveMessages(
+  deps: ServiceDeps,
+  input: {
+    conversationId: string;
+    projectId: string;
+    organizationId: string;
+    userId: string;
+    messages: AssistantUIMessage[];
+    title?: string | null;
+  }
+): Promise<void> {
+  await deps.db.$transaction(async (tx) => {
+    // Message ids come from the client; one must not overwrite a row in another conversation.
+    const foreign = await tx.chatMessage.findFirst({
+      where: {
+        id: { in: input.messages.map((message) => message.id) },
+        conversationId: { not: input.conversationId },
+      },
+      select: { id: true },
+    });
+    if (foreign) {
+      throw new Error(`Message ${foreign.id} belongs to another conversation`);
+    }
+    const title = stripNullCharacters(input.title ?? undefined);
+    await tx.conversation.upsert({
+      where: { id: input.conversationId },
+      create: {
+        id: input.conversationId,
+        projectId: input.projectId,
+        organizationId: input.organizationId,
+        userId: input.userId,
+        title,
+      },
+      update: {
+        updatedAt: new Date(),
+        ...(title ? { title } : {}),
+      },
+    });
+    // Rows saved together must load in this order; the default timestamp can tie.
+    const baseTime = Date.now();
+    for (const [index, message] of input.messages.entries()) {
+      const parts = stripNullCharacters(message.parts as unknown[]);
+      const metadata = stripNullCharacters(
+        (message.metadata ?? {}) as Record<string, unknown>
+      );
+      await tx.chatMessage.upsert({
+        where: { id: message.id },
+        create: {
+          id: message.id,
+          conversationId: input.conversationId,
+          role: message.role,
+          parts,
+          metadata,
+          createdAt: new Date(baseTime + index),
         },
+        update: { parts, metadata },
       });
-      if (!conv) {
-        return null;
-      }
+    }
+  });
+}
 
-      return {
-        items: conv.messages.map((m) => m.parts as unknown as ConversationItem),
-        cursor: conv.updatedAt.getTime(),
-      };
-    },
-
-    async save({ conversationId, items }) {
-      const owner = chatRunContext.getStore();
-      if (!owner) {
-        throw new Error(
-          'chatRunContext missing during save — assistant.routes.ts must run the handler inside chatRunContext.run()'
-        );
-      }
-
-      await db.$transaction(async (tx) => {
-        await tx.conversation.upsert({
-          where: { id: conversationId },
-          create: {
-            id: conversationId,
-            projectId: owner.projectId,
-            organizationId: owner.organizationId,
-            userId: owner.userId,
-          },
-          update: { updatedAt: new Date() },
-        });
-
-        const existingCount = await tx.chatMessage.count({
-          where: { conversationId },
-        });
-
-        if (items.length >= existingCount) {
-          const newItems = items.slice(existingCount);
-          if (newItems.length > 0) {
-            await tx.chatMessage.createMany({
-              data: newItems.map((item) => itemToRow(conversationId, item)),
-            });
-          }
-        } else {
-          await tx.chatMessage.deleteMany({ where: { conversationId } });
-          if (items.length > 0) {
-            await tx.chatMessage.createMany({
-              data: items.map((item) => itemToRow(conversationId, item)),
-            });
-          }
-        }
-      });
-
-      const updated = await db.conversation.findUnique({
-        where: { id: conversationId },
-        select: { updatedAt: true },
-      });
-      return { cursor: updated?.updatedAt.getTime() ?? Date.now() };
-    },
-  };
+/** Regeneration: drop the message and everything after it. */
+export async function deleteMessagesFrom(
+  deps: ServiceDeps,
+  conversationId: string,
+  messageId: string
+): Promise<void> {
+  const target = await deps.db.chatMessage.findFirst({
+    where: { id: messageId, conversationId },
+    select: { createdAt: true },
+  });
+  if (!target) {
+    return;
+  }
+  await deps.db.chatMessage.deleteMany({
+    where: { conversationId, createdAt: { gte: target.createdAt } },
+  });
 }

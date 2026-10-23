@@ -29,7 +29,9 @@ test('an invalid session cookie is treated as signed out, not as an error', asyn
   ]);
   await page.goto(`/${seed.organizationId}`);
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back' })
+  ).toBeVisible();
 
   const session = await request.get(`${apiUrl()}/trpc/auth.session`, {
     headers: { cookie: 'session=not-a-session' },
@@ -78,7 +80,6 @@ test('a password with a trailing space signs in after signing up with it', async
         lastName: 'Auth',
         email,
         password,
-        confirmPassword: password,
       },
     },
   });

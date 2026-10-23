@@ -4,6 +4,7 @@ import {
   ChevronsUpDown,
   GanttChartIcon,
   LayersIcon,
+  type LucideIcon,
 } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
@@ -55,6 +56,9 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   className?: string;
   searchable?: boolean;
   size?: ButtonProps['size'];
+  variant?: ButtonProps['variant'];
+  /** Icon shown while nothing is selected. */
+  icon?: LucideIcon;
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
@@ -89,6 +93,8 @@ export function ComboboxEvents<
   className,
   searchable,
   size,
+  variant = 'outline',
+  icon: PlaceholderIcon = GanttChartIcon,
   align = 'start',
   portal,
   error,
@@ -167,7 +173,7 @@ export function ComboboxEvents<
         />
       );
     }
-    return <GanttChartIcon className="mr-2 shrink-0" size={16} />;
+    return <PlaceholderIcon className="mr-2 shrink-0" size={16} />;
   };
 
   const renderTriggerContent = () => {
@@ -202,7 +208,7 @@ export function ComboboxEvents<
           disabled={disabled}
           role="combobox"
           size={size}
-          variant="outline"
+          variant={variant}
         >
           <div className="flex min-w-0 items-center">
             {renderTriggerIcon()}
@@ -291,7 +297,7 @@ export function ComboboxEvents<
                     <span className="flex-1 truncate font-medium">
                       {item.name === '*' ? 'Any events' : item.name}
                     </span>
-                    <span className="font-medium font-mono text-muted-foreground">
+                    <span className="font-medium text-muted-foreground tabular-nums">
                       {number.short(item.count)}
                     </span>
                   </CommandItem>

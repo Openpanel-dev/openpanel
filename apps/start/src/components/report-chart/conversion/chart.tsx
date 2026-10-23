@@ -41,7 +41,15 @@ export function Chart({
   series: (ConversionSeries[number] & { index: number })[];
 }) {
   const {
-    report: { interval, projectId, startDate, endDate, range, lineType },
+    report: {
+      interval,
+      projectId,
+      startDate,
+      endDate,
+      range,
+      lineType,
+      options,
+    },
     isEditMode,
     shareId,
   } = useReportChartContext();
@@ -79,6 +87,10 @@ export function Chart({
     [rechartData, averageRate]
   );
   const curve = getCurve(lineType);
+  const funnelOptions = options?.type === 'funnel' ? options : undefined;
+  const isAutoYAxis = funnelOptions?.yAxisScale === 'auto';
+  // Auto lets the chart shell add headroom above the peak; fixed pins 0–100%.
+  const yDomain = isAutoYAxis ? undefined : PERCENT_DOMAIN;
 
   const formatDateLabel = useCallback(
     (date: Date) => formatDateInterval({ interval, date, short: true }),
@@ -134,7 +146,7 @@ export function Chart({
           margin={chrome.margin}
           style={{ touchAction: 'pan-y' }}
           xDataKey="date"
-          yDomain={PERCENT_DOMAIN}
+          yDomain={yDomain}
         >
           <Grid horizontal />
           {chrome.showYAxis && (

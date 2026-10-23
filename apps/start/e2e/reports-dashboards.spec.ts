@@ -128,11 +128,14 @@ test('dashboard page: search, range, duplicate, move, delete, reload', async ({
       .getByRole('button', { name: /Last 7 days|Last 30 days|Today/ })
       .first()
       .click();
-    await page.getByRole('menuitem', { name: 'Last 30 days' }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: 'Last 30 days' })
+      .click();
     await expect(page).toHaveURL(/range=30d/);
     await page.reload();
     await expect(
-      page.getByRole('button', { name: 'Last 30 days' })
+      page.getByRole('button', { name: 'Last 30 days', exact: true })
     ).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('E2E reports opens')).toBeVisible({
       timeout: 30_000,

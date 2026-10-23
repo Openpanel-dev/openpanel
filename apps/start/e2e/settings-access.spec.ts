@@ -95,7 +95,6 @@ test.beforeAll(async ({ seed }) => {
     lastName: 'Outsider',
     email: `e2e-settings-outsider-${Date.now()}@openpanel.local`,
     password: OUTSIDER_PASSWORD,
-    confirmPassword: OUTSIDER_PASSWORD,
   });
   expect(signedUp.status, signedUp.errorMessage).toBe(200);
 });

@@ -11,8 +11,16 @@ setup('sign in as the seeded user', async ({ page }) => {
   await page.goto('/login');
   // The form is server-rendered; a click before hydration submits it natively as a GET.
   await page.waitForLoadState('networkidle');
-  await page.getByLabel('Email').fill(manifest.user.email);
-  await page.getByLabel('Password').fill(manifest.user.password);
+  // Hydration can land after the fields are filled and reset them; fill
+  // until the values stick, then submit.
+  await expect(async () => {
+    await page.getByLabel('Email').fill(manifest.user.email);
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(manifest.user.password);
+    await page.waitForTimeout(500);
+    await expect(page.getByLabel('Email')).toHaveValue(manifest.user.email);
+  }).toPass({ timeout: 15_000 });
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${manifest.organizationId}`), {
     timeout: 15_000,

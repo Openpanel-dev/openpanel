@@ -1,6 +1,11 @@
-import type { IChartMetric } from '@openpanel/core/modules/report/report.constants';
+import type {
+  IChartMetric,
+  IConversionYAxisScale,
+} from '@openpanel/core/modules/report/report.constants';
+import { conversionYAxisScales } from '@openpanel/core/modules/report/report.constants';
 import { useMemo } from 'react';
 import {
+  changeConversionYAxisScale,
   changeCriteria,
   changeFunnelGroup,
   changeFunnelWindow,
@@ -13,6 +18,7 @@ import {
   changeStacked,
   changeUnit,
 } from '../reportSlice';
+import { SidebarSection } from './sidebar-section';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { InputEnter } from '@/components/ui/input-enter';
@@ -21,6 +27,9 @@ import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useDispatch, useSelector } from '@/redux';
+import { objectToZodEnums } from '@/utils/object-to-zod-enums';
+
+const DEFAULT_CONVERSION_Y_AXIS_SCALE: IConversionYAxisScale = 'fixed';
 
 export function ReportSettings() {
   const chartType = useSelector((state) => state.report.chartType);
@@ -35,6 +44,8 @@ export function ReportSettings() {
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
   const funnelWindow = funnelOptions?.funnelWindow;
+  const conversionYAxisScale =
+    funnelOptions?.yAxisScale ?? DEFAULT_CONVERSION_Y_AXIS_SCALE;
 
   const histogramOptions = options?.type === 'histogram' ? options : undefined;
   const stacked = histogramOptions?.stacked ?? false;
@@ -44,7 +55,7 @@ export function ReportSettings() {
   const eventNames = useEventNames({ projectId });
 
   const fields = useMemo(() => {
-    const fields = [];
+    const fields: string[] = [];
 
     if (chartType !== 'retention' && chartType !== 'sankey') {
       fields.push('previous');
@@ -58,6 +69,10 @@ export function ReportSettings() {
     if (chartType === 'funnel' || chartType === 'conversion') {
       fields.push('funnelGroup');
       fields.push('funnelWindow');
+    }
+
+    if (chartType === 'conversion') {
+      fields.push('conversionYAxisScale');
     }
 
     if (chartType === 'sankey') {
@@ -84,9 +99,8 @@ export function ReportSettings() {
   }
 
   return (
-    <div>
-      <h3 className="mb-2 font-medium">Settings</h3>
-      <div className="col gap-4 rounded-lg border bg-card p-4">
+    <SidebarSection title="Settings">
+      <div className="flex flex-col gap-3">
         {fields.includes('previous') && (
           <Label className="mb-0 flex items-center justify-between">
             <span className="whitespace-nowrap">
@@ -117,7 +131,9 @@ export function ReportSettings() {
               ]}
               onChange={(val) => dispatch(changeCriteria(val))}
               placeholder="Select criteria"
+              size="sm"
               value={criteria}
+              variant="input"
             />
           </div>
         )}
@@ -140,7 +156,9 @@ export function ReportSettings() {
                 dispatch(changeUnit(val === 'count' ? undefined : val));
               }}
               placeholder="Unit"
+              size="sm"
               value={unit || 'count'}
+              variant="input"
             />
           </div>
         )}
@@ -160,8 +178,10 @@ export function ReportSettings() {
               ]}
               onChange={(val) => dispatch(changeMetric(val as IChartMetric))}
               placeholder="Aggregation"
-              // Same labels the report table uses for these columns.
+              size="sm"
               value={metric}
+              // Same labels the report table uses for these columns.
+              variant="input"
             />
           </div>
         )}
@@ -188,7 +208,9 @@ export function ReportSettings() {
                 );
               }}
               placeholder="Default: Session"
+              size="sm"
               value={funnelGroup || 'session_id'}
+              variant="input"
             />
           </div>
         )}
@@ -198,6 +220,7 @@ export function ReportSettings() {
               Funnel Window
             </Label>
             <InputEnter
+              className="w-36"
               onChangeValue={(value) => {
                 const parsed = Number.parseFloat(value);
                 if (Number.isNaN(parsed)) {
@@ -207,8 +230,32 @@ export function ReportSettings() {
                 }
               }}
               placeholder="Default: 24h"
+              size="sm"
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
+            />
+          </div>
+        )}
+        {fields.includes('conversionYAxisScale') && (
+          <div className="flex items-center justify-between gap-4">
+            <Label className="mb-0 whitespace-nowrap font-medium">Y axis</Label>
+            <Combobox
+              align="end"
+              items={objectToZodEnums(conversionYAxisScales).map((key) => ({
+                label: conversionYAxisScales[key],
+                value: key,
+              }))}
+              onChange={(val) => {
+                dispatch(
+                  changeConversionYAxisScale(
+                    val === DEFAULT_CONVERSION_Y_AXIS_SCALE ? undefined : val
+                  )
+                );
+              }}
+              placeholder="Default: Fixed"
+              size="sm"
+              value={conversionYAxisScale}
+              variant="input"
             />
           </div>
         )}
@@ -237,7 +284,9 @@ export function ReportSettings() {
                 );
               }}
               placeholder="Select mode"
+              size="sm"
               value={options?.mode || 'after'}
+              variant="input"
             />
           </div>
         )}
@@ -245,6 +294,7 @@ export function ReportSettings() {
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">Steps</Label>
             <InputEnter
+              className="w-36"
               onChangeValue={(value) => {
                 const parsed = Number.parseInt(value, 10);
                 if (Number.isNaN(parsed) || parsed < 2 || parsed > 10) {
@@ -254,6 +304,7 @@ export function ReportSettings() {
                 }
               }}
               placeholder="Default: 5"
+              size="sm"
               type="number"
               value={options?.steps ? String(options.steps) : '5'}
             />
@@ -273,6 +324,7 @@ export function ReportSettings() {
               placeholder="Select events to exclude"
               searchable
               value={options?.exclude || []}
+              variant="input"
             />
           </div>
         )}
@@ -292,6 +344,7 @@ export function ReportSettings() {
               placeholder="Leave empty to include all"
               searchable
               value={options?.include || []}
+              variant="input"
             />
           </div>
         )}
@@ -305,6 +358,6 @@ export function ReportSettings() {
           </Label>
         )}
       </div>
-    </div>
+    </SidebarSection>
   );
 }

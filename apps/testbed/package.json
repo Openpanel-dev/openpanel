@@ -4,9 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/copy-op1.mjs && vite --port 3100",
+    "dev": "node scripts/copy-op1.mjs && vite --port ${TESTBED_PORT:-3100} --strictPort",
     "build": "node scripts/copy-op1.mjs && tsc && vite build",
-    "postinstall": "node scripts/copy-op1.mjs"
+    "e2e": "playwright test",
+    "postinstall": "node scripts/copy-op1.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@openpanel/web": "workspace:*",
@@ -15,6 +17,8 @@
     "react-router-dom": "7.13.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "catalog:",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.2.0",

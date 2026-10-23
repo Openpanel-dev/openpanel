@@ -1,6 +1,13 @@
-import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  useParams,
+} from '@tanstack/react-router';
 import { ConstructionIcon } from 'lucide-react';
-import { ChatDrawerSlot } from '@/components/chat/chat-drawer-slot';
+import { useEffect } from 'react';
+import { useChatLaunch } from '@/components/chat/chat-launch';
+import { EventDrawer } from '@/components/events/event-drawer';
 import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
@@ -19,6 +26,7 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   const { isMaintenance } = useAppContext();
+  useChatShortcut();
 
   if (isMaintenance) {
     return (
@@ -48,7 +56,26 @@ function AppLayout() {
         <div className="block h-16 lg:hidden" />
         <Outlet />
       </div>
-      <ChatDrawerSlot />
+      <EventDrawer />
     </div>
   );
+}
+
+/** ⌘J / Ctrl+J opens the chat for the current project. */
+function useChatShortcut() {
+  const launchChat = useChatLaunch();
+  const { organizationId, projectId } = useParams({ strict: false });
+  useEffect(() => {
+    if (!(organizationId && projectId)) {
+      return;
+    }
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        launchChat();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [launchChat, organizationId, projectId]);
 }

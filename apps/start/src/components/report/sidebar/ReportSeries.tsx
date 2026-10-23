@@ -34,6 +34,7 @@ import {
   ReportSeriesItem,
   type ReportSeriesItemProps,
 } from './ReportSeriesItem';
+import { BuilderList, SidebarSection } from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -203,8 +204,7 @@ export function ReportSeries() {
     chartType !== 'sankey';
 
   return (
-    <div>
-      <h3 className="mb-2 font-medium">Metrics</h3>
+    <SidebarSection title="Metrics">
       <DndContext
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
@@ -216,13 +216,12 @@ export function ReportSeries() {
           }))}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-4">
+          <BuilderList>
             {selectedSeries.map((event, index) => {
               const isFormula = event.type === 'formula';
 
               return (
                 <SortableReportSeriesItem
-                  className="rounded-lg border bg-def-100"
                   event={event}
                   index={index}
                   isSelectManyEvents={isSelectManyEvents}
@@ -307,7 +306,7 @@ export function ReportSeries() {
                   ) : (
                     <>
                       <ComboboxEvents
-                        className="flex-1"
+                        className="min-w-0 flex-1"
                         customEvents={customEvents}
                         items={eventNames}
                         multiple={isSelectManyEvents as false}
@@ -368,9 +367,11 @@ export function ReportSeries() {
                                 }
                               ).name) as any
                         }
+                        variant="input"
                       />
                       {showDisplayNameInput && (
                         <Input
+                          className="w-36 shrink-0"
                           defaultValue={
                             (event as IChartEventItem & { type: 'event' })
                               .displayName
@@ -397,11 +398,12 @@ export function ReportSeries() {
               );
             })}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-1 p-2">
               <ComboboxEvents
-                className="flex-1"
+                className="text-muted-foreground hover:text-foreground"
                 customEvents={customEvents}
                 disabled={isAddEventDisabled || isSankeyEventLimitReached}
+                icon={PlusIcon}
                 items={eventNames}
                 onChange={(value) => {
                   if (isSelectManyEvents) {
@@ -443,11 +445,13 @@ export function ReportSeries() {
                 }}
                 placeholder="Select event"
                 searchable
+                size="sm"
                 value={''}
+                variant="ghost"
               />
               {showFormula && (
                 <Button
-                  className="flex-1 justify-start px-4 text-left"
+                  className="text-muted-foreground hover:text-foreground"
                   icon={PiIcon}
                   onClick={() => {
                     dispatch(
@@ -458,17 +462,17 @@ export function ReportSeries() {
                       })
                     );
                   }}
+                  size="sm"
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                 >
                   Add Formula
-                  <PlusIcon className="ml-auto size-4 text-muted-foreground" />
                 </Button>
               )}
             </div>
-          </div>
+          </BuilderList>
         </SortableContext>
       </DndContext>
-    </div>
+    </SidebarSection>
   );
 }

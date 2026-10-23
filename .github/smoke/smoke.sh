@@ -101,6 +101,28 @@ assert_migrations_ran() {
   echo "  op-api migrations applied"
 }
 
+# The api applies ClickHouse code migrations after it starts listening, so a
+# green readiness probe says nothing about them: wait until every migration
+# file in the image is recorded as finished.
+assert_code_migrations_ran() {
+  local expected recorded missing
+  expected=$(docker compose exec -T op-api sh -c \
+    'ls /app/packages/db/src/code-migrations | grep -E "^[0-9]+-.*\.ts$" | grep -v "\.test\.ts$"' | sort)
+  for _ in $(seq 1 60); do
+    recorded=$(docker compose exec -T op-db psql -U postgres -tAc \
+      'SELECT name FROM __code_migrations' 2>/dev/null | sort || true)
+    missing=$(comm -23 <(echo "$expected") <(echo "$recorded"))
+    if [ -z "$missing" ]; then
+      echo "  code migrations applied ($(echo "$expected" | wc -l | tr -d ' '))"
+      return
+    fi
+    sleep 2
+  done
+  echo "--- not applied ---"
+  echo "$missing"
+  fail "the api did not apply every code migration"
+}
+
 # An SSR failure that gets swallowed into a 200 would still show up here.
 assert_no_server_errors() {
   local svc="$1" logs
@@ -125,6 +147,7 @@ wait_for "dashboard" "$DASHBOARD/api/healthcheck"
 
 echo "==> database migrations"
 assert_migrations_ran
+assert_code_migrations_ran
 
 echo "==> SSR rendering (the check that would have caught main-8e60)"
 assert_ssr_route "/login"

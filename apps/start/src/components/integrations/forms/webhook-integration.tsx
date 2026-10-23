@@ -213,6 +213,7 @@ export function WebhookIntegrationForm({
             label="Payload Format"
           >
             <Combobox
+              variant="input"
               {...field}
               className="w-full"
               items={[

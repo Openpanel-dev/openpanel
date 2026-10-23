@@ -6,6 +6,7 @@ import type {
   IChartMetric,
   IChartRange,
   IChartType,
+  IConversionYAxisScale,
   IInterval,
   IReport,
   IReportOptions,
@@ -352,6 +353,22 @@ export const reportSlice = createSlice({
         state.options.funnelWindow = action.payload;
       }
     },
+    changeConversionYAxisScale(
+      state,
+      action: PayloadAction<IConversionYAxisScale | undefined>
+    ) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: undefined,
+          funnelWindow: undefined,
+          yAxisScale: action.payload,
+        };
+      } else {
+        state.options.yAxisScale = action.payload;
+      }
+    },
     changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
       state.dirty = true;
       state.options = action.payload || undefined;
@@ -470,6 +487,7 @@ export const {
   changeMetric,
   changeFunnelGroup,
   changeFunnelWindow,
+  changeConversionYAxisScale,
   changeOptions,
   changeSankeyMode,
   changeSankeySteps,

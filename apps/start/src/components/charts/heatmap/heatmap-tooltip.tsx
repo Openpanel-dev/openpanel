@@ -78,7 +78,7 @@ export const HeatmapTooltip = memo(function HeatmapTooltip({
           {formatHeatmapTooltipWeekday(date)}
         </div>
       </TooltipHeader>
-      <div className="px-3.5 py-3 text-left text-chart-tooltip-foreground text-sm">
+      <div className="px-3 py-2.5 text-left text-chart-tooltip-foreground text-sm">
         {formatLabel(count, date)}
       </div>
     </TooltipBox>

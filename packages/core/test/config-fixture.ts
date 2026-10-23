@@ -33,6 +33,7 @@ export function testCoreConfig(
       github: { clientId: '', clientSecret: '', redirectUri: '' },
       google: { clientId: '', clientSecret: '', redirectUri: '' },
       googleGsc: { clientId: '', clientSecret: '', redirectUri: '' },
+      devLogin: undefined,
     },
     cookies: {
       secret: 'test-cookie-secret',

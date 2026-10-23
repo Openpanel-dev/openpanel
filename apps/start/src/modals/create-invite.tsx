@@ -109,7 +109,7 @@ export default function CreateInvite() {
             </div>
           </SheetHeader>
           <form
-            className="flex flex-col gap-8"
+            className="flex flex-1 flex-col gap-8"
             onSubmit={handleSubmit((values) => mutation.mutate(values))}
           >
             <InputWithLabel

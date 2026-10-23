@@ -316,13 +316,14 @@ export interface ConfiguredProviders {
   google: boolean;
   github: boolean;
   gsc: boolean;
+  devLogin: boolean;
 }
 
 /** Report availability only; OAuth credentials never leave the server. */
 export function getConfiguredProviders(
   config: CoreConfig
 ): ConfiguredProviders {
-  const { google, github, googleGsc } = config.auth;
+  const { google, github, googleGsc, devLogin } = config.auth;
   return {
     google: Boolean(
       google.clientId && google.clientSecret && google.redirectUri
@@ -333,7 +334,37 @@ export function getConfiguredProviders(
     gsc: Boolean(
       googleGsc.clientId && googleGsc.clientSecret && googleGsc.redirectUri
     ),
+    devLogin: devLogin !== undefined,
   };
+}
+
+/**
+ * The configured `DEV_LOGIN` credentials go through the ordinary email
+ * sign-in, so the account must exist and the password must match; the
+ * credentials themselves never leave the API.
+ */
+export function signInWithDevLogin(
+  deps: ServiceDeps,
+  input: SignInDevInput,
+  setCookie: ISetCookie,
+  logger: Pick<Logger, 'error'>
+): Promise<SignInEmailResult> {
+  const devLogin = deps.config.auth.devLogin;
+  if (!devLogin) {
+    throw new TRPCBadRequestError(
+      'Dev login is not configured on this deployment'
+    );
+  }
+  return signInWithEmail(
+    deps,
+    { ...devLogin, inviteId: input.inviteId },
+    setCookie,
+    logger
+  );
+}
+
+export interface SignInDevInput {
+  inviteId?: string | null;
 }
 
 /**

@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 
 const validator = z.object({
   name: z.string().min(1),
@@ -30,14 +30,14 @@ export default function EditReport({ form, onSubmit }: EditReportProps) {
       <ModalHeader title="Edit report" />
       <form onSubmit={handleSubmit(onSubmit)}>
         <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
             Update
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

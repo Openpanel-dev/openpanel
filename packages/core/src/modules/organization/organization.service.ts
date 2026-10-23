@@ -54,10 +54,6 @@ export type IServiceMember = Omit<
 // Session bookkeeping rows are worker-generated (the reaper can emit
 // session_end long after tracking stopped), so they are not billable activity.
 const NON_BILLABLE_EVENT_NAMES = ['session_start', 'session_end'];
-/** A module function's parameters with its leading `ServiceDeps` dropped. */
-type Tail<T extends unknown[]> = T extends [unknown, ...infer Rest]
-  ? Rest
-  : never;
 
 const DELETE_GRACE_PERIOD_MS = 24 * 60 * 60 * 1000;
 const INVITE_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000;
@@ -456,45 +452,129 @@ export async function getOrganizationEventsCountSince(
   return res[0]?.count ?? 0;
 }
 
-export async function getOrganizationBillingEventsCountSerie(
-  deps: ServiceDeps,
-  organization: IServiceOrganization & { projects: { id: string }[] },
-  {
-    startDate,
-    endDate,
-  }: {
-    startDate: Date;
-    endDate: Date;
-  }
-): Promise<{ count: number; day: string }[]> {
-  // `day` is the SELECT alias, referenced by both the WHERE clause and the
-  // WITH FILL below.
-  const from = formatClickhouseDate(startDate, true);
-  const to = formatClickhouseDate(endDate, true);
-  const statement = sql`
-    SELECT COUNT(*) AS count, toDate(toStartOfDay(created_at)) AS day
-    FROM ${sql.id(TABLE_NAMES.events)} e
-    WHERE project_id IN ${sql.array(
-      'String',
-      organization.projects.map((project) => project.id)
-    )}
-      AND day BETWEEN ${sql.string(from)} AND ${sql.string(to)}
-      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
-    GROUP BY day
-    ORDER BY day WITH FILL FROM toDate(${sql.string(from)}) TO toDate(${sql.string(to)}) STEP INTERVAL 1 DAY
-  `;
-
-  return chQuery<{ count: number; day: string }>(deps, statement);
+export interface IOrganizationBillingUsageInput {
+  projectIds: string[];
+  /** Inclusive UTC day, `YYYY-MM-DD`. */
+  from: string;
+  /** Inclusive UTC day, `YYYY-MM-DD`. */
+  to: string;
+  /** Exact lower bound within `from`, `YYYY-MM-DD HH:mm:ss` UTC, when the window starts mid-day. */
+  since?: string;
 }
 
-const BILLING_EVENTS_SERIE_CACHE_TTL_SEC = 60 * 10;
-export const getOrganizationBillingEventsCountSerieCached = cacheablePerDeps(
-  'getOrganizationBillingEventsCountSerie',
-  (
-    deps: ServiceDeps,
-    ...args: Tail<Parameters<typeof getOrganizationBillingEventsCountSerie>>
-  ) => getOrganizationBillingEventsCountSerie(deps, ...args),
-  BILLING_EVENTS_SERIE_CACHE_TTL_SEC
+export interface IOrganizationBillingUsage {
+  from: string;
+  to: string;
+  /** One row per UTC day in the window, zero-filled; `counts` is keyed by project id. */
+  days: { day: string; counts: Record<string, number> }[];
+  /** Billable events per project over the window. */
+  projectTotals: Record<string, number>;
+  /** The most frequent billable event names over the window, descending. */
+  eventNames: { name: string; count: number }[];
+  /** The same per project, keyed by project id. */
+  eventNamesByProject: Record<string, { name: string; count: number }[]>;
+}
+
+// Enough slices for a legible pie; the dashboard folds the rest into "Other".
+export const BILLING_USAGE_EVENT_NAMES_LIMIT = 9;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function listUtcDays(from: string, to: string): string[] {
+  const days: string[] = [];
+  const end = new Date(`${to}T00:00:00.000Z`).getTime();
+  for (
+    let cursor = new Date(`${from}T00:00:00.000Z`).getTime();
+    cursor <= end;
+    cursor += MS_PER_DAY
+  ) {
+    days.push(new Date(cursor).toISOString().slice(0, 10));
+  }
+  return days;
+}
+
+export async function getOrganizationBillingUsage(
+  deps: ServiceDeps,
+  { projectIds, from, to, since }: IOrganizationBillingUsageInput
+): Promise<IOrganizationBillingUsage> {
+  const empty: IOrganizationBillingUsage = {
+    from,
+    to,
+    days: listUtcDays(from, to).map((day) => ({ day, counts: {} })),
+    projectTotals: {},
+    eventNames: [],
+    eventNamesByProject: {},
+  };
+  if (projectIds.length === 0) {
+    return empty;
+  }
+
+  // Both statements share the billable-event filter so the pie's "Other"
+  // slice (total minus the named slices) adds up against the bars.
+  const billable = sql`
+    project_id IN ${sql.array('String', projectIds)}
+      AND toDate(created_at) BETWEEN toDate(${sql.string(from)}) AND toDate(${sql.string(to)})
+      ${since ? sql`AND created_at >= ${sql.string(since)}` : sql.empty}
+      AND name NOT IN ${sql.array('String', NON_BILLABLE_EVENT_NAMES)}
+  `;
+  const [perProjectDay, perName, perProjectName] = await Promise.all([
+    chQuery<{ project_id: string; day: string; count: number }>(
+      deps,
+      sql`
+        SELECT project_id, toDate(created_at) AS day, COUNT(*) AS count
+        FROM ${sql.id(TABLE_NAMES.events)}
+        WHERE ${billable}
+        GROUP BY project_id, day
+      `
+    ),
+    chQuery<{ name: string; count: number }>(
+      deps,
+      sql`
+        SELECT name, COUNT(*) AS count
+        FROM ${sql.id(TABLE_NAMES.events)}
+        WHERE ${billable}
+        GROUP BY name
+        ORDER BY count DESC
+        LIMIT ${sql.uint64(BILLING_USAGE_EVENT_NAMES_LIMIT)}
+      `
+    ),
+    chQuery<{ project_id: string; name: string; count: number }>(
+      deps,
+      sql`
+        SELECT project_id, name, COUNT(*) AS count
+        FROM ${sql.id(TABLE_NAMES.events)}
+        WHERE ${billable}
+        GROUP BY project_id, name
+        ORDER BY project_id, count DESC
+        LIMIT ${sql.uint64(BILLING_USAGE_EVENT_NAMES_LIMIT)} BY project_id
+      `
+    ),
+  ]);
+
+  const countsByDay = new Map(empty.days.map((row) => [row.day, row.counts]));
+  for (const row of perProjectDay) {
+    const count = Number(row.count);
+    countsByDay.get(row.day)![row.project_id] = count;
+    empty.projectTotals[row.project_id] =
+      (empty.projectTotals[row.project_id] ?? 0) + count;
+  }
+  empty.eventNames = perName.map((row) => ({
+    name: row.name,
+    count: Number(row.count),
+  }));
+  for (const row of perProjectName) {
+    const names = empty.eventNamesByProject[row.project_id] ?? [];
+    names.push({ name: row.name, count: Number(row.count) });
+    empty.eventNamesByProject[row.project_id] = names;
+  }
+  return empty;
+}
+
+const BILLING_USAGE_CACHE_TTL_SEC = 60 * 10;
+export const getOrganizationBillingUsageCached = cacheablePerDeps(
+  'getOrganizationBillingUsage',
+  (deps: ServiceDeps, input: IOrganizationBillingUsageInput) =>
+    getOrganizationBillingUsage(deps, input),
+  BILLING_USAGE_CACHE_TTL_SEC
 );
 
 export async function getOrganizationSubscriptionChartEndDate(

@@ -7,10 +7,10 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { SelectDashboard } from '@/components/dashboards/select-dashboard';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
@@ -124,7 +124,7 @@ export default function SaveReport({
             );
           }}
         />
-        <ButtonContainer>
+        <DialogFooter>
           <Button
             onClick={() => popModal()}
             size="default"
@@ -136,7 +136,7 @@ export default function SaveReport({
           <Button disabled={!formState.isValid} size="default" type="submit">
             Save
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

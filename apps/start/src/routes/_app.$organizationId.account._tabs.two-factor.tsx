@@ -24,7 +24,7 @@ function Component() {
         <span className="title">Two-factor authentication</span>
       </WidgetHead>
       <WidgetBody className="col gap-4">
-        <p className="text-muted-foreground text-sm leading-normal">
+        <p className="text-muted-foreground text-sm">
           Protect your account with an authenticator app (Google Authenticator,
           1Password, Authy, etc.). You'll be asked for a 6-digit code each time
           you sign in with email and password.
@@ -51,7 +51,7 @@ function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
           <ShieldOffIcon className="size-4 text-muted-foreground" />
           <span>Two-factor authentication is not available.</span>
         </div>
-        <p className="text-muted-foreground leading-normal">
+        <p className="text-muted-foreground">
           Your account signs in with Google or GitHub, which handle two-factor
           authentication in their account settings. Enable it in your provider's
           security settings.

@@ -46,7 +46,11 @@ export {
   isRetryableStatus,
   ProviderError,
 } from './clients/provider-error';
-export { KAFKA_SASL_MECHANISMS, type KafkaSaslMechanism } from './config';
+export {
+  type DevLoginConfig,
+  KAFKA_SASL_MECHANISMS,
+  type KafkaSaslMechanism,
+} from './config';
 export type {
   AppDeps,
   CoreConfig,
@@ -92,8 +96,11 @@ export {
 // `registry` itself is not exported: a caller that can reach it could start a
 // second collector graph outside a module.
 export { registerDefaultMetrics } from './metrics';
-// `ChatApp` stays a type so no value of the assistant module reaches a browser bundle.
-export type { ChatApp } from './modules/assistant/assistant.service';
+// Type-only: no value of the assistant module reaches a browser bundle.
+export type {
+  AssistantUIMessage,
+  AssistantUIMessagePart,
+} from './modules/assistant/assistant.service';
 export { createAssistantService } from './modules/assistant/assistant.service';
 export {
   Arctic,
@@ -137,6 +144,10 @@ export {
   // apps/api's session e2e clears one client's cache between runs.
   getClientByIdCached,
 } from './modules/client/client.service';
+export {
+  type CodeMigrationsHandle,
+  startCodeMigrations,
+} from './modules/code-migration/code-migration.service';
 export { createConversationService } from './modules/conversation/conversation.service';
 export type { IServiceCustomEvent } from './modules/custom-event/custom-event.service';
 export type {

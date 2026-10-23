@@ -1,12 +1,13 @@
 import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { getDefaultIntervalByDates } from '@openpanel/core/modules/report/report.constants';
 import { endOfDay, startOfDay, subMonths } from 'date-fns';
-import { CheckIcon, XIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { DialogFooter } from '@/components/ui/dialog';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { formatDate } from '@/utils/date';
 
@@ -30,7 +31,7 @@ export default function DateRangerPicker({
   const [endDate, setEndDate] = useState(initialEndDate);
 
   return (
-    <ModalContent className="min-w-fit p-4 md:p-8">
+    <ModalContent bodyClassName="p-4 md:p-8" className="min-w-fit">
       <Calendar
         captionLayout="dropdown"
         className="mx-auto min-h-[310px] p-0 [&_table]:mx-auto [&_table]:w-auto"
@@ -57,43 +58,32 @@ export default function DateRangerPicker({
           to: endDate,
         }}
       />
-      <div className="col md:row flex-col-reverse gap-2">
-        <Button
-          icon={XIcon}
-          onClick={() => popModal()}
-          type="button"
-          variant="outline"
-        >
+      <DialogFooter>
+        <Button onClick={() => popModal()} type="button" variant="outline">
           Cancel
         </Button>
-
         {startDate && endDate && (
           <Button
-            className="md:ml-auto"
-            icon={startDate && endDate ? CheckIcon : XIcon}
+            icon={CheckIcon}
             onClick={() => {
               popModal();
-              if (startDate && endDate) {
-                const rangeStart = startOfDay(startDate);
-                const rangeEnd = endOfDay(endDate);
-                onChange({
-                  startDate: rangeStart,
-                  endDate: rangeEnd,
-                  interval: getDefaultIntervalByDates(
-                    rangeStart.toISOString(),
-                    rangeEnd.toISOString()
-                  )!,
-                });
-              }
+              const rangeStart = startOfDay(startDate);
+              const rangeEnd = endOfDay(endDate);
+              onChange({
+                startDate: rangeStart,
+                endDate: rangeEnd,
+                interval: getDefaultIntervalByDates(
+                  rangeStart.toISOString(),
+                  rangeEnd.toISOString()
+                )!,
+              });
             }}
             type="button"
           >
-            {startDate && endDate
-              ? `Select ${formatDate(startDate)} - ${formatDate(endDate)}`
-              : 'Cancel'}
+            Select {formatDate(startDate)} - {formatDate(endDate)}
           </Button>
         )}
-      </div>
+      </DialogFooter>
     </ModalContent>
   );
 }

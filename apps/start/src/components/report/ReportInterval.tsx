@@ -9,7 +9,7 @@ import {
 } from '@openpanel/core/modules/report/report.constants';
 import { differenceInDays } from 'date-fns';
 import { ClockIcon } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button, type ButtonProps } from '../ui/button';
 import { CommandShortcut } from '../ui/command';
 import {
   DropdownMenu,
@@ -25,6 +25,8 @@ import { cn } from '@/utils/cn';
 
 interface ReportIntervalProps {
   className?: string;
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
   interval: IInterval;
   onChange: (range: IInterval) => void;
   chartType: IChartType;
@@ -34,6 +36,8 @@ interface ReportIntervalProps {
 }
 export function ReportInterval({
   className,
+  variant = 'outline',
+  size,
   interval,
   onChange,
   chartType,
@@ -101,7 +105,8 @@ export function ReportInterval({
         <Button
           className={cn('justify-start', className)}
           icon={ClockIcon}
-          variant="outline"
+          size={size}
+          variant={variant}
         >
           {items.find((item) => item.value === interval)?.label || 'Interval'}
         </Button>

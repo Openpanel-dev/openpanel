@@ -31,10 +31,10 @@ export default function BillingSuccess() {
           </div>
         </div>
 
-        <h2 className="mb-4 font-semibold text-3xl">
+        <h2 className="mb-4 font-semibold text-2xl">
           Subscription updated successfully
         </h2>
-        <p className="mb-12 max-w-md text-center text-base leading-normal">
+        <p className="mb-12 max-w-md text-center text-base">
           Thank you for your purchase! You have now full access to OpenPanel. If
           you have any questions or feedback, please don't hesitate to contact
           us.

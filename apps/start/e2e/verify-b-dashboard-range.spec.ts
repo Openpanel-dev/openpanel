@@ -79,7 +79,10 @@ test('a dashboard card uses the range and interval saved on its report', async (
     await page
       .getByRole('button', { name: 'Last 7 days', exact: true })
       .click();
-    await page.getByRole('menuitem', { name: /^Last 6 months/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Last 6 months/ })
+      .click();
     await expect.poll(() => rangeCookie(page)).toContain('6m');
     calls.length = 0;
     await page.goto(`/acme/${SHOP}/dashboards/${dashboard.id}`);

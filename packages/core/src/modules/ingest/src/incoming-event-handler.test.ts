@@ -264,6 +264,138 @@ describe('incomingEvent', () => {
     expect(testEventCall!.referrerType).toBe('search');
   });
 
+  test('inherits utm from current session when the event URL has none', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({
+      kind: 'extend',
+      current: makeSession({
+        utm_source: 'meta',
+        utm_medium: 'paid_socials',
+        utm_campaign: 'mega_pikr',
+        utm_content: '',
+        utm_term: '',
+      }),
+    });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'registration_completed',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: { __path: 'https://example.com/signup/done' },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find(
+      (a) => a.name === 'registration_completed'
+    );
+    expect(event!.properties).toMatchObject({
+      __query: {
+        utm_source: 'meta',
+        utm_medium: 'paid_socials',
+        utm_campaign: 'mega_pikr',
+      },
+    });
+    const query = (event!.properties as { __query: object }).__query;
+    expect(Object.keys(query)).toHaveLength(3);
+  });
+
+  test('keeps a client-sent __query and lets the URL query win over it', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'screen_view',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: {
+            __path: 'https://example.com/?utm_source=google',
+            __query: { utm_source: 'meta', utm_campaign: 'first_touch' },
+          },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find(
+      (a) => a.name === 'screen_view'
+    );
+    expect(event!.properties).toMatchObject({
+      __query: { utm_source: 'google', utm_campaign: 'first_touch' },
+    });
+  });
+
+  test("keeps the event's own utm over the session's", async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({
+      kind: 'extend',
+      current: makeSession({ utm_source: 'meta', utm_campaign: 'first' }),
+    });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'screen_view',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: {
+            __path: 'https://example.com/?utm_source=google&utm_medium=cpc',
+          },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find(
+      (a) => a.name === 'screen_view'
+    );
+    expect(event!.properties).toMatchObject({
+      __query: {
+        utm_source: 'google',
+        utm_medium: 'cpc',
+        utm_campaign: 'first',
+      },
+    });
+  });
+
+  test('server events inherit utm from the profile session they ride on', async () => {
+    const { deps, createEvent, getExistingSession } = ctx;
+    getExistingSession.mockResolvedValueOnce(
+      makeSession({
+        id: 'last-session-456',
+        profile_id: 'profile-123',
+        utm_source: 'meta',
+        utm_campaign: 'mega_pikr',
+      })
+    );
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'server_event',
+          timestamp: new Date().toISOString(),
+          properties: { plan: 'pro' },
+          profileId: 'profile-123',
+          isTimestampFromThePast: false,
+        },
+        uaInfo: uaInfoServer,
+        deviceId: '',
+        sessionId: '',
+      }),
+      deps
+    );
+
+    expect(createdEvents(createEvent)[0]!.properties).toMatchObject({
+      plan: 'pro',
+      __query: { utm_source: 'meta', utm_campaign: 'mega_pikr' },
+    });
+  });
+
   test('handles server events with existing profile session', async () => {
     const { deps, createEvent, ingest, getExistingSession, enqueueSessionEnd } =
       ctx;

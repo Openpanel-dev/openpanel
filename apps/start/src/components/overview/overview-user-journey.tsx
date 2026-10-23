@@ -337,17 +337,17 @@ export default function OverviewUserJourney({
                       </ChartTooltipHeader>
 
                       <ChartTooltipItem color={color} innerClassName="gap-2">
-                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
+                        <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
                           <div className="text-muted-foreground">Sessions</div>
                           <div>{number.format(value)}</div>
                         </div>
-                        <div className="flex items-center justify-between gap-8 font-mono text-sm">
+                        <div className="flex items-center justify-between gap-8 text-sm tabular-nums">
                           <div className="text-muted-foreground">
                             % of total
                           </div>
                           <div>{number.format(round(pctOfTotal, 1))} %</div>
                         </div>
-                        <div className="flex items-center justify-between gap-8 font-mono text-sm">
+                        <div className="flex items-center justify-between gap-8 text-sm tabular-nums">
                           <div className="text-muted-foreground">
                             % of source
                           </div>
@@ -397,11 +397,11 @@ export default function OverviewUserJourney({
                         )}
                       </ChartTooltipHeader>
                       <ChartTooltipItem color={color} innerClassName="gap-2">
-                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
+                        <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
                           <div className="text-muted-foreground">Sessions</div>
                           <div>{number.format(value)}</div>
                         </div>
-                        <div className="flex items-center justify-between gap-8 font-medium font-mono">
+                        <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
                           <div className="text-muted-foreground">Share</div>
                           <div>{number.format(round(pct, 1))} %</div>
                         </div>

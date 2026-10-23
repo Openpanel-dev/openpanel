@@ -319,11 +319,12 @@ CREATE TABLE IF NOT EXISTS sessions
     `referrer_name` String CODEC(ZSTD(3)),
     `referrer_type` LowCardinality(String),
     `sign` Int8,
-    `version` UInt64
+    `version` UInt64,
+    INDEX idx_id id TYPE bloom_filter(0.01) GRANULARITY 1
 )
 ENGINE = VersionedCollapsingMergeTree(sign, version)
 PARTITION BY toYYYYMM(created_at)
-ORDER BY (project_id, toDate(created_at), created_at)
+ORDER BY (project_id, toDate(created_at), created_at, id)
 SETTINGS index_granularity = 8192
 ;
 

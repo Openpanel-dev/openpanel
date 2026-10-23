@@ -11,6 +11,7 @@ import {
 } from './popover';
 import { Badge } from '@/components/ui/badge';
 import { Command, CommandInput, CommandItem } from '@/components/ui/command';
+import { cn } from '@/utils/cn';
 
 type IValue = any;
 type IItem = Record<'value' | 'label', IValue>;
@@ -30,6 +31,7 @@ interface ComboboxAdvancedProps {
   placeholder?: string;
   className?: string;
   size?: ButtonProps['size'];
+  variant?: ButtonProps['variant'];
   children?: React.ReactNode;
 }
 
@@ -40,6 +42,7 @@ export function ComboboxAdvanced({
   placeholder,
   className,
   size,
+  variant = 'outline',
   children,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
@@ -104,7 +107,7 @@ export function ComboboxAdvanced({
   }, [inputValue, selectables, items, value]);
 
   const trigger = children ?? (
-    <Button autoHeight className={className} size={size} variant={'outline'}>
+    <Button autoHeight className={className} size={size} variant={variant}>
       <div className="flex w-full flex-wrap gap-1">
         {value.length === 0 && placeholder}
         {value.map((val) => {
@@ -112,7 +115,18 @@ export function ComboboxAdvanced({
             value: val,
             label: val,
           };
-          return <Badge key={String(item.value)}>{item.label}</Badge>;
+          return (
+            <Badge
+              className={cn(
+                variant === 'input' &&
+                  'border-transparent bg-card font-normal shadow-xs dark:bg-def-200'
+              )}
+              key={String(item.value)}
+              variant={variant === 'input' ? 'outline' : 'default'}
+            >
+              {item.label}
+            </Badge>
+          );
         })}
       </div>
       <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />

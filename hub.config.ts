@@ -1,22 +1,42 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+/** The parts of `.seed.json` this file reads; the seed writes the rest for agents and tests. */
+interface SeedManifest {
+  user?: { email?: unknown; password?: unknown };
+  mcp?: { token?: unknown };
+}
+
+/** What the seed wrote to `.seed.json`; undefined until the worktree has been seeded. */
+function readSeed(dir: string): SeedManifest | undefined {
+  try {
+    return JSON.parse(readFileSync(join(dir, '.seed.json'), 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+/** The seed's login as `DEV_LOGIN` wants it, `email/password`, so the one-click button appears once the worktree is seeded. */
+function seededDevLogin(w: { dir: string }): string | undefined {
+  const user = readSeed(w.dir)?.user;
+  if (typeof user?.email !== 'string' || typeof user?.password !== 'string') {
+    return undefined;
+  }
+  return `${user.email}/${user.password}`;
+}
+
 /** The product's MCP on this worktree's API, authenticated with the seed's root client. */
 function seededMcp(w: {
   dir: string;
   url(process: string): string;
 }): Record<string, { url: string }> {
-  try {
-    const seed = JSON.parse(readFileSync(join(w.dir, '.seed.json'), 'utf8'));
-    if (typeof seed?.mcp?.token !== 'string') {
-      return {};
-    }
-    return {
-      openpanel: { url: `${w.url('api')}/mcp?token=${seed.mcp.token}` },
-    };
-  } catch {
+  const token = readSeed(w.dir)?.mcp?.token;
+  if (typeof token !== 'string') {
     return {};
   }
+  return {
+    openpanel: { url: `${w.url('api')}/mcp?token=${token}` },
+  };
 }
 
 // The one file the hub reads from this repo. Its shape is `hub.config.d.ts` in the hub repo,
@@ -75,6 +95,9 @@ export default {
     KAFKA_EVENTS_TOPIC: `events-${w.name}`,
     KAFKA_EVENTS_DLQ_TOPIC: `events-${w.name}-dlq`,
     KAFKA_CONSUMER_GROUP: `api-${w.name}`,
+    // The seed's login, read at each process start; a process started before the seed picks it
+    // up on its next restart. The loader refuses DEV_LOGIN under NODE_ENV=production.
+    DEV_LOGIN: seededDevLogin(w),
   }),
 
   // A worktree name is a DNS label; a database name is an identifier, so hyphens become underscores.
