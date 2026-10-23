@@ -29,7 +29,7 @@ return 0
 `);
 
 export interface CodeMigrationRunner {
-  /** Unfinished migrations in run order: blocking first, then online. */
+  /** Unfinished migrations in file order. */
   getPending: () => Promise<string[]>;
   /** Runs one migration and records it as finished; throws on failure. */
   run: (file: string) => Promise<void>;
@@ -73,7 +73,7 @@ type AttemptResult = 'finished' | 'retry';
  * Every process calls this once it listens; the lock picks one to do the
  * work, so replicas never run a migration twice at once. The others check
  * back every `retryIntervalMs`, so a holder that dies mid-way is replaced and
- * the migration resumes, which online migrations must support.
+ * the migration resumes, which every migration must support.
  */
 export function startCodeMigrations(
   deps: CodeMigrationDeps,
@@ -106,7 +106,7 @@ export function startCodeMigrations(
         return;
       }
       // Another process may take over now; two copies running at once is the
-      // one thing an online migration cannot survive.
+      // one thing a migration cannot survive.
       isLockLost = true;
       logger.error({ err: error }, message);
       migrations.abort();
