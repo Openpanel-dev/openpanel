@@ -1,26 +1,100 @@
 import { Link } from '@tanstack/react-router';
-import { BotIcon, ExternalLinkIcon } from 'lucide-react';
+import { BotIcon, CopyIcon, ExternalLinkIcon, ZapIcon } from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { clipboard } from '@/utils/clipboard';
+import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
 
-// Both hosts add a remote MCP server by URL and cannot send headers, so the
-// token travels in the query string (see the MCP docs).
-const HOSTS = [
+const SERVER_NAME = 'openpanel';
+
+interface Connection {
+  endpoint: string;
+  token: string;
+}
+
+// Install links are documented by Cursor (base64 JSON config) and VS Code
+// (percent-encoded JSON). Claude Code takes one command. claude.ai and
+// ChatGPT have no deep link: the user pastes the URL as a custom connector,
+// with the token in the query string because neither can send headers.
+type Host =
+  | {
+      key: string;
+      label: string;
+      kind: 'install';
+      href: (connection: Connection) => string;
+    }
+  | {
+      key: string;
+      label: string;
+      kind: 'command';
+      command: (connection: Connection) => string;
+    }
+  | {
+      key: string;
+      label: string;
+      kind: 'paste';
+      settingsUrl: string;
+      hint: string;
+    };
+
+const HOSTS: Host[] = [
   {
-    key: 'chatgpt',
-    label: 'ChatGPT',
-    settingsUrl: 'https://chatgpt.com/#settings/Connectors',
-    hint: 'Settings → Connectors → Create',
+    key: 'cursor',
+    label: 'Cursor',
+    kind: 'install',
+    href: ({ endpoint, token }) => {
+      const config = btoa(
+        JSON.stringify({
+          url: endpoint,
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      );
+      return `cursor://anysphere.cursor-deeplink/mcp/install?name=${SERVER_NAME}&config=${encodeURIComponent(config)}`;
+    },
+  },
+  {
+    key: 'vscode',
+    label: 'VS Code',
+    kind: 'install',
+    href: ({ endpoint, token }) =>
+      `vscode:mcp/install?${encodeURIComponent(
+        JSON.stringify({
+          name: SERVER_NAME,
+          type: 'http',
+          url: endpoint,
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      )}`,
+  },
+  {
+    key: 'claude-code',
+    label: 'Claude Code',
+    kind: 'command',
+    command: ({ endpoint, token }) =>
+      `claude mcp add --transport http ${SERVER_NAME} ${endpoint} --header "Authorization: Bearer ${token}"`,
   },
   {
     key: 'claude',
     label: 'Claude',
+    kind: 'paste',
     settingsUrl: 'https://claude.ai/settings/connectors',
     hint: 'Settings → Connectors → Add custom connector',
   },
-] as const;
+  {
+    key: 'chatgpt',
+    label: 'ChatGPT',
+    kind: 'paste',
+    settingsUrl: 'https://chatgpt.com/#settings/Connectors',
+    hint: 'Settings → Connectors → Create (Developer mode)',
+  },
+];
+
+const KIND_CAPTIONS: Record<Host['kind'], string> = {
+  install: 'One click',
+  command: 'One command',
+  paste: 'Paste the URL',
+};
 
 interface Props {
   projectId: string;
@@ -30,22 +104,65 @@ interface Props {
   mcpToken: string | null;
 }
 
-/** The MCP token and one-click starts for the two chat assistants most people use. */
+/** The MCP token and the quickest route into each assistant that supports MCP. */
 export function McpConnect({
   projectId,
   organizationId,
   apiUrl,
   mcpToken,
 }: Props) {
-  const connectorUrl = mcpToken ? `${apiUrl}/mcp?token=${mcpToken}` : null;
+  const connection: Connection | null = mcpToken
+    ? { endpoint: `${apiUrl}/mcp`, token: mcpToken }
+    : null;
 
-  const connect = (host: (typeof HOSTS)[number]) => {
-    if (!connectorUrl) {
-      return;
-    }
+  const track = (host: Host) =>
     op.track('onboarding_mcp_connect_clicked', { projectId, host: host.key });
-    clipboard(connectorUrl, `Paste it as the MCP server URL (${host.hint})`);
-    window.open(host.settingsUrl, '_blank', 'noopener');
+
+  const renderAction = (host: Host, current: Connection) => {
+    if (host.kind === 'install') {
+      return (
+        <a
+          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}
+          href={host.href(current)}
+          onClick={() => track(host)}
+        >
+          <ZapIcon className="mr-1.5 size-3.5" />
+          Install
+        </a>
+      );
+    }
+    if (host.kind === 'command') {
+      return (
+        <Button
+          icon={CopyIcon}
+          onClick={() => {
+            track(host);
+            clipboard(host.command(current), 'Run it in your terminal');
+          }}
+          size="sm"
+          variant="outline"
+        >
+          Copy command
+        </Button>
+      );
+    }
+    return (
+      <Button
+        icon={ExternalLinkIcon}
+        onClick={() => {
+          track(host);
+          clipboard(
+            `${current.endpoint}?token=${current.token}`,
+            `Paste it as the server URL: ${host.hint}`
+          );
+          window.open(host.settingsUrl, '_blank', 'noopener');
+        }}
+        size="sm"
+        variant="outline"
+      >
+        Copy URL
+      </Button>
+    );
   };
 
   return (
@@ -54,26 +171,29 @@ export function McpConnect({
         <BotIcon className="text-muted-foreground" size={16} />
         <h2 className="font-semibold text-base">Ask your data in chat</h2>
       </div>
-      {mcpToken ? (
+      {connection ? (
         <>
           <p className="text-muted-foreground text-sm">
-            Connect ChatGPT or Claude over MCP and ask about this project in
-            plain language. Each button copies your connector URL and opens the
-            right settings page; paste the URL as a new connector.
+            Connect an assistant over MCP and ask about this project in plain
+            language. Read-only; it cannot change anything.
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <ul className="col divide-y">
             {HOSTS.map((host) => (
-              <Button
-                icon={ExternalLinkIcon}
+              <li
+                className="row items-center justify-between gap-3 py-2.5"
                 key={host.key}
-                onClick={() => connect(host)}
-                variant="outline"
               >
-                {host.label}
-              </Button>
+                <div className="col">
+                  <span className="font-medium text-sm">{host.label}</span>
+                  <span className="text-muted-foreground text-xs">
+                    {KIND_CAPTIONS[host.kind]}
+                  </span>
+                </div>
+                {renderAction(host, connection)}
+              </li>
             ))}
-          </div>
-          <CopyInput label="MCP token" value={mcpToken} />
+          </ul>
+          <CopyInput label="MCP token" value={connection.token} />
         </>
       ) : (
         <p className="text-muted-foreground text-sm">
@@ -86,7 +206,7 @@ export function McpConnect({
         params={{ organizationId, projectId }}
         to="/$organizationId/$projectId/settings/mcp"
       >
-        Cursor, Claude Code, VS Code and more in Settings → MCP
+        Windsurf, Raycast and config files in Settings → MCP
       </Link>
     </section>
   );
