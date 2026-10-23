@@ -1,7 +1,9 @@
 import type { IServiceReport } from '@openpanel/core';
+import { useQuery } from '@tanstack/react-query';
 import { ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import EditReportName from '../report/edit-report-name';
+import { ReportPrompt } from '../report/report-prompt';
 import { ReportSummaryTrigger } from '../report/report-summary-trigger';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
@@ -23,6 +25,7 @@ import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 
@@ -31,6 +34,20 @@ const TOOLBAR_TRIGGER_CLASS =
 
 interface ReportEditorProps {
   report: IServiceReport | null;
+}
+
+/** With an AI provider the empty editor asks for a description; without one it points at the event picker. */
+function EmptyReport({ projectId }: { projectId: string }) {
+  const trpc = useTRPC();
+  const models = useQuery(trpc.chat.models.queryOptions());
+  const report = useSelector((state) => state.report);
+  if (models.isPending) {
+    return <div className="card min-h-72" />;
+  }
+  if ((models.data?.models.length ?? 0) > 0) {
+    return <ReportPrompt />;
+  }
+  return <ReportChart isEditMode report={{ ...report, projectId }} />;
 }
 
 export default function ReportEditor({
@@ -129,7 +146,10 @@ export default function ReportEditor({
           </div>
         </div>
         <div className="flex flex-col gap-4 p-4 pt-0" id="report-editor">
-          {report.ready && (
+          {report.ready && report.series.length === 0 && (
+            <EmptyReport projectId={projectId} />
+          )}
+          {report.ready && report.series.length > 0 && (
             <ReportChart isEditMode report={{ ...report, projectId }} />
           )}
         </div>

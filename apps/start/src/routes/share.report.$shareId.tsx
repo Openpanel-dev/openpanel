@@ -1,8 +1,9 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { UnlinkIcon } from 'lucide-react';
 import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
@@ -65,10 +66,11 @@ export const Route = createFileRoute('/share/report/$shareId')({
   },
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
-    <FullPageEmptyState
-      className="min-h-[calc(100vh-theme(spacing.16))]"
-      description="The report you are looking for does not exist."
+    <EmptyState
+      description="This link doesn't point to a shared report anymore. Ask whoever sent it for a new one."
+      icon={UnlinkIcon}
       title="Share not found"
+      variant="page"
     />
   ),
 });

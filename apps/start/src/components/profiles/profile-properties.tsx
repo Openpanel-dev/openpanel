@@ -1,6 +1,7 @@
 import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
+import { TagIcon } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-import { FullPageEmptyState } from '../full-page-empty-state';
+import { EmptyState } from '../empty-state';
 import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
@@ -113,8 +114,13 @@ export const ProfileProperties = ({ profile }: Props) => {
             }))}
         />
       )}
-      {!(profile && profile.properties) && (
-        <FullPageEmptyState title="No properties found" />
+      {!profile?.properties && (
+        <EmptyState
+          description="Properties you pass to identify show up here."
+          icon={TagIcon}
+          title="No properties yet"
+          variant="inline"
+        />
       )}
     </Widget>
   );

@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, Link, redirect } from '@tanstack/react-router';
-import { XIcon } from 'lucide-react';
+import { SearchXIcon } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { ClientCredentials } from '@/components/onboarding/client-credentials';
 import {
@@ -89,10 +89,11 @@ function Component() {
 
   if (!(project && client)) {
     return (
-      <FullPageEmptyState
-        description="The project you are looking for does not exist. Please reload the page."
-        icon={XIcon}
-        title="No project found"
+      <EmptyState
+        description="This project doesn't exist or isn't ready yet. Reload the page to try again."
+        icon={SearchXIcon}
+        title="Project not found"
+        variant="page"
       />
     );
   }

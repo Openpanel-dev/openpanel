@@ -4,9 +4,15 @@ import {
   type FilterCommandInput,
   runFilterCommand,
 } from './src/filter-command';
+import {
+  type ReportDraftInput,
+  type ReportDraftResult,
+  runReportDraft,
+} from './src/report-draft';
 
 export type { FilterCommandResult } from './src/filter-command';
 export type { AssistantUIMessage, AssistantUIMessagePart } from './src/message';
+export type { ReportDraft, ReportDraftResult } from './src/report-draft';
 
 export function createAssistantService(
   deps: ServiceDeps,
@@ -17,5 +23,7 @@ export function createAssistantService(
     runFilterCommand: (
       input: FilterCommandInput
     ): ReturnType<typeof runFilterCommand> => runFilterCommand(deps, input),
+    draftReport: (input: ReportDraftInput): Promise<ReportDraftResult> =>
+      runReportDraft(deps, input),
   };
 }

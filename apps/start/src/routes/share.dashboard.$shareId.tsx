@@ -1,10 +1,11 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { LayoutPanelTopIcon, UnlinkIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { DashboardGrid, useDashboardLayout } from '@/components/dashboard-grid';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
@@ -66,10 +67,11 @@ export const Route = createFileRoute('/share/dashboard/$shareId')({
   },
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
-    <FullPageEmptyState
-      className="min-h-[calc(100vh-theme(spacing.16))]"
-      description="The dashboard you are looking for does not exist."
+    <EmptyState
+      description="This link doesn't point to a shared dashboard anymore. Ask whoever sent it for a new one."
+      icon={UnlinkIcon}
       title="Share not found"
+      variant="page"
     />
   ),
 });
@@ -140,7 +142,11 @@ function RouteComponent() {
             <ReportItemSkeleton />
           </div>
         ) : reports.length === 0 ? (
-          <FullPageEmptyState title="No reports" />
+          <EmptyState
+            description="Reports added to this dashboard will show up here."
+            icon={LayoutPanelTopIcon}
+            title="This dashboard is empty"
+          />
         ) : (
           <DashboardGrid layout={layout}>
             {reports.map((report) => (

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { BoxSelectIcon, PlusIcon } from 'lucide-react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { FolderPlusIcon, PlusIcon } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LazyComponent } from '@/components/lazy-component';
 import { PageHeader } from '@/components/page-header';
@@ -51,21 +51,28 @@ function OrganizationPage() {
 
   if (!projects?.length) {
     return (
-      <FullPageEmptyState
-        description={
-          isAdmin
-            ? 'Create your first project to get started with analytics.'
-            : 'You do not have access to any projects in this organization yet. Ask an admin to grant you access.'
-        }
-        icon={BoxSelectIcon}
-        title="No projects found"
-      >
-        {isAdmin && (
-          <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
-            Create project
-          </Button>
-        )}
-      </FullPageEmptyState>
+      <div className="container p-8">
+        <PageHeader
+          className="mb-8"
+          description="All your projects in this workspace"
+          title="Projects"
+        />
+        <EmptyState
+          description={
+            isAdmin
+              ? 'A project holds the data for one website or app. Create one, install the SDK, and your first events show up within minutes.'
+              : "You don't have access to any projects in this workspace yet. Ask an admin to add you to one."
+          }
+          icon={FolderPlusIcon}
+          title={isAdmin ? 'Create your first project' : 'No projects yet'}
+        >
+          {isAdmin && (
+            <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
+              Create project
+            </Button>
+          )}
+        </EmptyState>
+      </div>
     );
   }
 

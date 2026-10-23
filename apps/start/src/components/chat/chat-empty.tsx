@@ -1,64 +1,131 @@
 import type { ChatLaunchHint } from '@openpanel/core/modules/assistant/assistant.constants';
-import { ExternalLinkIcon, KeyRoundIcon, SparklesIcon } from 'lucide-react';
+import {
+  ActivityIcon,
+  ArrowLeftRightIcon,
+  ArrowUpRightIcon,
+  ChartBarIcon,
+  ChartLineIcon,
+  CodeIcon,
+  CompassIcon,
+  ExternalLinkIcon,
+  FilterIcon,
+  GitForkIcon,
+  GlobeIcon,
+  HistoryIcon,
+  KeyRoundIcon,
+  LayersIcon,
+  LayoutDashboardIcon,
+  ListIcon,
+  LogInIcon,
+  type LucideIcon,
+  PlugIcon,
+  PlusIcon,
+  RouteIcon,
+  ScrollTextIcon,
+  SearchIcon,
+  TargetIcon,
+  TrendingDownIcon,
+  TrendingUpIcon,
+  TriangleAlertIcon,
+  UndoIcon,
+  UserIcon,
+  UsersIcon,
+  ZapIcon,
+} from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
 
-const DEFAULT_PROMPTS = [
-  'What changed this week compared to last week?',
-  'Show me unique visitors per day for the last 30 days',
-  'Build a dashboard for signups and where they come from',
-  'How do I connect the MCP server to Claude?',
+interface Suggestion {
+  icon: LucideIcon;
+  text: string;
+}
+
+const DEFAULT_PROMPTS: Suggestion[] = [
+  {
+    icon: ArrowLeftRightIcon,
+    text: 'What changed this week compared to last week?',
+  },
+  {
+    icon: ChartLineIcon,
+    text: 'Show me unique visitors per day for the last 30 days',
+  },
+  {
+    icon: LayoutDashboardIcon,
+    text: 'Build a dashboard for signups and where they come from',
+  },
+  { icon: PlugIcon, text: 'How do I connect the MCP server to Claude?' },
 ];
 
-function promptsFor(hint?: ChatLaunchHint): string[] {
+function promptsFor(hint?: ChatLaunchHint): Suggestion[] {
   switch (hint?.page) {
     case 'profile':
       return [
-        'Tell me about this user',
-        'What did they do in their last session?',
-        'How does this user compare to a typical one?',
-        'Which pages did they visit most?',
+        { icon: UserIcon, text: 'Tell me about this user' },
+        { icon: HistoryIcon, text: 'What did they do in their last session?' },
+        {
+          icon: UsersIcon,
+          text: 'How does this user compare to a typical one?',
+        },
+        { icon: ListIcon, text: 'Which pages did they visit most?' },
       ];
     case 'session':
       return [
-        'Walk me through this session',
-        'Where did this visitor come from?',
-        'Did they convert?',
-        'Show similar sessions from the same referrer',
+        { icon: RouteIcon, text: 'Walk me through this session' },
+        { icon: CompassIcon, text: 'Where did this visitor come from?' },
+        { icon: TargetIcon, text: 'Did they convert?' },
+        {
+          icon: LayersIcon,
+          text: 'Show similar sessions from the same referrer',
+        },
       ];
     case 'dashboard':
       return [
-        'Summarize this dashboard',
-        'Which report changed the most this week?',
-        'Add a chart of signups by referrer to this dashboard',
-        'Which of these charts should I worry about?',
+        { icon: ScrollTextIcon, text: 'Summarize this dashboard' },
+        {
+          icon: TrendingUpIcon,
+          text: 'Which report changed the most this week?',
+        },
+        {
+          icon: PlusIcon,
+          text: 'Add a chart of signups by referrer to this dashboard',
+        },
+        {
+          icon: TriangleAlertIcon,
+          text: 'Which of these charts should I worry about?',
+        },
       ];
     case 'seo':
       return [
-        'Which queries are the easiest wins?',
-        'Is my organic traffic trending up?',
-        'Any pages competing for the same query?',
-        'Top pages in Google last 30 days',
+        { icon: SearchIcon, text: 'Which queries are the easiest wins?' },
+        { icon: TrendingUpIcon, text: 'Is my organic traffic trending up?' },
+        { icon: GitForkIcon, text: 'Any pages competing for the same query?' },
+        { icon: GlobeIcon, text: 'Top pages in Google last 30 days' },
       ];
     case 'pages':
       return [
-        'Which pages have the highest bounce rate?',
-        'Top entry pages last 7 days',
-        'Which pages are losing traffic?',
-        'Chart pageviews for /pricing over time',
+        { icon: UndoIcon, text: 'Which pages have the highest bounce rate?' },
+        { icon: LogInIcon, text: 'Top entry pages last 7 days' },
+        { icon: TrendingDownIcon, text: 'Which pages are losing traffic?' },
+        { icon: ChartLineIcon, text: 'Chart pageviews for /pricing over time' },
       ];
     case 'onboarding':
       return [
-        'Why are no events arriving?',
-        'Check my install on my website',
-        'Which SDK fits my stack?',
-        'Show the last events that reached this project',
+        { icon: TriangleAlertIcon, text: 'Why are no events arriving?' },
+        { icon: GlobeIcon, text: 'Check my install on my website' },
+        { icon: CodeIcon, text: 'Which SDK fits my stack?' },
+        {
+          icon: ActivityIcon,
+          text: 'Show the last events that reached this project',
+        },
       ];
     case 'events':
       return [
-        'Which events fire most often?',
-        'Show me the last 20 purchase events',
-        'Build a funnel from signup to purchase',
-        'Chart the daily count of each conversion event',
+        { icon: ZapIcon, text: 'Which events fire most often?' },
+        { icon: ListIcon, text: 'Show me the last 20 purchase events' },
+        { icon: FilterIcon, text: 'Build a funnel from signup to purchase' },
+        {
+          icon: ChartBarIcon,
+          text: 'Chart the daily count of each conversion event',
+        },
       ];
     default:
       return DEFAULT_PROMPTS;
@@ -73,28 +140,34 @@ export function ChatEmpty({
   onPick: (prompt: string) => void;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-6 px-4 py-10 text-center">
-      <div className="flex size-11 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <SparklesIcon className="size-5" />
-      </div>
-      <div>
-        <h1 className="font-semibold text-2xl">What do you want to know?</h1>
-        <p className="mt-2 text-muted-foreground">
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-4 py-10">
+      <div className="space-y-1.5 text-center">
+        <h1 className="font-semibold text-2xl tracking-tight">
+          What do you want to know?
+        </h1>
+        <p className="mx-auto max-w-md text-muted-foreground">
           Ask about your numbers, get charts inline, build dashboards, or ask
           how OpenPanel works.
         </p>
       </div>
-      <div className="grid w-full gap-2 sm:grid-cols-2">
-        {promptsFor(hint).map((prompt) => (
-          <button
-            className="rounded-xl border bg-card px-4 py-3 text-left text-sm transition-colors hover:bg-muted/60"
-            key={prompt}
-            onClick={() => onPick(prompt)}
-            type="button"
-          >
-            {prompt}
-          </button>
-        ))}
+      <div className="space-y-2">
+        <p className="px-1 font-medium text-muted-foreground text-xs">
+          Try asking
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {promptsFor(hint).map(({ icon: Icon, text }) => (
+            <button
+              className="group flex items-center gap-3 rounded-xl bg-def-200 px-3.5 py-3 text-left text-sm transition-colors hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60"
+              key={text}
+              onClick={() => onPick(text)}
+              type="button"
+            >
+              <Icon className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
+              <span className="min-w-0 flex-1">{text}</span>
+              <ArrowUpRightIcon className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import type {
   IConversionYAxisScale,
   IInterval,
   IReport,
+  IReportInput,
   IReportOptions,
   zCriteria,
 } from '@openpanel/core/modules/report/report.constants';
@@ -98,6 +99,19 @@ export const reportSlice = createSlice({
         startDate: action.payload.startDate ?? null,
         endDate: action.payload.endDate ?? null,
         dirty: false,
+        ready: true,
+      };
+    },
+    // A draft from the editor's prompt box; dirty, so it can be saved as is.
+    applyDraft(state, action: PayloadAction<IReportInput & { name: string }>) {
+      return {
+        ...state,
+        ...action.payload,
+        lineType: action.payload.lineType ?? state.lineType,
+        globalFilters: action.payload.globalFilters ?? [],
+        startDate: action.payload.startDate ?? null,
+        endDate: action.payload.endDate ?? null,
+        dirty: true,
         ready: true,
       };
     },
@@ -462,6 +476,7 @@ export const {
   reset,
   ready,
   setReport,
+  applyDraft,
   setName,
   addSerie,
   removeEvent,

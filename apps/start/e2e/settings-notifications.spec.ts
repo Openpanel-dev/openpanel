@@ -143,11 +143,13 @@ test('both notification tabs render their empty state', async ({ page }) => {
     target.getByRole('tab', { name: 'Rules' })
   );
   await expect(page).toHaveURL(/notifications\/notifications$/);
-  await expect(page.getByText('No data')).toBeVisible(SLOW_ASSERT);
+  await expect(page.getByText('No notifications yet')).toBeVisible(SLOW_ASSERT);
 
   await page.getByRole('tab', { name: 'Rules' }).click();
   await expect(page).toHaveURL(/notifications\/rules$/);
-  await expect(page.getByText('No rules yet')).toBeVisible(SLOW_ASSERT);
+  await expect(page.getByText('No notification rules yet')).toBeVisible(
+    SLOW_ASSERT
+  );
   await screenshot(page, 'rules-empty');
 
   await page.goBack();
@@ -315,7 +317,9 @@ test('a rule is deleted after confirmation', async ({ page }) => {
   await card.getByRole('button', { name: 'Delete' }).click();
   await dialog.getByRole('button', { name: 'Yes' }).click();
   await expect(page.getByText('Rule deleted')).toBeVisible(SLOW_ASSERT);
-  await expect(page.getByText('No rules yet')).toBeVisible(SLOW_ASSERT);
+  await expect(page.getByText('No notification rules yet')).toBeVisible(
+    SLOW_ASSERT
+  );
   expect(await fetchRules()).toEqual([]);
   // The funnel card renders its events without keys; known, so it is filtered out below.
   expect(

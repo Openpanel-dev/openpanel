@@ -1,13 +1,15 @@
 import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@openpanel/core/modules/insight/insight.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { SearchIcon, SparklesIcon } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import { InsightCard } from '@/components/insights/insight-card';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Carousel,
   CarouselContent,
@@ -299,6 +301,20 @@ function Component() {
     );
   }
 
+  const isFiltered =
+    search !== '' ||
+    moduleFilter !== 'all' ||
+    windowKindFilter !== 'all' ||
+    severityFilter !== 'all' ||
+    directionFilter !== 'all';
+  const clearFilters = () => {
+    void setSearch(null);
+    void setModuleFilter(null);
+    void setWindowKindFilter(null);
+    void setSeverityFilter(null);
+    void setDirectionFilter(null);
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -381,13 +397,9 @@ function Component() {
       </TableButtons>
 
       {filteredAndSorted.length === 0 && !isLoading && (
-        <FullPageEmptyState
-          description={
-            search || moduleFilter !== 'all' || windowKindFilter !== 'all'
-              ? 'Try adjusting your filters to see more insights.'
-              : 'Insights will appear here as trends are detected in your analytics.'
-          }
-          title="No insights found"
+        <InsightsEmptyState
+          isFiltered={isFiltered}
+          onClearFilters={clearFilters}
         />
       )}
 
@@ -458,5 +470,34 @@ function Component() {
         </div>
       )}
     </PageContainer>
+  );
+}
+
+function InsightsEmptyState({
+  isFiltered,
+  onClearFilters,
+}: {
+  isFiltered: boolean;
+  onClearFilters: () => void;
+}) {
+  if (isFiltered) {
+    return (
+      <EmptyState
+        description="Nothing matches the current search and filters."
+        icon={SearchIcon}
+        title="No matching insights"
+      >
+        <Button onClick={onClearFilters} variant="outline">
+          Clear filters
+        </Button>
+      </EmptyState>
+    );
+  }
+  return (
+    <EmptyState
+      description="Insights are detected automatically from your traffic. Give it a few days of data and check back."
+      icon={SparklesIcon}
+      title="No insights yet"
+    />
   );
 }
