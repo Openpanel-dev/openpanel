@@ -11,9 +11,9 @@ interface Props {
   mcpToken: string | null;
 }
 
-/** Everything the SDKs and an MCP client need to authenticate as this project. */
+/** What the SDKs need to send events; the MCP token rides along in the download. */
 export function ClientCredentials({ clientId, clientSecret, mcpToken }: Props) {
-  const isOneTimeView = Boolean(clientSecret || mcpToken);
+  const isOneTimeView = Boolean(clientSecret);
   const credentials = [
     `CLIENT_ID=${clientId}`,
     clientSecret && `CLIENT_SECRET=${clientSecret}`,
@@ -43,12 +43,11 @@ export function ClientCredentials({ clientId, clientSecret, mcpToken }: Props) {
         {clientSecret && (
           <CopyInput label="Client secret" value={clientSecret} />
         )}
-        {mcpToken && <CopyInput label="MCP token" value={mcpToken} />}
       </div>
       <p className="text-muted-foreground text-sm">
         {isOneTimeView
-          ? 'The secret and the MCP token are shown only now. The client ID goes in your website snippet; the secret is for servers and apps; the MCP token connects Claude, Cursor or any MCP client to this project.'
-          : 'Secrets are shown once, right after a project is created. Create a new client under Settings → Clients, or an MCP client under Settings → MCP, if you need another.'}
+          ? 'The secret is shown only now. The client ID goes in your website snippet; the secret is for servers and apps and must never reach a browser.'
+          : 'Secrets are shown once, right after a project is created. Create a new client under Settings → Clients if you need another.'}
       </p>
       {isOneTimeView && (
         <div className="row flex-wrap gap-2">

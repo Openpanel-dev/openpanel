@@ -12,6 +12,7 @@ import {
 import { InstallGuide } from '@/components/onboarding/install-guide';
 import type { SnippetContext } from '@/components/onboarding/install-snippets';
 import { InstallTroubleshooting } from '@/components/onboarding/install-troubleshooting';
+import { McpConnect } from '@/components/onboarding/mcp-connect';
 import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
 import {
   Accordion,
@@ -94,7 +95,7 @@ function Component() {
   // One DOM copy of the sidebar: it sits under the heading on small screens
   // and becomes the sticky right column on large ones.
   const sidebarPlacement =
-    'col gap-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-4 lg:row-start-1';
+    'col gap-5 lg:col-start-2 lg:row-span-4 lg:row-start-1';
 
   return (
     <div className="flex flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start lg:gap-x-12">
@@ -122,6 +123,12 @@ function Component() {
           clientId={client.id}
           clientSecret={context.clientSecret}
           mcpToken={mcpToken}
+        />
+        <McpConnect
+          apiUrl={apiUrl}
+          mcpToken={mcpToken}
+          organizationId={project.organizationId}
+          projectId={project.id}
         />
         {!isVerified && (
           <Link
