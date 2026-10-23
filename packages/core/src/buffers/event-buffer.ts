@@ -344,7 +344,11 @@ export class EventBuffer extends BaseBuffer {
     return done;
   }
 
-  /** @returns the failure the rpush ended with, or `null` on success. */
+  /**
+   * Advance the durability watermark only after Redis accepts the micro-batch.
+   * On failure, retain rows whose retry is not already owned by Kafka.
+   * @returns the enqueue failure, or `null` on success.
+   */
   private async writeToRedis(
     eventsToFlush: IClickhouseEvent[],
     coversSeq: number
