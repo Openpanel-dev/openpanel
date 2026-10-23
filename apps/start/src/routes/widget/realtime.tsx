@@ -143,7 +143,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
         </div>
 
         <div className="row">
-          <div className="h-18 font-bold font-mono text-6xl text-foreground">
+          <div className="h-18 font-bold text-5xl text-foreground tabular-nums">
             <AnimatedNumber value={data.liveCount} />
           </div>
         </div>
@@ -180,7 +180,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               />
             </BarChart>
           </div>
-          <div className="row justify-between pt-1 text-[10px] text-muted-foreground">
+          <div className="row justify-between pt-1 text-2xs text-muted-foreground">
             <span>{firstMinute}</span>
             <span>{lastMinute}</span>
           </div>
@@ -440,7 +440,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
         </div>
 
         <div className="row">
-          <div className="row flex h-18 items-center gap-1 py-4 font-bold font-mono text-6xl">
+          <div className="row flex h-18 items-center gap-1 py-4 font-bold text-5xl tabular-nums">
             <div className="h-full w-6 rounded bg-muted" />
             <div className="h-full w-6 rounded bg-muted" />
           </div>

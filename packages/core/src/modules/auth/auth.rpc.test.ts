@@ -32,6 +32,7 @@ test('providers reports which OAuth features are configured, as booleans only', 
     google: false,
     github: false,
     gsc: false,
+    devLogin: false,
   });
 
   const config = testCoreConfig();
@@ -55,8 +56,34 @@ test('providers reports which OAuth features are configured, as booleans only', 
     cookieOptions: COOKIE_OPTIONS,
   });
   const providers = await authRouter.createCaller(trpcCtx).providers();
-  expect(providers).toEqual({ google: true, github: false, gsc: true });
+  expect(providers).toEqual({
+    google: true,
+    github: false,
+    gsc: true,
+    devLogin: false,
+  });
   expect(JSON.stringify(providers)).not.toContain('secret');
+});
+
+test('providers says a dev login exists without reporting its credentials', async () => {
+  const config = testCoreConfig();
+  config.auth.devLogin = { email: 'admin@openpanel.local', password: 'pw' };
+  const { ctx } = stubHttpCtx({ config }, EMPTY_SESSION);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  const providers = await authRouter.createCaller(trpcCtx).providers();
+  expect(providers.devLogin).toBe(true);
+  expect(JSON.stringify(providers)).not.toContain('openpanel.local');
+  expect(JSON.stringify(providers)).not.toContain('pw');
+});
+
+test('signInDev is refused when DEV_LOGIN is not configured', async () => {
+  const caller = await anonCaller();
+  await expect(caller.signInDev({})).rejects.toMatchObject({
+    code: 'BAD_REQUEST',
+    message: 'Dev login is not configured on this deployment',
+  });
 });
 
 test('totpStatus rejects an unauthenticated caller', async () => {

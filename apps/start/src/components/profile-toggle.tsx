@@ -40,10 +40,7 @@ export function ProfileToggle({ className }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          className={cn(className, 'center-center outline-0')}
-          type="button"
-        >
+        <button className={cn('outline-0', className)} type="button">
           <UserIcon className="size-4" />
           <span className="sr-only">Profile</span>
         </button>

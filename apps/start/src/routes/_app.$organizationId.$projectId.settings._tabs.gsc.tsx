@@ -238,7 +238,7 @@ function GscSettings() {
             revoked. Please reconnect to continue syncing data.
           </p>
           {connection.lastSyncError && (
-            <p className="break-words font-mono text-muted-foreground text-xs">
+            <p className="break-words text-muted-foreground text-xs tabular-nums">
               {connection.lastSyncError}
             </p>
           )}
@@ -295,7 +295,7 @@ function GscSettings() {
       <div className="divide-y rounded-lg border">
         <div className="flex items-center justify-between p-4">
           <div className="font-medium text-sm">Property</div>
-          <div className="font-mono text-muted-foreground text-sm">
+          <div className="text-muted-foreground text-sm tabular-nums">
             {connection.siteUrl}
           </div>
         </div>
@@ -350,7 +350,7 @@ function GscSettings() {
             <div className="font-medium text-destructive text-sm">
               Last error
             </div>
-            <div className="mt-1 break-words font-mono text-muted-foreground text-sm">
+            <div className="mt-1 break-words text-muted-foreground text-sm tabular-nums">
               {connection.lastSyncError}
             </div>
           </div>

@@ -1,10 +1,9 @@
-import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
 import {
   runSequence,
@@ -103,7 +102,12 @@ export interface CreateOnboardingProjectResult {
   projectId: string | null;
   type: string;
   secret: string;
+  /** Token for the read-only MCP client created alongside; only ever returned here. */
+  mcpToken: string;
 }
+
+const toMcpToken = (clientId: string, secret: string) =>
+  Buffer.from(`${clientId}:${secret}`).toString('base64');
 
 export async function createOnboardingProject(
   deps: ServiceDeps,
@@ -140,29 +144,52 @@ export async function createOnboardingProject(
 
   const db = deps.db;
 
-  const project = await db.project.create({
-    data: {
-      id: await getId(deps, 'project', input.project),
-      name: input.project,
-      organizationId: organization.id,
-      types,
-      domain: input.domain ? stripTrailingSlash(input.domain) : null,
-      cors: cors.map((c) => stripTrailingSlash(c)),
-    },
+  const projectId = await getId(deps, 'project', input.project);
+  const secret = newClientSecret();
+  // MCP only accepts read and root clients, so the write client's token
+  // would never work. A read client scoped to this project is created up
+  // front; the dashboard shows its token once and never its id or secret.
+  const mcpSecret = newClientSecret();
+  const [hashedSecret, hashedMcpSecret] = await Promise.all([
+    hashClientSecret(secret),
+    hashClientSecret(mcpSecret),
+  ]);
+
+  // One transaction: a project without its clients would leave the user
+  // with an error and no credentials to retry with.
+  const { client, mcpClient } = await db.$transaction(async (tx) => {
+    const project = await tx.project.create({
+      data: {
+        id: projectId,
+        name: input.project,
+        organizationId: organization.id,
+        types,
+        domain: input.domain ? stripTrailingSlash(input.domain) : null,
+        cors: cors.map((c) => stripTrailingSlash(c)),
+      },
+    });
+    const createdClient = await tx.client.create({
+      data: {
+        name: `${project.name} Client`,
+        organizationId: organization.id,
+        projectId: project.id,
+        type: 'write',
+        secret: hashedSecret,
+      },
+    });
+    const createdMcpClient = await tx.client.create({
+      data: {
+        name: `${project.name} MCP client`,
+        organizationId: organization.id,
+        projectId: project.id,
+        type: 'read',
+        secret: hashedMcpSecret,
+      },
+    });
+    return { client: createdClient, mcpClient: createdMcpClient };
   });
 
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-  const client = await db.client.create({
-    data: {
-      name: `${project.name} Client`,
-      organizationId: organization.id,
-      projectId: project.id,
-      type: 'write',
-      secret: await hashClientSecret(secret),
-    },
-  });
-
-  return { ...client, secret };
+  return { ...client, secret, mcpToken: toMcpToken(mcpClient.id, mcpSecret) };
 }
 
 // The onboarding email drip cron. The `organization.onboarding` column

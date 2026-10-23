@@ -203,10 +203,10 @@ function renderPages(row: ChartRow) {
           className="flex items-center justify-between gap-4 py-0.5"
           key={page.path}
         >
-          <span className="max-w-40 truncate font-mono text-muted-foreground text-xs">
+          <span className="max-w-40 truncate text-muted-foreground text-xs tabular-nums">
             {page.path}
           </span>
-          <span className="shrink-0 font-mono text-xs tabular-nums">
+          <span className="shrink-0 text-xs tabular-nums tabular-nums">
             {formatPercent(page.ctr * 100)}
           </span>
         </div>

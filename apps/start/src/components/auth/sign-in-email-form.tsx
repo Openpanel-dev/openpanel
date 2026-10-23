@@ -1,13 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { zSignInEmail } from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import {
+  type SubmitErrorHandler,
+  type SubmitHandler,
+  useForm,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { LastUsedBadge } from './last-used-badge';
+import { PasswordInput } from './password-input';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
+import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 const validator = zSignInEmail;
 type IForm = z.infer<typeof validator>;
@@ -23,6 +30,10 @@ export function SignInEmailForm({
   const mutation = useMutation(
     trpc.auth.signInEmail.mutationOptions({
       async onSuccess(data) {
+        trackFunnel('auth_signin_succeeded', {
+          provider: 'email',
+          totpRequired: data.type === 'totp_required',
+        });
         if (data.type === 'totp_required') {
           window.location.href = '/verify';
           return;
@@ -31,6 +42,10 @@ export function SignInEmailForm({
         window.location.href = '/';
       },
       onError(error) {
+        trackFunnel('auth_signin_failed', {
+          provider: 'email',
+          reason: failureReason(error),
+        });
         toast.error(error.message);
       },
     })
@@ -43,52 +58,71 @@ export function SignInEmailForm({
     },
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
+    trackFunnel('auth_provider_clicked', {
+      page: 'login',
+      provider: 'email',
+      isLastUsed: Boolean(isLastUsed),
+    });
     mutation.mutate({
       ...values,
       inviteId,
     });
   };
+  const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
+    trackFunnel('auth_form_invalid', {
+      page: 'login',
+      fields: Object.keys(errors),
+    });
+  };
 
   return (
     <form
-      className="col gap-4"
+      className="col gap-5"
       method="post"
-      onSubmit={form.handleSubmit(onSubmit)}
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
     >
       <InputWithLabel
         {...form.register('email')}
-        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
+        autoComplete="email"
         error={form.formState.errors.email?.message}
+        inputMode="email"
         label="Email"
+        placeholder="you@company.com"
+        size="xl"
+        type="email"
       />
-      <InputWithLabel
+      <PasswordInput
         {...form.register('password')}
-        className="border-def-300 bg-def-100/50 focus:border-highlight focus:ring-highlight/20"
+        action={
+          <button
+            className="text-muted-foreground text-sm transition-colors hover:text-foreground hover:underline"
+            onClick={() => {
+              trackFunnel('auth_forgot_password_clicked');
+              pushModal('RequestPasswordReset', {
+                email: form.getValues('email'),
+              });
+            }}
+            type="button"
+          >
+            Forgot password?
+          </button>
+        }
         error={form.formState.errors.password?.message}
         label="Password"
-        type="password"
+        placeholder="Your password"
+        size="xl"
       />
-      <div className="relative">
-        <Button className="w-full" size="lg" type="submit">
+      <div className="relative mt-1">
+        <Button
+          className="w-full"
+          loading={mutation.isPending}
+          size="xl"
+          type="submit"
+        >
           Sign in
         </Button>
-        {isLastUsed && (
-          <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-[10px] text-white leading-none">
-            Used last time
-          </span>
-        )}
+        {isLastUsed && <LastUsedBadge />}
       </div>
-      <button
-        className="mt-2 text-center text-muted-foreground text-sm transition-colors duration-200 hover:text-highlight hover:underline"
-        onClick={() =>
-          pushModal('RequestPasswordReset', {
-            email: form.getValues('email'),
-          })
-        }
-        type="button"
-      >
-        Forgot password?
-      </button>
     </form>
   );
 }

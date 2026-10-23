@@ -360,3 +360,12 @@ input:focus {
   gap: 8px;
   margin-top: 8px;
 }
+
+.sdk-fixtures {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid #ddd;
+  font-size: 13px;
+}

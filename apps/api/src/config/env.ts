@@ -3,7 +3,11 @@
 // contradiction fails at boot. A blank `KEY=` counts as unset. Every issue is reported at once:
 // boot-critical values (roles, queues, Kafka wiring) fail, tuning knobs fall back to the module's default.
 
-import type { CoreConfig, KafkaSaslMechanism } from '@openpanel/core';
+import type {
+  CoreConfig,
+  DevLoginConfig,
+  KafkaSaslMechanism,
+} from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
 import { z } from 'zod';
 
@@ -64,6 +68,8 @@ const DEFAULT_INGEST_DEAD_LETTER_MAX_ENTRIES = 1000;
 const DEFAULT_KAFKA_HANDLER_RETRY_INITIAL_MS = 100;
 const DEFAULT_KAFKA_HANDLER_RETRY_MAX_MS = 1000;
 const DEFAULT_KAFKA_SASL_MECHANISM: KafkaSaslMechanism = 'scram-sha-512';
+/** `DEV_LOGIN=email/password`; the password may itself contain the separator. */
+const DEV_LOGIN_SEPARATOR = '/';
 
 /** The Kafka events consumer's token. The old `events_kafka` spelling gets its own error (`RENAMED_QUEUE_TOKENS`), not an alias. */
 export const KAFKA_QUEUE_TOKEN = 'events';
@@ -224,6 +230,43 @@ const positiveIntWithDefault = (fallback: number) =>
     z.coerce.number().int().positive().default(fallback)
   );
 
+/**
+ * `email/password`, split at the first separator. A value with no separator
+ * or an empty half fails boot: a dev login that cannot sign in is a typo.
+ */
+const devLoginSchema = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .superRefine((value, ctx) => {
+      if (value === undefined || parseDevLogin(value) !== undefined) {
+        return;
+      }
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        // The value is a credential, so it stays out of the boot error.
+        message: `DEV_LOGIN must be "email${DEV_LOGIN_SEPARATOR}password", with neither half empty`,
+      });
+    })
+    .transform((value) =>
+      value === undefined ? undefined : parseDevLogin(value)
+    )
+);
+
+function parseDevLogin(value: string): DevLoginConfig | undefined {
+  const separatorAt = value.indexOf(DEV_LOGIN_SEPARATOR);
+  if (separatorAt === -1) {
+    return undefined;
+  }
+  const email = value.slice(0, separatorAt).trim();
+  const password = value.slice(separatorAt + DEV_LOGIN_SEPARATOR.length);
+  if (email === '' || password === '') {
+    return undefined;
+  }
+  return { email, password };
+}
+
 /** Comma-separated list; `undefined` when unset so the caller's order stands. */
 const optionalTokenList = z.preprocess(
   blankToUndefined,
@@ -330,6 +373,12 @@ const rawSchema = z.object({
    * cloud-only cron jobs.
    */
   SELF_HOSTED: trueOrOneSchema,
+  /**
+   * Lets this process apply pending code migrations once it is listening; a
+   * Redis lock makes one process do it. Self-hosted installs set it, cloud
+   * decides per deploy.
+   */
+  AUTOMATIC_MIGRATIONS: trueOrOneSchema,
   SHUTDOWN_FORCE_EXIT_MS: z.preprocess(
     blankToUndefined,
     z.coerce.number().int().positive().default(DEFAULT_SHUTDOWN_FORCE_EXIT_MS)
@@ -388,6 +437,8 @@ const rawSchema = z.object({
 
   ALLOW_REGISTRATION: optionalString,
   ALLOW_INVITATION: optionalString,
+  /** A one-click sign-in on the login page; refused under NODE_ENV=production. */
+  DEV_LOGIN: devLoginSchema,
   GITHUB_CLIENT_ID: stringWithDefault(''),
   GITHUB_CLIENT_SECRET: stringWithDefault(''),
   GITHUB_REDIRECT_URI: stringWithDefault(''),
@@ -624,6 +675,18 @@ function checkKafkaSaslIsComplete(raw: RawEnv, ctx: z.RefinementCtx): void {
   }
 }
 
+/** A password-free sign-in button has no place on a production deployment. */
+function checkDevLoginIsNotProduction(raw: RawEnv, ctx: z.RefinementCtx): void {
+  if (raw.DEV_LOGIN === undefined || raw.NODE_ENV !== PRODUCTION) {
+    return;
+  }
+  ctx.addIssue({
+    code: z.ZodIssueCode.custom,
+    message:
+      'DEV_LOGIN is set while NODE_ENV=production — it puts a one-click sign-in on the login page, so unset it here.',
+  });
+}
+
 /** A CA or a verification switch on a plaintext connection does nothing. */
 function checkKafkaTlsOptionsHaveTls(raw: RawEnv, ctx: z.RefinementCtx): void {
   const hasTlsOptions =
@@ -800,6 +863,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       },
       google: { ...googleClient, redirectUri: raw.GOOGLE_REDIRECT_URI },
       googleGsc: { ...googleClient, redirectUri: raw.GSC_GOOGLE_REDIRECT_URI },
+      devLogin: raw.DEV_LOGIN,
     },
     cookies: {
       secret: raw.COOKIE_SECRET,
@@ -909,6 +973,7 @@ export interface Config {
   QUEUE_NAMESPACE: string | undefined;
   ENABLED_QUEUES: EnabledQueue[];
   DISABLE_WORKERS: boolean;
+  AUTOMATIC_MIGRATIONS: boolean;
   DISABLE_BULLBOARD: boolean;
   COOKIE_SECRET: string;
   SHUTDOWN_FORCE_EXIT_MS: number;
@@ -941,6 +1006,7 @@ const envSchema = rawSchema
     checkKafkaHeartbeatFitsSession(raw, ctx);
     checkKafkaSaslIsComplete(raw, ctx);
     checkAdminAuthIsComplete(raw, ctx);
+    checkDevLoginIsNotProduction(raw, ctx);
     checkKafkaTlsOptionsHaveTls(raw, ctx);
     checkReaperDeadmanOutlivesSession(raw, ctx);
     checkVacuumOutlivesReaper(raw, ctx);
@@ -956,6 +1022,7 @@ const envSchema = rawSchema
       QUEUE_NAMESPACE: raw.QUEUE_NAMESPACE,
       ENABLED_QUEUES: raw.ENABLED_QUEUES,
       DISABLE_WORKERS: raw.DISABLE_WORKERS,
+      AUTOMATIC_MIGRATIONS: raw.AUTOMATIC_MIGRATIONS,
       DISABLE_BULLBOARD: raw.DISABLE_BULLBOARD,
       COOKIE_SECRET: raw.COOKIE_SECRET,
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,

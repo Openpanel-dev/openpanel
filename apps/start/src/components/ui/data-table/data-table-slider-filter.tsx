@@ -158,7 +158,7 @@ export function DataTableSliderFilter<TData>({
       </PopoverTrigger>
       <PopoverContent align="start" className="flex w-auto flex-col gap-4">
         <div className="flex flex-col gap-3">
-          <p className="font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          <p className="font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
             {title}
           </p>
           <div className="flex items-center gap-4">
@@ -177,6 +177,7 @@ export function DataTableSliderFilter<TData>({
                 onChange={onFromInputChange}
                 pattern="[0-9]*"
                 placeholder={min.toString()}
+                size="sm"
                 type="number"
                 value={range[0]?.toString()}
               />
@@ -201,6 +202,7 @@ export function DataTableSliderFilter<TData>({
                 onChange={onToInputChange}
                 pattern="[0-9]*"
                 placeholder={max.toString()}
+                size="sm"
                 type="number"
                 value={range[1]?.toString()}
               />

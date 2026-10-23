@@ -12,10 +12,10 @@ import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import {
   getRealtimeActiveSessions,
   getRealtimeCoordinates,
-  getRealtimeGeo,
+  getRealtimeHistogram,
   getRealtimeMapBadgeDetails,
-  getRealtimePaths,
-  getRealtimeReferrals,
+  getRealtimeRecentSessions,
+  getRealtimeTopSources,
 } from './realtime.service';
 
 const MAP_BADGE_LOCATIONS_MIN = 1;
@@ -78,7 +78,7 @@ export const realtimeRouter = createTRPCRouter({
 
       return getRealtimeActiveSessions(ctx, input.projectId);
     }),
-  paths: protectedProcedure
+  recentSessions: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
@@ -87,9 +87,9 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimePaths(ctx, input.projectId);
+      return getRealtimeRecentSessions(ctx, input.projectId);
     }),
-  referrals: protectedProcedure
+  topSources: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
@@ -98,9 +98,9 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeReferrals(ctx, input.projectId);
+      return getRealtimeTopSources(ctx, input.projectId);
     }),
-  geo: protectedProcedure
+  histogram: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
@@ -109,6 +109,6 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeGeo(ctx, input.projectId);
+      return getRealtimeHistogram(ctx, input.projectId);
     }),
 });

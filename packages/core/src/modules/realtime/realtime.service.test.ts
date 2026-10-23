@@ -62,6 +62,7 @@ const MS_PER_MINUTE = 60_000;
 const REALTIME_WINDOW_MS = MINUTES_PER_REALTIME_WINDOW * MS_PER_MINUTE;
 const CLOCK_TOLERANCE_MS = 5000;
 const ACTIVE_SESSIONS_LIMIT = 50;
+const RECENT_SESSIONS_LIMIT = 30;
 
 const noop = () => undefined;
 const deps = {
@@ -203,4 +204,112 @@ test('getRealtimeActiveSessions scopes the query to the project and the 30-minut
   expect(query_params.p3).toBe(ACTIVE_SESSIONS_LIMIT);
   expect(result).toHaveLength(1);
   expect(result[0]?.sessionId).toBe('sess_1');
+});
+
+test('getRealtimeRecentSessions only reads session starts in the project and window', async () => {
+  nextRows = [
+    {
+      name: 'session_start',
+      session_id: 'sess_2',
+      profile_id: 'prof_2',
+      created_at: '2026-09-04 00:00:00',
+      path: '/pricing',
+      origin: 'https://example.com',
+      referrer: '',
+      referrer_name: 'Google',
+      country: 'SE',
+      city: 'Stockholm',
+      region: '',
+      os: 'macOS',
+      os_version: '',
+      browser: 'Chrome',
+      browser_version: '',
+      device: 'desktop',
+    },
+  ];
+
+  const result = await subject.getRealtimeRecentSessions(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('project_id = {p1:String}');
+  expect(query).toContain('name = {p2:String}');
+  expect(query).toContain('created_at >= {p3:String}');
+  expect(query).toContain('LIMIT {p4:UInt64}');
+  expect(query_params.p1).toBe('proj_1');
+  expect(query_params.p2).toBe('session_start');
+  expect(query_params.p4).toBe(RECENT_SESSIONS_LIMIT);
+  expect(result).toHaveLength(1);
+  expect(result[0]?.sessionId).toBe('sess_2');
+  expect(result[0]?.referrerName).toBe('Google');
+});
+
+test('getRealtimeTopSources splits one grouping-sets scan into referrers and countries', async () => {
+  nextRows = [
+    {
+      referrer_name: 'Google',
+      country: '',
+      sessions: 12,
+      is_referrer_row: 1,
+      is_country_row: 0,
+    },
+    {
+      referrer_name: '',
+      country: 'SE',
+      sessions: 9,
+      is_referrer_row: 0,
+      is_country_row: 1,
+    },
+    {
+      referrer_name: 'Reddit',
+      country: '',
+      sessions: 3,
+      is_referrer_row: 1,
+      is_country_row: 0,
+    },
+  ];
+
+  const result = await subject.getRealtimeTopSources(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('GROUPING SETS ((referrer_name), (country))');
+  expect(query).toContain('project_id = {p1:String}');
+  expect(query_params.p1).toBe('proj_1');
+  expect(result).toEqual({
+    referrers: [
+      { name: 'Google', sessions: 12 },
+      { name: 'Reddit', sessions: 3 },
+    ],
+    countries: [{ country: 'SE', sessions: 9 }],
+  });
+});
+
+test('getRealtimeHistogram fills every minute of the window and takes the total from the same scan', async () => {
+  const minuteAgo = new Date(Math.floor(Date.now() / 60_000) * 60_000 - 60_000);
+  const minuteKey = minuteAgo.toISOString().slice(0, 19).replace('T', ' ');
+  nextRows = [
+    { minute: '1970-01-01 00:00:00', sessions: 40, visitors: 15, is_total: 1 },
+    { minute: minuteKey, sessions: 4, visitors: 2, is_total: 0 },
+  ];
+
+  const result = await subject.getRealtimeHistogram(deps, 'proj_1');
+
+  expect(chQuery).toHaveBeenCalledTimes(1);
+  expect(chQuery.mock.calls[0]![0].query).toContain(
+    'GROUPING SETS ((minute), ())'
+  );
+  expect(result.totalSessions).toBe(40);
+  expect(result.minutes).toHaveLength(MINUTES_PER_REALTIME_WINDOW + 1);
+  const filled = result.minutes.find(
+    (entry) => entry.minute === minuteAgo.toISOString()
+  );
+  expect(filled).toEqual({
+    minute: minuteAgo.toISOString(),
+    sessions: 4,
+    visitors: 2,
+  });
+  expect(result.minutes.filter((entry) => entry.sessions === 0)).toHaveLength(
+    MINUTES_PER_REALTIME_WINDOW
+  );
 });

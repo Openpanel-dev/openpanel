@@ -4,6 +4,7 @@ import { zCreateNotificationRule } from '@openpanel/core/modules/notification/no
 import { shortId } from '@openpanel/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
+import { useId } from 'react';
 import {
   Controller,
   type SubmitHandler,
@@ -17,7 +18,11 @@ import type { z } from 'zod';
 import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
 import { ColorSquare } from '@/components/color-square';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import {
+  fieldMessageId,
+  InputWithLabel,
+  WithLabel,
+} from '@/components/forms/input-with-label';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -38,6 +43,7 @@ interface Props {
 type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
+  const typeId = useId();
   const client = useQueryClient();
   const { projectId } = useAppParams();
   const form = useForm<IForm>({
@@ -63,6 +69,11 @@ export default function AddNotificationRule({ rule }: Props) {
       },
     },
   });
+  // The config union hides `type` from the inferred error shape.
+  const configErrors = form.formState.errors.config as
+    | { type?: { message?: string } }
+    | undefined;
+  const typeError = configErrors?.type?.message;
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.notification.createOrUpdateRule.mutationOptions({
@@ -115,20 +126,20 @@ export default function AddNotificationRule({ rule }: Props) {
           {...form.register('name')}
         />
 
-        <WithLabel
-          // @ts-expect-error
-          error={form.formState.errors.config?.type.message}
-          label="Type"
-        >
+        <WithLabel error={typeError} id={typeId} label="Type">
           <Controller
             control={form.control}
             name="config.type"
             render={({ field }) => (
               <Combobox
+                variant="input"
                 {...field}
+                aria-describedby={
+                  typeError ? fieldMessageId(typeId) : undefined
+                }
                 className="w-full"
-                // @ts-expect-error
-                error={form.formState.errors.config?.type.message}
+                error={typeError}
+                id={typeId}
                 items={[
                   {
                     label: 'Events',

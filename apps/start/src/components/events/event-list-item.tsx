@@ -2,15 +2,16 @@ import type { IServiceEvent, IServiceEventMinimal } from '@openpanel/core';
 import { Link } from '@tanstack/react-router';
 import { SerieIcon } from '../report-chart/common/serie-icon';
 import { EventIcon } from './event-icon';
+import { useEventDrawer } from './use-event-drawer';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
-import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 
 type EventListItemProps = IServiceEventMinimal | IServiceEvent;
 
 export function EventListItem(props: EventListItemProps) {
+  const { openEvent } = useEventDrawer();
   const { organizationId, projectId } = useAppParams();
   const { createdAt, name, path, meta } = props;
   const profile = 'profile' in props ? props.profile : null;
@@ -38,11 +39,7 @@ export function EventListItem(props: EventListItemProps) {
       )}
       onClick={() => {
         if (!isMinimal) {
-          pushModal('EventDetails', {
-            id: props.id,
-            projectId,
-            createdAt,
-          });
+          openEvent({ id: props.id, createdAt });
         }
       }}
       type="button"

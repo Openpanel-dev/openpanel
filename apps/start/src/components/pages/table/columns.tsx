@@ -58,12 +58,12 @@ export function useColumns({
               )}
               <div className="min-w-0">
                 {page.title && (
-                  <div className="truncate font-medium text-sm leading-tight">
+                  <div className="truncate font-medium text-sm">
                     {page.title}
                   </div>
                 )}
                 <div className="flex min-w-0 items-center gap-1">
-                  <span className="truncate font-mono text-muted-foreground text-xs">
+                  <span className="truncate text-muted-foreground text-xs tabular-nums">
                     {page.path}
                   </span>
                   <a
@@ -99,7 +99,7 @@ export function useColumns({
         header: createHeaderColumn('Views'),
         size: 80,
         cell: ({ row }) => (
-          <span className="font-mono text-sm tabular-nums">
+          <span className="text-sm tabular-nums tabular-nums">
             {number.short(row.original.pageviews)}
           </span>
         ),
@@ -116,7 +116,7 @@ export function useColumns({
           // previous period, so a missing `prev` hides the delta, not the
           // number.
           const count = (
-            <span className="font-mono text-sm tabular-nums">
+            <span className="text-sm tabular-nums tabular-nums">
               {number.short(row.original.sessions)}
             </span>
           );
@@ -141,7 +141,7 @@ export function useColumns({
             <div className="flex items-center gap-2">
               {count}
               <span
-                className={`font-mono text-sm tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
+                className={`text-2xs tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}
               >
                 {isPos ? '+' : ''}
                 {pct.toFixed(1)}%
@@ -155,7 +155,7 @@ export function useColumns({
         header: createHeaderColumn('Bounce'),
         size: 80,
         cell: ({ row }) => (
-          <span className="font-mono text-sm tabular-nums">
+          <span className="text-sm tabular-nums tabular-nums">
             {row.original.bounce_rate.toFixed(0)}%
           </span>
         ),
@@ -165,7 +165,7 @@ export function useColumns({
         header: createHeaderColumn('Duration'),
         size: 90,
         cell: ({ row }) => (
-          <span className="whitespace-nowrap font-mono text-sm tabular-nums">
+          <span className="whitespace-nowrap text-sm tabular-nums tabular-nums">
             {fancyMinutes(row.original.avg_duration * SECONDS_PER_MINUTE)}
           </span>
         ),
@@ -182,7 +182,7 @@ export function useColumns({
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (
-              <span className="font-mono text-sm tabular-nums">
+              <span className="text-sm tabular-nums tabular-nums">
                 {number.short(row.original.gsc.impressions)}
               </span>
             ) : (
@@ -197,7 +197,7 @@ export function useColumns({
           size: 70,
           cell: ({ row }) =>
             row.original.gsc ? (
-              <span className="font-mono text-sm tabular-nums">
+              <span className="text-sm tabular-nums tabular-nums">
                 {(row.original.gsc.ctr * 100).toFixed(1)}%
               </span>
             ) : (
@@ -212,7 +212,7 @@ export function useColumns({
           size: 80,
           cell: ({ row }) =>
             row.original.gsc ? (
-              <span className="font-mono text-sm tabular-nums">
+              <span className="text-sm tabular-nums tabular-nums">
                 {number.short(row.original.gsc.clicks)}
               </span>
             ) : (

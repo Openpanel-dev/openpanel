@@ -55,7 +55,7 @@ export const WidgetTableHead = ({
   return (
     <thead
       className={cn(
-        'sticky top-0 z-10 border-border border-b bg-def-100 text-def-1000 [&_th:first-child]:text-left [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th]:font-medium',
+        'sticky top-0 z-10 border-border border-b bg-def-100 text-def-1000 [&_th:first-child]:text-left [&_th:last-child]:text-right [&_th]:whitespace-nowrap [&_th]:p-4 [&_th]:py-2 [&_th]:text-right [&_th]:font-medium [&_th]:text-3xs [&_th]:uppercase [&_th]:tracking-wider',
         className
       )}
     >
@@ -181,7 +181,7 @@ export function WidgetTable<T>({
             return (
               <div
                 className={cn(
-                  'cell whitespace-nowrap p-2 font-medium font-sans text-sm',
+                  'cell whitespace-nowrap p-2 font-medium font-sans text-3xs uppercase tracking-wider',
                   columns.length > 1 && column !== columns[0]
                     ? 'text-right'
                     : 'text-left',

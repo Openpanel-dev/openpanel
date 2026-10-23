@@ -192,7 +192,7 @@ export function LoginPage({ onLogin }: Props) {
                   type="button"
                 >
                   {group.name}
-                  <span className="group-plan">{group.plan}</span>
+                  <span className="group-plan">{group.properties.plan}</span>
                 </button>
               );
             })}

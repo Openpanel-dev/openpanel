@@ -1,18 +1,6 @@
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
-import type { CoordinateCluster } from './coordinates';
-
-/** Serializable marker payload for the realtime map badge detail panel */
-export interface MapBadgeDisplayMarker extends CoordinateCluster {
-  detailScope: 'city' | 'coordinate' | 'country' | 'merged';
-  id: string;
-  label: string;
-  mergedVisualClusters: number;
-  screenPoint: {
-    x: number;
-    y: number;
-  };
-}
+import type { MapBadgeDisplayMarker } from './map-types';
 
 interface RealtimeMapBadgeState {
   open: boolean;

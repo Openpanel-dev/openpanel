@@ -375,25 +375,47 @@ export const workerHealthcheck: Check = (install) => {
   };
 };
 
+const replaceApiCommand = (target: Install) => {
+  const next = templateCompose.getIn(['services', 'op-api', 'command']);
+  target.compose.setIn(['services', 'op-api', 'command'], next);
+};
+
 export const apiMigrations: Check = (install) => {
   const command = install.compose.getIn(['services', 'op-api', 'command']);
-  if (
-    typeof command !== 'string' ||
-    command.includes('scripts/migrate-code.ts')
-  ) {
+  if (typeof command !== 'string') {
     return null;
   }
-  return {
-    id: 'compose/api-migrations',
-    severity: 'error',
-    title: 'op-api start command runs the old migration steps',
-    detail:
-      'v3 migrates with prisma + scripts/migrate-code.ts under bun; pnpm is gone from the image.',
-    fix: (target) => {
-      const next = templateCompose.getIn(['services', 'op-api', 'command']);
-      target.compose.setIn(['services', 'op-api', 'command'], next);
-    },
-  };
+  if (command.includes('pnpm')) {
+    return {
+      id: 'compose/api-migrations',
+      severity: 'error',
+      title: 'op-api start command runs the old migration steps',
+      detail:
+        'v3 runs the Prisma CLI the image ships and the api applies code migrations; pnpm is gone from the image.',
+      fix: replaceApiCommand,
+    };
+  }
+  if (command.includes('bunx prisma')) {
+    return {
+      id: 'compose/api-migrations',
+      severity: 'warn',
+      title: 'op-api downloads the Prisma CLI at every start',
+      detail:
+        'The image ships the Prisma CLI, so the api can start without reaching the npm registry.',
+      fix: replaceApiCommand,
+    };
+  }
+  if (command.includes('scripts/migrate-code.ts')) {
+    return {
+      id: 'compose/api-migrations',
+      severity: 'warn',
+      title: 'op-api runs the code migrations before it starts',
+      detail:
+        'The api now starts at once and applies code migrations itself, so a long migration no longer keeps it down.',
+      fix: replaceApiCommand,
+    };
+  }
+  return null;
 };
 
 export const kafkaBrokers: Check = (install) => {
@@ -553,6 +575,23 @@ export const selfHosted: Check = (install) => {
   };
 };
 
+export const automaticMigrations: Check = (install) => {
+  const value = install.env.get('AUTOMATIC_MIGRATIONS');
+  if (value === 'true' || value === '1') {
+    return null;
+  }
+  return {
+    id: 'env/automatic-migrations',
+    // The api still boots without it, so it must not block `reload`;
+    // `upgrade` applies the fix either way.
+    severity: 'warn',
+    title: `AUTOMATIC_MIGRATIONS is ${value === undefined ? 'not set' : `"${value}"`}`,
+    detail:
+      'The api and worker apply ClickHouse code migrations only when it is `true` or `1`.',
+    fix: (target) => target.env.set('AUTOMATIC_MIGRATIONS', 'true'),
+  };
+};
+
 export const enabledQueues: Check = (install) => {
   const value = install.env.get('ENABLED_QUEUES');
   if (!value) {
@@ -700,6 +739,7 @@ export const checks: Check[] = [
   apiUrl,
   adminCredentials,
   selfHosted,
+  automaticMigrations,
   enabledQueues,
   removedEnvVars,
   caddyBullboardRedirect,

@@ -3,12 +3,7 @@ import { motion } from 'framer-motion';
 import { XIcon } from 'lucide-react';
 import type { RefObject } from 'react';
 import type { DisplayMarker } from './map-types';
-import {
-  getBadgeOverlayPosition,
-  getProfileDisplayName,
-  getUniqueCoordinateDetailLocations,
-  getUniquePlaceDetailLocations,
-} from './map-utils';
+import { getBadgeOverlayPosition, getProfileDisplayName } from './map-utils';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
@@ -31,10 +26,7 @@ export function MapBadgeDetailCard({
   const input = {
     detailScope: marker.detailScope,
     projectId,
-    locations:
-      marker.detailScope === 'coordinate'
-        ? getUniqueCoordinateDetailLocations(marker.members)
-        : getUniquePlaceDetailLocations(marker.members),
+    locations: marker.locations,
   };
   const query = useQuery(
     trpc.realtime.mapBadgeDetails.queryOptions(input, {
@@ -66,7 +58,7 @@ export function MapBadgeDetailCard({
         <div className="flex items-start justify-between gap-4 border-b p-4">
           <div className="min-w-0">
             <div className="mb-2 text-muted-foreground text-xs uppercase tracking-wide">
-              Realtime cluster
+              Online now
             </div>
             <div className="truncate text-lg" style={{ fontWeight: 600 }}>
               {marker.label}
@@ -94,7 +86,7 @@ export function MapBadgeDetailCard({
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
             <div className="text-muted-foreground text-xs">Locations</div>
             <div className="font-semibold">
-              {query.data?.summary.totalLocations ?? marker.members.length}
+              {query.data?.summary.totalLocations ?? marker.locations.length}
             </div>
           </div>
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
@@ -139,7 +131,7 @@ export function MapBadgeDetailCard({
                                 .replaceAll('www.', '') || '(Not set)'}
                             </span>
                           </div>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (
@@ -160,7 +152,7 @@ export function MapBadgeDetailCard({
                           key={item.name}
                         >
                           <span className="truncate">{item.name}</span>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (
@@ -183,7 +175,7 @@ export function MapBadgeDetailCard({
                           <span className="truncate">
                             {item.path || '(Not set)'}
                           </span>
-                          <span className="font-mono">{item.count}</span>
+                          <span className="tabular-nums">{item.count}</span>
                         </div>
                       ))
                     ) : (

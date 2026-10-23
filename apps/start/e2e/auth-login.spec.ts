@@ -2,6 +2,7 @@
 // shared auth state and signs in by itself, so the shared session is never touched.
 
 import {
+  apiUrl,
   FRESH_CONTEXT,
   gotoHydrated,
   hasHorizontalOverflow,
@@ -19,6 +20,7 @@ test.describe.configure({ timeout: 120_000 });
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const SIGN_IN_REQUEST = '/trpc/auth.signInEmail';
+const DEV_SIGN_IN_REQUEST = '/trpc/auth.signInDev';
 
 test('signed-out visitors are sent to /login from every protected route', async ({
   page,
@@ -37,7 +39,9 @@ test('signed-out visitors are sent to /login from every protected route', async 
     await page.goto(path);
     await expect(page, `from ${path}`).toHaveURL(/\/login$/);
   }
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back' })
+  ).toBeVisible();
 
   // The onboarding steps send a signed-out visitor to the sign-up page instead.
   await page.goto('/onboarding/project');
@@ -60,25 +64,25 @@ test('the login form validates before it calls the API', async ({ page }) => {
   });
   await gotoHydrated(page, '/login');
 
+  const fieldErrors = page.locator('[data-slot="field-error"]');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await expect(page.getByText('Issues')).toHaveCount(2);
-  await page.getByText('Issues').first().hover();
-  await expect(page.getByRole('tooltip')).toContainText(
-    'Invalid email address'
-  );
+  await expect(fieldErrors).toHaveCount(2);
+  await expect(fieldErrors.first()).toHaveText('Invalid email address');
 
   await page.getByLabel('Email').fill('not-an-email');
-  await page.getByLabel('Password').fill('short');
-  await page.getByLabel('Password').press('Enter');
-  await expect(page.getByText('Issues')).toHaveCount(2);
+  await page.getByLabel('Password', { exact: true }).fill('short');
+  await page.getByLabel('Password', { exact: true }).press('Enter');
+  await expect(fieldErrors).toHaveCount(2);
 
   await page.getByLabel('Email').fill('someone@example.com');
-  await page.getByLabel('Password').fill('long-enough-password');
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill('long-enough-password');
   await page.getByLabel('Email').press('Tab');
-  await expect(page.getByText('Issues')).toHaveCount(0);
+  await expect(fieldErrors).toHaveCount(0);
 
   await expect(
-    page.getByRole('link', { name: 'Create one today' })
+    page.getByRole('link', { name: 'Create an account' })
   ).toHaveAttribute('href', '/onboarding');
   expect(signInRequests).toBe(0);
   await expect(page).toHaveURL(/\/login$/);
@@ -212,8 +216,38 @@ test('a submit before hydration never puts the password in the URL', async ({
   );
   await page.goto('/login');
   await page.getByLabel('Email').fill('someone@example.com');
-  await page.getByLabel('Password').fill('super-secret-password');
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill('super-secret-password');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.waitForLoadState('load');
   expect(page.url()).not.toContain('super-secret-password');
+});
+
+test('the dev login button signs in with one click when DEV_LOGIN is set', async ({
+  page,
+  context,
+  seed,
+  request,
+}) => {
+  const providers = await request.get(`${apiUrl()}/trpc/auth.providers`);
+  const configured = (await providers.json()).result.data.json.devLogin;
+  test.skip(!configured, 'DEV_LOGIN is not set on this API');
+
+  const issues = watchIssues(page);
+  await gotoHydrated(page, '/login');
+  await page.screenshot({ path: `${SHOTS_DIR}/login-dev-button.png` });
+
+  const signedIn = page.waitForResponse((response) =>
+    response.url().includes(DEV_SIGN_IN_REQUEST)
+  );
+  await page.getByRole('button', { name: 'Dev login' }).click();
+  expect((await signedIn).status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`), {
+    timeout: 20_000,
+  });
+  expect((await context.cookies()).map((cookie) => cookie.name)).toContain(
+    'session'
+  );
+  expect(issues.unexpected()).toEqual([]);
 });

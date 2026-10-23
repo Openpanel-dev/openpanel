@@ -318,7 +318,7 @@ function Cell<Row>({
     <div
       className={cn(
         'relative flex shrink-0 items-center px-3',
-        numeric && 'justify-end font-mono tabular-nums'
+        numeric && 'justify-end tabular-nums'
       )}
       style={{ width: column.width ?? DEFAULT_COLUMN_WIDTH }}
     >

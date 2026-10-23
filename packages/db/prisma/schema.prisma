@@ -57,8 +57,11 @@ model ChatMessage {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String
+  // json, not jsonb: the model replays these verbatim and jsonb reorders keys.
   /// [IPrismaUIMessageParts]
-  parts          Json
+  parts          Json         @db.Json
+  /// [IPrismaChatMessageMetadata]
+  metadata       Json?
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])

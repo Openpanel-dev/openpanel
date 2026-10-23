@@ -13,7 +13,7 @@ export default function PageDetails({ type, projectId, value }: Props) {
   return (
     <SheetContent className="flex flex-col gap-6 overflow-y-auto sm:max-w-xl">
       <SheetHeader>
-        <SheetTitle className="truncate pr-8 font-medium font-mono text-sm">
+        <SheetTitle className="truncate pr-8 font-medium text-sm tabular-nums">
           {value}
         </SheetTitle>
       </SheetHeader>

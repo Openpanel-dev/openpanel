@@ -6,11 +6,11 @@ import type {
   IChartFilterValueType,
 } from '@openpanel/core/modules/report/report.constants';
 import { getOperatorsForType } from '@openpanel/core/modules/report/report.constants';
-import { SlidersHorizontal, Trash } from 'lucide-react';
+import { FilterIcon, XIcon } from 'lucide-react';
 import { changeEvent } from '../../reportSlice';
-import { ColorSquare } from '@/components/color-square';
 import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
 import { FilterTypeSelect } from '@/components/report/sidebar/filters/FilterTypeSelect';
+import { FILTER_CARD_CLASS } from '@/components/report/sidebar/sidebar-section';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
@@ -21,6 +21,7 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { usePropertyValues } from '@/hooks/use-property-values';
 import { useDispatch } from '@/redux';
+import { cn } from '@/utils/cn';
 
 // Client-side sanity check: can this raw value possibly match the chosen cast
 // type? Mirrors the SQL casts in
@@ -173,7 +174,7 @@ export function FilterItem({ filter, event }: FilterProps) {
   const dispatch = useDispatch();
   return (
     <PureFilterItem
-      className="px-4 py-2 shadow-[inset_6px_0_0] shadow-def-300 first:border-t"
+      className={FILTER_CARD_CLASS}
       eventName={event.name}
       filter={filter}
       onChangeOperator={onChangeOperator}
@@ -261,11 +262,13 @@ export function PureFilterItem({
     if (isBooleanSessionFilter) {
       return (
         <Combobox
-          className="flex-1"
+          className="w-full"
           items={BOOLEAN_VALUE_ITEMS}
           onChange={(v) => changeFilterValue([v])}
           placeholder="Yes / No"
+          size="sm"
           value={filter.value[0] === undefined ? null : String(filter.value[0])}
+          variant="input"
         />
       );
     }
@@ -273,12 +276,14 @@ export function PureFilterItem({
     if (isPerformedEventFilter) {
       return (
         <ComboboxEvents
-          className="flex-1"
+          className="w-full"
           items={eventNames}
           onChange={(v: string) => changeFilterValue([v])}
           placeholder="Select event"
           searchable
+          size="sm"
           value={filter.value[0] ? String(filter.value[0]) : null}
+          variant="input"
         />
       );
     }
@@ -286,11 +291,13 @@ export function PureFilterItem({
     if (filter.operator === 'is' || filter.operator === 'isNot') {
       return (
         <ComboboxAdvanced
-          className="flex-1"
+          className="w-full"
           items={valuesCombobox}
           onChange={changeFilterValue}
           placeholder="Select..."
+          size="sm"
           value={filter.value}
+          variant="input"
         />
       );
     }
@@ -300,25 +307,30 @@ export function PureFilterItem({
         error={valueError}
         immediate={immediateInput}
         onChangeValue={(value) => changeFilterValue([value])}
+        size="sm"
         value={filter.value[0] ? String(filter.value[0]) : ''}
       />
     );
   };
 
   return (
-    <div className={className}>
-      <div className="mb-2 flex items-center gap-2">
-        <ColorSquare className="bg-emerald-500">
-          <SlidersHorizontal size={10} />
-        </ColorSquare>
-        <div className="flex flex-1">
-          <RenderDots truncate>{filter.name}</RenderDots>
-        </div>
-        <Button onClick={removeFilter} size="sm" variant="ghost">
-          <Trash size={16} />
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <div className="flex min-h-6 items-center gap-1.5 text-muted-foreground text-xs">
+        <FilterIcon className="shrink-0" size={12} />
+        <RenderDots className="min-w-0 font-medium" truncate>
+          {filter.name}
+        </RenderDots>
+        <Button
+          aria-label="Delete filter"
+          className="ml-auto size-6 text-muted-foreground hover:text-foreground"
+          onClick={removeFilter}
+          size="icon"
+          variant="ghost"
+        >
+          <XIcon size={14} />
         </Button>
       </div>
-      <div className="flex gap-1">
+      <div className="flex flex-wrap gap-1.5">
         {showTypeSelect && (
           <FilterTypeSelect onChange={changeFilterType} value={filter.type} />
         )}
@@ -327,11 +339,9 @@ export function PureFilterItem({
           type={filter.type}
           value={filter.operator}
         />
-        {renderValueControl()}
+        <div className="min-w-40 flex-1">{renderValueControl()}</div>
       </div>
-      {valueError && (
-        <p className="mt-1 text-destructive text-xs">{valueError}</p>
-      )}
+      {valueError && <p className="text-destructive text-xs">{valueError}</p>}
     </div>
   );
 }

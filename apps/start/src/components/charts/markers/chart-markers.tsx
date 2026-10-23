@@ -58,7 +58,7 @@ export function MarkerTooltipContent({ markers }: MarkerTooltipContentProps) {
                   <div className="flex items-center gap-1.5 truncate font-medium text-chart-tooltip-foreground text-sm">
                     {marker.title}
                     {isClickable && (
-                      <span className="text-[10px] text-chart-tooltip-muted">
+                      <span className="text-2xs text-chart-tooltip-muted">
                         ↗
                       </span>
                     )}

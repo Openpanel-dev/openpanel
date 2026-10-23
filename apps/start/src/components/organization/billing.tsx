@@ -3,12 +3,13 @@ import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { differenceInDays } from 'date-fns';
 import { useQueryState } from 'nuqs';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { Progress } from '../ui/progress';
 import { Widget, WidgetBody, WidgetHead } from '../widget';
 import { BillingFaq } from './billing-faq';
 import BillingPlanPicker from './billing-plan-picker';
+import { projectUsage } from './billing-projection';
 import BillingUsage from './billing-usage';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,21 +19,15 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
 
-type Props = {
+interface Props {
   organization: IServiceOrganization;
-};
+}
 
 export default function Billing({ organization }: Props) {
   const [success, setSuccess] = useQueryState('customer_session_token');
   const queryClient = useQueryClient();
   const trpc = useTRPC();
   const number = useNumber();
-
-  const productsQuery = useQuery(
-    trpc.subscription.products.queryOptions({
-      organizationId: organization.id,
-    })
-  );
 
   const currentProductQuery = useQuery(
     trpc.subscription.getCurrent.queryOptions({
@@ -77,19 +72,7 @@ export default function Billing({ organization }: Props) {
     queryClient.invalidateQueries(trpc.subscription.pathFilter());
   });
 
-  const [recurringInterval, setRecurringInterval] = useState<'year' | 'month'>(
-    (organization.subscriptionInterval as 'year' | 'month') || 'month'
-  );
-
-  const products = useMemo(() => {
-    return (productsQuery.data || [])
-      .filter((product) => product.recurringInterval === recurringInterval)
-      .filter((product) =>
-        // `free` no longer exists in the SDK's amountType union, but retired
-        // free-plan products can still come back from Polar's API.
-        product.prices.some((p) => (p.amountType as string) !== 'free')
-      );
-  }, [productsQuery.data, recurringInterval]);
+  const recurringInterval = organization.subscriptionInterval ?? 'month';
 
   const currentProduct = currentProductQuery.data ?? null;
   const currentPrice = currentProduct?.prices.flatMap((p) =>
@@ -183,12 +166,66 @@ export default function Billing({ organization }: Props) {
     }
   });
 
-  // Active subscribers manage an existing plan: current-plan card + usage on the
-  // left, FAQ on the right. Plan changes go through the modal.
+  // Active subscribers manage an existing plan: current-plan card beside the
+  // FAQ, then the usage breakdown across the full width so both charts fit.
+  // Plan changes go through the modal.
   if (currentProduct && currentPrice) {
+    const eventsLimit = Number(currentProduct.metadata.eventsLimit);
+    const eventsLeft = Math.max(
+      0,
+      eventsLimit - organization.subscriptionPeriodEventsCount
+    );
+    const periodStart = organization.subscriptionCurrentPeriodStart;
+    const periodEnd = organization.subscriptionCurrentPeriodEnd;
+    const periodLabel =
+      periodStart && periodEnd
+        ? `${formatDate(periodStart)} – ${formatDate(periodEnd)}`
+        : null;
+    const projection =
+      periodStart && periodEnd
+        ? projectUsage({
+            used: organization.subscriptionPeriodEventsCount,
+            limit: eventsLimit,
+            periodStart,
+            periodEnd,
+            now: new Date(),
+          })
+        : null;
+    const isOverLimit =
+      eventsLimit > 0 &&
+      organization.subscriptionPeriodEventsCount >= eventsLimit;
+    const renderProjection = () => {
+      if (isOverLimit) {
+        return (
+          <p className="text-destructive">
+            Limit reached for this period. New events are not shown until the
+            next period starts.
+          </p>
+        );
+      }
+      if (!projection) {
+        return null;
+      }
+      const pace = `${number.format(Math.round(projection.perDay))} events a day`;
+      if (projection.limitReachedAt) {
+        return (
+          <p className="text-destructive">
+            At {pace} the limit is reached around{' '}
+            {formatDate(projection.limitReachedAt)}, with about{' '}
+            {number.format(projection.projectedTotal)} events by period end.
+          </p>
+        );
+      }
+      return (
+        <p className="text-muted-foreground">
+          At {pace} this period ends at about{' '}
+          {number.format(projection.projectedTotal)} events.
+        </p>
+      );
+    };
     return (
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-        <div className="col gap-8">
+      <div className="col gap-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
           <Widget className="w-full">
             <WidgetHead className="flex items-center justify-between gap-4">
               <div className="title flex-1 truncate">{currentProduct.name}</div>
@@ -213,18 +250,33 @@ export default function Billing({ organization }: Props) {
               {renderStatus()}
               {renderDiscount()}
               <div className="col mt-4">
-                <div className="mb-2 font-semibold">
-                  {number.format(organization.subscriptionPeriodEventsCount)} /{' '}
-                  {number.format(Number(currentProduct.metadata.eventsLimit))}
+                <div className="row mb-2 items-baseline justify-between gap-4">
+                  <div className="font-semibold">
+                    {number.format(organization.subscriptionPeriodEventsCount)}{' '}
+                    / {number.format(eventsLimit)} events
+                  </div>
+                  <div className="text-muted-foreground">
+                    {number.format(eventsLeft)} left
+                  </div>
                 </div>
                 <Progress
                   size="sm"
                   value={
-                    (organization.subscriptionPeriodEventsCount /
-                      Number(currentProduct.metadata.eventsLimit)) *
-                    100
+                    eventsLimit
+                      ? (organization.subscriptionPeriodEventsCount /
+                          eventsLimit) *
+                        100
+                      : 0
                   }
                 />
+                <div className="col mt-2 gap-1">
+                  {periodLabel && (
+                    <p className="text-muted-foreground">
+                      Current period {periodLabel}
+                    </p>
+                  )}
+                  {renderProjection()}
+                </div>
                 <div className="row mt-4 justify-between">
                   <Button
                     loading={portalMutation.isPending}
@@ -294,10 +346,10 @@ export default function Billing({ organization }: Props) {
             </WidgetBody>
           </Widget>
 
-          <BillingUsage organization={organization} />
+          <BillingFaq />
         </div>
 
-        <BillingFaq />
+        <BillingUsage organization={organization} />
       </div>
     );
   }
@@ -346,11 +398,10 @@ export default function Billing({ organization }: Props) {
           </WidgetBody>
         </Widget>
 
-        <div className="col gap-8">
-          <BillingUsage organization={organization} />
-          <BillingFaq />
-        </div>
+        <BillingFaq />
       </div>
+
+      <BillingUsage organization={organization} />
     </div>
   );
 }
