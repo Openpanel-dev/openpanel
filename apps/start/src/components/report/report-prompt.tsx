@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { applyDraft } from './reportSlice';
 import { Button } from '@/components/ui/button';
+import { fieldSurface } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useAppParams } from '@/hooks/use-app-params';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
@@ -73,32 +74,25 @@ export function ReportPrompt() {
 
   return (
     <div className="card flex flex-col items-center px-4 py-16 md:py-24">
-      <p className="max-w-lg text-center text-muted-foreground">
-        To get you going, just say what you want to see and we'll generate a
-        good starting point.
-      </p>
+      <div className="max-w-lg space-y-1 text-center">
+        <h2 className="font-semibold text-xl">Describe your report</h2>
+        <p className="font-medium text-base text-muted-foreground">
+          Say what you want to see and we'll generate a good starting point. You
+          can adjust everything afterwards.
+        </p>
+      </div>
 
       <form
-        className="mt-6 w-full max-w-2xl"
+        className="mt-8 w-full max-w-2xl"
         onSubmit={(event) => {
           event.preventDefault();
           submit();
         }}
       >
-        <div
-          className={cn(
-            'rounded-2xl border bg-card shadow-sm transition-shadow',
-            'focus-within:border-ring focus-within:ring-1 focus-within:ring-ring',
-            busy && 'opacity-80'
-          )}
-        >
+        <div className={cn(fieldSurface, 'rounded-2xl', busy && 'opacity-80')}>
           <textarea
             aria-label="Describe the report"
-            className={cn(
-              'block w-full resize-none bg-transparent px-4 pt-4 pb-2 text-base text-foreground',
-              'placeholder:text-muted-foreground/70',
-              'border-0 outline-none ring-0 focus:outline-none focus:ring-0'
-            )}
+            className="block w-full resize-none bg-transparent px-4 pt-4 pb-2 text-base text-foreground outline-none placeholder:text-muted-foreground/70"
             disabled={busy}
             onChange={(event) => setText(event.target.value)}
             onKeyDown={(event) => {
