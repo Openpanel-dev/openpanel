@@ -121,6 +121,8 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
     cohortJoins,
   } = input;
 
+  const sessionFilter =
+    group === 'session_id' ? sql`AND events.session_id != ''` : sql.empty;
   const groupKey = sql.id(group, CONVERSION_GROUPS);
   const breakdownAliases = breakdownSelects.map((_, index) =>
     compiledText(`b_${index}`)
@@ -166,6 +168,7 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
         ${groupJoin(needsGroupArrayJoin, projectId)}
         ${sql.join(cohortJoins, ' ')}
         WHERE project_id = ${sql.string(projectId)}
+          ${sessionFilter}
           ${eventNames.includes('*') ? sql.empty : sql`AND events.name IN ${sql.array('String', eventNames)}`}
           AND ${dateRange}
         GROUP BY ${groupKey}${innerBreakdownGroupBy})
