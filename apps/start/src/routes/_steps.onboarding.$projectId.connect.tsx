@@ -152,20 +152,6 @@ function Component() {
           organizationId={project.organizationId}
           projectId={project.id}
         />
-        {!isVerified && (
-          <Link
-            className="text-center text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
-            onClick={() =>
-              trackFunnel('onboarding_skipped', {
-                projectId,
-                secondsOnStep: secondsOnStep(),
-              })
-            }
-            {...dashboard}
-          >
-            Skip for now, I will install later
-          </Link>
-        )}
       </aside>
       <div className="col gap-10 lg:col-start-1">
         <InstallGuide
@@ -175,11 +161,22 @@ function Component() {
           projectTypes={project.types}
         />
         <div className="row items-center justify-between gap-4 border-t pt-8">
-          <span className="text-muted-foreground">
-            {isVerified
-              ? 'You are all set.'
-              : 'The dashboard fills up as soon as events arrive.'}
-          </span>
+          {isVerified ? (
+            <span className="text-muted-foreground">You are all set.</span>
+          ) : (
+            <Link
+              className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              onClick={() =>
+                trackFunnel('onboarding_skipped', {
+                  projectId,
+                  secondsOnStep: secondsOnStep(),
+                })
+              }
+              {...dashboard}
+            >
+              Skip for now, I will install later
+            </Link>
+          )}
           <LinkButton
             onClick={() => openDashboard('footer')}
             size="xl"
