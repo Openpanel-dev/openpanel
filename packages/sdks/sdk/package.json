@@ -13,7 +13,6 @@
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {},

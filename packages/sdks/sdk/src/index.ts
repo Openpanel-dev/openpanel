@@ -135,9 +135,7 @@ export class OpenPanel {
     });
   }
 
-  init() {
-    // Platform SDKs override this hook.
-  }
+  init() {}
 
   ready() {
     this.options.disabled = false;
@@ -182,11 +180,8 @@ export class OpenPanel {
     // Disable keepalive for replay since it has a hard body limit and breaks the request
     const result = await this.api.fetch<
       TrackHandlerPayload,
-      { deviceId: string; sessionId: string } | { duplicate: true }
+      { deviceId: string; sessionId: string }
     >('/track', payload, { keepalive: payload.type !== 'replay' });
-    if (result && 'duplicate' in result) {
-      return;
-    }
     this.deviceId = result?.deviceId;
     const hadSession = !!this.sessionId;
     this.sessionId = result?.sessionId;
@@ -284,9 +279,7 @@ export class OpenPanel {
   /**
    * @deprecated This method is deprecated and will be removed in a future version.
    */
-  alias(_payload: AliasPayload) {
-    // Ingestion no longer supports aliases.
-  }
+  alias(_payload: AliasPayload) {}
 
   increment(payload: IncrementPayload) {
     return this.send({
