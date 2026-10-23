@@ -103,7 +103,14 @@ export interface CreateOnboardingProjectResult {
   projectId: string | null;
   type: string;
   secret: string;
+  /** Token for the read-only MCP client created alongside; only ever returned here. */
+  mcpToken: string;
 }
+
+const newClientSecret = () => `sec_${crypto.randomBytes(10).toString('hex')}`;
+
+const toMcpToken = (clientId: string, secret: string) =>
+  Buffer.from(`${clientId}:${secret}`).toString('base64');
 
 export async function createOnboardingProject(
   deps: ServiceDeps,
@@ -151,7 +158,7 @@ export async function createOnboardingProject(
     },
   });
 
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+  const secret = newClientSecret();
   const client = await db.client.create({
     data: {
       name: `${project.name} Client`,
@@ -162,7 +169,21 @@ export async function createOnboardingProject(
     },
   });
 
-  return { ...client, secret };
+  // MCP only accepts read and root clients, so the write client's token
+  // would never work. A read client scoped to this project is created up
+  // front; the dashboard shows its token once and never its id or secret.
+  const mcpSecret = newClientSecret();
+  const mcpClient = await db.client.create({
+    data: {
+      name: `${project.name} MCP client`,
+      organizationId: organization.id,
+      projectId: project.id,
+      type: 'read',
+      secret: await hashClientSecret(mcpSecret),
+    },
+  });
+
+  return { ...client, secret, mcpToken: toMcpToken(mcpClient.id, mcpSecret) };
 }
 
 // The onboarding email drip cron. The `organization.onboarding` column

@@ -22,7 +22,10 @@ function Component() {
     trpc.project.getProjectWithClients.queryOptions({ projectId })
   );
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const clients: IPublicClient[] = project?.clients ?? [];
+  // Read clients (MCP) cannot send events, so they never belong in a snippet.
+  const clients: IPublicClient[] = (project?.clients ?? []).filter(
+    (candidate) => candidate.type !== 'read'
+  );
   const client =
     clients.find((candidate) => candidate.id === selectedClientId) ??
     clients[0];

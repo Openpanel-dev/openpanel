@@ -20,9 +20,20 @@ const STEPS = [
 
 function OnboardingLayout() {
   const logout = useLogout();
+  const matchRoute = useMatchRoute();
+  // The install step has a sidebar; the project form stays a single column.
+  const isWide = Boolean(
+    matchRoute({ to: '/onboarding/$projectId/connect', fuzzy: false })
+  );
+  const width = isWide ? 'max-w-5xl' : 'max-w-2xl';
   return (
     <div className="min-h-screen bg-background">
-      <header className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 py-6">
+      <header
+        className={cn(
+          'mx-auto flex w-full items-center justify-between px-6 py-6',
+          width
+        )}
+      >
         <a className="row items-center gap-2.5 font-medium" href="/">
           <LogoSquare className="size-8 shrink-0" />
           <span>OpenPanel</span>
@@ -37,7 +48,7 @@ function OnboardingLayout() {
           Sign out
         </Button>
       </header>
-      <main className="mx-auto w-full max-w-2xl px-6 pt-8 pb-24">
+      <main className={cn('mx-auto w-full px-6 pt-8 pb-24', width)}>
         <StepIndicator />
         <Outlet />
       </main>

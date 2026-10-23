@@ -171,7 +171,6 @@ test('a website + backend project is created with its domains and leads into set
   await expect(page).toHaveURL(new RegExp(`/onboarding/${project.id}/connect`));
   await expect(page.getByText('Listening for your first event')).toBeVisible();
   // The secret is read from sessionStorage after hydration.
-  await page.getByRole('button', { name: 'Your credentials' }).click();
   await expect(page.getByText(/sec_[0-9a-f]{20}/).first()).toBeVisible({
     timeout: HYDRATION_TIMEOUT_MS,
   });

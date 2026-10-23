@@ -328,13 +328,13 @@ test('a website project leads to the connect step with its one-time credentials'
     },
   });
 
-  // The secret and the MCP token are only known right after creation.
-  await page.getByRole('button', { name: 'Your credentials' }).click();
+  // The secret and the MCP token are only known right after creation. The
+  // token belongs to a separate read-only client, so it is not derived from
+  // the write client's secret.
   await expect(page.getByText(client.id).first()).toBeVisible();
   await expect(page.getByText(client.secret)).toBeVisible();
-  await expect(
-    page.getByText(btoa(`${client.id}:${client.secret}`))
-  ).toBeVisible();
+  await expect(page.getByText(client.mcpToken)).toBeVisible();
+  expect(client.mcpToken).not.toBe(btoa(`${client.id}:${client.secret}`));
 
   // Manual setup starts with the script tag for a website, with the real client id.
   await page.getByRole('tab', { name: 'Manual setup' }).click();
@@ -364,9 +364,10 @@ test('a website project leads to the connect step with its one-time credentials'
   await page.evaluate(() => sessionStorage.clear());
   await page.reload();
   await waitForHydration(page);
-  await page.getByRole('button', { name: 'Your credentials' }).click();
+  await expect(page.getByText(client.id).first()).toBeVisible();
   await expect(page.getByText(client.secret)).toHaveCount(0);
-  await expect(page.getByText('is only shown once')).toBeVisible();
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await expect(page.getByText('Secrets are shown once')).toBeVisible();
   expect(issues.unexpected()).toEqual([]);
 });
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export const ONBOARDING_SECRET_KEY = 'onboarding.clientSecret';
+export const ONBOARDING_MCP_TOKEN_KEY = 'onboarding.mcpToken';
 const DEFAULT_SECRET = '[CLIENT_SECRET]';
 
 // The secret only exists client-side right after creation (we store a hash).
@@ -12,38 +13,48 @@ export const isRealClientSecret = (
 
 // Storage can throw (blocked cookies/site data, some private modes); a missing
 // secret must degrade to the placeholder flow, never crash the page.
-const safeRead = () => {
+const safeRead = (key: string) => {
   try {
-    return sessionStorage.getItem(ONBOARDING_SECRET_KEY);
+    return sessionStorage.getItem(key);
   } catch {
     return null;
   }
 };
 
-const safeWrite = (value: string) => {
+const safeWrite = (key: string, value: string) => {
   try {
-    sessionStorage.setItem(ONBOARDING_SECRET_KEY, value);
+    sessionStorage.setItem(key, value);
   } catch {
     // Unavailable — the connect page falls back to its secret-already-shown
     // notice.
   }
 };
 
-export function useClientSecret() {
-  const [clientSecret, setClientSecret] = useState<string>(DEFAULT_SECRET);
+function useSessionSecret(key: string, fallback: string) {
+  const [value, setValue] = useState<string>(fallback);
 
   useEffect(() => {
-    if (clientSecret && DEFAULT_SECRET !== clientSecret) {
-      safeWrite(clientSecret);
+    if (value && value !== fallback) {
+      safeWrite(key, value);
     }
-  }, [clientSecret]);
+  }, [value, key, fallback]);
 
   useEffect(() => {
-    const stored = safeRead();
+    const stored = safeRead(key);
     if (stored) {
-      setClientSecret(stored);
+      setValue(stored);
     }
-  }, []);
+  }, [key]);
 
-  return [clientSecret, setClientSecret] as const;
+  return [value, setValue] as const;
+}
+
+export function useClientSecret() {
+  return useSessionSecret(ONBOARDING_SECRET_KEY, DEFAULT_SECRET);
+}
+
+/** The read-only MCP client's token, known only in the session that created the project. */
+export function useMcpToken() {
+  const [token, setToken] = useSessionSecret(ONBOARDING_MCP_TOKEN_KEY, '');
+  return [token || null, setToken] as const;
 }

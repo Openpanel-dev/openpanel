@@ -56,14 +56,14 @@ export function FirstEventStatus({
     <section
       aria-live="polite"
       className={cn(
-        'col gap-4 rounded-xl p-5 transition-colors',
+        '@container col gap-4 rounded-xl p-5 transition-colors',
         isVerified
           ? 'bg-emerald-500/10 text-emerald-950 dark:text-emerald-50'
           : 'bg-def-200 dark:bg-def-300',
         className
       )}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+      <div className="flex @md:flex-row flex-col @md:items-center gap-4">
         <span
           className={cn(
             'center-center size-10 shrink-0 rounded-full',
@@ -95,7 +95,7 @@ export function FirstEventStatus({
               : 'Install the snippet, open your site or app once, and this turns green by itself.'}
           </p>
         </div>
-        {children && <div className="shrink-0 sm:ml-auto">{children}</div>}
+        {children && <div className="@md:ml-auto shrink-0">{children}</div>}
       </div>
       {isVerified && (
         <ul className="col gap-1 rounded-lg bg-background/60 p-3 text-sm">

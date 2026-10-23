@@ -30,7 +30,7 @@ import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { useClientSecret } from '@/hooks/use-client-secret';
+import { useClientSecret, useMcpToken } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
@@ -117,6 +117,7 @@ function Component() {
     trpc.organization.list.queryOptions(undefined, { initialData: [] })
   );
   const [, setSecret] = useClientSecret();
+  const [, setMcpToken] = useMcpToken();
   const navigate = useNavigate();
   const mutation = useMutation(
     trpc.onboarding.project.mutationOptions({
@@ -125,6 +126,7 @@ function Component() {
         op.track('onboarding_project_created', { projectId: res.projectId });
         queryClient.invalidateQueries(trpc.organization.list.queryFilter());
         setSecret(res.secret);
+        setMcpToken(res.mcpToken);
         navigate({
           to: '/onboarding/$projectId/connect',
           params: {
@@ -214,6 +216,7 @@ function Component() {
   return (
     <form className="col" onSubmit={form.handleSubmit(onSubmit)}>
       <OnboardingHeading
+        className="mb-10"
         description="A project is one website, app or service you want to track. You can add more later."
         title={hasWorkspaces ? 'Create a project' : 'Create your first project'}
       />
