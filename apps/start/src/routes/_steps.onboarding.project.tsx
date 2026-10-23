@@ -28,6 +28,7 @@ import {
 import TagInput from '@/components/forms/tag-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
+import { useOnboardingShell } from '@/components/onboarding/onboarding-shell';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
@@ -102,6 +103,8 @@ const PROJECT_TYPES: {
   },
 ];
 
+const PROJECT_STEP_SHELL = { step: 1, wide: false } as const;
+
 const TIMEZONES = ['UTC', ...Intl.supportedValuesOf('timeZone')].map(
   (zone) => ({ value: zone, label: zone })
 );
@@ -125,6 +128,7 @@ function Component() {
   const [, setMcpToken] = useMcpToken();
   const navigate = useNavigate();
   const secondsOnStep = useSecondsOnStep();
+  useOnboardingShell(PROJECT_STEP_SHELL);
   const mutation = useMutation(
     trpc.onboarding.project.mutationOptions({
       onError(error) {

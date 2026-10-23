@@ -14,6 +14,7 @@ import type { SnippetContext } from '@/components/onboarding/install-snippets';
 import { InstallTroubleshooting } from '@/components/onboarding/install-troubleshooting';
 import { McpConnect } from '@/components/onboarding/mcp-connect';
 import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
+import { useOnboardingShell } from '@/components/onboarding/onboarding-shell';
 import {
   Accordion,
   AccordionContent,
@@ -52,7 +53,10 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
   pendingComponent: FullPageLoadingState,
 });
 
+const INSTALL_STEP_SHELL = { step: 2, wide: true } as const;
+
 function Component() {
+  useOnboardingShell(INSTALL_STEP_SHELL);
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { apiUrl, isSelfHosted } = useAppContext();

@@ -1,6 +1,11 @@
-import { createFileRoute, Outlet, useMatchRoute } from '@tanstack/react-router';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { LogOutIcon } from 'lucide-react';
 import { LogoSquare } from '@/components/logo';
+import {
+  OnboardingShellProvider,
+  STEP_NAMES,
+  useOnboardingShellConfig,
+} from '@/components/onboarding/onboarding-shell';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/utils/cn';
@@ -14,19 +19,18 @@ export const Route = createFileRoute('/_steps')({
   }),
 });
 
-const STEPS = [
-  { name: 'Create project', match: '/onboarding/project' },
-  { name: 'Install', match: '/onboarding/$projectId/connect' },
-] as const;
-
 function OnboardingLayout() {
-  const logout = useLogout();
-  const matchRoute = useMatchRoute();
-  // The install step has a sidebar; the project form stays a single column.
-  const isWide = Boolean(
-    matchRoute({ to: '/onboarding/$projectId/connect', fuzzy: false })
+  return (
+    <OnboardingShellProvider>
+      <OnboardingFrame />
+    </OnboardingShellProvider>
   );
-  const width = isWide ? 'max-w-5xl' : 'max-w-2xl';
+}
+
+function OnboardingFrame() {
+  const logout = useLogout();
+  const { step, wide } = useOnboardingShellConfig();
+  const width = wide ? 'max-w-5xl' : 'max-w-2xl';
   return (
     <div className="min-h-screen bg-background">
       <header
@@ -44,7 +48,7 @@ function OnboardingLayout() {
           loading={logout.isPending}
           onClick={() => {
             trackFunnel('onboarding_signed_out', {
-              step: isWide ? 'install' : 'project',
+              step: STEP_NAMES[step - 1] ?? String(step),
             });
             logout.mutate();
           }}
@@ -55,37 +59,31 @@ function OnboardingLayout() {
         </Button>
       </header>
       <main className={cn('mx-auto w-full px-6 pt-8 pb-24', width)}>
-        <StepIndicator />
+        <StepIndicator current={step} />
         <Outlet />
       </main>
     </div>
   );
 }
 
-function StepIndicator() {
-  const matchRoute = useMatchRoute();
-  const currentIndex = STEPS.findIndex((step) =>
-    matchRoute({ to: step.match, fuzzy: false })
-  );
-  if (currentIndex === -1) {
-    return null;
-  }
+function StepIndicator({ current }: { current: number }) {
+  const currentIndex = current - 1;
   return (
     <nav aria-label="Onboarding progress" className="col mb-8 gap-3">
       <div className="text-muted-foreground text-sm tabular-nums">
-        Step {currentIndex + 1} of {STEPS.length}
+        Step {current} of {STEP_NAMES.length}
       </div>
       <ol className="row gap-2">
-        {STEPS.map((step, index) => (
+        {STEP_NAMES.map((name, index) => (
           <li
             aria-current={index === currentIndex ? 'step' : undefined}
             className={cn(
               'h-1 flex-1 rounded-full transition-colors',
               index <= currentIndex ? 'bg-foreground' : 'bg-def-300'
             )}
-            key={step.match}
+            key={name}
           >
-            <span className="sr-only">{step.name}</span>
+            <span className="sr-only">{name}</span>
           </li>
         ))}
       </ol>
