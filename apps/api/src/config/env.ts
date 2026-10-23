@@ -511,14 +511,8 @@ const rawSchema = z.object({
   SESSION_VACUUM: onUnlessZeroSchema,
   SESSION_VACUUM_BATCH_SIZE: optionalPositiveInt,
   SESSION_VACUUM_STALE_THRESHOLD_MS: optionalPositiveInt,
-  EXPERIMENTAL_PROFILE_BACKFILL: z.preprocess(
-    blankToUndefined,
-    z
-      .string()
-      .optional()
-      .transform((value) => value === ONE_STRING)
-  ),
-  EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS: tokenList,
+  PROFILE_BACKFILL: onUnlessZeroSchema,
+  PROFILE_BACKFILL_PROJECTS: tokenList,
 
   EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT: optionalPositiveInt,
   COHORT_MATERIALIZE_LIMIT: optionalPositiveInt,
@@ -674,16 +668,13 @@ function checkProfileBackfillProjectsHaveAFlag(
   raw: RawEnv,
   ctx: z.RefinementCtx
 ): void {
-  if (
-    raw.EXPERIMENTAL_PROFILE_BACKFILL ||
-    raw.EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS.length === 0
-  ) {
+  if (raw.PROFILE_BACKFILL || raw.PROFILE_BACKFILL_PROJECTS.length === 0) {
     return;
   }
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     message:
-      'EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS is set while EXPERIMENTAL_PROFILE_BACKFILL is not 1 — the allowlist has no effect.',
+      'PROFILE_BACKFILL_PROJECTS is set while PROFILE_BACKFILL is 0 — the allowlist has no effect.',
   });
 }
 
@@ -871,8 +862,8 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       vacuumEnabled: raw.SESSION_VACUUM,
       vacuumBatchSize: raw.SESSION_VACUUM_BATCH_SIZE,
       vacuumStaleThresholdMs: raw.SESSION_VACUUM_STALE_THRESHOLD_MS,
-      profileBackfillEnabled: raw.EXPERIMENTAL_PROFILE_BACKFILL,
-      profileBackfillProjectIds: raw.EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS,
+      profileBackfillEnabled: raw.PROFILE_BACKFILL,
+      profileBackfillProjectIds: raw.PROFILE_BACKFILL_PROJECTS,
     },
     query: {
       eventPropertyValueAutocompleteLimit:

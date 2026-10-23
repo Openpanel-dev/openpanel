@@ -505,16 +505,25 @@ describe('cross-field invariants, checked before the transform', () => {
     expect(message).not.toContain('hunter2-secret');
   });
 
-  it('refuses a profile-backfill project list with the flag off', () => {
-    expect(() =>
-      loadConfig({ ...base, EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS: 'p1' })
-    ).toThrow(/the allowlist has no effect/);
+  it('profile backfill is on unless PROFILE_BACKFILL=0', () => {
+    expect(loadConfig(base).core.session.profileBackfillEnabled).toBe(true);
+    expect(
+      loadConfig({ ...base, PROFILE_BACKFILL: '0' }).core.session
+        .profileBackfillEnabled
+    ).toBe(false);
+  });
+
+  it('refuses a profile-backfill project list with the switch off', () => {
     expect(() =>
       loadConfig({
         ...base,
-        EXPERIMENTAL_PROFILE_BACKFILL: '1',
-        EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS: 'p1',
+        PROFILE_BACKFILL: '0',
+        PROFILE_BACKFILL_PROJECTS: 'p1',
       })
-    ).not.toThrow();
+    ).toThrow(/the allowlist has no effect/);
+    expect(
+      loadConfig({ ...base, PROFILE_BACKFILL_PROJECTS: 'p1' }).core.session
+        .profileBackfillProjectIds
+    ).toEqual(['p1']);
   });
 });

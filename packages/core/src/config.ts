@@ -175,7 +175,7 @@ export interface SessionConfig {
   vacuumEnabled: boolean;
   vacuumBatchSize: number | undefined;
   vacuumStaleThresholdMs: number | undefined;
-  /** EXPERIMENTAL_PROFILE_BACKFILL, narrowed to a project list when given. */
+  /** PROFILE_BACKFILL (on unless 0), narrowed to a project list when given. */
   profileBackfillEnabled: boolean;
   profileBackfillProjectIds: string[];
 }

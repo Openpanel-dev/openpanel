@@ -107,6 +107,8 @@ export interface SessionEndDeps extends SessionRuntime {
       projectId: string;
       sessionId: string;
       profileId: string;
+      startedAt: string;
+      endedAt: string;
     }): Promise<unknown>;
   };
   notifications: {
@@ -217,6 +219,8 @@ export async function createSessionEnd(
       projectId: payload.projectId,
       sessionId: session.id,
       profileId,
+      startedAt: session.created_at,
+      endedAt: session.ended_at,
     });
   }
 
