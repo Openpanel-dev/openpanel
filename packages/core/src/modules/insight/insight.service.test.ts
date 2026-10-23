@@ -40,7 +40,7 @@ const redis = {
 // granted this project and a member granted another one.
 const digestProject = { id: 'p1', name: 'Project', organizationId: 'org_1' };
 const project = {
-  findMany: mock(async () => [
+  findMany: mock(async (_query: unknown) => [
     { ...digestProject, organization: { subscriptionState: 'active' } },
   ]),
 };
@@ -268,4 +268,58 @@ test('sendWeeklyDigests mails only the members who can open the project', async 
     { to: 'all@example.com', template: 'weekly-digest' },
     { to: 'this@example.com', template: 'weekly-digest' },
   ]);
+});
+
+test.each([
+  { selfHosted: true, state: 'self_hosted', sent: 1 },
+  { selfHosted: false, state: 'active', sent: 1 },
+  { selfHosted: false, state: 'trialing', sent: 1 },
+  { selfHosted: false, state: 'expired', sent: 0 },
+  { selfHosted: false, state: 'canceled', sent: 0 },
+  { selfHosted: false, state: 'self_hosted', sent: 0 },
+])('weekly digest eligibility: %j', async ({ selfHosted, state, sent }) => {
+  project.findMany.mockClear();
+  project.findMany.mockResolvedValueOnce([
+    { ...digestProject, organization: { subscriptionState: state } },
+  ]);
+  sentEmails.length = 0;
+  getAnalyticsOverviewCore.mockClear();
+  const noop = () => undefined;
+  const logger: import('../../logger').Logger = {
+    fatal: noop,
+    error: noop,
+    warn: noop,
+    info: noop,
+    debug: noop,
+    trace: noop,
+    child: () => logger,
+  };
+  const result = await subject.sendWeeklyDigests(
+    { ...deps, config: testCoreConfig({ selfHosted }) },
+    logger
+  );
+
+  expect(project.findMany).toHaveBeenCalledTimes(1);
+  const query = project.findMany.mock.calls[0]![0] as {
+    where: Record<string, unknown>;
+  };
+  expect(query.where).toEqual({
+    deleteAt: null,
+    eventsCount: { gt: expect.any(Number) },
+    ...(selfHosted
+      ? {}
+      : {
+          organization: { subscriptionStatus: { in: ['active', 'trialing'] } },
+        }),
+  });
+  expect(result).toEqual({ projects: 1, sent });
+  expect(getAnalyticsOverviewCore).toHaveBeenCalledTimes(sent * 2);
+  expect(sentEmails).toEqual(
+    sent
+      ? [
+          { to: 'all@example.com', template: 'weekly-digest' },
+          { to: 'this@example.com', template: 'weekly-digest' },
+        ]
+      : []
+  );
 });
