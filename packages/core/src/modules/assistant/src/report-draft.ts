@@ -19,6 +19,10 @@ import { discoveryTools } from './tools/discovery';
 const MAX_STEPS = 6;
 const DATE_LENGTH = 10;
 const DEFAULT_RANGE: IChartRange = '30d';
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const MS_PER_DAY = 86_400_000;
+/** The longest custom span that may be drawn per hour; the same bound the `7d` preset has. */
+const MAX_HOURLY_SPAN_DAYS = 7;
 const MAX_SUMMARY_LENGTH = 200;
 
 const PRESET_RANGES = Object.keys(timeWindows).filter(
@@ -77,21 +81,90 @@ function clampInterval(
   return interval;
 }
 
+/** Custom dates are whole days, so minutes never fit and hours only on a short span. */
+function clampCustomInterval(
+  interval: ReportDraft['interval'],
+  spanDays: number
+): ReportDraft['interval'] {
+  if (interval === 'minute') {
+    return spanDays <= MAX_HOURLY_SPAN_DAYS ? 'hour' : 'day';
+  }
+  if (interval === 'hour' && spanDays > MAX_HOURLY_SPAN_DAYS) {
+    return 'day';
+  }
+  return interval;
+}
+
+function parseIsoDate(value: string): Date | null {
+  if (!ISO_DATE.test(value)) {
+    return null;
+  }
+  const date = new Date(`${value}T00:00:00Z`);
+  const roundTrips = date.toISOString().slice(0, DATE_LENGTH) === value;
+  return roundTrips ? date : null;
+}
+
+/** The model writes dates as free text; reject anything the chart engine could not turn into a window. */
+function customSpanDays(
+  startDate: string,
+  endDate: string
+): { days: number } | { error: string; issues: unknown } {
+  const start = parseIsoDate(startDate);
+  const end = parseIsoDate(endDate);
+  if (!(start && end)) {
+    return {
+      error: 'startDate and endDate must be real dates written as YYYY-MM-DD',
+      issues: { startDate, endDate },
+    };
+  }
+  if (end < start) {
+    return {
+      error: 'endDate must be the same day as startDate or later',
+      issues: { startDate, endDate },
+    };
+  }
+  return { days: (end.getTime() - start.getTime()) / MS_PER_DAY };
+}
+
 /** The editor stores a preset as `range` with no dates, or `custom` with both dates. */
 export function proposalToDraft(
   projectId: string,
   timezone: string,
   proposal: ReportDraftProposal
 ): { draft: ReportDraft } | { error: string; issues: unknown } {
-  const hasCustomDates = Boolean(proposal.startDate && proposal.endDate);
-  const range: IChartRange = hasCustomDates
-    ? 'custom'
-    : (proposal.range ?? DEFAULT_RANGE);
-  const dates = hasCustomDates
-    ? { startDate: proposal.startDate ?? '', endDate: proposal.endDate ?? '' }
-    : getDatesFromRange(range, timezone);
   const { range: _range, summary: _summary, ...chartInput } = proposal;
-  const built = buildReportConfig({ projectId }, { ...chartInput, ...dates });
+  const customDates =
+    proposal.startDate && proposal.endDate
+      ? { startDate: proposal.startDate, endDate: proposal.endDate }
+      : null;
+
+  if (customDates) {
+    const span = customSpanDays(customDates.startDate, customDates.endDate);
+    if ('error' in span) {
+      return span;
+    }
+    const built = buildReportConfig(
+      { projectId },
+      { ...chartInput, ...customDates }
+    );
+    if ('error' in built) {
+      return built;
+    }
+    return {
+      draft: {
+        ...built.config,
+        range: 'custom',
+        ...customDates,
+        interval: clampCustomInterval(built.config.interval, span.days),
+      },
+    };
+  }
+
+  const range: IChartRange = proposal.range ?? DEFAULT_RANGE;
+  const built = buildReportConfig(
+    { projectId },
+    { ...chartInput, ...getDatesFromRange(range, timezone) }
+  );
   if ('error' in built) {
     return built;
   }
@@ -99,11 +172,9 @@ export function proposalToDraft(
     draft: {
       ...built.config,
       range,
-      startDate: hasCustomDates ? dates.startDate : null,
-      endDate: hasCustomDates ? dates.endDate : null,
-      interval: hasCustomDates
-        ? built.config.interval
-        : clampInterval(built.config.interval, range),
+      startDate: null,
+      endDate: null,
+      interval: clampInterval(built.config.interval, range),
     },
   };
 }

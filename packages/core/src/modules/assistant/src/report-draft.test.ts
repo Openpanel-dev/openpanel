@@ -69,6 +69,51 @@ describe('proposalToDraft', () => {
     expect('draft' in minutely && minutely.draft.interval).toBe('hour');
   });
 
+  test('custom dates must be real days in order', () => {
+    const malformed = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      startDate: 'last month',
+      endDate: '2026-08-31',
+    });
+    expect('error' in malformed).toBe(true);
+    const impossible = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      startDate: '2026-02-30',
+      endDate: '2026-03-01',
+    });
+    expect('error' in impossible).toBe(true);
+    const reversed = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      startDate: '2026-08-31',
+      endDate: '2026-08-01',
+    });
+    expect('error' in reversed).toBe(true);
+  });
+
+  test('a custom span clamps the interval like a preset does', () => {
+    const hourlyYear = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      interval: 'hour',
+      startDate: '2025-01-01',
+      endDate: '2025-12-31',
+    });
+    expect('draft' in hourlyYear && hourlyYear.draft.interval).toBe('day');
+    const hourlyWeek = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      interval: 'hour',
+      startDate: '2026-08-01',
+      endDate: '2026-08-07',
+    });
+    expect('draft' in hourlyWeek && hourlyWeek.draft.interval).toBe('hour');
+    const minutely = proposalToDraft(PROJECT_ID, TIMEZONE, {
+      ...purchases,
+      interval: 'minute',
+      startDate: '2026-08-01',
+      endDate: '2026-08-01',
+    });
+    expect('draft' in minutely && minutely.draft.interval).toBe('hour');
+  });
+
   test('an invalid proposal comes back as issues the model can fix', () => {
     const built = proposalToDraft(PROJECT_ID, TIMEZONE, {
       ...purchases,
