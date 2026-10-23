@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useLayoutEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useMatches } from '@tanstack/react-router';
 
 export interface OnboardingShellConfig {
   /** 1-based position in STEP_NAMES. */
@@ -15,39 +9,27 @@ export interface OnboardingShellConfig {
 
 export const STEP_NAMES = ['Create project', 'Install'] as const;
 
+const SHELL_BY_ROUTE: Record<string, OnboardingShellConfig> = {
+  '/_steps/onboarding/project': { step: 1, wide: false },
+  '/_steps/onboarding/$projectId/connect': { step: 2, wide: true },
+};
+
 const DEFAULT_CONFIG: OnboardingShellConfig = { step: 1, wide: false };
 
-const ShellContext = createContext<{
-  config: OnboardingShellConfig;
-  setConfig: (config: OnboardingShellConfig) => void;
-} | null>(null);
-
-export function OnboardingShellProvider({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const [config, setConfig] = useState<OnboardingShellConfig>(DEFAULT_CONFIG);
-  const value = useMemo(() => ({ config, setConfig }), [config]);
-  return (
-    <ShellContext.Provider value={value}>{children}</ShellContext.Provider>
-  );
-}
-
-export function useOnboardingShellConfig(): OnboardingShellConfig {
-  return useContext(ShellContext)?.config ?? DEFAULT_CONFIG;
-}
-
 /**
- * A step declares its own shell. The router knows the next location before
- * the next page commits, so deriving this from the route re-lays out the
- * shell around the old page for a frame; a layout effect from the page
- * itself updates the shell in the same paint as the page.
+ * Read from the committed matches, which change in the same render as the
+ * page the Outlet shows, so the frame and the step never disagree: not on
+ * the server, not on hydration and not for a frame during navigation.
+ * (Location-based matching flips as soon as a navigation starts.)
  */
-export function useOnboardingShell(config: OnboardingShellConfig) {
-  const context = useContext(ShellContext);
-  const setConfig = context?.setConfig;
-  useLayoutEffect(() => {
-    setConfig?.(config);
-  }, [setConfig, config.step, config.wide]);
+export function useOnboardingShellConfig(): OnboardingShellConfig {
+  return useMatches({
+    select: (matches) => {
+      const stepMatch = matches.find(
+        (match) => match.routeId in SHELL_BY_ROUTE
+      );
+      return stepMatch ? SHELL_BY_ROUTE[stepMatch.routeId] : DEFAULT_CONFIG;
+    },
+    structuralSharing: true,
+  });
 }

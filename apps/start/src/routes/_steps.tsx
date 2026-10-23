@@ -2,7 +2,6 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { LogOutIcon } from 'lucide-react';
 import { LogoSquare } from '@/components/logo';
 import {
-  OnboardingShellProvider,
   STEP_NAMES,
   useOnboardingShellConfig,
 } from '@/components/onboarding/onboarding-shell';
@@ -20,14 +19,6 @@ export const Route = createFileRoute('/_steps')({
 });
 
 function OnboardingLayout() {
-  return (
-    <OnboardingShellProvider>
-      <OnboardingFrame />
-    </OnboardingShellProvider>
-  );
-}
-
-function OnboardingFrame() {
   const logout = useLogout();
   const { step, wide } = useOnboardingShellConfig();
   const width = wide ? 'max-w-5xl' : 'max-w-2xl';
