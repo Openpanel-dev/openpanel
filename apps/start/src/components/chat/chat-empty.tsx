@@ -46,6 +46,13 @@ function promptsFor(hint?: ChatLaunchHint): string[] {
         'Which pages are losing traffic?',
         'Chart pageviews for /pricing over time',
       ];
+    case 'onboarding':
+      return [
+        'Why are no events arriving?',
+        'Check my install on my website',
+        'Which SDK fits my stack?',
+        'Show the last events that reached this project',
+      ];
     case 'events':
       return [
         'Which events fire most often?',

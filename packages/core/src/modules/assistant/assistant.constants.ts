@@ -135,6 +135,7 @@ export const CHAT_HINT_PAGES = [
   'events',
   'insights',
   'realtime',
+  'onboarding',
 ] as const;
 
 const MAX_ID_LENGTH = 128;

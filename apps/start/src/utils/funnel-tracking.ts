@@ -45,6 +45,7 @@ export type FunnelEvent =
   | 'onboarding_allowed_domains_updated'
   | 'onboarding_test_curl_copied'
   | 'onboarding_support_link_clicked'
+  | 'onboarding_assistant_opened'
   | 'onboarding_first_event_verified'
   | 'onboarding_skipped'
   | 'onboarding_dashboard_opened'
