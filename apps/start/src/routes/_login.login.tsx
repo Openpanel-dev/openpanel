@@ -2,11 +2,11 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
 import { z } from 'zod';
+import { AuthHeading } from '@/components/auth/auth-shell';
 import { Or } from '@/components/auth/or';
 import { SignInDev } from '@/components/auth/sign-in-dev';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
-import { SignInGithub } from '@/components/auth/sign-in-github';
-import { SignInGoogle } from '@/components/auth/sign-in-google';
+import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -43,43 +43,34 @@ function LoginPage() {
     'last-auth-provider',
     null
   );
+  const signUpHref = inviteId
+    ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
+    : '/onboarding';
 
   return (
-    <div className="col w-full gap-8 text-left">
-      <div>
-        <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
-        <p className="text-muted-foreground">
-          Don't have an account?{' '}
-          <a
-            className="font-medium text-foreground underline"
-            href="/onboarding"
-          >
-            Create one today
-          </a>
-        </p>
-      </div>
+    <div className="col w-full gap-8">
+      <AuthHeading
+        description="Sign in to your OpenPanel account."
+        title="Welcome back"
+      />
+
       {error && (
-        <Alert
-          className="mb-6 border-destructive/20 bg-destructive/10 text-left"
-          variant="destructive"
-        >
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Could not sign you in</AlertTitle>
           <AlertDescription>
             <p>{error}</p>
             {correlationId && (
-              <>
-                <p>Correlation ID: {correlationId}</p>
-                <p className="mt-2">
-                  Contact us if you have any issues.{' '}
-                  <a
-                    className="font-medium underline"
-                    href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
-                  >
-                    hello[at]openpanel.dev
-                  </a>
-                </p>
-              </>
+              <p className="mt-2">
+                Reference: {correlationId}.{' '}
+                <a
+                  className="font-medium underline"
+                  href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
+                >
+                  Email us
+                </a>{' '}
+                and we will sort it out.
+              </p>
             )}
           </AlertDescription>
         </Alert>
@@ -87,35 +78,46 @@ function LoginPage() {
 
       {hasOAuthProviders && (
         <>
-          <div className="space-y-4">
+          <div className="col gap-3">
             {providers.google && (
-              <SignInGoogle
+              <SignInOAuth
                 inviteId={inviteId}
                 isLastUsed={lastProvider === 'google'}
+                provider="google"
                 type="sign-in"
               />
             )}
             {providers.github && (
-              <SignInGithub
+              <SignInOAuth
                 inviteId={inviteId}
                 isLastUsed={lastProvider === 'github'}
+                provider="github"
                 type="sign-in"
               />
             )}
           </div>
-          <Or />
+          <Or>or continue with email</Or>
         </>
       )}
+
       <SignInEmailForm
         inviteId={inviteId}
         isLastUsed={lastProvider === 'email'}
       />
+
       {providers.devLogin && (
         <>
-          <Or />
+          <Or>local development</Or>
           <SignInDev inviteId={inviteId} />
         </>
       )}
+
+      <p className="text-center text-muted-foreground text-sm">
+        New to OpenPanel?{' '}
+        <a className="font-medium text-foreground underline" href={signUpHref}>
+          Create an account
+        </a>
+      </p>
     </div>
   );
 }

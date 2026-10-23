@@ -15,7 +15,9 @@ setup('sign in as the seeded user', async ({ page }) => {
   // until the values stick, then submit.
   await expect(async () => {
     await page.getByLabel('Email').fill(manifest.user.email);
-    await page.getByLabel('Password').fill(manifest.user.password);
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill(manifest.user.password);
     await page.waitForTimeout(500);
     await expect(page.getByLabel('Email')).toHaveValue(manifest.user.email);
   }).toPass({ timeout: 15_000 });

@@ -169,15 +169,14 @@ test('a website + backend project is created with its domains and leads into set
 
   await dialog.getByRole('link', { name: 'Set up tracking' }).click();
   await expect(page).toHaveURL(new RegExp(`/onboarding/${project.id}/connect`));
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
   // The secret is read from sessionStorage after hydration.
+  await page.getByRole('button', { name: 'Your credentials' }).click();
   await expect(page.getByText(/sec_[0-9a-f]{20}/).first()).toBeVisible({
     timeout: HYDRATION_TIMEOUT_MS,
   });
-  await page.getByRole('link', { name: 'Next' }).click();
-  await expect(page).toHaveURL(new RegExp(`/onboarding/${project.id}/verify`));
-  await expect(page.getByText('Waiting for events')).toBeVisible();
   await expect(
-    page.getByRole('link', { name: 'Skip for now' })
+    page.getByRole('link', { name: 'Skip for now, I will install later' })
   ).toHaveAttribute('href', `/${seed.organizationId}/${project.id}`);
 
   await deleteProjectThroughSettings(page, seed.organizationId, project.id);

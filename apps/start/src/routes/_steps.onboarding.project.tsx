@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
 import {
   BuildingIcon,
+  CheckIcon,
+  type LucideIcon,
   MonitorIcon,
   ServerIcon,
   SmartphoneIcon,
@@ -17,7 +19,6 @@ import {
 } from 'react-hook-form';
 import { z } from 'zod';
 import AnimateHeight from '@/components/animate-height';
-import { ButtonContainer } from '@/components/button-container';
 import {
   fieldMessageId,
   InputWithLabel,
@@ -25,6 +26,7 @@ import {
 } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import FullPageLoadingState from '@/components/full-page-loading-state';
+import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
@@ -67,9 +69,48 @@ export const Route = createFileRoute('/_steps/onboarding/project')({
 });
 
 type IForm = z.infer<typeof zOnboardingProject>;
+type ProjectType = 'website' | 'app' | 'backend';
+
+const PROJECT_TYPES: {
+  key: ProjectType;
+  label: string;
+  description: string;
+  Icon: LucideIcon;
+}[] = [
+  {
+    key: 'website',
+    label: 'Website',
+    description: 'Pages, traffic sources, funnels',
+    Icon: MonitorIcon,
+  },
+  {
+    key: 'app',
+    label: 'App',
+    description: 'iOS, Android, React Native',
+    Icon: SmartphoneIcon,
+  },
+  {
+    key: 'backend',
+    label: 'Backend / API',
+    description: 'Server-side events',
+    Icon: ServerIcon,
+  },
+];
+
+const TIMEZONES = ['UTC', ...Intl.supportedValuesOf('timeZone')].map(
+  (zone) => ({ value: zone, label: zone })
+);
+
+function toOrigin(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '*' || /^https?:\/\//.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
 
 function Component() {
-  const workspaceId = useId();
+  const workspaceFieldId = useId();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const { data: organizations } = useQuery(
@@ -108,30 +149,32 @@ function Component() {
     },
   });
 
-  const isWebsite = useWatch({
-    name: 'website',
-    control: form.control,
-  });
+  const [isWebsite, isApp, isBackend, projectName, domain, workspaceName] =
+    useWatch({
+      control: form.control,
+      name: ['website', 'app', 'backend', 'project', 'domain', 'organization'],
+    });
+  const selectedTypes: Record<ProjectType, boolean> = {
+    website: isWebsite,
+    app: isApp,
+    backend: isBackend,
+  };
 
-  const isApp = useWatch({
-    name: 'app',
-    control: form.control,
-  });
-
-  const isBackend = useWatch({
-    name: 'backend',
-    control: form.control,
-  });
-
-  const domain = useWatch({
-    name: 'domain',
-    control: form.control,
-  });
-
+  const hasWorkspaces = organizations.length > 0;
+  const [useExistingWorkspace, setUseExistingWorkspace] = useState(true);
+  const createsWorkspace = !(hasWorkspaces && useExistingWorkspace);
+  const [workspaceEdited, setWorkspaceEdited] = useState(false);
+  const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
   const [showCorsInput, setShowCorsInput] = useState(false);
-  const [createNewOrg, setCreateNewOrg] = useState(false);
-  const canUseExistingWorkspace = organizations.length > 0;
-  const showCreateForm = createNewOrg || organizations.length === 0;
+
+  // The workspace is the billing unit, not something a new user should have
+  // to name before seeing a single chart: it follows the project name until
+  // they edit it themselves.
+  useEffect(() => {
+    if (!workspaceEdited) {
+      form.setValue('organization', projectName);
+    }
+  }, [projectName, workspaceEdited, form]);
 
   useEffect(() => {
     if (!isWebsite) {
@@ -141,272 +184,285 @@ function Component() {
     }
   }, [isWebsite, form]);
 
-  const onSubmit: SubmitHandler<IForm> = (values) => {
-    mutation.mutate(values);
-  };
-
   useEffect(() => {
     form.clearErrors();
-  }, [isWebsite, isApp, isBackend]);
+  }, [isWebsite, isApp, isBackend, form]);
+
+  // `enforceAccess` checks any organizationId key that is present, even an
+  // undefined one, so each branch sends only its own workspace field.
+  const onSubmit: SubmitHandler<IForm> = ({
+    organization,
+    organizationId,
+    ...values
+  }) => {
+    if (createsWorkspace) {
+      mutation.mutate({ ...values, organization });
+      return;
+    }
+    if (!organizationId) {
+      form.setError('organizationId', { message: 'Select a workspace' });
+      return;
+    }
+    mutation.mutate({ ...values, organizationId });
+  };
+
+  const typeError =
+    form.formState.errors.website?.message ??
+    form.formState.errors.app?.message ??
+    form.formState.errors.backend?.message;
 
   return (
-    <form
-      className="flex min-h-0 flex-1 flex-col"
-      onSubmit={form.handleSubmit(onSubmit)}
-    >
-      <div className="scrollbar-thin flex-1 overflow-y-auto p-4">
-        <div className="row mb-4 gap-2 rounded-lg bg-muted p-1">
-          <button
-            className={cn(
-              'rounded-md px-3 py-2 font-medium text-sm transition-colors',
-              createNewOrg || !canUseExistingWorkspace
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-            onClick={() => setCreateNewOrg(true)}
-            type="button"
-          >
-            Create new workspace
-          </button>
-          <button
-            className={cn(
-              'rounded-md px-3 py-2 font-medium text-sm transition-colors',
-              !createNewOrg && canUseExistingWorkspace
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground',
-              canUseExistingWorkspace
-                ? 'hover:text-foreground'
-                : 'cursor-not-allowed opacity-60'
-            )}
-            disabled={!canUseExistingWorkspace}
-            onClick={() => setCreateNewOrg(false)}
-            type="button"
-          >
-            Use existing workspace
-          </button>
+    <form className="col" onSubmit={form.handleSubmit(onSubmit)}>
+      <OnboardingHeading
+        description="A project is one website, app or service you want to track. You can add more later."
+        title={hasWorkspaces ? 'Create a project' : 'Create your first project'}
+      />
+
+      {hasWorkspaces && (
+        <div className="col mb-10 gap-3">
+          <Label className="mb-0 text-base">Workspace</Label>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-def-200 p-1 dark:bg-def-300">
+            {[
+              { label: 'Use existing workspace', existing: true },
+              { label: 'Create new workspace', existing: false },
+            ].map((option) => (
+              <button
+                aria-pressed={useExistingWorkspace === option.existing}
+                className={cn(
+                  'rounded-lg px-4 py-2.5 font-medium transition-colors',
+                  useExistingWorkspace === option.existing
+                    ? 'bg-background shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                key={option.label}
+                onClick={() => setUseExistingWorkspace(option.existing)}
+                type="button"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <AnimateHeight open={!createsWorkspace}>
+            <Controller
+              control={form.control}
+              name="organizationId"
+              render={({ field, formState }) => (
+                <WithLabel
+                  error={formState.errors.organizationId?.message}
+                  id={workspaceFieldId}
+                  label="Which workspace?"
+                >
+                  <Combobox
+                    aria-describedby={
+                      formState.errors.organizationId
+                        ? fieldMessageId(workspaceFieldId)
+                        : undefined
+                    }
+                    className="w-full"
+                    error={formState.errors.organizationId?.message}
+                    icon={BuildingIcon}
+                    id={workspaceFieldId}
+                    items={organizations.map((item) => ({
+                      label: item.name,
+                      value: item.id,
+                    }))}
+                    onChange={field.onChange}
+                    placeholder="Select workspace"
+                    size="xl"
+                    value={field.value}
+                    variant="input"
+                  />
+                </WithLabel>
+              )}
+            />
+          </AnimateHeight>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {showCreateForm ? (
-            <>
+      )}
+
+      <InputWithLabel
+        autoFocus
+        className="mb-10"
+        error={form.formState.errors.project?.message}
+        label="Project name"
+        placeholder="Acme"
+        size="xl"
+        {...form.register('project')}
+      />
+
+      <div className="col mb-10 gap-3">
+        <Label className="mb-0 text-base">What are you tracking?</Label>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {PROJECT_TYPES.map(({ key, label, description, Icon }) => {
+            const active = selectedTypes[key];
+            return (
+              <button
+                aria-pressed={active}
+                className={cn(
+                  'col relative items-start gap-3 rounded-xl p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  active
+                    ? 'bg-foreground text-background'
+                    : 'bg-def-200 hover:bg-def-300 dark:bg-def-300 dark:hover:bg-def-400/60'
+                )}
+                key={key}
+                onClick={() =>
+                  form.setValue(key, !active, { shouldValidate: true })
+                }
+                type="button"
+              >
+                <Icon size={22} strokeWidth={1.75} />
+                <span className="col gap-0.5">
+                  <span className="font-medium">{label}</span>
+                  <span
+                    className={cn(
+                      'text-xs',
+                      active ? 'text-background/70' : 'text-muted-foreground'
+                    )}
+                  >
+                    {description}
+                  </span>
+                </span>
+                {active && (
+                  <CheckIcon className="absolute top-4 right-4" size={16} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <p className="text-muted-foreground text-sm">
+          Pick everything that applies. It only decides which install guides we
+          show first.
+        </p>
+        {typeError && (
+          <p className="text-destructive text-sm">
+            Pick at least one thing to track
+          </p>
+        )}
+      </div>
+
+      <AnimateHeight open={isWebsite}>
+        <div className="col gap-3 pb-10">
+          <InputWithLabel
+            error={form.formState.errors.domain?.message}
+            hint="Browser events are only accepted from this domain."
+            inputMode="url"
+            label="Website URL"
+            placeholder="acme.com"
+            size="xl"
+            {...form.register('domain')}
+            onBlur={(event) => {
+              const value = toOrigin(event.target.value);
+              if (!value) {
+                return;
+              }
+              form.setValue('domain', value, { shouldValidate: true });
+              if (form.getValues().cors.length === 0) {
+                form.setValue('cors', [value]);
+              }
+            }}
+          />
+          {domain && (
+            <button
+              className="self-start text-muted-foreground text-sm hover:text-foreground hover:underline"
+              onClick={() => setShowCorsInput((open) => !open)}
+              type="button"
+            >
+              Also track other domains (staging, localhost…)
+            </button>
+          )}
+          <AnimateHeight open={showCorsInput}>
+            <Controller
+              control={form.control}
+              name="cors"
+              render={({ field }) => (
+                <WithLabel
+                  error={form.formState.errors.cors?.message}
+                  label="Allowed domains"
+                >
+                  <TagInput
+                    {...field}
+                    error={form.formState.errors.cors?.message}
+                    onChange={(values: string[]) =>
+                      field.onChange(values.map(toOrigin))
+                    }
+                    placeholder="Add a domain and press Enter"
+                    renderTag={(tag: string) =>
+                      tag === '*' ? 'Any domain' : tag
+                    }
+                    value={field.value ?? []}
+                  />
+                </WithLabel>
+              )}
+            />
+          </AnimateHeight>
+        </div>
+      </AnimateHeight>
+
+      <AnimateHeight open={createsWorkspace}>
+        <div className="col mb-10 gap-3 rounded-xl border p-5">
+          <div className="row items-center justify-between gap-4">
+            <div className="text-muted-foreground text-sm">
+              Workspace{' '}
+              <span className="font-medium text-foreground">
+                {workspaceName || 'named after the project'}
+              </span>{' '}
+              · {form.getValues('timezone')}
+            </div>
+            <button
+              className="shrink-0 text-sm underline-offset-4 hover:underline"
+              onClick={() => setShowWorkspaceSettings((open) => !open)}
+              type="button"
+            >
+              {showWorkspaceSettings ? 'Done' : 'Change'}
+            </button>
+          </div>
+          <AnimateHeight open={showWorkspaceSettings}>
+            <div className="grid gap-4 pt-3 sm:grid-cols-2">
               <InputWithLabel
                 error={form.formState.errors.organization?.message}
-                info="This is the name of your workspace. It can be anything you like."
+                hint="Your team and billing live here."
                 label="Workspace name"
-                placeholder="Eg. The Music Company"
-                {...form.register('organization')}
+                placeholder="Acme Inc"
+                size="xl"
+                {...form.register('organization', {
+                  onChange: () => setWorkspaceEdited(true),
+                })}
               />
               <Controller
                 control={form.control}
                 name="timezone"
                 render={({ field }) => (
-                  <WithLabel label="Timezone">
+                  <WithLabel
+                    hint="Used for daily and weekly reports."
+                    label="Timezone"
+                  >
                     <Combobox
                       className="w-full"
-                      items={['UTC', ...Intl.supportedValuesOf('timeZone')].map(
-                        (item) => ({
-                          value: item,
-                          label: item,
-                        })
-                      )}
+                      items={TIMEZONES}
                       onChange={field.onChange}
                       placeholder="Select timezone"
                       searchable
+                      size="xl"
                       value={field.value}
                       variant="input"
                     />
                   </WithLabel>
                 )}
               />
-            </>
-          ) : (
-            <div className="col-span-2">
-              <Controller
-                control={form.control}
-                name="organizationId"
-                render={({ field, formState }) => {
-                  return (
-                    <WithLabel
-                      error={formState.errors.organizationId?.message}
-                      id={workspaceId}
-                      label="Workspace"
-                    >
-                      <Combobox
-                        aria-describedby={
-                          formState.errors.organizationId
-                            ? fieldMessageId(workspaceId)
-                            : undefined
-                        }
-                        className="w-full"
-                        error={formState.errors.organizationId?.message}
-                        icon={BuildingIcon}
-                        id={workspaceId}
-                        items={
-                          organizations
-                            .filter((item) => item.id)
-                            .map((item) => ({
-                              label: item.name,
-                              value: item.id,
-                            })) ?? []
-                        }
-                        onChange={field.onChange}
-                        placeholder="Select workspace"
-                        value={field.value}
-                        variant="input"
-                      />
-                    </WithLabel>
-                  );
-                }}
-              />
-            </div>
-          )}
-          <InputWithLabel
-            error={form.formState.errors.project?.message}
-            label="Your first project name"
-            placeholder="Eg. The Music App"
-            {...form.register('project')}
-            className="col-span-2"
-          />
-        </div>
-        <div className="mt-4">
-          <Label className="mb-2">What are you tracking?</Label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              {
-                key: 'website' as const,
-                label: 'Website',
-                Icon: MonitorIcon,
-                active: isWebsite,
-              },
-              {
-                key: 'app' as const,
-                label: 'App',
-                Icon: SmartphoneIcon,
-                active: isApp,
-              },
-              {
-                key: 'backend' as const,
-                label: 'Backend / API',
-                Icon: ServerIcon,
-                active: isBackend,
-              },
-            ].map(({ key, label, Icon, active }) => (
-              <button
-                className={cn(
-                  'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-colors',
-                  active
-                    ? 'border-primary bg-primary/5 text-primary'
-                    : 'border-border text-muted-foreground hover:border-primary/40'
-                )}
-                key={key}
-                onClick={() => {
-                  form.setValue(key, !active, { shouldValidate: true });
-                }}
-                type="button"
-              >
-                <Icon size={24} />
-                <span className="font-medium text-sm">{label}</span>
-              </button>
-            ))}
-          </div>
-          {(form.formState.errors.website?.message ||
-            form.formState.errors.app?.message ||
-            form.formState.errors.backend?.message) && (
-            <p className="mt-2 text-destructive text-sm">
-              At least one type must be selected
-            </p>
-          )}
-          <AnimateHeight open={isWebsite}>
-            <div className="mt-4">
-              <InputWithLabel
-                label="Domain"
-                placeholder="example.com"
-                {...form.register('domain')}
-                error={form.formState.errors.domain?.message}
-                onBlur={(e) => {
-                  const raw = e.target.value.trim();
-                  if (!raw) {
-                    return;
-                  }
-
-                  const hasProtocol =
-                    raw.startsWith('http://') || raw.startsWith('https://');
-                  const value = hasProtocol ? raw : `https://${raw}`;
-
-                  form.setValue('domain', value, { shouldValidate: true });
-                  if (form.getValues().cors.length === 0) {
-                    form.setValue('cors', [value]);
-                  }
-                }}
-              />
-              {domain && (
-                <>
-                  <button
-                    className="mt-2 text-muted-foreground text-sm hover:text-foreground"
-                    onClick={() => setShowCorsInput((open) => !open)}
-                    type="button"
-                  >
-                    All events from{' '}
-                    <span className="font-medium text-foreground">
-                      {domain}
-                    </span>{' '}
-                    will be allowed. Do you want to allow any other?
-                  </button>
-                  <AnimateHeight open={showCorsInput}>
-                    <div className="mt-3">
-                      <Controller
-                        control={form.control}
-                        name="cors"
-                        render={({ field }) => (
-                          <WithLabel label="Allowed domains">
-                            <TagInput
-                              {...field}
-                              error={form.formState.errors.cors?.message}
-                              onChange={(newValue: string[]) => {
-                                field.onChange(
-                                  newValue.map((item: string) => {
-                                    const trimmed = item.trim();
-                                    if (
-                                      trimmed.startsWith('http://') ||
-                                      trimmed.startsWith('https://') ||
-                                      trimmed === '*'
-                                    ) {
-                                      return trimmed;
-                                    }
-                                    return `https://${trimmed}`;
-                                  })
-                                );
-                              }}
-                              placeholder="Accept events from these domains"
-                              renderTag={(tag: string) =>
-                                tag === '*'
-                                  ? 'Accept events from any domains'
-                                  : tag
-                              }
-                              value={field.value ?? []}
-                            />
-                          </WithLabel>
-                        )}
-                      />
-                    </div>
-                  </AnimateHeight>
-                </>
-              )}
             </div>
           </AnimateHeight>
         </div>
-      </div>
+      </AnimateHeight>
 
-      <ButtonContainer className="mt-0 flex-shrink-0 border-t bg-background p-4">
-        <div />
+      <div className="row justify-end border-t pt-8">
         <Button
-          className="min-w-28 self-start"
+          className="min-w-44"
           loading={mutation.isPending}
-          size="lg"
+          size="xl"
           type="submit"
         >
-          Next
+          Create project
         </Button>
-      </ButtonContainer>
+      </div>
     </form>
   );
 }

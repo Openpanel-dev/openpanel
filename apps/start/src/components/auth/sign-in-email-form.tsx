@@ -6,6 +6,8 @@ import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { LastUsedBadge } from './last-used-badge';
+import { PasswordInput } from './password-input';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -51,42 +53,51 @@ export function SignInEmailForm({
 
   return (
     <form
-      className="col gap-4"
+      className="col gap-5"
       method="post"
       onSubmit={form.handleSubmit(onSubmit)}
     >
       <InputWithLabel
         {...form.register('email')}
+        autoComplete="email"
         error={form.formState.errors.email?.message}
+        inputMode="email"
         label="Email"
+        placeholder="you@company.com"
+        size="xl"
+        type="email"
       />
-      <InputWithLabel
+      <PasswordInput
         {...form.register('password')}
+        action={
+          <button
+            className="text-muted-foreground text-sm transition-colors hover:text-foreground hover:underline"
+            onClick={() =>
+              pushModal('RequestPasswordReset', {
+                email: form.getValues('email'),
+              })
+            }
+            type="button"
+          >
+            Forgot password?
+          </button>
+        }
         error={form.formState.errors.password?.message}
         label="Password"
-        type="password"
+        placeholder="Your password"
+        size="xl"
       />
-      <div className="relative">
-        <Button className="w-full" size="lg" type="submit">
+      <div className="relative mt-1">
+        <Button
+          className="w-full"
+          loading={mutation.isPending}
+          size="xl"
+          type="submit"
+        >
           Sign in
         </Button>
-        {isLastUsed && (
-          <span className="absolute -top-2 right-3 rounded-full bg-highlight px-1.5 py-0.5 font-medium text-2xs text-white leading-none">
-            Used last time
-          </span>
-        )}
+        {isLastUsed && <LastUsedBadge />}
       </div>
-      <button
-        className="mt-2 text-center text-muted-foreground text-sm transition-colors duration-200 hover:text-highlight hover:underline"
-        onClick={() =>
-          pushModal('RequestPasswordReset', {
-            email: form.getValues('email'),
-          })
-        }
-        type="button"
-      >
-        Forgot password?
-      </button>
     </form>
   );
 }

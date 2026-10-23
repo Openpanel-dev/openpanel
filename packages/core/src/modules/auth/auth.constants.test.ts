@@ -43,7 +43,6 @@ describe('passwords are bounded before argon2 sees them', () => {
         lastName: 'B',
         email: 'a@b.co',
         password: huge,
-        confirmPassword: huge,
       }).success
     ).toBe(false);
     expect(
@@ -88,7 +87,6 @@ describe('emails and names', () => {
     const base = {
       email: 'a@b.co',
       password: 'longenough',
-      confirmPassword: 'longenough',
     };
     expect(
       zSignUpEmail.safeParse({ ...base, firstName: '   ', lastName: 'B' })

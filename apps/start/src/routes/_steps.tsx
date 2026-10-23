@@ -1,5 +1,8 @@
 import { createFileRoute, Outlet, useMatchRoute } from '@tanstack/react-router';
-import { SkeletonDashboard } from '@/components/skeleton-dashboard';
+import { LogOutIcon } from 'lucide-react';
+import { LogoSquare } from '@/components/logo';
+import { Button } from '@/components/ui/button';
+import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/utils/cn';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -10,64 +13,65 @@ export const Route = createFileRoute('/_steps')({
   }),
 });
 
+const STEPS = [
+  { name: 'Create project', match: '/onboarding/project' },
+  { name: 'Install', match: '/onboarding/$projectId/connect' },
+] as const;
+
 function OnboardingLayout() {
+  const logout = useLogout();
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4">
-      <div className="fixed inset-0 hidden md:block">
-        <SkeletonDashboard />
-        <div className="fixed inset-0 z-10 bg-def-100/50" />
-      </div>
-      <div className="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-lg border bg-background shadow-muted/50 shadow-xl">
-        <div className="sticky top-0 z-10 flex-shrink-0 border-b bg-background">
-          <Progress />
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <Outlet />
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <header className="mx-auto flex w-full max-w-2xl items-center justify-between px-6 py-6">
+        <a className="row items-center gap-2.5 font-medium" href="/">
+          <LogoSquare className="size-8 shrink-0" />
+          <span>OpenPanel</span>
+        </a>
+        <Button
+          icon={LogOutIcon}
+          loading={logout.isPending}
+          onClick={() => logout.mutate()}
+          size="sm"
+          variant="ghost"
+        >
+          Sign out
+        </Button>
+      </header>
+      <main className="mx-auto w-full max-w-2xl px-6 pt-8 pb-24">
+        <StepIndicator />
+        <Outlet />
+      </main>
     </div>
   );
 }
 
-function Progress() {
-  const steps = [
-    {
-      name: 'Create project',
-      match: '/onboarding/project',
-    },
-    {
-      name: 'Connect data',
-      match: '/onboarding/$projectId/connect',
-    },
-    {
-      name: 'Verify',
-      match: '/onboarding/$projectId/verify',
-    },
-  ];
+function StepIndicator() {
   const matchRoute = useMatchRoute();
-
-  const currentStep = steps.find((step) =>
-    matchRoute({
-      // @ts-expect-error
-      from: step.match,
-      fuzzy: false,
-    })
+  const currentIndex = STEPS.findIndex((step) =>
+    matchRoute({ to: step.match, fuzzy: false })
   );
-
+  if (currentIndex === -1) {
+    return null;
+  }
   return (
-    <div className="row w-full flex-shrink-0 items-center justify-between gap-4 p-4">
-      <div className="font-bold">{currentStep?.name ?? 'Onboarding'}</div>
-      <div className="row gap-4">
-        {steps.map((step) => (
-          <div
+    <nav aria-label="Onboarding progress" className="col mb-8 gap-3">
+      <div className="text-muted-foreground text-sm tabular-nums">
+        Step {currentIndex + 1} of {STEPS.length}
+      </div>
+      <ol className="row gap-2">
+        {STEPS.map((step, index) => (
+          <li
+            aria-current={index === currentIndex ? 'step' : undefined}
             className={cn(
-              'h-2 w-10 rounded-full bg-muted',
-              currentStep === step && 'w-20 bg-primary'
+              'h-1 flex-1 rounded-full transition-colors',
+              index <= currentIndex ? 'bg-foreground' : 'bg-def-300'
             )}
             key={step.match}
-          />
+          >
+            <span className="sr-only">{step.name}</span>
+          </li>
         ))}
-      </div>
-    </div>
+      </ol>
+    </nav>
   );
 }
