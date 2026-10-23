@@ -33,6 +33,12 @@ export interface CodeMigrationRunner {
   getPending: () => Promise<string[]>;
   /** Runs one migration and records it as finished; throws on failure. */
   run: (file: string) => Promise<void>;
+  /**
+   * Whether `run` failed because it aborted a statement ClickHouse did not
+   * confirm stopping. The lock is then kept until it expires, so no other
+   * process starts the same copy while the old one may still be running.
+   */
+  isQueryStillRunning: (error: unknown) => boolean;
   /** Kills the statement in flight; nothing more runs until `allow()`. */
   abort: () => void;
   allow: () => void;
@@ -89,6 +95,23 @@ export function startCodeMigrations(
 
   async function runPending(lockId: string): Promise<void> {
     let isLockLost = false;
+    let isFinished = false;
+    let isQueryStillRunning = false;
+    let lastRenewedAt = performance.now();
+    // Past this, the lock may expire before the next renewal succeeds.
+    const maxRenewalGapMs = timing.lockTtlMs - timing.lockRenewIntervalMs;
+
+    const loseLock = (message: string, error?: unknown) => {
+      if (isFinished || isLockLost) {
+        return;
+      }
+      // Another process may take over now; two copies running at once is the
+      // one thing an online migration cannot survive.
+      isLockLost = true;
+      logger.error({ err: error }, message);
+      migrations.abort();
+    };
+
     const renewTimer = setInterval(async () => {
       try {
         const renewed = await renewLockScript(
@@ -97,17 +120,17 @@ export function startCodeMigrations(
           [lockId, String(timing.lockTtlMs)]
         );
         if (renewed === 1) {
+          lastRenewedAt = performance.now();
           return;
         }
+        loseLock('code migration lock lost, aborting');
       } catch (error) {
+        if (performance.now() - lastRenewedAt >= maxRenewalGapMs) {
+          loseLock('code migration lock cannot be renewed, aborting', error);
+          return;
+        }
         logger.warn({ err: error }, 'code migration lock renewal failed');
-        return;
       }
-      // Another process may take over now; two copies running at once is the
-      // one thing an online migration cannot survive.
-      isLockLost = true;
-      logger.error('code migration lock lost, aborting');
-      migrations.abort();
     }, timing.lockRenewIntervalMs);
 
     try {
@@ -126,11 +149,21 @@ export function startCodeMigrations(
           'code migration finished'
         );
       }
+    } catch (error) {
+      isQueryStillRunning = migrations.isQueryStillRunning(error);
+      throw error;
     } finally {
+      isFinished = true;
       clearInterval(renewTimer);
-      await releaseLockScript(redis, [LOCK_KEY], [lockId]).catch(
-        () => undefined
-      );
+      if (isQueryStillRunning) {
+        logger.error(
+          'an aborted code migration query may still run; keeping the lock until it expires'
+        );
+      } else {
+        await releaseLockScript(redis, [LOCK_KEY], [lockId]).catch(
+          () => undefined
+        );
+      }
     }
   }
 

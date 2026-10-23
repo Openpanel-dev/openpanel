@@ -168,14 +168,15 @@ ones. So write every change in two parts:
 - **Blocking** (the default): the fast breaking change the new code needs — a new
   table or column, a metadata-only `ALTER`. Seconds, whatever the data size: until it
   lands, the new code runs against the old schema, so keep that window short. The
-  runner warns when one takes over 30 s.
+  runner warns when one takes over 30 s. A failed migration is retried, so make
+  each statement safe to repeat (`IF NOT EXISTS`, `IF EXISTS`) for when an earlier
+  statement of the same migration already ran.
 - **Online** (`export const online = true`): anything that grows with the data —
   rebuilding or copying a table, a backfill. It runs after the blocking ones, in the
   background, and it must:
   - stay correct while ingestion and the dashboard read and write the table. If the
     write path reads the table back (the profile buffer does), copy before you swap;
-    otherwise swap first and copy after (`28-sessions-sort-key-id.ts`,
-    `29-profiles-partition-by-id.ts`);
+    otherwise swap first and copy after;
   - be safe to rerun from any point, since a process can die mid-way and another one
     resumes it;
   - never be something a blocking migration depends on.

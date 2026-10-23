@@ -10,6 +10,20 @@ const LOCK_KEY = 'lock:code-migrations';
 const FAST = { lockTtlMs: 300, lockRenewIntervalMs: 50, retryIntervalMs: 50 };
 
 const redis = getRedisCache();
+const STILL_RUNNING = 'query still running';
+
+/** The real client, except that every Lua script call goes through `script`. */
+function withScripts(script: () => Promise<unknown>): typeof redis {
+  return new Proxy(redis, {
+    get(target, property) {
+      if (property === 'evalsha' || property === 'eval') {
+        return script;
+      }
+      const value = Reflect.get(target, property, target);
+      return typeof value === 'function' ? value.bind(target) : value;
+    },
+  });
+}
 
 function silentLogger(): Logger {
   const log = () => undefined;
@@ -42,6 +56,8 @@ function fakeRunner(
     }),
     abort: mock((): void => undefined),
     allow: mock((): void => undefined),
+    isQueryStillRunning: (error: unknown) =>
+      error instanceof Error && error.message === STILL_RUNNING,
   } satisfies CodeMigrationRunner;
   return { runner, ran };
 }
@@ -159,4 +175,66 @@ test('stop() aborts the running migration and stops retrying', async () => {
   expect(await redis.get(LOCK_KEY)).toBeNull();
   await sleep(150);
   expect(runner.run).toHaveBeenCalledTimes(1);
+});
+
+test('aborts before the lock can expire when renewals keep failing', async () => {
+  let release: () => void = () => undefined;
+  const { runner } = fakeRunner(['28-a.ts'], async () => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    throw new Error('Migration commands aborted');
+  });
+  let abortedAfterMs = 0;
+  const startedAt = performance.now();
+  runner.abort.mockImplementation(() => {
+    abortedAfterMs = performance.now() - startedAt;
+    release();
+  });
+  const handle = startCodeMigrations(
+    {
+      redis: withScripts(() => Promise.reject(new Error('redis unreachable'))),
+      logger: silentLogger(),
+      migrations: runner,
+    },
+    FAST
+  );
+  await sleep(FAST.lockTtlMs + 100);
+  expect(runner.abort).toHaveBeenCalled();
+  expect(abortedAfterMs).toBeLessThan(FAST.lockTtlMs);
+  await handle.stop();
+});
+
+test('keeps the lock when an aborted query may still be running', async () => {
+  const { runner } = fakeRunner(['28-a.ts'], async () => {
+    throw new Error(STILL_RUNNING);
+  });
+  const handle = startCodeMigrations(
+    { redis, logger: silentLogger(), migrations: runner },
+    { ...FAST, retryIntervalMs: 10_000 }
+  );
+  await sleep(50);
+  expect(runner.run).toHaveBeenCalledTimes(1);
+  expect(await redis.get(LOCK_KEY)).not.toBeNull();
+  await handle.stop();
+});
+
+test('ignores a renewal answer that arrives after the run finished', async () => {
+  const { runner } = fakeRunner(['28-a.ts'], async () => {
+    await sleep(FAST.lockRenewIntervalMs + 10);
+  });
+  // The renewal sent during the run answers "not yours" only after it ended.
+  const slowNotOwned = () => sleep(100).then(() => 0);
+  const handle = startCodeMigrations(
+    {
+      redis: withScripts(slowNotOwned),
+      logger: silentLogger(),
+      migrations: runner,
+    },
+    FAST
+  );
+  await handle.done;
+  await sleep(150);
+  expect(runner.run).toHaveBeenCalledTimes(1);
+  expect(runner.abort).not.toHaveBeenCalled();
 });

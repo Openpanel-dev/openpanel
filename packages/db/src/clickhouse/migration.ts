@@ -409,6 +409,21 @@ export function countRows(tableName: string) {
   return `SELECT count() FROM ${tableName}`;
 }
 
+// KILL QUERY ... SYNC returns once the query stopped; past this, assume it
+// did not.
+const KILL_QUERY_TIMEOUT_MS = 60_000;
+
+/**
+ * An aborted statement that ClickHouse did not confirm stopping. It may still
+ * be writing, so nothing may start the same work until it is known to be gone.
+ */
+export class MigrationQueryStillRunningError extends Error {
+  constructor(queryId: string, cause: unknown) {
+    super(`Could not confirm migration query ${queryId} stopped`, { cause });
+    this.name = 'MigrationQueryStillRunningError';
+  }
+}
+
 let isAbortRequested = false;
 const inFlight = new Set<AbortController>();
 
@@ -551,13 +566,17 @@ export async function runClickhouseMigrationCommands(sqls: string[]) {
     }
 
     if (activeQueryId) {
+      // An INSERT ... SELECT keeps running on the server after the client
+      // goes away, so the abort is only done once ClickHouse says it stopped.
       try {
         await chMigrationClient.command({
-          query: `KILL QUERY WHERE query_id = '${activeQueryId}'`,
+          query: `KILL QUERY WHERE query_id = '${activeQueryId}' SYNC`,
+          abort_signal: AbortSignal.timeout(KILL_QUERY_TIMEOUT_MS),
         });
         console.log(`Successfully killed query ${activeQueryId}`);
       } catch (err) {
         console.error(`Failed to kill query ${activeQueryId}:`, err);
+        throw new MigrationQueryStillRunningError(activeQueryId, err);
       }
     }
 

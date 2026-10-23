@@ -65,6 +65,7 @@ import { ch } from '@openpanel/db/src/clickhouse/client';
 import {
   abortMigrationCommands,
   allowMigrationCommands,
+  MigrationQueryStillRunningError,
 } from '@openpanel/db/src/clickhouse/migration';
 import {
   getPendingMigrations,
@@ -507,6 +508,8 @@ async function main() {
             }),
           abort: abortMigrationCommands,
           allow: allowMigrationCommands,
+          isQueryStillRunning: (error) =>
+            error instanceof MigrationQueryStillRunningError,
         },
       })
     : undefined;
@@ -568,14 +571,16 @@ async function main() {
     // work before the drain below finishes rather than after.
     setShuttingDown(true);
     logger.info({ signal }, 'Starting graceful shutdown');
-    // Interrupting is safe: the next process resumes where this one stopped.
-    await codeMigrations?.stop();
 
+    // Armed first, so stopping a migration that hangs is bounded too.
     const forceExit = setTimeout(() => {
       logger.error({ signal }, 'Graceful shutdown timed out — forcing exit');
       process.exit(1);
     }, config.SHUTDOWN_FORCE_EXIT_MS);
     forceExit.unref();
+
+    // Interrupting is safe: the next process resumes where this one stopped.
+    await codeMigrations?.stop();
 
     const exitCode = await runShutdownSequence(
       {
