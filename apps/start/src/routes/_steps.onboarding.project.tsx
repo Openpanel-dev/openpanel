@@ -31,7 +31,7 @@ import { OnboardingHeading } from '@/components/onboarding/onboarding-heading';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
-import { useClientSecret, useMcpToken } from '@/hooks/use-client-secret';
+import { rememberOnboardingKeys } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import {
@@ -121,8 +121,6 @@ function Component() {
   const { data: organizations } = useQuery(
     trpc.organization.list.queryOptions(undefined, { initialData: [] })
   );
-  const [, setSecret] = useClientSecret();
-  const [, setMcpToken] = useMcpToken();
   const navigate = useNavigate();
   const secondsOnStep = useSecondsOnStep();
   const mutation = useMutation(
@@ -147,8 +145,12 @@ function Component() {
           secondsOnStep: secondsOnStep(),
         });
         queryClient.invalidateQueries(trpc.organization.list.queryFilter());
-        setSecret(res.secret);
-        setMcpToken(res.mcpToken);
+        if (res.projectId) {
+          rememberOnboardingKeys(res.projectId, {
+            clientSecret: res.secret,
+            mcpToken: res.mcpToken,
+          });
+        }
         navigate({
           to: '/onboarding/$projectId/connect',
           params: {

@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
 
-export const ONBOARDING_SECRET_KEY = 'onboarding.clientSecret';
-export const ONBOARDING_MCP_TOKEN_KEY = 'onboarding.mcpToken';
+const SECRET_KEY = 'onboarding.clientSecret';
+const MCP_TOKEN_KEY = 'onboarding.mcpToken';
 const DEFAULT_SECRET = '[CLIENT_SECRET]';
+
+// Keyed per project: opening another project's install step must never show
+// it the credentials of the one created before.
+const secretKey = (projectId: string) => `${SECRET_KEY}:${projectId}`;
+const mcpTokenKey = (projectId: string) => `${MCP_TOKEN_KEY}:${projectId}`;
 
 // The secret only exists client-side right after creation (we store a hash).
 // Anything derived from it (MCP token, env snippets) must check this first —
@@ -30,6 +35,19 @@ const safeWrite = (key: string, value: string) => {
   }
 };
 
+/** Keeps a project's one-time credentials for the rest of the browser session. */
+export function rememberOnboardingKeys(
+  projectId: string,
+  keys: { clientSecret?: string | null; mcpToken?: string | null }
+) {
+  if (keys.clientSecret) {
+    safeWrite(secretKey(projectId), keys.clientSecret);
+  }
+  if (keys.mcpToken) {
+    safeWrite(mcpTokenKey(projectId), keys.mcpToken);
+  }
+}
+
 function useSessionSecret(key: string, fallback: string) {
   const [value, setValue] = useState<string>(fallback);
   // False until storage has been read, so a first-render consumer does not
@@ -37,31 +55,19 @@ function useSessionSecret(key: string, fallback: string) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (value && value !== fallback) {
-      safeWrite(key, value);
-    }
-  }, [value, key, fallback]);
-
-  useEffect(() => {
-    const stored = safeRead(key);
-    if (stored) {
-      setValue(stored);
-    }
+    setValue(safeRead(key) ?? fallback);
     setReady(true);
-  }, [key]);
+  }, [key, fallback]);
 
-  return [value, setValue, ready] as const;
+  return [value, ready] as const;
 }
 
-export function useClientSecret() {
-  return useSessionSecret(ONBOARDING_SECRET_KEY, DEFAULT_SECRET);
+export function useClientSecret(projectId: string) {
+  return useSessionSecret(secretKey(projectId), DEFAULT_SECRET);
 }
 
 /** The read-only MCP client's token, known only in the session that created the project. */
-export function useMcpToken() {
-  const [token, setToken, ready] = useSessionSecret(
-    ONBOARDING_MCP_TOKEN_KEY,
-    ''
-  );
-  return [token || null, setToken, ready] as const;
+export function useMcpToken(projectId: string) {
+  const [token, ready] = useSessionSecret(mcpTokenKey(projectId), '');
+  return [token || null, ready] as const;
 }

@@ -19,8 +19,13 @@ const dbMock = {
   member: { create: mock(async () => ({})) },
   project: { create: mock(async ({ data }: CreateArgs) => ({ ...data })) },
   client: { create: clientCreate },
-  $transaction: mock((operations: Promise<unknown>[]) =>
-    Promise.all(operations)
+  // Both Prisma forms: the array of operations the organization uses, and
+  // the callback the project and its clients run in.
+  $transaction: mock(
+    (operations: Promise<unknown>[] | ((tx: unknown) => Promise<unknown>)) =>
+      typeof operations === 'function'
+        ? operations(dbMock)
+        : Promise.all(operations)
   ),
 };
 const deps = {

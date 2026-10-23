@@ -56,8 +56,8 @@ function Component() {
   const client = project?.clients.find(
     (candidate) => candidate.type === 'write'
   );
-  const [secret, , secretReady] = useClientSecret();
-  const [mcpToken, , mcpTokenReady] = useMcpToken();
+  const [secret, secretReady] = useClientSecret(projectId);
+  const [mcpToken, mcpTokenReady] = useMcpToken(projectId);
   const keysReady = secretReady && mcpTokenReady;
   const secondsOnStep = useSecondsOnStep();
   const { events, isVerified } = useFirstEvents(projectId, secondsOnStep);
