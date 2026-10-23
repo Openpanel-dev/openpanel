@@ -104,7 +104,7 @@ interface Props {
   mcpToken: string | null;
 }
 
-/** The MCP token and the quickest route into each assistant that supports MCP. */
+/** The MCP token and the quickest documented route into each assistant. */
 export function McpConnect({
   projectId,
   organizationId,
@@ -169,13 +169,13 @@ export function McpConnect({
     <section className="col gap-4 rounded-xl border p-5">
       <div className="row items-center gap-2">
         <BotIcon className="text-muted-foreground" size={16} />
-        <h2 className="font-semibold text-base">Ask your data in chat</h2>
+        <h2 className="font-semibold text-base">Connect an AI assistant</h2>
       </div>
       {connection ? (
         <>
           <p className="text-muted-foreground text-sm">
-            Connect an assistant over MCP and ask about this project in plain
-            language. Read-only; it cannot change anything.
+            Give Cursor, Claude or ChatGPT read access to this project over MCP
+            and ask it questions instead of building reports.
           </p>
           <ul className="col divide-y">
             {HOSTS.map((host) => (
