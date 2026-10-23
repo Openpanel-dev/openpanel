@@ -1,6 +1,6 @@
 ---
 title: Session Replay
-description: Record and replay user sessions to understand exactly what users did. Loaded asynchronously so it never bloats your analytics bundle.
+description: Record and replay user sessions with explicit npm recorder imports or automatic script-tag loading.
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
@@ -8,18 +8,18 @@ import { Callout } from 'fumadocs-ui/components/callout';
 Session replay captures a structured recording of what users do in your app or website. You can replay any session to see which elements were clicked, how forms were filled, and where users ran into friction—without guessing.
 
 <Callout type="info">
-Session replay is **not enabled by default**. You explicitly opt in per-project. When disabled, the replay script is never downloaded, keeping your analytics bundle lean.
+Session replay is **not enabled by default**. Script-tag installs download the recorder only when replay starts. Bundles installed through npm stay lean when they do not import the recorder subpath; setting `enabled: false` does not remove an explicit recorder import.
 </Callout>
 
 ## How it works
 
 OpenPanel session replay is built on [rrweb](https://www.rrweb.io/), an open-source library for recording and replaying web sessions. It captures DOM mutations, mouse movements, scroll positions, and interactions as structured data—not video.
 
-The replay module is loaded **asynchronously** as a separate script (`op1-replay.js`). This means:
+For script-tag installs, the replay module is loaded **asynchronously** as a separate script (`op1-replay.js`). This means:
 
 - Your main tracking script (`op1.js`) stays lightweight even when replay is disabled
 - The replay module is only downloaded for sessions that are actually recorded
-- No impact on page load performance when replay is turned off
+- No recorder download when replay is turned off
 
 ## Limits & retention
 
@@ -50,23 +50,31 @@ Add `sessionReplay` to your `init` call. The replay script loads automatically f
 
 ```ts title="op.ts"
 import { OpenPanel } from '@openpanel/web';
+import { startReplayRecorder } from '@openpanel/web/replay';
 
 const op = new OpenPanel({
   clientId: 'YOUR_CLIENT_ID',
   trackScreenViews: true,
   sessionReplay: {
     enabled: true,
+    recorder: startReplayRecorder,
   },
 });
 ```
 
-With the npm package, the replay module is a dynamic import code-split by your bundler. It is never included in your main bundle when session replay is disabled.
+Pass `recorder` from `@openpanel/web/replay` when enabling replay in the npm package. That keeps rrweb out of apps that never import the subpath. Script-tag installs still load `op1-replay.js` from the CDN automatically.
+
+When upgrading an npm integration, add this explicit recorder import if replay was previously enabled with only `enabled: true`. Without a recorder, the SDK logs a warning and does not record.
 
 ## Options
+
+The examples below show `sessionReplay` configuration fragments. When using npm, keep `recorder: startReplayRecorder` from the setup above alongside these options.
 
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `enabled` | `boolean` | `false` | Enable session replay recording |
+| `sampleRate` | `number` | `1` | Probability of recording a session, from `0` to `1` (for example, `0.1` for 10%) |
+| `recorder` | `function` | — | Required for the npm package: pass `startReplayRecorder` from `@openpanel/web/replay`. Not needed for script-tag installs |
 | `maskAllInputs` | `boolean` | `true` | Mask all input field values |
 | `maskAllText` | `boolean` | `true` | Mask all text content in the recording |
 | `unmaskTextSelector` | `string` | — | CSS selector for elements whose text should NOT be masked when `maskAllText` is true |
@@ -168,13 +176,20 @@ sessionReplay: {
 
 ## Self-hosting
 
-If you self-host OpenPanel, the replay script is served from your instance automatically. You can also override the script URL if you host it separately:
+For script-tag installs, the recorder URL is derived from the tracking script URL: `op1.js` becomes `op1-replay.js`. Serve both files from your instance, or set `sessionReplay.scriptUrl` to a separately hosted recorder. Setting `apiUrl` alone does not change where scripts load from.
 
-```ts
-sessionReplay: {
-  enabled: true,
-  scriptUrl: 'https://your-cdn.example.com/op1-replay.js',
-}
+For npm installs, use the imported recorder shown above. `sessionReplay.scriptUrl` is ignored by the npm build.
+
+For example, configure a custom recorder URL in the script-tag init call:
+
+```js
+window.op('init', {
+  clientId: 'YOUR_CLIENT_ID',
+  sessionReplay: {
+    enabled: true,
+    scriptUrl: 'https://your-cdn.example.com/op1-replay.js',
+  },
+});
 ```
 
 ## Related
