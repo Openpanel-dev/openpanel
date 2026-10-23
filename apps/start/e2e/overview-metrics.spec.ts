@@ -213,9 +213,13 @@ test('every range can be picked, sets its default interval and enables the right
       })
       .first()
       .click();
+    // Exact, since the calendar also names today's cell "Today, …".
     await page
-      .getByRole('menuitem', { name: new RegExp(`^${range.label}`) })
+      .getByRole('dialog')
+      .getByRole('button', { name: range.label, exact: true })
       .click();
+    // The picker animates out; its preset would otherwise match the trigger's name.
+    await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page).toHaveURL(new RegExp(`range=${range.key}(&|$)`));
     await overviewReady(page);
     await expect(

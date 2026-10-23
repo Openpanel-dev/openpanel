@@ -189,7 +189,10 @@ test.describe('390px mobile viewport', () => {
     await page
       .getByRole('button', { name: 'Last 7 days', exact: true })
       .click();
-    await page.getByRole('menuitem', { name: /^Last 30 days/ }).click();
+    await page
+      .getByRole('dialog')
+      .getByRole('button', { name: /^Last 30 days/ })
+      .click();
     await expect(page).toHaveURL(/range=30d/);
     await shot(page, 'mobile-overview-30d', false);
 
