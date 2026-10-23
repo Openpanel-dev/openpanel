@@ -122,10 +122,10 @@ cd /app/packages/db && prisma migrate deploy
 
 and, with `AUTOMATIC_MIGRATIONS=true` (set by the shipped compose `.env` and
 the Coolify template), the api applies pending ClickHouse code migrations
-itself once it is listening (Carl, 2026-10-20: the api starts at once, fast
-breaking changes first, long data moves after; see AGENTS.md → Migrations). Installs whose
-compose file still runs `cd /app/packages/core && bun scripts/migrate-code.ts`
-first keep working; that step simply finds less to do.
+itself, in order, once it is listening (see AGENTS.md → Migrations). Installs
+whose compose file still runs `cd /app/packages/core && bun scripts/migrate-code.ts`
+first keep working, but wait for every pending migration before the api starts
+until `openpanel doctor` rewrites the command.
 
 - **The image ships the Prisma CLI** (Carl, 2026-10-20), installed on its own in
   `/opt/prisma` and on `PATH`, engines included, so a container start reaches

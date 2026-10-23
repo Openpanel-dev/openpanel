@@ -491,8 +491,8 @@ async function main() {
     );
   });
 
-  // Right after listening, so the api serves from the start and the fast
-  // blocking migrations land within seconds; see AGENTS.md → Migrations.
+  // Right after listening, so the api serves while pending migrations run;
+  // see AGENTS.md → Migrations.
   const codeMigrations = config.AUTOMATIC_MIGRATIONS
     ? startCodeMigrations({
         redis: deps.redis,

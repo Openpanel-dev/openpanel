@@ -217,9 +217,6 @@ async function getDaysToCopy(source: string) {
   return rows.map((row) => row.day);
 }
 
-/** Runs in the background once the api is up; see the rerun notes above. */
-export const online = true;
-
 export async function up(env: CodeMigrationEnv) {
   const isClustered = getIsCluster(env);
   const isDry = process.argv.includes('--dry');
