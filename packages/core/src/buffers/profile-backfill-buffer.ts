@@ -190,7 +190,9 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     for (const { statement, marker } of inserts) {
       if (await this.redis.exists(marker)) {
         // Still retrying: the marker outlives the retries, not the clock.
-        await this.redis.expire(marker, VIEW_MARKER_TTL_SECONDS);
+        // SET rather than EXPIRE so a marker that lapsed between the two
+        // commands is recreated instead of left missing for the next retry.
+        await this.redis.set(marker, '1', 'EX', VIEW_MARKER_TTL_SECONDS);
         continue;
       }
       await this.command(statement);
