@@ -13,6 +13,7 @@ import { cors } from '@elysiajs/cors';
 /** The allowlist of private-route prefixes. */
 export const CORS_PRIVATE_PATHS = [
   '/trpc',
+  '/api/auth',
   '/live',
   '/webhook',
   '/oauth',

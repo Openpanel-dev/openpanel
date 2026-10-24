@@ -4,7 +4,7 @@
 import type { Session, User } from '@openpanel/db/src/prisma-client';
 import type { ServiceDeps } from '../../../services';
 import { EMPTY_SESSION } from '../../../shared/session';
-import { decodeSessionToken, hashSessionToken } from './token';
+import { decodeSessionToken } from './token';
 
 type LoginSessionDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
@@ -16,27 +16,6 @@ const DEMO_SESSION_ID = '1';
 export type SessionValidationResult =
   | { session: Session; user: User; userId: string }
   | { session: null; user: null; userId: null };
-
-export async function createSession(
-  deps: LoginSessionDeps,
-  token: string,
-  userId: string
-): Promise<Session> {
-  const session: Session = {
-    id: hashSessionToken(token),
-    token: null,
-    userId,
-    expiresAt: new Date(Date.now() + SESSION_TTL_MS),
-    ipAddress: null,
-    userAgent: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
-  await deps.db.session.create({
-    data: session,
-  });
-  return session;
-}
 
 export async function createDemoSession(
   deps: LoginSessionDeps,

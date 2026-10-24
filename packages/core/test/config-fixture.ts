@@ -29,6 +29,7 @@ export function testCoreConfig(
     },
     auth: {
       secret: undefined,
+      trustedOrigins: [],
       allowRegistration: undefined,
       allowInvitation: undefined,
       github: { clientId: '', clientSecret: '', redirectUri: '' },

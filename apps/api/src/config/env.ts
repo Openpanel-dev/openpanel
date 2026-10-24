@@ -756,6 +756,12 @@ function deriveDashboardUrl(raw: RawEnv): string {
   return raw.DASHBOARD_URL ?? '';
 }
 
+function deriveDashboardOrigins(raw: RawEnv): string[] {
+  return [deriveDashboardUrl(raw), ...splitTokens(raw.API_CORS_ORIGINS)].filter(
+    Boolean
+  );
+}
+
 /** The Kafka transport's knobs, including the producer's three throughput ones. */
 function deriveKafkaConfig(raw: RawEnv): CoreConfig['kafka'] {
   return {
@@ -851,6 +857,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
     },
     auth: {
       secret: raw.AUTH_SECRET ?? (raw.COOKIE_SECRET || undefined),
+      trustedOrigins: deriveDashboardOrigins(raw),
       allowRegistration:
         raw.ALLOW_REGISTRATION === undefined
           ? undefined
@@ -1016,7 +1023,6 @@ const envSchema = rawSchema
     checkProfileBackfillProjectsHaveAFlag(raw, ctx);
   })
   .transform((raw): Config => {
-    const dashboardUrl = deriveDashboardUrl(raw);
     return {
       ROLE: raw.ROLE,
       LOG_LEVEL: raw.LOG_LEVEL,
@@ -1031,10 +1037,7 @@ const envSchema = rawSchema
       SHUTDOWN_FORCE_EXIT_MS: raw.SHUTDOWN_FORCE_EXIT_MS,
       REDIS_CACHE_COMMAND_TIMEOUT_MS: raw.REDIS_CACHE_COMMAND_TIMEOUT_MS,
       INGEST_DEAD_LETTER_MAX_ENTRIES: raw.INGEST_DEAD_LETTER_MAX_ENTRIES,
-      dashboardOrigins: [
-        dashboardUrl,
-        ...splitTokens(raw.API_CORS_ORIGINS),
-      ].filter(Boolean),
+      dashboardOrigins: deriveDashboardOrigins(raw),
       verboseClientIds: splitTokens(raw.ENABLE_VERBOSE_LOGGING),
       listen: raw.API_HOST
         ? { port: raw.API_PORT, hostname: raw.API_HOST }

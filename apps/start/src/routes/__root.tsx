@@ -22,7 +22,6 @@ import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
-import { useSessionExtension } from '@/hooks/use-session-extension';
 import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
@@ -115,8 +114,6 @@ function OpIdentify() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  useSessionExtension();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

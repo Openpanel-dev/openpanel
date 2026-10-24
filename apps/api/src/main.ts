@@ -187,7 +187,12 @@ function buildDeps(): AppDeps {
     producers,
     logger,
     config: config.core,
-    auth: createAuth({ db, config: config.core, logger }),
+    auth: createAuth({
+      db,
+      config: config.core,
+      logger,
+      redis: getRedisCache(),
+    }),
   };
 }
 

@@ -1,123 +1,62 @@
-import { redirect } from 'elysia';
-import { z } from 'zod';
 import { defineRoutes } from '../../http/define';
-import { MAX_TOKEN } from '../../shared/limits.constants';
+import { getTrustedIpFromHeaders } from '../../shared/get-client-ip';
 import {
-  assertOAuthState,
-  completeOAuthCallback,
-  fetchGithubOAuthUser,
-  fetchGoogleOAuthUser,
-  OAuthCallbackError,
-} from './auth.service';
-import { AUTH_BASE_PATH } from './src/better-auth';
+  AUTH_BASE_PATH,
+  type Auth,
+  TRUSTED_IP_HEADER,
+} from './src/better-auth';
 
-// Anyone can call this URL directly, so both values are attacker-controlled.
-const callbackQuery = z.object({
-  code: z.string().max(MAX_TOKEN),
-  state: z.string().max(MAX_TOKEN),
-});
+const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
 
-/** Only used to make the URL parseable when DASHBOARD_URL is not set. */
-const FALLBACK_ORIGIN = 'http://localhost';
-
-function loginErrorRedirect(
-  dashboardUrl: string,
-  message: string,
-  correlationId: string
-) {
-  const url = new URL('/login', dashboardUrl || FALLBACK_ORIGIN);
-  url.searchParams.set('error', message);
-  url.searchParams.set('correlationId', correlationId);
-  return redirect(url.toString());
+/**
+ * better-auth's rate limiter keys on one header we set ourselves, so a caller
+ * cannot pick its own bucket through `x-forwarded-for`.
+ */
+function withTrustedIp(request: Request, pathname?: string): Request {
+  const url = new URL(request.url);
+  if (pathname) {
+    url.pathname = pathname;
+  }
+  const headers = new Headers(request.headers);
+  const { ip } = getTrustedIpFromHeaders(TRUSTED_ONLY, request.headers);
+  headers.delete(TRUSTED_IP_HEADER);
+  if (ip) {
+    headers.set(TRUSTED_IP_HEADER, ip);
+  }
+  return new Request(url.toString(), {
+    method: request.method,
+    headers,
+    body: request.body,
+    redirect: 'manual',
+  });
 }
 
+function handle(auth: Auth | null, request: Request, pathname?: string) {
+  if (!auth) {
+    return new Response('Not Found', { status: 404 });
+  }
+  return auth.handler(withTrustedIp(request, pathname));
+}
+
+// The redirect URIs registered at Google and GitHub point at the legacy
+// `/oauth/<provider>/callback` paths; serving them means nobody has to change
+// their OAuth app.
 export const authRoutes = defineRoutes((app, deps) =>
   app
-    .all(
-      `${AUTH_BASE_PATH}/*`,
+    .all(`${AUTH_BASE_PATH}/*`, ({ request }) => handle(deps.auth, request), {
+      parse: 'none',
+      detail: { hide: true },
+    })
+    .get(
+      '/oauth/google/callback',
       ({ request }) =>
-        deps.auth?.handler(request) ??
-        new Response('Not Found', { status: 404 }),
+        handle(deps.auth, request, `${AUTH_BASE_PATH}/callback/google`),
       { parse: 'none', detail: { hide: true } }
     )
     .get(
       '/oauth/github/callback',
-      async ({ query, ctx }) => {
-        const storedState = ctx.cookies.get('github_oauth_state') ?? null;
-        const inviteId = ctx.cookies.get('inviteId');
-
-        try {
-          assertOAuthState('github', query.state, storedState);
-          const oauthUser = await fetchGithubOAuthUser(ctx.config, query.code);
-          await completeOAuthCallback(ctx, {
-            provider: 'github',
-            oauthUser,
-            inviteId,
-            setCookie: ctx.setCookie,
-            logger: ctx.logger,
-          });
-          ctx.setCookie('github_oauth_state', '', { maxAge: 0 });
-          return redirect(ctx.config.dashboardUrl);
-        } catch (error) {
-          ctx.logger.error({ err: error }, 'GitHub OAuth callback error');
-          ctx.setCookie('github_oauth_state', '', { maxAge: 0 });
-          const message =
-            error instanceof OAuthCallbackError
-              ? error.message
-              : 'An error occurred';
-          return loginErrorRedirect(
-            ctx.config.dashboardUrl,
-            message,
-            ctx.requestId
-          );
-        }
-      },
-      { query: callbackQuery, detail: { hide: true } }
-    )
-    .get(
-      '/oauth/google/callback',
-      async ({ query, ctx }) => {
-        const storedState = ctx.cookies.get('google_oauth_state') ?? null;
-        const codeVerifier = ctx.cookies.get('google_code_verifier') ?? null;
-        const inviteId = ctx.cookies.get('inviteId');
-
-        try {
-          assertOAuthState('google', query.state, storedState);
-          if (!codeVerifier) {
-            throw new OAuthCallbackError('Missing oauth parameters', {
-              codeVerifier: false,
-            });
-          }
-          const oauthUser = await fetchGoogleOAuthUser(
-            ctx.config,
-            query.code,
-            codeVerifier
-          );
-          await completeOAuthCallback(ctx, {
-            provider: 'google',
-            oauthUser,
-            inviteId,
-            setCookie: ctx.setCookie,
-            logger: ctx.logger,
-          });
-          ctx.setCookie('google_oauth_state', '', { maxAge: 0 });
-          ctx.setCookie('google_code_verifier', '', { maxAge: 0 });
-          return redirect(ctx.config.dashboardUrl);
-        } catch (error) {
-          ctx.logger.error({ err: error }, 'Google OAuth callback error');
-          ctx.setCookie('google_oauth_state', '', { maxAge: 0 });
-          ctx.setCookie('google_code_verifier', '', { maxAge: 0 });
-          const message =
-            error instanceof OAuthCallbackError
-              ? error.message
-              : 'An error occurred';
-          return loginErrorRedirect(
-            ctx.config.dashboardUrl,
-            message,
-            ctx.requestId
-          );
-        }
-      },
-      { query: callbackQuery, detail: { hide: true } }
+      ({ request }) =>
+        handle(deps.auth, request, `${AUTH_BASE_PATH}/callback/github`),
+      { parse: 'none', detail: { hide: true } }
     )
 );

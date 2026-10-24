@@ -3,9 +3,11 @@
 
 import {
   apiUrl,
+  authPost,
   FRESH_CONTEXT,
   gotoHydrated,
   SHOTS_DIR,
+  signUpWithEmail,
   submitSignIn,
   waitForSignInSlot,
 } from './auth-helpers';
@@ -74,21 +76,13 @@ test('a password with a trailing space signs in after signing up with it', async
 }) => {
   const email = `e2e-auth-space-${Date.now()}@example.com`;
   const password = 'spaced-password-1 ';
-  const signUp = await request.post(`${apiUrl()}/trpc/auth.signUpEmail`, {
-    data: {
-      json: {
-        firstName: 'E2E',
-        lastName: 'Auth',
-        email,
-        password,
-      },
-    },
-  });
+  const signUp = await signUpWithEmail(request, { email, password });
   expect(signUp.status()).toBe(200);
   try {
     await waitForSignInSlot();
-    const signIn = await request.post(`${apiUrl()}/trpc/auth.signInEmail`, {
-      data: { json: { email, password } },
+    const signIn = await authPost(request, '/sign-in/email', {
+      email,
+      password,
     });
     expect(signIn.status()).toBe(200);
   } finally {
@@ -100,8 +94,6 @@ test('a password with a trailing space signs in after signing up with it', async
   }
 });
 
-// Sign-in still issues the legacy `session` cookie; the first request after it
-// hands out better-auth's, which must keep the user signed in on its own.
 test("a signed-in browser gets better-auth's cookie and stays signed in on it alone", async ({
   page,
   context,

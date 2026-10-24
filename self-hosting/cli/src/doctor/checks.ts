@@ -470,7 +470,7 @@ export const encryptionKey: Check = (install) => {
     severity: 'error',
     title: 'ENCRYPTION_KEY is not set',
     detail:
-      'Needed for 2FA, Google Search Console and export credentials; must match on api and worker.',
+      'Needed for Google Search Console and export credentials; must match on api and worker.',
     fix: (target) => target.env.set('ENCRYPTION_KEY', randomHex(32)),
   };
 };
@@ -483,7 +483,8 @@ export const cookieSecret: Check = (install) => {
     id: 'env/cookie-secret',
     severity: 'error',
     title: 'COOKIE_SECRET is not set',
-    detail: 'Signs unsubscribe links and unlocks password-protected shares.',
+    detail:
+      'Without it (and without AUTH_SECRET) nobody can sign in. Also signs unsubscribe links and unlocks password-protected shares.',
     fix: (target) => target.env.set('COOKIE_SECRET', randomHex(16)),
   };
 };

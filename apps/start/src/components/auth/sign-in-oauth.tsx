@@ -2,7 +2,8 @@ import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
-import { useTRPC } from '@/integrations/trpc/react';
+import { useAppContext } from '@/hooks/use-app-context';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 export type OAuthProvider = 'google' | 'github';
@@ -65,23 +66,27 @@ export function SignInOAuth({
   inviteId?: string;
   isLastUsed?: boolean;
 }) {
-  const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.auth.signInOAuth.mutationOptions({
-      onSuccess(res) {
-        if (res.url) {
-          window.location.href = res.url;
-        }
-      },
-      onError(error) {
-        trackFunnel(
-          type === 'sign-in' ? 'auth_signin_failed' : 'auth_signup_failed',
-          { provider, reason: failureReason(error) }
-        );
-        toast.error(error.message);
-      },
-    })
-  );
+  const authClient = useAuthClient();
+  const { dashboardUrl } = useAppContext();
+  const mutation = useMutation({
+    // better-auth sends the browser to the provider itself.
+    mutationFn: () =>
+      unwrap(
+        authClient.signIn.social({
+          provider,
+          callbackURL: dashboardUrl,
+          errorCallbackURL: `${dashboardUrl}/login`,
+          additionalData: inviteId ? { inviteId } : undefined,
+        })
+      ),
+    onError(error) {
+      trackFunnel(
+        type === 'sign-in' ? 'auth_signin_failed' : 'auth_signup_failed',
+        { provider, reason: failureReason(error) }
+      );
+      toast.error(error.message);
+    },
+  });
   const verb = type === 'sign-in' ? 'Sign in' : 'Sign up';
   return (
     <div className="relative">
@@ -94,7 +99,7 @@ export function SignInOAuth({
             provider,
             isLastUsed: Boolean(isLastUsed),
           });
-          mutation.mutate({ provider, inviteId });
+          mutation.mutate();
         }}
         size="xl"
         variant="outline"
