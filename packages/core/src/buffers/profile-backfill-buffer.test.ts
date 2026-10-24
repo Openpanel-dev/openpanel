@@ -167,8 +167,18 @@ describe('ProfileBackfillBuffer', () => {
     expect(chCommand).toHaveBeenCalledTimes(4);
     expect(await redis.llen(REDIS_KEY)).toBe(1);
 
+    // A long-failing UPDATE must not outlive the markers: every retry renews them.
+    const [marker] = await redis.keys(`${REDIS_KEY}:views-done:*`);
+    await redis.expire(marker as string, 5);
+    chCommand.mockImplementationOnce(() =>
+      Promise.reject(new Error('still down'))
+    );
     await buffer.tryFlush({ trigger: 'cron' });
     expect(chCommand).toHaveBeenCalledTimes(5);
+    expect(await redis.ttl(marker as string)).toBeGreaterThan(3000);
+
+    await buffer.tryFlush({ trigger: 'cron' });
+    expect(chCommand).toHaveBeenCalledTimes(6);
     expect(rendered(commands.at(-1) as Command)).toStartWith('UPDATE events');
     expect(await redis.llen(REDIS_KEY)).toBe(0);
     expect(await redis.keys(`${REDIS_KEY}:views-done:*`)).toEqual([]);

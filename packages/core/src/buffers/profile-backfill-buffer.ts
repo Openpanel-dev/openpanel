@@ -36,7 +36,8 @@ const WINDOW_PADDING_SECONDS = 1;
 const MIN_LIGHTWEIGHT_UPDATE_VERSION = { major: 25, minor: 8 };
 
 // A retried batch is read from the same list head, so its chunks are the same
-// sessions in the same order; the markers only have to outlive one retry.
+// sessions in the same order. Every retry renews the markers, so they last as
+// long as the UPDATE keeps failing and vanish an hour after the batch is gone.
 const VIEW_MARKER_TTL_SECONDS = 60 * 60;
 
 function chunkKey(chunk: ProfileBackfillEntry[]): string {
@@ -188,6 +189,8 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     }));
     for (const { statement, marker } of inserts) {
       if (await this.redis.exists(marker)) {
+        // Still retrying: the marker outlives the retries, not the clock.
+        await this.redis.expire(marker, VIEW_MARKER_TTL_SECONDS);
         continue;
       }
       await this.command(statement);
