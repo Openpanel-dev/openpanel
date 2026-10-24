@@ -244,6 +244,22 @@ const tokenList = z.preprocess(
 );
 
 /**
+ * An allowlist where an empty list means "everyone": a value that is set but
+ * yields no tokens (`",,"`) would silently allow all, so it fails boot.
+ */
+const nonEmptyTokenList = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .refine((value) => value === undefined || splitTokens(value).length > 0, {
+      message:
+        'is set but contains no ids — an empty allowlist allows every project',
+    })
+    .transform((value) => splitTokens(value))
+);
+
+/**
  * Same doctrine as `ENABLED_QUEUES` below: a stale or mistyped value fails
  * boot loudly, naming both the offending value and the accepted set.
  */
@@ -511,8 +527,8 @@ const rawSchema = z.object({
   SESSION_VACUUM: onUnlessZeroSchema,
   SESSION_VACUUM_BATCH_SIZE: optionalPositiveInt,
   SESSION_VACUUM_STALE_THRESHOLD_MS: optionalPositiveInt,
-  PROFILE_BACKFILL: onUnlessZeroSchema,
-  PROFILE_BACKFILL_PROJECTS: tokenList,
+  PROFILE_BACKFILL: onUnlessDisabledSchema,
+  PROFILE_BACKFILL_PROJECTS: nonEmptyTokenList,
 
   EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT: optionalPositiveInt,
   COHORT_MATERIALIZE_LIMIT: optionalPositiveInt,
@@ -674,7 +690,7 @@ function checkProfileBackfillProjectsHaveAFlag(
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     message:
-      'PROFILE_BACKFILL_PROJECTS is set while PROFILE_BACKFILL is 0 — the allowlist has no effect.',
+      'PROFILE_BACKFILL_PROJECTS is set while PROFILE_BACKFILL is off — the allowlist has no effect.',
   });
 }
 

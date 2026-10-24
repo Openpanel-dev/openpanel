@@ -56,6 +56,10 @@ function rendered(command: Command): string {
 
 beforeEach(async () => {
   await redis.del(REDIS_KEY, 'lock:profile-backfill');
+  const markers = await redis.keys(`${REDIS_KEY}:views-done:*`);
+  if (markers.length > 0) {
+    await redis.del(...markers);
+  }
   commands.length = 0;
   chCommand.mockClear();
   chQuery.mockClear();
@@ -139,6 +143,50 @@ describe('ProfileBackfillBuffer', () => {
 
     expect(chQuery).toHaveBeenCalledTimes(1);
     expect(chCommand).not.toHaveBeenCalled();
+    expect(await redis.llen(REDIS_KEY)).toBe(0);
+  });
+
+  it('does not repeat the view inserts when the UPDATE fails and the batch is retried', async () => {
+    const buffer = makeBuffer();
+    await buffer.add(entry());
+    chCommand
+      .mockImplementationOnce(async (options) => {
+        commands.push(options);
+      })
+      .mockImplementationOnce(async (options) => {
+        commands.push(options);
+      })
+      .mockImplementationOnce(async (options) => {
+        commands.push(options);
+      })
+      .mockImplementationOnce(() =>
+        Promise.reject(new Error('clickhouse down'))
+      );
+
+    await buffer.tryFlush({ trigger: 'cron' });
+    expect(chCommand).toHaveBeenCalledTimes(4);
+    expect(await redis.llen(REDIS_KEY)).toBe(1);
+
+    await buffer.tryFlush({ trigger: 'cron' });
+    expect(chCommand).toHaveBeenCalledTimes(5);
+    expect(rendered(commands.at(-1) as Command)).toStartWith('UPDATE events');
+    expect(await redis.llen(REDIS_KEY)).toBe(0);
+    expect(await redis.keys(`${REDIS_KEY}:views-done:*`)).toEqual([]);
+  });
+
+  it('retries the version probe after it failed once', async () => {
+    const buffer = makeBuffer();
+    await buffer.add(entry());
+    chQuery.mockImplementationOnce(() =>
+      Promise.reject(new Error('clickhouse restarting'))
+    );
+
+    await buffer.tryFlush({ trigger: 'cron' });
+    expect(chCommand).not.toHaveBeenCalled();
+
+    await buffer.tryFlush({ trigger: 'cron' });
+    expect(chQuery).toHaveBeenCalledTimes(2);
+    expect(chCommand).toHaveBeenCalledTimes(4);
     expect(await redis.llen(REDIS_KEY)).toBe(0);
   });
 

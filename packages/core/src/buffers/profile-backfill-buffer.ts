@@ -8,6 +8,7 @@
 // logout followed by another user's login in the same session never moves
 // the first user's events, and a retried flush is a no-op.
 
+import { createHash } from 'node:crypto';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache, type Redis } from '@openpanel/redis';
 import { getSafeJson } from '@openpanel/shared';
@@ -33,6 +34,18 @@ const WINDOW_PADDING_SECONDS = 1;
 // Lightweight UPDATE became the default-on Beta in 25.8; older servers only
 // have heavyweight mutations, which cannot run once per closed session.
 const MIN_LIGHTWEIGHT_UPDATE_VERSION = { major: 25, minor: 8 };
+
+// A retried batch is read from the same list head, so its chunks are the same
+// sessions in the same order; the markers only have to outlive one retry.
+const VIEW_MARKER_TTL_SECONDS = 60 * 60;
+
+function chunkKey(chunk: ProfileBackfillEntry[]): string {
+  return createHash('sha1')
+    .update(
+      chunk.map((entry) => `${entry.sessionId}=${entry.profileId}`).join(',')
+    )
+    .digest('hex');
+}
 
 export function supportsLightweightUpdate(version: string): boolean {
   const [major = 0, minor = 0] = version.split('.').map(Number);
@@ -80,17 +93,23 @@ export class ProfileBackfillBuffer extends BaseBuffer {
   private checkLightweightUpdateSupport(): Promise<boolean> {
     this.lightweightUpdateSupported ??= this.chQuery<{ version: string }>(
       'SELECT version() AS version'
-    ).then(([row]) => {
-      const version = row?.version ?? '';
-      const supported = supportsLightweightUpdate(version);
-      if (!supported) {
-        this.logger.warn(
-          { version },
-          'ClickHouse has no lightweight UPDATE; identified sessions keep their anonymous events'
-        );
-      }
-      return supported;
-    });
+    )
+      .then(([row]) => {
+        const version = row?.version ?? '';
+        const supported = supportsLightweightUpdate(version);
+        if (!supported) {
+          this.logger.warn(
+            { version },
+            'ClickHouse has no lightweight UPDATE; identified sessions keep their anonymous events'
+          );
+        }
+        return supported;
+      })
+      .catch((error: unknown) => {
+        // A failed probe (ClickHouse restarting) must not be the answer forever.
+        this.lightweightUpdateSupported = null;
+        throw error;
+      });
     return this.lightweightUpdateSupported;
   }
 
@@ -126,7 +145,8 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     const chunks = this.chunks(byStart, CHUNK_SIZE);
 
     // A failing statement throws out of here and leaves the batch in Redis
-    // for the next flush; the rewrite is idempotent, the view inserts are not.
+    // for the next flush. The rewrite is idempotent; the view inserts are
+    // not, so each one leaves a marker and the retry skips it.
     const chStart = performance.now();
     for (const chunk of chunks) {
       await this.rewriteChunk(chunk);
@@ -158,12 +178,22 @@ export class ProfileBackfillBuffer extends BaseBuffer {
     )} ELSE profile_id END`;
     const anonymousRowsOfChunk = this.anonymousRowsOfChunk(chunk);
 
-    for (const statement of this.viewInserts(
+    const key = chunkKey(chunk);
+    const inserts = this.viewInserts(
       resolvedProfileId,
       anonymousRowsOfChunk
-    )) {
+    ).map((statement, index) => ({
+      statement,
+      marker: `${this.redisKey}:views-done:${key}:${index}`,
+    }));
+    for (const { statement, marker } of inserts) {
+      if (await this.redis.exists(marker)) {
+        continue;
+      }
       await this.command(statement);
+      await this.redis.set(marker, '1', 'EX', VIEW_MARKER_TTL_SECONDS);
     }
+    const markers = inserts.map((insert) => insert.marker);
 
     // `replicatedTarget`, not `sql.id`: the clustered form carries an
     // `ON CLUSTER` clause and is not a bare identifier.
@@ -175,6 +205,7 @@ export class ProfileBackfillBuffer extends BaseBuffer {
       sql`UPDATE ${target} SET profile_id = ${resolvedProfileId} WHERE ${anonymousRowsOfChunk}`,
       { allow_experimental_lightweight_update: '1' }
     );
+    await this.redis.del(...markers);
   }
 
   /** The chunk's sessions, within their joint time span, still anonymous. */
