@@ -66,6 +66,7 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    ai: {} as Services['ai'],
   };
   return {
     auth: null,
@@ -201,6 +202,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
       conversation: {} as Services['conversation'],
       assistant: {} as Services['assistant'],
       mcp: {} as Services['mcp'],
+      ai: {} as Services['ai'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'gscSync' },

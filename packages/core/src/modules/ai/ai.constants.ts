@@ -229,3 +229,37 @@ export const zAiPayload = z
       });
     }
   }) satisfies z.ZodType<IAiPayload>;
+
+// Dashboard vocabulary
+
+export const AI_BREAKDOWN_DIMENSIONS = [
+  'model',
+  'provider',
+  'name',
+  'profile',
+  'conversation',
+  'group',
+  'stopReason',
+  'errorCode',
+] as const;
+export type AiBreakdownDimension = (typeof AI_BREAKDOWN_DIMENSIONS)[number];
+
+export const AI_LIST_DEFAULT_TAKE = 50;
+export const AI_LIST_MAX_TAKE = 500;
+export const AI_BREAKDOWN_DEFAULT_LIMIT = 10;
+export const AI_BREAKDOWN_MAX_LIMIT = 100;
+
+export const zAiFilters = z.object({
+  models: z.array(z.string()).optional(),
+  providers: z.array(z.string()).optional(),
+  names: z.array(z.string()).optional(),
+  types: z.array(z.enum(AI_EVENT_KINDS)).optional(),
+  profileId: z.string().optional(),
+  conversationId: z.string().optional(),
+  sessionId: z.string().optional(),
+  groupId: z.string().optional(),
+  isError: z.boolean().optional(),
+  /** Matches trace and conversation ids exactly, prompt and completion text loosely. */
+  search: z.string().max(200).optional(),
+});
+export type IAiFilters = z.infer<typeof zAiFilters>;

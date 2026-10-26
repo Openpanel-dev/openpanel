@@ -10,6 +10,7 @@ import {
 } from '../charts/op-stat-hover-bridge';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { Skeleton } from '../skeleton';
+import { formatCost, formatLatency } from '@/components/ai/ai-format';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
@@ -23,7 +24,15 @@ const SPARKLINE_BAR_RADIUS = 1;
 // Below this a count fits the card in full ("25,412"); above it we compact to "12M".
 const FULL_NUMBER_LIMIT = 10_000_000;
 
-export type MetricUnit = '' | 'date' | 'timeAgo' | 'min' | '%' | 'currency';
+export type MetricUnit =
+  | ''
+  | 'date'
+  | 'timeAgo'
+  | 'min'
+  | '%'
+  | 'currency'
+  | 'usd'
+  | 'ms';
 
 interface MetricCardProps {
   id: string;
@@ -210,6 +219,14 @@ function MetricValue({ value, unit }: { value: number; unit?: MetricUnit }) {
 
   if (unit === 'min') {
     return <span className={VALUE_CLASS}>{fancyMinutes(value)}</span>;
+  }
+
+  if (unit === 'usd') {
+    return <span className={VALUE_CLASS}>{formatCost(value)}</span>;
+  }
+
+  if (unit === 'ms') {
+    return <span className={VALUE_CLASS}>{formatLatency(value)}</span>;
   }
 
   if (unit === 'currency') {

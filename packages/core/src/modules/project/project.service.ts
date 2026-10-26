@@ -366,6 +366,7 @@ export function createProjectService(
       cors?: string[];
       crossDomain?: boolean;
       allowUnsafeRevenueTracking?: boolean;
+      aiStoreContent?: boolean;
       filters?: IProjectFilters[];
     }
   ): Promise<IServiceProject | null> {
@@ -395,6 +396,9 @@ export function createProjectService(
     }
     if (input.allowUnsafeRevenueTracking !== undefined) {
       updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
+    }
+    if (input.aiStoreContent !== undefined) {
+      updateData.aiStoreContent = input.aiStoreContent;
     }
     if (input.filters !== undefined) {
       updateData.filters = input.filters;

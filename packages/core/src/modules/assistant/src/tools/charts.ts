@@ -46,6 +46,9 @@ const zEventSeriesInput = z.object({
       'property_average',
       'property_max',
       'property_min',
+      'property_p50',
+      'property_p95',
+      'property_p99',
     ])
     .default('event')
     .describe(

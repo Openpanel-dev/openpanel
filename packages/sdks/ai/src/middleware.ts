@@ -150,6 +150,8 @@ function buildPayload(
     profileId: context.profileId,
     groups: context.groups,
     deviceId: context.deviceId,
+    // The call's start, so a trace timeline places steps where they began.
+    timestamp: new Date(call.startedAt).toISOString(),
   };
 }
 

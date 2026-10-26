@@ -28,6 +28,7 @@ export const zUpdateProject = z.object({
   cors: z.array(z.string()).optional(),
   crossDomain: z.boolean().optional(),
   allowUnsafeRevenueTracking: z.boolean().optional(),
+  aiStoreContent: z.boolean().optional(),
 });
 
 export const zProjectFilterIp = z.object({
@@ -62,6 +63,7 @@ export const zProject = z.object({
   cors: z.array(z.string()).default([]),
   crossDomain: z.boolean().default(false),
   allowUnsafeRevenueTracking: z.boolean().default(false),
+  aiStoreContent: z.boolean().default(true),
 });
 export type IProjectEdit = z.infer<typeof zProject>;
 
@@ -73,5 +75,6 @@ export const zProjectUpdate = z.object({
   cors: z.array(z.string()).optional(),
   crossDomain: z.boolean().optional(),
   allowUnsafeRevenueTracking: z.boolean().optional(),
+  aiStoreContent: z.boolean().optional(),
 });
 export type IProjectUpdate = z.infer<typeof zProjectUpdate>;

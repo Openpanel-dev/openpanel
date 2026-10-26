@@ -2,6 +2,8 @@ import type { IServiceEvent, IServiceSession } from '@openpanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { ZapIcon } from 'lucide-react';
+import { formatCost, formatTokens } from '@/components/ai/ai-format';
+import { AiUsageWidget } from '@/components/ai/ai-usage-widget';
 import { EmptyState } from '@/components/empty-state';
 import { EventIcon } from '@/components/events/event-icon';
 import { useEventDrawer } from '@/components/events/use-event-drawer';
@@ -52,6 +54,20 @@ export const Route = createFileRoute(
   }),
   pendingComponent: FullPageLoadingState,
 });
+
+/** `model · tokens · cost` from the flat `ai_*` properties an AI event carries. */
+function aiEventSummary(properties: Record<string, unknown>): string {
+  const parts = [
+    properties.ai_name,
+    properties.ai_model,
+    properties.ai_total_tokens
+      ? `${formatTokens(Number(properties.ai_total_tokens))} tokens`
+      : null,
+    properties.ai_cost ? formatCost(Number(properties.ai_cost)) : null,
+    properties.ai_is_error === 'true' ? 'error' : null,
+  ].filter((part): part is string => typeof part === 'string' && part !== '');
+  return parts.join(' · ');
+}
 
 function sessionToFakeEvent(session: IServiceSession): IServiceEvent {
   return {
@@ -369,6 +385,12 @@ function Component() {
             </Widget>
           )}
 
+          <AiUsageWidget
+            className="w-full"
+            entity={{ kind: 'session', sessionId }}
+            projectId={projectId}
+          />
+
           <VisitedRoutes
             paths={events
               .filter((e) => e.name === 'screen_view' && e.path)
@@ -400,6 +422,11 @@ function Component() {
                         ? event.path
                         : event.name.replace(/_/g, ' ')}
                     </span>
+                    {event.name.startsWith('ai_') && (
+                      <span className="truncate text-muted-foreground text-xs">
+                        {aiEventSummary(event.properties)}
+                      </span>
+                    )}
                   </div>
                   <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
                     {formatDateTime(event.createdAt)}

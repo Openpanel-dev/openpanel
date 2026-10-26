@@ -5,6 +5,7 @@ import {
   Building2Icon,
   ClockIcon,
   EqualApproximatelyIcon,
+  GaugeIcon,
   type LucideIcon,
   SigmaIcon,
   TrendingDownIcon,
@@ -57,6 +58,9 @@ export function ReportSegment({
     property_average: EqualApproximatelyIcon,
     property_max: TrendingUpIcon,
     property_min: TrendingDownIcon,
+    property_p50: GaugeIcon,
+    property_p95: GaugeIcon,
+    property_p99: GaugeIcon,
   };
 
   return (
