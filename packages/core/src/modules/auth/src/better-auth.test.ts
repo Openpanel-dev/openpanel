@@ -22,6 +22,8 @@ let hashPassword: typeof import('./password').hashPassword;
 let constants: typeof import('./better-auth');
 
 const PREFIX = 'ba-test';
+/** Creating and migrating the test databases on a fresh runner. */
+const BOOTSTRAP_TIMEOUT_MS = 30_000;
 const DASHBOARD_URL = 'http://dashboard.test';
 const ORG_ID = `${PREFIX}-org`;
 const PASSWORD = 'correct horse battery';
@@ -119,6 +121,11 @@ async function cleanUp() {
 }
 
 beforeAll(async () => {
+  // A fresh CI shard has no test databases until a suite creates them.
+  const { bootstrapTestDatabases } = await import(
+    '../../../../../../test/bootstrap-databases'
+  );
+  await bootstrapTestDatabases();
   ({ createAuth } = await import('./better-auth'));
   ({ hashPassword } = await import('./password'));
   constants = await import('./better-auth');
@@ -151,7 +158,7 @@ beforeAll(async () => {
       createdByUserId: EXISTING_ID,
     },
   });
-});
+}, BOOTSTRAP_TIMEOUT_MS);
 
 afterAll(cleanUp);
 
