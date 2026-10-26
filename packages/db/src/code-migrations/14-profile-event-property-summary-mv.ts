@@ -38,6 +38,9 @@ export async function up(env: CodeMigrationEnv) {
           'event_date',
         ],
         partitionBy: 'toYYYYMM(event_date)',
+        // property_value is grouped on but sits outside the sorting key, which
+        // ClickHouse 26.7+ rejects for AggregatingMergeTree unless allowed.
+        settings: { allow_dimensions_outside_sorting_key: 1 },
         query: `SELECT
           project_id,
           profile_id,

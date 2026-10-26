@@ -100,6 +100,9 @@ function getClickhouseSettings(): ClickHouseSettings {
   return {
     distributed_product_mode: 'allow',
     date_time_input_format: 'best_effort',
+    // ClickHouse 26.3+ defaults async_insert to 1. The buffers already batch
+    // client-side, so inserts stay synchronous; a buffer can still opt in per query.
+    async_insert: 0,
     ...(process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
       ? {}
       : {
