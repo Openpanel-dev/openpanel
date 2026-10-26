@@ -1,0 +1,82 @@
+---
+title: Vercel AI SDK
+description: Record every model call made through the Vercel AI SDK with one middleware, for any provider it supports.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta; the middleware options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
+</Callout>
+
+`@openpanel/ai` ships a middleware for `wrapLanguageModel`. It sees every call to any provider the AI SDK supports, so one wrap covers OpenAI, Anthropic, Google, Bedrock, Mistral, OpenRouter and the rest, with no OpenTelemetry setup.
+
+## Installation
+
+```bash
+pnpm install @openpanel/sdk @openpanel/ai
+```
+
+Requires `ai` 7 or later.
+
+## Usage
+
+```ts
+import { OpenPanel } from '@openpanel/sdk';
+import { openpanelAiMiddleware } from '@openpanel/ai';
+import { wrapLanguageModel, generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+
+const op = new OpenPanel({ clientId: 'xxx', clientSecret: 'xxx' });
+
+const model = wrapLanguageModel({
+  model: anthropic('claude-sonnet-5-5'),
+  middleware: openpanelAiMiddleware({ op }),
+});
+
+await generateText({
+  model,
+  messages,
+  providerOptions: {
+    openpanel: {
+      profileId: user.id,          // the same id you identify with in the web SDK
+      conversationId: thread.id,   // groups this request's traces into one conversation
+      name: 'inbox-summary',       // the feature this call belongs to
+      groups: [user.orgId],
+      properties: { plan: user.plan },
+    },
+  },
+});
+```
+
+Every call becomes an `ai_generation` event with the model, provider, messages in and out, tools, token usage including cached and reasoning tokens, latency, time to first token on streams, the finish reason, and errors. A failed call is recorded with its error and then rethrown, so your own error handling is untouched. Sending never blocks the model call.
+
+## One trace per request
+
+An agent loop with tools runs the model several times. Wrap the request in `withAiContext` and every call inside it shares one trace and the same identity, without repeating `providerOptions`:
+
+```ts
+import { withAiContext } from '@openpanel/ai';
+
+await withAiContext(
+  { profileId: user.id, conversationId: thread.id, name: 'support-agent', groups: [user.orgId] },
+  () => runAgent()
+);
+```
+
+Nested contexts merge over the outer one, so a step can override `name` while keeping the user and the trace.
+
+## Options
+
+| Option | Where | What it does |
+|---|---|---|
+| `op` | middleware | The OpenPanel client that sends the events. |
+| `privacyMode` | middleware or per call | Never send prompts, completions or tool definitions. Tokens, cost and latency are still recorded. |
+| `provider` | middleware | Reported instead of the model's provider id, for example `openrouter` behind a gateway. |
+| `defaults` | middleware | Context applied to calls that have no `withAiContext` and no `providerOptions.openpanel`. |
+| `profileId`, `groups`, `deviceId` | per call | Who the call belongs to. `deviceId` binds it to a web session's device (the web SDK's `getDeviceId()`). |
+| `traceId`, `parentId`, `conversationId`, `name`, `properties` | per call | Where the call sits and what it is. |
+
+## Linking to sessions
+
+A logged-in user's server-side model call lands in the same session as their page views, because OpenPanel resolves a server event to the profile's live session. For anonymous users, forward the web SDK's device id to your backend and pass it as `deviceId`.

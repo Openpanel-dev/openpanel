@@ -1,0 +1,104 @@
+---
+title: Manual capture
+description: Send AI events yourself with op.ai() or the raw payload, from any language.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta; this payload may still change. Fields will be added rather than removed, and events you have already sent stay readable. See the [overview](/docs/ai-observability) for how to give feedback.
+</Callout>
+
+## With the Node SDK
+
+`@openpanel/sdk` 1.4 adds `op.ai(payload)`. The sticky profile id from `identify()` and groups from `setGroups()` are merged in, like `track()`.
+
+```ts
+import { OpenPanel } from '@openpanel/sdk';
+
+const op = new OpenPanel({ clientId: 'xxx', clientSecret: 'xxx' });
+
+op.ai({
+  kind: 'generation',
+  traceId,
+  name: 'summarize',
+  conversationId: thread.id,
+  model: 'gpt-5-mini',
+  provider: 'openai',
+  input: messages,
+  output: [{ role: 'assistant', content: completion }],
+  usage: { inputTokens: 812, outputTokens: 140, cacheReadTokens: 100 },
+  latencyMs: 1840,
+  stopReason: 'stop',
+  properties: { feature: 'inbox-summary', plan: 'pro' },
+  profileId: user.id,
+  groups: [user.orgId],
+});
+```
+
+## Raw payload
+
+Any language can post the same payload to `POST /track` with the client headers used for every other event:
+
+```bash
+curl -X POST https://api.openpanel.dev/track \
+  -H 'content-type: application/json' \
+  -H 'openpanel-client-id: xxx' -H 'openpanel-client-secret: xxx' \
+  -d '{
+    "type": "ai",
+    "payload": {
+      "kind": "generation",
+      "traceId": "trace_01",
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "input": [{ "role": "user", "content": "Summarize my inbox" }],
+      "output": [{ "role": "assistant", "content": "You have 3 unread emails." }],
+      "usage": { "inputTokens": 812, "outputTokens": 140 },
+      "latencyMs": 1840,
+      "profileId": "usr_123"
+    }
+  }'
+```
+
+## Kinds
+
+| `kind` | Required fields | Meaning |
+|---|---|---|
+| `generation` | `traceId`, `model`, `provider`, `usage.inputTokens`, `usage.outputTokens` | One model call |
+| `embedding` | `traceId`, `model`, `provider`, `usage.inputTokens` | One embedding call |
+| `span` | `traceId` | A tool call, a retrieval, any non-model step |
+| `trace` | `traceId` | An optional explicit root with a name, total latency, input and output state |
+
+A trace does not need an explicit `trace` event; the trace list aggregates from its children.
+
+## Fields
+
+| Field | Type | Notes |
+|---|---|---|
+| `traceId` | string | Groups every event of one request. Letters, digits and `- _ ~ . @ ( ) ! ' : \|`, up to 128 characters. |
+| `spanId` | string | This event's id. Defaults to the event id. |
+| `parentId` | string | A `spanId` or the `traceId`, for the tree. |
+| `name` | string | Display name of the step or trace, e.g. `summarize`. Shows up as `ai_name` in reports. |
+| `conversationId` | string | Groups traces into a conversation or thread. |
+| `model`, `provider` | string | e.g. `gpt-5-mini`, `openai`. Cost is looked up from these. |
+| `input`, `output` | any JSON | Messages for a generation, any JSON for a span or trace, strings for an embedding. Each is cut at 200 KB. |
+| `tools` | any JSON | The tools the model could call. |
+| `usage` | object | `inputTokens`, `outputTokens`, `cacheReadTokens`, `cacheWriteTokens`, `reasoningTokens`. `inputTokens` includes cached tokens; `outputTokens` includes reasoning tokens. |
+| `cost` | number | USD. When given it is stored as is instead of being computed. |
+| `latencyMs`, `timeToFirstTokenMs` | number | Milliseconds. |
+| `error` | object | `{ message, code?, httpStatus? }`. Its presence marks the event as failed. |
+| `stopReason` | string | e.g. `stop`, `length`, `tool-calls`. |
+| `stream` | boolean | Whether the response was streamed. |
+| `modelParameters` | object | `temperature`, `maxTokens`, `topP` and friends. |
+| `privacyMode` | boolean | Drops `input`, `output` and `tools` before storage. |
+| `properties` | object | Your own properties; filterable and breakdown-able like on any event. |
+| `profileId`, `groups`, `deviceId` | | Who the call belongs to. |
+| `timestamp` | ISO 8601 | Back-dates the event; send the call's start time. |
+
+## What is stored
+
+Each event is stored twice. A slim row in `events` carries the flat `ai_*` properties (`ai_model`, `ai_provider`, `ai_name`, `ai_input_tokens`, `ai_output_tokens`, `ai_total_tokens`, `ai_cost`, `ai_latency_ms`, `ai_is_error`, `ai_trace_id`, `ai_conversation_id` and more), which is what reports, funnels and the profile timeline read. The full row with the messages lives in a separate table that powers the AI pages; its content expires after 30 days.
+
+## Cost
+
+Cost is computed at ingest from a built-in catalog covering the major providers and gateways. Model names are matched after stripping provider prefixes and date suffixes, so `gpt-5-mini-2025-08-07` prices like `gpt-5-mini`. A model the catalog does not know is stored with a cost of zero; send `cost` yourself in that case.
