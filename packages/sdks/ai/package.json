@@ -9,7 +9,10 @@
   },
   "module": "index.ts",
   "config": {
-    "docPath": "apps/public/content/docs/(tracking)/sdks/ai.mdx"
+    "docPath": "apps/public/content/docs/(tracking)/sdks/ai.mdx",
+    "subpaths": [
+      "vercel"
+    ]
   },
   "scripts": {
     "build": "rm -rf dist && tsup",

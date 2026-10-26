@@ -3,7 +3,7 @@
 // events land in whichever project OP_CLIENT_ID names. Without that config
 // the model is returned untouched.
 
-import { openpanelAiMiddleware } from '@openpanel/ai';
+import { openpanelAiMiddleware } from '@openpanel/ai/vercel';
 import { OpenPanel } from '@openpanel/sdk';
 import { type LanguageModel, wrapLanguageModel } from 'ai';
 import type { CoreConfig } from '../../../config';

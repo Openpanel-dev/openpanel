@@ -9,7 +9,7 @@ import { Callout } from 'fumadocs-ui/components/callout';
 AI observability is in beta; the middleware options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
 </Callout>
 
-`@openpanel/ai` ships a middleware for `wrapLanguageModel`. It sees every call to any provider the AI SDK supports, so one wrap covers OpenAI, Anthropic, Google, Bedrock, Mistral, OpenRouter and the rest, with no OpenTelemetry setup.
+`@openpanel/ai/vercel` ships a middleware for `wrapLanguageModel`. The root of `@openpanel/ai` holds what every integration shares, such as `withAiContext`; provider wrappers for the OpenAI and Anthropic clients will arrive as their own subpaths. It sees every call to any provider the AI SDK supports, so one wrap covers OpenAI, Anthropic, Google, Bedrock, Mistral, OpenRouter and the rest, with no OpenTelemetry setup.
 
 ## Installation
 
@@ -23,7 +23,7 @@ Requires `ai` 7 or later.
 
 ```ts
 import { OpenPanel } from '@openpanel/sdk';
-import { openpanelAiMiddleware } from '@openpanel/ai';
+import { openpanelAiMiddleware } from '@openpanel/ai/vercel';
 import { wrapLanguageModel, generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 

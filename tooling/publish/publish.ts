@@ -21,6 +21,8 @@ interface PackageJson {
     transformPackageJson?: boolean;
     transformEnvs?: boolean;
     docPath?: string;
+    /** Extra entry points published as `<name>/<subpath>` (a `<subpath>.ts` next to index). */
+    subpaths?: string[];
   };
 }
 
@@ -165,15 +167,16 @@ const updatePackageJsonForRelease = (
           require: './dist/index.cjs',
           types: './dist/index.d.ts',
         },
-        ...(name === '@openpanel/nextjs'
-          ? {
-              './server': {
-                import: './dist/server.js',
-                require: './dist/server.cjs',
-                types: './dist/server.d.ts',
-              },
-            }
-          : {}),
+        ...Object.fromEntries(
+          (packages[name]!.config?.subpaths ?? []).map((subpath) => [
+            `./${subpath}`,
+            {
+              import: `./dist/${subpath}.js`,
+              require: `./dist/${subpath}.cjs`,
+              types: `./dist/${subpath}.d.ts`,
+            },
+          ])
+        ),
       },
     };
   }
