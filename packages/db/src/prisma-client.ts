@@ -1,6 +1,8 @@
 import { getSubscriptionState } from '@openpanel/payments/subscription-state';
+import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from './generated/prisma/client';
 import { logger } from './logger';
+import { getRdsIamConnection, isRdsIamAuth } from './rds-iam';
 
 export * from './generated/prisma/client';
 
@@ -11,10 +13,22 @@ const subscriptionStateNeeds = {
   subscriptionPauseAtPeriodEnd: true,
 } as const;
 
+// The query engine only takes a fixed URL, so IAM tokens (which expire) need
+// the pg driver adapter, whose pool asks for a password per connection.
+// Prisma rejects `adapter: undefined`; null keeps the URL-based engine.
+const getDriverAdapter = (): PrismaPg | null => {
+  if (!isRdsIamAuth()) {
+    return null;
+  }
+  const { poolConfig, schema } = getRdsIamConnection(process.env.DATABASE_URL);
+  return new PrismaPg(poolConfig, { schema });
+};
+
 const getPrismaClient = () => {
   // emit: 'event' keeps the engine from writing prisma:error lines straight
   // to stderr, so they flow through pino to the OTLP pipeline instead.
   const client = new PrismaClient({
+    adapter: getDriverAdapter(),
     // Prisma's default error format splices file, line and a source snippet
     // into messages that reach API clients verbatim. `minimal` keeps our
     // source layout out of a 500.

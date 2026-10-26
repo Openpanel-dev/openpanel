@@ -7,6 +7,7 @@ generator client {
   moduleFormat           = "esm"
   generatedFileExtension = "ts"
   importFileExtension    = "ts"
+  previewFeatures        = ["driverAdapters"]
 }
 
 // generator json {

@@ -17,12 +17,14 @@
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
+    "@aws-sdk/rds-signer": "3.1117.0",
     "@clickhouse/client": "1.18.5",
     "@hyperdx/node-opentelemetry": "catalog:",
     "@openpanel/core": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/redis": "workspace:*",
     "@openpanel/shared": "workspace:*",
+    "@prisma/adapter-pg": "6.14.0",
     "@prisma/client": "6.14.0",
     "pino": "catalog:",
     "pino-pretty": "catalog:",
@@ -32,6 +34,7 @@
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "8.23.1",
     "bun-types": "1.4.4",
     "prisma": "6.14.0",
     "typescript": "catalog:"
