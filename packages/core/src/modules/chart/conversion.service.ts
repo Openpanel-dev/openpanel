@@ -1,10 +1,14 @@
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { omit } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
 import { expandCustomEvents } from '../custom-event/custom-event.service';
 import type { IReportInput } from '../report/report.constants';
 import { NOT_SET_VALUE } from '../report/report.constants';
-import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
+import {
+  mergeGlobalFilters,
+  onlyReportEvents,
+  type ReportEventItem,
+} from '../report/src/series';
 import { JOINABLE_PROFILE_COLUMNS } from './chart.constants';
 import { compiledText } from './src/compiled';
 import { type ConversionGroup, conversionQuery } from './src/conversion.sql';
@@ -20,6 +24,11 @@ import {
   getEventFiltersWhereClause,
   joinFilterClauses,
 } from './src/filter-where';
+import {
+  type FirstOccurrencePeriod,
+  firstTimeCondition,
+  rangePeriod,
+} from './src/first-time';
 import { runQuery } from './src/run-query';
 import { fetchCohortsMetadata } from './src/statement';
 
@@ -73,6 +82,32 @@ function profileJoinFields(profileBreakdowns: { name: string }[]): string[] {
     }
   }
   return Array.from(fields);
+}
+
+/** A step's filters, plus the first-occurrence condition for a "first time" step. */
+function stepWhere(
+  event: ReportEventItem,
+  projectId: string,
+  period: FirstOccurrencePeriod
+): SqlFragment | null {
+  // Qualify with 'events' so event-level `properties[...]` becomes
+  // `events.properties[...]`, required when the conversion query also joins
+  // the profiles table (which exposes a `properties` column). Without the
+  // qualifier ClickHouse fails with "ambiguous identifier 'properties'"
+  // whenever a step filters on properties.X while a breakdown is on
+  // profile.properties.Y.
+  const filters = getEventFiltersWhereClause(
+    event.filters,
+    projectId,
+    'events'
+  );
+  const firstTime = firstTimeCondition({
+    event,
+    projectId,
+    eventsAlias: 'events',
+    period,
+  });
+  return joinFilterClauses(firstTime ? { ...filters, firstTime } : filters);
 }
 
 export async function getConversion(
@@ -148,18 +183,9 @@ export async function getConversion(
 
   const eventA = events[0] as (typeof events)[number];
   const eventB = events[1] as (typeof events)[number];
-  // Qualify with 'events' so event-level `properties[...]` becomes
-  // `events.properties[...]` — required when the conversion query also joins
-  // the profiles table (which exposes a `properties` column). Without the
-  // qualifier ClickHouse fails with "ambiguous identifier 'properties'"
-  // whenever a step filters on properties.X while a breakdown is on
-  // profile.properties.Y.
-  const whereA = joinFilterClauses(
-    getEventFiltersWhereClause(eventA.filters, projectId, 'events')
-  );
-  const whereB = joinFilterClauses(
-    getEventFiltersWhereClause(eventB.filters, projectId, 'events')
-  );
+  const period = rangePeriod(startDate, endDate);
+  const whereA = stepWhere(eventA, projectId, period);
+  const whereB = stepWhere(eventB, projectId, period);
 
   const results = await runQuery<ConversionRow>(
     deps,
