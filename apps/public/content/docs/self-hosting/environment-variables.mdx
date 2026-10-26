@@ -46,6 +46,27 @@ Direct PostgreSQL connection string (bypasses connection pooling). Used for migr
 DATABASE_URL_DIRECT=postgres://user:password@localhost:5432/openpanel?schema=public
 ```
 
+### DATABASE_AUTH
+
+**Type**: `string`
+**Required**: No
+**Default**: `password`
+
+How the API and worker authenticate to PostgreSQL. `password` uses the password in `DATABASE_URL`. `rds-iam` authenticates to Amazon RDS or Aurora PostgreSQL with short-lived [IAM auth tokens](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.IAMDBAuth.html), minted for every new connection, so no database password is stored.
+
+With `rds-iam`:
+
+- Leave the password out of `DATABASE_URL`. The user needs `GRANT rds_iam TO <user>`, and the process's AWS identity (EKS Pod Identity, IRSA, an instance profile or access keys) needs `rds-db:connect` on it.
+- TLS is required: `sslmode` must be `require`, `verify-ca` or `verify-full` (the default). For `verify-full`, point `sslrootcert` at the [RDS CA bundle](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/UsingWithRDS.SSL.html).
+- The region comes from `AWS_REGION`, or from the RDS hostname.
+- `prisma migrate deploy` only takes a URL. Mint one right before it runs: `DATABASE_URL_DIRECT="$(bun ./scripts/rds-iam-database-url.ts)" prisma migrate deploy` in `packages/db`.
+
+**Example**:
+```bash
+DATABASE_AUTH=rds-iam
+DATABASE_URL=postgres://openpanel@mydb.cluster-abc.us-east-1.rds.amazonaws.com:5432/openpanel?schema=public&sslmode=verify-full&sslrootcert=/certs/global-bundle.pem
+```
+
 ### REDIS_URL
 
 **Type**: `string`
