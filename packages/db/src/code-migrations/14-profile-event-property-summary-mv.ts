@@ -3,6 +3,7 @@ import {
   createMaterializedView,
   dropTable,
   getExistingTables,
+  hasMergeTreeSetting,
   runClickhouseMigrationCommands,
 } from '../clickhouse/migration';
 import { type CodeMigrationEnv, getIsCluster, writeSqlDump } from './helpers';
@@ -14,6 +15,12 @@ export async function up(env: CodeMigrationEnv) {
   const replicatedVersion = '1';
   const existingTables = await getExistingTables();
   const isClustered = getIsCluster(env);
+  // property_value is grouped on but sits outside the sorting key. ClickHouse
+  // 26.7+ rejects that for AggregatingMergeTree unless allowed; older servers
+  // do not know the setting and would reject the CREATE for naming it.
+  const allowDimensionsOutsideSortingKey = await hasMergeTreeSetting(
+    'allow_dimensions_outside_sorting_key'
+  );
 
   const sqls: string[] = [];
 
@@ -38,9 +45,9 @@ export async function up(env: CodeMigrationEnv) {
           'event_date',
         ],
         partitionBy: 'toYYYYMM(event_date)',
-        // property_value is grouped on but sits outside the sorting key, which
-        // ClickHouse 26.7+ rejects for AggregatingMergeTree unless allowed.
-        settings: { allow_dimensions_outside_sorting_key: 1 },
+        settings: allowDimensionsOutsideSortingKey
+          ? { allow_dimensions_outside_sorting_key: 1 }
+          : {},
         query: `SELECT
           project_id,
           profile_id,

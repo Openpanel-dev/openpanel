@@ -194,6 +194,19 @@ export async function getExistingTables() {
   }
 }
 
+// A MergeTree setting that is unknown to the server fails the CREATE, so a
+// migration checks before it sets one that only newer releases know.
+export async function hasMergeTreeSetting(name: string): Promise<boolean> {
+  const result = await chMigrationClient.query({
+    query:
+      'SELECT count() AS total FROM system.merge_tree_settings WHERE name = {name:String}',
+    query_params: { name },
+    format: 'JSONEachRow',
+  });
+  const [row] = await result.json<{ total: string }>();
+  return Number(row?.total ?? 0) > 0;
+}
+
 export interface TableKeys {
   sortingKey: string[];
   partitionKey: string;
