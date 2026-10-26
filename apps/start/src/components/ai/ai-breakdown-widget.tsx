@@ -3,8 +3,14 @@ import type { AiBreakdownDimension } from '@openpanel/core/modules/ai/ai.constan
 import { useQuery } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { type AiMeasure, breakdownReportDraft } from './ai-report-draft';
+import { OpenAsReportLink } from './open-as-report-link';
 import { ProjectLink } from '@/components/links';
-import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
+import {
+  WidgetFooter,
+  WidgetHead,
+  WidgetTitle,
+} from '@/components/overview/overview-widget';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Skeleton } from '@/components/skeleton';
@@ -14,7 +20,7 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 
-type Measure = 'cost' | 'generations' | 'errors' | 'tokens' | 'p95LatencyMs';
+type Measure = AiMeasure;
 
 const MEASURE_LABEL: Record<Measure, string> = {
   cost: 'Cost',
@@ -106,8 +112,12 @@ export function AiBreakdownWidget({
   className,
 }: Props) {
   const trpc = useTRPC();
-  const { range, startDate, endDate } = useOverviewOptions();
+  const { range, startDate, endDate, interval } = useOverviewOptions();
   const { filters } = useAiFilters();
+  const draft = breakdownReportDraft(
+    { projectId, range, startDate, endDate, interval, filters },
+    { dimension, measure, name: title }
+  );
   const query = useQuery(
     trpc.ai.breakdown.queryOptions({
       projectId,
@@ -166,6 +176,11 @@ export function AiBreakdownWidget({
           ))}
         </div>
       </WidgetBody>
+      {draft && (
+        <WidgetFooter>
+          <OpenAsReportLink draft={draft} />
+        </WidgetFooter>
+      )}
     </Widget>
   );
 }

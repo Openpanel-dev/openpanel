@@ -96,6 +96,15 @@ test.describe('ai observability', () => {
     await expect(page.getByText('Top users')).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/ai-overview.png`, fullPage: true });
 
+    // "Open as report" lands in the editor with the widget's series and breakdown.
+    await page.getByRole('link', { name: 'Open as report' }).nth(1).click();
+    await expect(page).toHaveURL(/\/reports\?.*draft=/);
+    await expect(page.getByText('gpt-5-mini').first()).toBeVisible();
+    await page.screenshot({
+      path: `${SHOTS}/ai-open-as-report.png`,
+      fullPage: true,
+    });
+
     expect(problems).toEqual([]);
   });
 

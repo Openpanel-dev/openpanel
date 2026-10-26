@@ -1,3 +1,4 @@
+import { zReportInput } from '@openpanel/core/modules/report/report.constants';
 import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import ReportEditor from '@/components/report-chart/report-editor';
@@ -18,9 +19,12 @@ export const Route = createFileRoute(
   },
   validateSearch: z.object({
     dashboardId: z.string().optional(),
+    /** A report to open unsaved, from a widget's "Open as report". */
+    draft: zReportInput.extend({ name: z.string() }).optional(),
   }),
 });
 
 function Component() {
-  return <ReportEditor report={null} />;
+  const { draft } = Route.useSearch();
+  return <ReportEditor draft={draft} report={null} />;
 }

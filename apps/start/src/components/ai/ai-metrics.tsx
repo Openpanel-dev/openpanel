@@ -4,6 +4,8 @@ import { curveMonotoneX } from '@visx/curve';
 import { RotateCwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { type AiMetricKey, metricReportDraft } from './ai-report-draft';
+import { OpenAsReportLink } from './open-as-report-link';
 import { Area } from '@/components/charts/area';
 import { ComposedChart } from '@/components/charts/composed-chart';
 import { Grid } from '@/components/charts/grid';
@@ -25,7 +27,7 @@ import { getChartColor } from '@/utils/theme';
 const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.4)';
 
 interface MetricDefinition {
-  key: keyof IAiMetrics;
+  key: AiMetricKey;
   title: string;
   unit: MetricUnit;
   inverted: boolean;
@@ -152,8 +154,16 @@ export function AiMetrics({ projectId }: { projectId: string }) {
         ))}
       </div>
       <div className="card p-4">
-        <div className="-mt-1 font-medium text-3xs text-muted-foreground uppercase tracking-wider">
-          {active.title}
+        <div className="row -mt-1 items-center justify-between">
+          <div className="font-medium text-3xs text-muted-foreground uppercase tracking-wider">
+            {active.title}
+          </div>
+          <OpenAsReportLink
+            draft={metricReportDraft(
+              { projectId, range, startDate, endDate, interval, filters },
+              { metric: active.key, name: `AI ${active.title.toLowerCase()}` }
+            )}
+          />
         </div>
         <div className="h-[190px] w-full">
           {query.isLoading && <Skeleton className="h-full w-full" />}

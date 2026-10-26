@@ -1,4 +1,5 @@
 import type { IServiceReport } from '@openpanel/core';
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
 import { useQuery } from '@tanstack/react-query';
 import { ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';
@@ -10,6 +11,7 @@ import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
+  applyDraft,
   changeChartType,
   changeDateRanges,
   changeEndDate,
@@ -34,6 +36,8 @@ const TOOLBAR_TRIGGER_CLASS =
 
 interface ReportEditorProps {
   report: IServiceReport | null;
+  /** An unsaved report to start from, e.g. from an AI widget's "Open as report". */
+  draft?: IReportInput & { name: string };
 }
 
 /** With an AI provider the empty editor asks for a description; without one it points at the event picker. */
@@ -52,6 +56,7 @@ function EmptyReport({ projectId }: { projectId: string }) {
 
 export default function ReportEditor({
   report: initialReport,
+  draft,
 }: ReportEditorProps) {
   const { projectId } = useAppParams();
   const dispatch = useDispatch();
@@ -63,12 +68,15 @@ export default function ReportEditor({
       dispatch(setReport(initialReport));
     } else {
       dispatch(ready());
+      if (draft) {
+        dispatch(applyDraft(draft));
+      }
     }
 
     return () => {
       dispatch(reset());
     };
-  }, [initialReport, dispatch]);
+  }, [initialReport, draft, dispatch]);
 
   return (
     <Sheet>
