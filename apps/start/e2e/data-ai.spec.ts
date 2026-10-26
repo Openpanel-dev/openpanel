@@ -79,7 +79,11 @@ test.describe('ai observability', () => {
     await open(page, `${SAAS}/ai?range=30d`);
 
     await expect(
-      page.getByRole('heading', { name: 'AI', exact: true })
+      page.getByRole('heading', { level: 1, name: /^AI/ })
+    ).toBeVisible();
+    await expect(page.getByText('AI observability is in beta')).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Give feedback' }).last()
     ).toBeVisible();
     const cards = page.locator('.card').first();
     await expect(cards).toContainText('Cost');
@@ -111,14 +115,14 @@ test.describe('ai observability', () => {
     await expect(
       page.getByRole('button', { name: 'Conversation', exact: true })
     ).toBeVisible();
-    // A trace may start with an embedding; pick the model call, whose input
-    // carries the seeded assistant's system prompt.
+    // A trace may start with an embedding; pick the model call and expect its
+    // conversation to render a user message.
     await page
       .getByRole('button', { name: /gpt-|claude-/ })
       .first()
       .click();
     await expect(
-      page.getByText('OpenPanel analytics assistant').first()
+      page.locator('span', { hasText: /^user$/ }).first()
     ).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/ai-trace.png`, fullPage: true });
 

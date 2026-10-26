@@ -1,9 +1,11 @@
 import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import { z } from 'zod';
+import { AiBetaBanner } from '@/components/ai/ai-beta-banner';
 import { AiFilters } from '@/components/ai/ai-filters';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
 import { PageHeader } from '@/components/page-header';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
@@ -50,8 +52,14 @@ function Component() {
     <div className="container p-8">
       <PageHeader
         description="Every model call your product makes: cost, tokens, latency and errors, tied to the profiles and sessions behind them"
-        title="AI"
+        title={
+          <span className="row items-center gap-2">
+            AI
+            <Badge variant="outline">Beta</Badge>
+          </span>
+        }
       />
+      <AiBetaBanner className="mt-4" />
       <div className="col mt-4 gap-3">
         <div className="row flex-wrap items-center gap-2">
           <OverviewRange />
