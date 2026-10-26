@@ -56,7 +56,7 @@ export function useColumns() {
           }
 
           if (name.startsWith('ai_')) {
-            const model = row.original.properties.ai_model;
+            const model = row.original.properties?.ai_model;
             return (
               <>
                 {name.replace(/_/g, ' ')}
