@@ -992,6 +992,23 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
   expect(organizationStore.has('org_healthy')).toBe(true);
 });
 
+// An install keeps `org:admin` until code migration 29 has run, and its
+// crons can start first.
+test('runDeleteCron keeps an organization whose only admin has the old role spelling', async () => {
+  organizationStore.set('org_rollout', makeOrganization({ id: 'org_rollout' }));
+  memberStore.set('member_1', {
+    id: 'member_1',
+    organizationId: 'org_rollout',
+    userId: 'user_1',
+    role: 'org:admin',
+    email: 'a@example.com',
+  });
+
+  const result = await subject.runDeleteCron(deps);
+  expect(result).toEqual({ organizations: 0, projects: 0 });
+  expect(organizationStore.has('org_rollout')).toBe(true);
+});
+
 test('getSettingsForOrganization falls back to UTC when the stored timezone is unknown', async () => {
   organizationStore.set(
     'org_1',

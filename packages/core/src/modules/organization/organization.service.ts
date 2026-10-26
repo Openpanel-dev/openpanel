@@ -33,9 +33,9 @@ import {
   type IProjectAccessGrant,
   isValidTimezone,
   normalizeOrganizationRole,
-  ORGANIZATION_ADMIN_ROLES,
   type OrganizationRole,
   type ProjectScope,
+  STORED_ADMIN_ROLES,
 } from './organization.constants';
 
 export type IServiceOrganization = Awaited<
@@ -707,7 +707,7 @@ export async function runDeleteCron(
     where: {
       OR: [
         { deleteAt: { lte: now } },
-        { members: { none: { role: { in: [...ORGANIZATION_ADMIN_ROLES] } } } },
+        { members: { none: { role: { in: STORED_ADMIN_ROLES } } } },
       ],
     },
     include: { projects: { select: { id: true } } },

@@ -460,7 +460,7 @@ export const encryptionKey: Check = (install) => {
       severity: 'error',
       title: 'ENCRYPTION_KEY is not 64 hex characters',
       detail:
-        'It guards stored credentials (2FA, Search Console, exports), so doctor will not replace an existing value.',
+        'It guards stored credentials (Search Console, exports), so doctor will not replace an existing value.',
       manual:
         'Generate a replacement with `openssl rand -hex 32` only if you have nothing encrypted yet.',
     };

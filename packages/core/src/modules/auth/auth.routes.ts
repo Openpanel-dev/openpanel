@@ -1,3 +1,4 @@
+import type { IpHeaderConfig } from '../../config';
 import { defineRoutes } from '../../http/define';
 import { getTrustedIpFromHeaders } from '../../shared/get-client-ip';
 import {
@@ -6,19 +7,31 @@ import {
   TRUSTED_IP_HEADER,
 } from './src/better-auth';
 
-const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
+/** The part of Bun's server Elysia hands a route: the peer address. */
+interface SocketAddressSource {
+  requestIP(request: Request): { address: string } | null;
+}
+
+interface ForwardOptions {
+  ipHeaders: IpHeaderConfig;
+  socketIp: string | undefined;
+  pathname?: string;
+}
 
 /**
  * better-auth's rate limiter keys on one header we set ourselves, so a caller
  * cannot pick its own bucket through `x-forwarded-for`.
  */
-function withTrustedIp(request: Request, pathname?: string): Request {
+function withTrustedIp(
+  request: Request,
+  { ipHeaders, socketIp, pathname }: ForwardOptions
+): Request {
   const url = new URL(request.url);
   if (pathname) {
     url.pathname = pathname;
   }
   const headers = new Headers(request.headers);
-  const { ip } = getTrustedIpFromHeaders(TRUSTED_ONLY, request.headers);
+  const { ip } = getTrustedIpFromHeaders(ipHeaders, request.headers, socketIp);
   headers.delete(TRUSTED_IP_HEADER);
   if (ip) {
     headers.set(TRUSTED_IP_HEADER, ip);
@@ -31,32 +44,44 @@ function withTrustedIp(request: Request, pathname?: string): Request {
   });
 }
 
-function handle(auth: Auth | null, request: Request, pathname?: string) {
+function handle(
+  auth: Auth | null,
+  request: Request,
+  options: ForwardOptions
+): Promise<Response> | Response {
   if (!auth) {
     return new Response('Not Found', { status: 404 });
   }
-  return auth.handler(withTrustedIp(request, pathname));
+  return auth.handler(withTrustedIp(request, options));
 }
 
 // The redirect URIs registered at Google and GitHub point at the legacy
 // `/oauth/<provider>/callback` paths; serving them means nobody has to change
 // their OAuth app.
-export const authRoutes = defineRoutes((app, deps) =>
-  app
-    .all(`${AUTH_BASE_PATH}/*`, ({ request }) => handle(deps.auth, request), {
-      parse: 'none',
-      detail: { hide: true },
-    })
+export const authRoutes = defineRoutes((app, deps) => {
+  const forward = (
+    {
+      request,
+      server,
+    }: { request: Request; server: SocketAddressSource | null },
+    pathname?: string
+  ) =>
+    handle(deps.auth, request, {
+      ipHeaders: deps.config.ipHeaders,
+      socketIp: server?.requestIP(request)?.address,
+      pathname,
+    });
+  const route = { parse: 'none', detail: { hide: true } } as const;
+  return app
+    .all(`${AUTH_BASE_PATH}/*`, (context) => forward(context), route)
     .get(
       '/oauth/google/callback',
-      ({ request }) =>
-        handle(deps.auth, request, `${AUTH_BASE_PATH}/callback/google`),
-      { parse: 'none', detail: { hide: true } }
+      (context) => forward(context, `${AUTH_BASE_PATH}/callback/google`),
+      route
     )
     .get(
       '/oauth/github/callback',
-      ({ request }) =>
-        handle(deps.auth, request, `${AUTH_BASE_PATH}/callback/github`),
-      { parse: 'none', detail: { hide: true } }
-    )
-);
+      (context) => forward(context, `${AUTH_BASE_PATH}/callback/github`),
+      route
+    );
+});

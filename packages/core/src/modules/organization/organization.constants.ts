@@ -36,6 +36,17 @@ export const ORGANIZATION_ADMIN_ROLES = [
   'admin',
 ] as const satisfies readonly OrganizationRole[];
 
+/**
+ * For filters that delete or skip organizations: also the pre-rename spelling,
+ * which an install keeps until code migration 29 has run. A self-hosted
+ * upgrade can start its crons first, and a wrong "no admin" deletes the
+ * organization for good.
+ */
+export const STORED_ADMIN_ROLES: string[] = [
+  ...ORGANIZATION_ADMIN_ROLES,
+  'org:admin',
+];
+
 /** An unknown stored role reads as `member`, never as an admin. */
 export function normalizeOrganizationRole(stored: string): OrganizationRole {
   const parsed = zOrganizationRole.safeParse(stored);
