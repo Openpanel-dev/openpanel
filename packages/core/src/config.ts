@@ -177,6 +177,7 @@ export interface BuffersConfig {
     microBatchSize: number | undefined;
   };
   group: BufferSizing;
+  aiEvent: BufferSizing;
   profile: BufferSizing;
   profileBackfill: BufferSizing;
   replay: BufferSizing;

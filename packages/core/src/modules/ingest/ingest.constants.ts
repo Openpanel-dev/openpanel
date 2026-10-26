@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type IAiPayload, zAiPayload } from '../ai/ai.constants';
 
 /** Event names the ingestion pipeline mints itself; a caller may not send them. */
 export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
@@ -198,7 +199,8 @@ export type ITrackHandlerPayload =
   | { type: 'alias'; payload: IAliasPayload }
   | { type: 'replay'; payload: IReplayPayload }
   | { type: 'group'; payload: IGroupPayload }
-  | { type: 'assign_group'; payload: IAssignGroupPayload };
+  | { type: 'assign_group'; payload: IAssignGroupPayload }
+  | { type: 'ai'; payload: IAiPayload };
 
 export const zProfileId = z.union([
   z.string().min(1),
@@ -371,6 +373,12 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
       payload: zAssignGroupPayload,
     })
     .meta({ title: 'Assign Group' }),
+  z
+    .object({
+      type: z.enum(['ai']),
+      payload: zAiPayload,
+    })
+    .meta({ title: 'AI' }),
 ]) satisfies z.ZodType<ITrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs

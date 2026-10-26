@@ -546,6 +546,8 @@ const rawSchema = z.object({
   GROUP_BUFFER_BATCH_SIZE: optionalPositiveInt,
   GROUP_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   GROUP_BUFFER_TTL_IN_SECONDS: optionalPositiveInt,
+  AI_EVENT_BUFFER_BATCH_SIZE: optionalPositiveInt,
+  AI_EVENT_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_BATCH_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_TTL_IN_SECONDS: optionalPositiveInt,
@@ -919,6 +921,10 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         batchSize: raw.GROUP_BUFFER_BATCH_SIZE,
         chunkSize: raw.GROUP_BUFFER_CHUNK_SIZE,
         ttlSeconds: raw.GROUP_BUFFER_TTL_IN_SECONDS,
+      },
+      aiEvent: {
+        batchSize: raw.AI_EVENT_BUFFER_BATCH_SIZE,
+        chunkSize: raw.AI_EVENT_BUFFER_CHUNK_SIZE,
       },
       profile: {
         batchSize: raw.PROFILE_BUFFER_BATCH_SIZE,

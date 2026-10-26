@@ -68,6 +68,7 @@ export const TABLE_NAMES = {
   groups: 'groups',
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
+  ai_events: 'ai_events',
   // Dropped in migration 24; kept because migrations 13, 14 and 15 still name them.
   profile_event_summary_mv: 'profile_event_summary_mv',
   // Keyed for the cohort criteria (event + window first, profile last) rather than by profile.

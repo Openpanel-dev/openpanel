@@ -107,6 +107,7 @@ export function testCoreConfig(
         microBatchMs: undefined,
         microBatchSize: undefined,
       },
+      aiEvent: { batchSize: undefined, chunkSize: undefined },
       group: {
         batchSize: undefined,
         chunkSize: undefined,

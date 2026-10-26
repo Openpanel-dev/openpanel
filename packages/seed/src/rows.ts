@@ -5,8 +5,13 @@
 // the seed stays out of the backend's dependency graph.
 
 import { parsePath, toDots } from '@openpanel/shared';
-import type { Archetype, JourneyEvent } from './archetypes/archetype';
+import type {
+  Archetype,
+  JourneyEvent,
+  SeedAiEvent,
+} from './archetypes/archetype';
 import {
+  type ClickhouseAiEventRow,
   type ClickhouseEventRow,
   type ClickhouseProfileRow,
   type ClickhouseSessionRow,
@@ -32,6 +37,8 @@ export interface SessionInput {
 
 export interface SessionRows {
   events: ClickhouseEventRow[];
+  /** One per AI event, sharing its `events` row's id. */
+  aiEvents: ClickhouseAiEventRow[];
   session: ClickhouseSessionRow;
   endedAt: Date;
   /** Whether the session ended identified, and whether any event went out anonymously. */
@@ -49,6 +56,7 @@ interface EventPayload {
   properties: Record<string, unknown>;
   duration: number;
   revenue?: number;
+  ai?: SeedAiEvent;
 }
 
 const UTM_KEYS = [
@@ -246,6 +254,7 @@ export function buildSessionRows(rng: Rng, input: SessionInput): SessionRows {
       },
       duration: 0,
       revenue: event.name === 'revenue' ? event.revenue : undefined,
+      ai: event.ai,
     });
   }
 
@@ -279,14 +288,41 @@ export function buildSessionRows(rng: Rng, input: SessionInput): SessionRows {
   visitor.lastPath = first.path;
   visitor.lastReferrer = referrer;
 
+  const events: ClickhouseEventRow[] = [];
+  const aiEvents: ClickhouseAiEventRow[] = [];
+  for (const payload of [sessionStart, ...payloads, sessionEnd]) {
+    const row = eventRow(input, referrer, payload, rng.uuid());
+    events.push(row);
+    if (payload.ai) {
+      aiEvents.push(aiEventRow(payload.ai, row));
+    }
+  }
+
   return {
-    events: [sessionStart, ...payloads, sessionEnd].map((payload) =>
-      eventRow(input, referrer, payload, rng.uuid())
-    ),
+    events,
+    aiEvents,
     session,
     endedAt,
     identified: last.profileId !== '',
     anonymousEvents: payloads.some((payload) => payload.profileId === ''),
+  };
+}
+
+/** The worker's `buildAiEventRow`: identity and time copied from the stored event. */
+function aiEventRow(
+  ai: SeedAiEvent,
+  event: ClickhouseEventRow
+): ClickhouseAiEventRow {
+  return {
+    ...ai,
+    span_id: ai.span_id || event.id,
+    project_id: event.project_id,
+    id: event.id,
+    profile_id: event.profile_id,
+    device_id: event.device_id,
+    session_id: event.session_id,
+    groups: event.groups,
+    created_at: event.created_at,
   };
 }
 

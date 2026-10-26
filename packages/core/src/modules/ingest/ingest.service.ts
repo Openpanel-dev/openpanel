@@ -18,6 +18,8 @@ import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { headerValue, type IngestHeaders } from '../../shared/headers';
 import { generateDeviceId } from '../../shared/profileId';
+import type { IAiPayload } from '../ai/ai.constants';
+import { normalizeAiPayload } from '../ai/ai.service';
 import { createBotEvent } from '../event/event.service';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 import {
@@ -133,6 +135,12 @@ function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
       : undefined;
   }
 
+  if (body.type === 'ai') {
+    return body.payload.profileId
+      ? { profileId: String(body.payload.profileId) }
+      : undefined;
+  }
+
   return undefined;
 }
 
@@ -151,10 +159,24 @@ function sanitizeOverrideDeviceId(raw: unknown): string | undefined {
 export function getOverrideDeviceId(
   body: ITrackHandlerPayload
 ): string | undefined {
+  if (body.type === 'ai') {
+    return sanitizeOverrideDeviceId(body.payload.deviceId);
+  }
   if (body.type !== 'track') {
     return undefined;
   }
   return sanitizeOverrideDeviceId(body.payload?.properties?.__deviceId);
+}
+
+function isAiPayload(
+  payload: ITrackHandlerPayload['payload']
+): payload is IAiPayload {
+  return (
+    typeof payload === 'object' &&
+    payload !== null &&
+    'kind' in payload &&
+    'traceId' in payload
+  );
 }
 
 export function getTimestamp(
@@ -164,8 +186,9 @@ export function getTimestamp(
   const safeTimestamp = timestamp || Date.now();
   // `/event` has no body schema, so `payload` can be a string or null;
   // `'properties' in payload` throws on a primitive.
-  const userDefinedTimestamp =
-    typeof payload === 'object' && payload !== null && 'properties' in payload
+  const userDefinedTimestamp = isAiPayload(payload)
+    ? payload.timestamp
+    : typeof payload === 'object' && payload !== null && 'properties' in payload
       ? (payload?.properties?.__timestamp as string | undefined)
       : undefined;
 
@@ -341,6 +364,45 @@ async function handleTrack(
   promises.push(transport.produceIncomingEvent(queueData, partitionKey));
 
   await Promise.all(promises);
+}
+
+/**
+ * An AI event is a server event in all but name: no bot scoring, no session
+ * of its own. It keys the partition on the profile so one user's trace stays
+ * ordered, and ships the typed row draft next to the slim `events` payload.
+ */
+async function handleAi(
+  payload: IAiPayload,
+  context: TrackContext,
+  transport: IngestTransport
+): Promise<void> {
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
+  const normalized = normalizeAiPayload(payload);
+  const uaInfo = parseUserAgent(headers['user-agent'], undefined);
+  const profileId =
+    payload.profileId === undefined ? undefined : String(payload.profileId);
+
+  const queueData: IncomingEventPayload = {
+    id: uuid(),
+    projectId,
+    headers,
+    event: {
+      name: normalized.name,
+      properties: normalized.properties,
+      profileId,
+      groups: payload.groups ?? [],
+      timestamp: timestamp.value,
+      isTimestampFromThePast: timestamp.isFromPast,
+    },
+    uaInfo,
+    geo,
+    deviceId,
+    sessionId,
+    ai: normalized.draft,
+  };
+
+  const partitionKey = profileId ? `${projectId}:${profileId}` : deviceId;
+  await transport.produceIncomingEvent(queueData, partitionKey);
 }
 
 async function handleIdentify(
@@ -525,6 +587,9 @@ export async function ingestTrack(
       break;
     case 'assign_group':
       await handleAssignGroup(transport.deps, body.payload, context);
+      break;
+    case 'ai':
+      await handleAi(body.payload, context, transport);
       break;
     default:
       return { status: 'invalid-type' };

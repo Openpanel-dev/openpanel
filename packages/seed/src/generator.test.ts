@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { ARCHETYPES } from './archetypes';
 import type {
+  ClickhouseAiEventRow,
   ClickhouseEventRow,
   ClickhouseProfileRow,
   ClickhouseSessionRow,
@@ -12,11 +13,15 @@ import type { RowSink, SinkCounts } from './sink';
 
 class MemorySink implements RowSink {
   events: ClickhouseEventRow[] = [];
+  aiEvents: ClickhouseAiEventRow[] = [];
   sessions: ClickhouseSessionRow[] = [];
   profiles: ClickhouseProfileRow[] = [];
 
   addEvents(rows: readonly ClickhouseEventRow[]): void {
     this.events.push(...rows);
+  }
+  addAiEvents(rows: readonly ClickhouseAiEventRow[]): void {
+    this.aiEvents.push(...rows);
   }
   addSession(row: ClickhouseSessionRow): void {
     this.sessions.push(row);
@@ -33,6 +38,7 @@ class MemorySink implements RowSink {
   counts(): SinkCounts {
     return {
       events: this.events.length,
+      aiEvents: this.aiEvents.length,
       sessions: this.sessions.length,
       profiles: this.profiles.length,
     };

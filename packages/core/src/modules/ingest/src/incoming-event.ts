@@ -7,6 +7,7 @@
 
 import type { parseUserAgent } from '@openpanel/shared/server';
 import type { GeoLocation } from '../../../clients/geo';
+import type { AiEventRowDraft } from '../../ai/src/row';
 import type { ITrackPayload } from '../ingest.constants';
 
 export interface IncomingEventPayload {
@@ -25,6 +26,10 @@ export interface IncomingEventPayload {
   headers: Record<string, string | undefined>;
   deviceId: string;
   sessionId: string;
+  // Present for `type: 'ai'`: the typed `ai_events` row the worker completes
+  // once identity, session and time are resolved. A consumer from before the
+  // field existed ignores it and still writes the `events` row.
+  ai?: AiEventRowDraft;
 }
 
 export type IncomingEventProducer = (
