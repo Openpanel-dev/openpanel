@@ -126,6 +126,12 @@ test.describe('ai observability', () => {
     ).toBeVisible();
     await page.screenshot({ path: `${SHOTS}/ai-trace.png`, fullPage: true });
 
+    // The conversation link filters the traces list by the trace's conversation.
+    await page.getByRole('link', { name: 'Conversation' }).click();
+    await expect(page).toHaveURL(/\/ai\/traces\?.*conversation=/);
+    await expect(tableRows(page).first()).toBeVisible();
+    await expect(page.getByText('Something went wrong')).toHaveCount(0);
+
     expect(problems).toEqual([]);
   });
 

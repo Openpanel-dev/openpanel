@@ -220,6 +220,11 @@ export interface TraceListQueryInput extends AiScopedQueryInput {
   cursor?: string;
 }
 
+/**
+ * Aggregates are aliased away from the column names (`first_profile_id`, not
+ * `profile_id`): ClickHouse resolves a bare column in WHERE to a same-named
+ * SELECT alias, which turns a filter into an aggregate and fails the query.
+ */
 export function traceListQuery(input: TraceListQueryInput): SqlFragment {
   const cursorClause = input.cursor
     ? sql`HAVING started_at < toDateTime64(${sql.string(input.cursor)}, 3)`
@@ -233,20 +238,20 @@ export function traceListQuery(input: TraceListQueryInput): SqlFragment {
         anyIf(name, type = 'trace') != '', anyIf(name, type = 'trace'),
         countIf(type = 'generation' AND name != '') > 0, argMinIf(name, created_at, type = 'generation' AND name != ''),
         argMinIf(name, created_at, name != '')
-      ) AS name,
-      argMin(profile_id, created_at) AS profile_id,
-      argMin(device_id, created_at) AS device_id,
-      argMin(session_id, created_at) AS session_id,
-      argMin(conversation_id, created_at) AS conversation_id,
+      ) AS trace_name,
+      argMin(profile_id, created_at) AS first_profile_id,
+      argMin(device_id, created_at) AS first_device_id,
+      argMin(session_id, created_at) AS first_session_id,
+      argMin(conversation_id, created_at) AS first_conversation_id,
       argMin(id, created_at) AS first_id,
       countIf(type = 'generation') AS generations,
       count() AS events,
-      sum(input_tokens) AS input_tokens,
-      sum(output_tokens) AS output_tokens,
+      sum(input_tokens) AS total_input_tokens,
+      sum(output_tokens) AS total_output_tokens,
       sum(total_cost) AS cost,
-      max(is_error) AS is_error,
+      max(is_error) AS has_error,
       arrayDistinct(groupArrayIf(model, model != '')) AS models,
-      arrayDistinct(arrayFlatten(groupArray(groups))) AS groups
+      arrayDistinct(arrayFlatten(groupArray(groups))) AS all_groups
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE ${scopeWhere(input)}
     GROUP BY trace_id

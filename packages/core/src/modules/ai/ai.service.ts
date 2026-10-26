@@ -181,20 +181,20 @@ interface TraceRow {
   trace_id: string;
   started_at: string;
   duration_ms: string | number;
-  name: string;
-  profile_id: string;
-  device_id: string;
-  session_id: string;
-  conversation_id: string;
+  trace_name: string;
+  first_profile_id: string;
+  first_device_id: string;
+  first_session_id: string;
+  first_conversation_id: string;
   first_id: string;
   generations: string | number;
   events: string | number;
-  input_tokens: string | number;
-  output_tokens: string | number;
+  total_input_tokens: string | number;
+  total_output_tokens: string | number;
   cost: number;
-  is_error: boolean | number;
+  has_error: boolean | number;
   models: string[];
-  groups: string[];
+  all_groups: string[];
 }
 
 interface BreakdownRow {
@@ -318,22 +318,22 @@ function transformMetrics(row: MetricsRow | undefined): IAiMetrics {
 function transformTrace(row: TraceRow): IServiceAiTrace {
   return {
     id: row.trace_id,
-    name: row.name,
+    name: row.trace_name,
     startedAt: convertClickhouseDateToJs(row.started_at),
     durationMs: Math.max(0, num(row.duration_ms)),
-    profileId: row.profile_id,
-    deviceId: row.device_id,
-    sessionId: row.session_id,
-    conversationId: row.conversation_id,
+    profileId: row.first_profile_id,
+    deviceId: row.first_device_id,
+    sessionId: row.first_session_id,
+    conversationId: row.first_conversation_id,
     firstEventId: row.first_id,
     generations: num(row.generations),
     events: num(row.events),
-    inputTokens: num(row.input_tokens),
-    outputTokens: num(row.output_tokens),
+    inputTokens: num(row.total_input_tokens),
+    outputTokens: num(row.total_output_tokens),
     cost: num(row.cost),
-    isError: Boolean(row.is_error),
+    isError: Boolean(row.has_error),
     models: row.models ?? [],
-    groups: row.groups ?? [],
+    groups: row.all_groups ?? [],
   };
 }
 
