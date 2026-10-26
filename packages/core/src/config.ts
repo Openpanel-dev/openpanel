@@ -83,6 +83,16 @@ export interface AiConfig {
   anthropic: AnthropicConfig;
 }
 
+/**
+ * OP_CLIENT_ID / OP_CLIENT_SECRET / OP_API_URL: the OpenPanel project this
+ * deployment reports its own AI calls to. Unset means no self-tracking.
+ */
+export interface SelfTrackingConfig {
+  clientId: string | undefined;
+  clientSecret: string | undefined;
+  apiUrl: string | undefined;
+}
+
 export interface SlackConfig {
   clientId: string | undefined;
   clientSecret: string | undefined;
@@ -254,6 +264,7 @@ export interface CoreConfig {
   auth: AuthConfig;
   cookies: CookieConfig;
   ai: AiConfig;
+  selfTracking: SelfTrackingConfig;
   slack: SlackConfig;
   polar: PolarConfig;
   kafka: KafkaConfig;

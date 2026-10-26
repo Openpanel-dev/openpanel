@@ -32,6 +32,7 @@ import {
   traceListQuery,
 } from './src/sql';
 
+export { withAiContext } from '@openpanel/ai';
 export type { NormalizedAiEvent } from './src/normalize';
 export { normalizeAiPayload, serializeBounded } from './src/normalize';
 export { resolveModelPrice } from './src/pricing/catalog';
@@ -43,6 +44,7 @@ export type {
   IClickhouseAiEvent,
 } from './src/row';
 export { buildAiEventRow } from './src/row';
+export { instrumentLanguageModel } from './src/self-tracking';
 
 export interface IServiceAiEvent {
   id: string;

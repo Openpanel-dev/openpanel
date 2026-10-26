@@ -56,6 +56,11 @@ export function testCoreConfig(
         version: undefined,
       },
     },
+    selfTracking: {
+      clientId: undefined,
+      clientSecret: undefined,
+      apiUrl: undefined,
+    },
     slack: {
       clientId: undefined,
       clientSecret: undefined,

@@ -459,6 +459,10 @@ const rawSchema = z.object({
   ANTHROPIC_BASE_URL: optionalString,
   ANTHROPIC_TOKEN: optionalString,
   ANTHROPIC_VERSION: optionalString,
+  // OpenPanel tracking its own model calls into an OpenPanel project.
+  OP_CLIENT_ID: optionalString,
+  OP_CLIENT_SECRET: optionalString,
+  OP_API_URL: optionalString,
   SLACK_CLIENT_ID: optionalString,
   SLACK_CLIENT_SECRET: optionalString,
   SLACK_OAUTH_REDIRECT_URL: optionalString,
@@ -895,6 +899,11 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         authToken: raw.ANTHROPIC_TOKEN,
         version: raw.ANTHROPIC_VERSION,
       },
+    },
+    selfTracking: {
+      clientId: raw.OP_CLIENT_ID,
+      clientSecret: raw.OP_CLIENT_SECRET,
+      apiUrl: raw.OP_API_URL,
     },
     slack: {
       clientId: raw.SLACK_CLIENT_ID,
