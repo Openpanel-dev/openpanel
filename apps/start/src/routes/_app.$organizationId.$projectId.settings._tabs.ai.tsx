@@ -5,14 +5,18 @@ import EditProjectAi from '@/components/settings/edit-project-ai';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 
-export const Route = createFileRoute('/_app/$organizationId/$projectId/settings/_tabs/ai')({
+export const Route = createFileRoute(
+  '/_app/$organizationId/$projectId/settings/_tabs/ai'
+)({
   component: Component,
 });
 
 function Component() {
   const { projectId } = useAppParams();
   const trpc = useTRPC();
-  const query = useQuery(trpc.project.getProjectWithClients.queryOptions({ projectId }));
+  const query = useQuery(
+    trpc.project.getProjectWithClients.queryOptions({ projectId })
+  );
 
   if (query.isLoading) {
     return <FullPageLoadingState />;

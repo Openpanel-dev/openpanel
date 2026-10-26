@@ -161,6 +161,19 @@ test.describe('ai observability', () => {
       fullPage: true,
     });
 
+    // A picked model round-trips through the URL and narrows the rows.
+    await page.getByRole('button', { name: 'Model', exact: true }).click();
+    const modelItem = page.getByRole('menuitemcheckbox', {
+      name: /gpt-5-mini/,
+    });
+    await modelItem.click();
+    await expect(page).toHaveURL(/models=/);
+    await expect(tableRows(page).first()).toContainText('gpt-5-mini');
+    await expect(page.getByText('Something went wrong')).toHaveCount(0);
+    await modelItem.click();
+    await expect(page).not.toHaveURL(/models=/);
+    await page.keyboard.press('Escape');
+
     await page.getByRole('button', { name: 'Errors only' }).click();
     await expect(page).toHaveURL(/errors=true/);
     await expect(tableRows(page).first()).toContainText('429');

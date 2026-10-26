@@ -177,6 +177,8 @@ class StreamObserver {
   finishReason: LanguageModelV4FinishReason | undefined;
   modelId: string | undefined;
   firstTokenAt: number | undefined;
+  /** A provider can report failure as a stream part instead of rejecting. */
+  error: unknown;
   private readonly text = new Map<string, string>();
   private readonly reasoning = new Map<string, string>();
 
@@ -207,6 +209,9 @@ class StreamObserver {
         this.usage = part.usage;
         this.finishReason = part.finishReason;
         return;
+      case 'error':
+        this.error = part.error;
+        return;
       default:
         return;
     }
@@ -233,7 +238,7 @@ class StreamObserver {
       usage: this.usage,
       finishReason: this.finishReason,
       modelId: this.modelId,
-      error,
+      error: error ?? this.error,
       timeToFirstTokenMs:
         this.firstTokenAt === undefined
           ? undefined

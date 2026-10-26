@@ -254,6 +254,18 @@ describe('openpanelAiMiddleware', () => {
     ]);
   });
 
+  test('a stream that reports an error part is recorded as an error', async () => {
+    const { op, payloads } = collect();
+    const result = await wrap(openpanelAiMiddleware({ op })).stream([
+      { type: 'stream-start', warnings: [] },
+      { type: 'text-start', id: 't1' },
+      { type: 'error', error: new Error('overloaded') },
+    ]);
+    await drain(result.stream);
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]!.error).toMatchObject({ message: 'overloaded' });
+  });
+
   test('a stream that fails mid-way is recorded as an error', async () => {
     const { op, payloads } = collect();
     const middleware = openpanelAiMiddleware({ op });

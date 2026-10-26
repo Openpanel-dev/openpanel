@@ -3,14 +3,23 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { z } from 'zod';
 import { AiEventDetail } from '@/components/ai/ai-event-detail';
-import { formatCost, formatLatency, formatTokens } from '@/components/ai/ai-format';
+import {
+  formatCost,
+  formatLatency,
+  formatTokens,
+} from '@/components/ai/ai-format';
 import { AiTraceTree, buildTraceNodes } from '@/components/ai/ai-trace-tree';
 import { ProfileCell } from '@/components/ai/ai-traces-table';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { ProjectLink } from '@/components/links';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
-import { Widget, WidgetBody, WidgetHead, WidgetTitle } from '@/components/widget';
+import {
+  Widget,
+  WidgetBody,
+  WidgetHead,
+  WidgetTitle,
+} from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
@@ -21,7 +30,9 @@ const zSearch = z.object({
   event: z.string().optional(),
 });
 
-export const Route = createFileRoute('/_app/$organizationId/$projectId/ai_/traces/$traceId')({
+export const Route = createFileRoute(
+  '/_app/$organizationId/$projectId/ai_/traces/$traceId'
+)({
   component: Component,
   validateSearch: zSearch,
   loaderDeps: ({ search }) => ({ at: search.at }),
@@ -59,7 +70,11 @@ function Component() {
     { cost: 0, tokens: 0, generations: 0, errors: 0 }
   );
   const root = events.find((event) => event.type === 'trace');
-  const name = root?.name || events.find((event) => event.type === 'generation' && event.name)?.name || first?.name || 'Trace';
+  const name =
+    root?.name ||
+    events.find((event) => event.type === 'generation' && event.name)?.name ||
+    first?.name ||
+    'Trace';
 
   return (
     <PageContainer className="col gap-6">
@@ -73,7 +88,11 @@ function Component() {
                 profileId={first.profileId}
               />
             )}
-            {first && <span className="text-muted-foreground">{formatDateTime(first.createdAt)}</span>}
+            {first && (
+              <span className="text-muted-foreground">
+                {formatDateTime(first.createdAt)}
+              </span>
+            )}
             {first?.sessionId && (
               <ProjectLink
                 className="text-muted-foreground hover:underline"
@@ -98,9 +117,13 @@ function Component() {
             <span>{totals.generations} generations</span>
             <span>{formatTokens(totals.tokens)} tokens</span>
             <span>{formatCost(totals.cost)}</span>
-            {totals.errors > 0 && <span className="text-destructive">{totals.errors} errors</span>}
+            {totals.errors > 0 && (
+              <span className="text-destructive">{totals.errors} errors</span>
+            )}
           </div>
-          <span className="font-mono text-2xs text-muted-foreground">{traceId}</span>
+          <span className="font-mono text-2xs text-muted-foreground">
+            {traceId}
+          </span>
         </div>
       </PageHeader>
 
@@ -109,14 +132,22 @@ function Component() {
           <WidgetHead>
             <WidgetTitle>Timeline</WidgetTitle>
           </WidgetHead>
-          <AiTraceTree events={events} onSelect={setSelectedId} selectedId={selected?.id ?? null} />
+          <AiTraceTree
+            events={events}
+            onSelect={setSelectedId}
+            selectedId={selected?.id ?? null}
+          />
         </Widget>
         <Widget className="w-full self-start">
           <WidgetHead>
-            <WidgetTitle>{selected?.name || selected?.model || 'Step'}</WidgetTitle>
+            <WidgetTitle>
+              {selected?.name || selected?.model || 'Step'}
+            </WidgetTitle>
           </WidgetHead>
           <WidgetBody>
-            {selected && <AiEventDetail event={selected} showTraceLink={false} />}
+            {selected && (
+              <AiEventDetail event={selected} showTraceLink={false} />
+            )}
           </WidgetBody>
         </Widget>
       </div>

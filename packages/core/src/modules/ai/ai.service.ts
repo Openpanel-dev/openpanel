@@ -1,7 +1,7 @@
 // The AI observability reads for the dashboard, plus what the ingest pipeline
 // needs (normalisation, cost, the row builder).
 
-import { sql } from '@openpanel/db/src/clickhouse/sql';
+import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { getSafeJson } from '@openpanel/shared';
 import { chQuery } from '../../ch-query';
 import type { ServiceDeps, Services } from '../../services';
@@ -364,6 +364,7 @@ export interface AiOverviewInput {
 export interface AiBreakdownInput {
   projectId: string;
   range: AiDateRange;
+  timezone: string;
   dimension: AiBreakdownDimension;
   limit: number;
   filters?: IAiFilters;
@@ -372,6 +373,7 @@ export interface AiBreakdownInput {
 export interface AiTraceListInput {
   projectId: string;
   range: AiDateRange;
+  timezone: string;
   take: number;
   cursor?: string;
   filters?: IAiFilters;
@@ -380,6 +382,13 @@ export interface AiTraceListInput {
 export interface AiEventListInput extends AiTraceListInput {}
 
 export function createAiService(deps: ServiceDeps, _services: () => Services) {
+  // Range boundaries are wall-clock strings in the project's timezone, so
+  // ClickHouse must parse them in that zone too.
+  const rangedQuery = <T extends object>(
+    statement: SqlFragment,
+    timezone: string
+  ) => chQuery<T>(deps, statement, { session_timezone: timezone });
+
   const attachProfiles = async <
     T extends { profileId: string; deviceId: string },
   >(
@@ -400,13 +409,11 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
   async function getOverview(
     input: AiOverviewInput
   ): Promise<{ metrics: IAiMetrics; series: IAiSeriesPoint[] }> {
-    const settings = { session_timezone: input.timezone };
     const [totals, series] = await Promise.all([
-      chQuery<MetricsRow>(deps, overviewTotalsQuery(input), settings),
-      chQuery<MetricsRow & { date: string }>(
-        deps,
+      rangedQuery<MetricsRow>(overviewTotalsQuery(input), input.timezone),
+      rangedQuery<MetricsRow & { date: string }>(
         overviewSeriesQuery(input),
-        settings
+        input.timezone
       ),
     ]);
     return {
@@ -423,7 +430,10 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
   async function getBreakdown(
     input: AiBreakdownInput
   ): Promise<IAiBreakdownRow[]> {
-    const rows = await chQuery<BreakdownRow>(deps, breakdownQuery(input));
+    const rows = await rangedQuery<BreakdownRow>(
+      breakdownQuery(input),
+      input.timezone
+    );
     const items: IAiBreakdownRow[] = rows.map((row) => ({
       key: row.key,
       label: row.key,
@@ -466,7 +476,10 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
   async function listTraces(
     input: AiTraceListInput
   ): Promise<{ items: IServiceAiTrace[]; meta: { next?: string } }> {
-    const rows = await chQuery<TraceRow>(deps, traceListQuery(input));
+    const rows = await rangedQuery<TraceRow>(
+      traceListQuery(input),
+      input.timezone
+    );
     const items = await attachProfiles(
       input.projectId,
       rows.map(transformTrace)
@@ -495,7 +508,10 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
   async function listEvents(
     input: AiEventListInput
   ): Promise<{ items: IServiceAiEvent[]; meta: { next?: string } }> {
-    const rows = await chQuery<IClickhouseAiEvent>(deps, eventListQuery(input));
+    const rows = await rangedQuery<IClickhouseAiEvent>(
+      eventListQuery(input),
+      input.timezone
+    );
     const items = await attachProfiles(
       input.projectId,
       rows.map(transformAiEvent)
@@ -570,14 +586,15 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
   async function getFilterValues(input: {
     projectId: string;
     range: AiDateRange;
+    timezone: string;
   }): Promise<
     Record<'model' | 'provider' | 'name', { value: string; count: number }[]>
   > {
-    const rows = await chQuery<{
+    const rows = await rangedQuery<{
       field: 'model' | 'provider' | 'name';
       value: string;
       count: string | number;
-    }>(deps, filterValuesQuery(input));
+    }>(filterValuesQuery(input), input.timezone);
     const values = { model: [], provider: [], name: [] } as Record<
       'model' | 'provider' | 'name',
       { value: string; count: number }[]

@@ -2,7 +2,7 @@
 // its `events` row; a plain passthrough buffer with no merge step.
 
 import { getRedisCache, type Redis } from '@openpanel/redis';
-import type { IClickhouseAiEvent } from '../modules/ai/src/row';
+import type { IClickhouseAiEvent } from '../modules/ai/ai.service';
 import { TABLE_NAMES } from '../shared/ch-tables';
 import { BaseBuffer, type BufferDeps } from './base-buffer';
 

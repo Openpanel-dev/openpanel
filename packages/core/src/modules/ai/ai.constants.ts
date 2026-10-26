@@ -138,8 +138,12 @@ const zAiId = z
     "Allowed characters: letters, digits and - _ ~ . @ ( ) ! ' : |"
   );
 
-const zTokenCount = z.number().int().min(0);
+/** `ai_events` stores token counts and durations as UInt32. */
+const UINT32_MAX = 4_294_967_295;
+
+const zTokenCount = z.number().int().min(0).max(UINT32_MAX);
 const zNonNegative = z.number().min(0);
+const zDurationMs = z.number().min(0).max(UINT32_MAX);
 
 export const zAiUsage = z.object({
   inputTokens: zTokenCount.optional(),
@@ -185,8 +189,8 @@ export const zAiPayload = z
     tools: z.unknown().optional(),
     usage: zAiUsage.optional(),
     cost: zNonNegative.optional(),
-    latencyMs: zNonNegative.optional(),
-    timeToFirstTokenMs: zNonNegative.optional(),
+    latencyMs: zDurationMs.optional(),
+    timeToFirstTokenMs: zDurationMs.optional(),
     error: zAiError.nullish(),
     stopReason: z.string().max(AI_NAME_MAX_LENGTH).optional(),
     stream: z.boolean().optional(),

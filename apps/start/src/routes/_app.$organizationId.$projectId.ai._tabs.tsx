@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
-import { z } from 'zod';
 import { AiBetaBanner } from '@/components/ai/ai-beta-banner';
 import { AiFilters } from '@/components/ai/ai-filters';
 import { OverviewInterval } from '@/components/overview/overview-interval';
@@ -7,23 +6,13 @@ import { OverviewRange } from '@/components/overview/overview-range';
 import { PageHeader } from '@/components/page-header';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { zAiSearch } from '@/hooks/use-ai-filters';
 import { usePageTabs } from '@/hooks/use-page-tabs';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
-/** The filter state `useAiFilters` keeps in the URL, declared so links can set it. */
-const zAiSearch = z.object({
-  models: z.array(z.string()).optional(),
-  providers: z.array(z.string()).optional(),
-  names: z.array(z.string()).optional(),
-  errors: z.boolean().optional(),
-  q: z.string().optional(),
-  profile: z.string().optional(),
-  group: z.string().optional(),
-  conversation: z.string().optional(),
-  session: z.string().optional(),
-});
-
-export const Route = createFileRoute('/_app/$organizationId/$projectId/ai/_tabs')({
+export const Route = createFileRoute(
+  '/_app/$organizationId/$projectId/ai/_tabs'
+)({
   component: Component,
   validateSearch: zAiSearch,
   head: () => ({
@@ -67,7 +56,11 @@ function Component() {
         </div>
         <AiFilters projectId={projectId} />
       </div>
-      <Tabs className="mt-4 mb-6" onValueChange={handleTabChange} value={activeTab}>
+      <Tabs
+        className="mt-4 mb-6"
+        onValueChange={handleTabChange}
+        value={activeTab}
+      >
         <TabsList>
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>

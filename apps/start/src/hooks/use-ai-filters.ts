@@ -1,39 +1,98 @@
 import type { IAiFilters } from '@openpanel/core/modules/ai/ai.constants';
-import {
-  parseAsArrayOf,
-  parseAsBoolean,
-  parseAsString,
-  useQueryStates,
-} from 'nuqs';
-import { useMemo } from 'react';
+import { useMatches, useNavigate, useSearch } from '@tanstack/react-router';
+import { useCallback, useMemo } from 'react';
+import { z } from 'zod';
 
-const parsers = {
-  models: parseAsArrayOf(parseAsString),
-  providers: parseAsArrayOf(parseAsString),
-  names: parseAsArrayOf(parseAsString),
-  errors: parseAsBoolean,
-  q: parseAsString,
-  profile: parseAsString,
-  group: parseAsString,
-  conversation: parseAsString,
-  session: parseAsString,
+const AI_TABS_ROUTE = '/_app/$organizationId/$projectId/ai/_tabs';
+
+/** The pages that share the filters; a change stays on the one that made it. */
+const AI_PAGE_PATHS = [
+  '/$organizationId/$projectId/ai/',
+  '/$organizationId/$projectId/ai/traces',
+  '/$organizationId/$projectId/ai/generations',
+] as const;
+type AiPagePath = (typeof AI_PAGE_PATHS)[number];
+
+function isAiPagePath(path: string): path is AiPagePath {
+  return (AI_PAGE_PATHS as readonly string[]).includes(path);
+}
+
+/** The filter state the AI pages keep in the URL, declared so links can set it. */
+export const zAiSearch = z.object({
+  models: z.array(z.string()).optional(),
+  providers: z.array(z.string()).optional(),
+  names: z.array(z.string()).optional(),
+  errors: z.boolean().optional(),
+  q: z.string().optional(),
+  profile: z.string().optional(),
+  group: z.string().optional(),
+  conversation: z.string().optional(),
+  session: z.string().optional(),
+});
+
+export type AiSearch = z.infer<typeof zAiSearch>;
+
+/** `null` clears a key, as the URL has no way to carry it. */
+type AiSearchUpdate = { [K in keyof AiSearch]?: AiSearch[K] | null };
+
+const EMPTY_SEARCH: AiSearchUpdate = {
+  models: null,
+  providers: null,
+  names: null,
+  errors: null,
+  q: null,
+  profile: null,
+  group: null,
+  conversation: null,
+  session: null,
 };
+
+function applyUpdate(previous: AiSearch, update: AiSearchUpdate): AiSearch {
+  const next: Record<string, unknown> = { ...previous };
+  for (const [key, value] of Object.entries(update)) {
+    if (value === null || value === undefined) {
+      delete next[key];
+    } else {
+      next[key] = value;
+    }
+  }
+  return next as AiSearch;
+}
 
 /** The AI pages' filters, kept in the URL so a filtered view is a link. */
 export function useAiFilters() {
-  const [state, setState] = useQueryStates(parsers, { history: 'push' });
+  const state = useSearch({ from: AI_TABS_ROUTE });
+  // The deepest match is the page itself; the hook's caller may sit in the
+  // tabs layout above it.
+  const currentPath = useMatches({
+    select: (matches) => matches.at(-1)?.fullPath,
+  });
+  const navigate = useNavigate();
+
+  const setState = useCallback(
+    (update: AiSearchUpdate) => {
+      if (!(currentPath && isAiPagePath(currentPath))) {
+        return;
+      }
+      navigate({
+        from: currentPath,
+        search: (previous) => applyUpdate(previous, update),
+      });
+    },
+    [navigate, currentPath]
+  );
 
   const filters = useMemo<IAiFilters>(
     () => ({
-      models: state.models ?? undefined,
-      providers: state.providers ?? undefined,
-      names: state.names ?? undefined,
+      models: state.models,
+      providers: state.providers,
+      names: state.names,
       isError: state.errors ? true : undefined,
-      search: state.q ?? undefined,
-      profileId: state.profile ?? undefined,
-      groupId: state.group ?? undefined,
-      conversationId: state.conversation ?? undefined,
-      sessionId: state.session ?? undefined,
+      search: state.q,
+      profileId: state.profile,
+      groupId: state.group,
+      conversationId: state.conversation,
+      sessionId: state.session,
     }),
     [state]
   );
@@ -48,17 +107,6 @@ export function useAiFilters() {
     filters,
     activeCount,
     setState,
-    clear: () =>
-      setState({
-        models: null,
-        providers: null,
-        names: null,
-        errors: null,
-        q: null,
-        profile: null,
-        group: null,
-        conversation: null,
-        session: null,
-      }),
+    clear: () => setState(EMPTY_SEARCH),
   };
 }

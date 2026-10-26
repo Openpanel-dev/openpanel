@@ -1,5 +1,5 @@
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/core';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { Suspense, useEffect, useState } from 'react';
@@ -548,13 +548,17 @@ function AiEventSection({
   projectId: string;
 }) {
   const trpc = useTRPC();
-  const query = useSuspenseQuery(
-    trpc.ai.event.queryOptions({
-      id,
-      projectId,
-      around: createdAt.toISOString(),
-    })
+  // Not every `ai_*` event has an `ai_events` row (custom names, a row not
+  // flushed yet), and a miss must not replace the rest of the drawer.
+  const query = useQuery(
+    trpc.ai.event.queryOptions(
+      { id, projectId, around: createdAt.toISOString() },
+      { retry: false }
+    )
   );
+  if (!query.data) {
+    return null;
+  }
   return (
     <div className="card p-4">
       <AiEventDetail event={query.data} />

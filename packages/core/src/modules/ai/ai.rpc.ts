@@ -100,6 +100,7 @@ export const aiRouter = createTRPCRouter({
       return ctx.services.ai.getBreakdown({
         projectId: input.projectId,
         range: getChartStartEndDate(input, timezone),
+        timezone,
         dimension: input.dimension,
         limit: input.limit,
         filters: input.filters,
@@ -118,6 +119,7 @@ export const aiRouter = createTRPCRouter({
       return ctx.services.ai.listTraces({
         projectId: input.projectId,
         range: getChartStartEndDate(input, timezone),
+        timezone,
         take: input.take,
         cursor: input.cursor ?? undefined,
         filters: input.filters,
@@ -158,6 +160,7 @@ export const aiRouter = createTRPCRouter({
       return ctx.services.ai.listEvents({
         projectId: input.projectId,
         range: getChartStartEndDate(input, timezone),
+        timezone,
         take: input.take,
         cursor: input.cursor ?? undefined,
         filters: input.filters,
@@ -230,6 +233,7 @@ export const aiRouter = createTRPCRouter({
       return ctx.services.ai.getFilterValues({
         projectId: input.projectId,
         range: getChartStartEndDate(input, timezone),
+        timezone,
       });
     }),
 });
