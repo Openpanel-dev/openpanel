@@ -171,7 +171,7 @@ describe('buildEventCriteriaQuery zero frequency', () => {
     expect(query_params.p1).toBe(PROJECT_ID);
   });
 
-  test('excludes on the matching property row when the criterion has property filters', () => {
+  test('excludes on the matching events when the criterion has filters', () => {
     const { query, query_params } = render(
       buildEventCriteriaQuery(
         PROJECT_ID,
@@ -186,13 +186,15 @@ describe('buildEventCriteriaQuery zero frequency', () => {
       )
     );
 
-    // Read as "has no matching (event, property) row": someone who did the
-    // event with plan = free is a member.
+    // Read as "has no matching event": someone who did the event with
+    // plan = free is a member.
     expect(query).not.toContain('HAVING');
-    expect(query).toContain('FROM event_property_profile_summary_mv');
-    expect(query).toContain('property_key = {p5:String}');
+    expect(query).toContain('NOT IN (SELECT DISTINCT profile_id');
+    expect(query).toContain('FROM events');
+    expect(query).toContain('properties[{p5:String}] = {p6:String}');
     expect(query_params.p5).toBe('plan');
-    expect(outsideExclusion(query)).not.toContain('property_key');
+    expect(query_params.p6).toBe('pro');
+    expect(outsideExclusion(query)).not.toContain('properties[');
   });
 
   test('leaves gte 0 on the ordinary path (zFrequency rejects it upstream)', () => {
@@ -272,5 +274,144 @@ describe('buildEventBasedCohortQuery with a zero-count criterion', () => {
 
     expect(query).toContain(' UNION DISTINCT ');
     expect(query).not.toContain(' INTERSECT ');
+  });
+});
+
+// A filtered criterion has to read the events table: the summary MVs hold no
+// columns (path, country, has_profile) and one row per property key, so they
+// can neither apply a column filter nor AND two property filters. Before this
+// split, a `path` filter was silently dropped and the cohort matched everyone
+// who did the event at all.
+describe('buildEventCriteriaQuery with filters', () => {
+  const pathFilter = {
+    id: 'path',
+    name: 'path',
+    operator: 'startsWith',
+    value: ['/db'],
+  } satisfies EventCriteria['filters'][number];
+
+  const hasProfileFilter = {
+    id: 'has_profile',
+    name: 'has_profile',
+    operator: 'is',
+    value: ['true'],
+  } satisfies EventCriteria['filters'][number];
+
+  test('applies a bare column filter on the events table', () => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [pathFilter])
+      )
+    );
+
+    expect(query).toContain('FROM events');
+    expect(query).not.toContain('_summary_mv');
+    expect(query).toContain('name = {p2:String}');
+    expect(query).toContain(
+      'toDate(created_at) >= toDate(now() - INTERVAL {p3:UInt64} DAY)'
+    );
+    expect(query).toContain('path LIKE {p4:String}');
+    expect(query_params.p4).toBe('/db%');
+    expect(query).toContain('GROUP BY profile_id');
+    expect(query).toContain('HAVING count() >= {p5:UInt64}');
+    expect(query_params.p5).toBe(1);
+  });
+
+  test('keeps membership identified-only, like the summary MVs', () => {
+    const { query } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [pathFilter])
+      )
+    );
+
+    expect(query).toContain('profile_id != device_id');
+  });
+
+  test('ANDs several filters on the same event', () => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          {
+            id: 'plan',
+            name: 'properties.plan',
+            operator: 'is',
+            value: ['pro'],
+          },
+          { id: 'country', name: 'country', operator: 'is', value: ['SE'] },
+        ])
+      )
+    );
+
+    expect(query).toContain(
+      'properties[{p4:String}] = {p5:String} AND country = {p6:String}'
+    );
+    expect(query_params.p4).toBe('plan');
+    expect(query_params.p5).toBe('pro');
+    expect(query_params.p6).toBe('SE');
+  });
+
+  test('gives a property filter every operator a report has', () => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria(undefined, [
+          {
+            id: 'plan',
+            name: 'properties.plan',
+            operator: 'startsWith',
+            value: ['pr'],
+          },
+        ])
+      )
+    );
+
+    expect(query).toContain('SELECT DISTINCT profile_id');
+    expect(query).toContain('properties[{p4:String}] LIKE {p5:String}');
+    expect(query_params.p5).toBe('pr%');
+    expect(query).not.toContain('HAVING');
+  });
+
+  test('a has_profile filter compiles rather than being dropped', () => {
+    const { query } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          pathFilter,
+          hasProfileFilter,
+        ])
+      )
+    );
+
+    expect(query).toContain('FROM events');
+    expect(query).toContain('path LIKE {p4:String}');
+  });
+
+  test('a filter the compiler drops leaves the criterion on the summary MV', () => {
+    const { query } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          { id: 'empty', name: 'path', operator: 'is', value: [] },
+        ])
+      )
+    );
+
+    expect(query).toContain('FROM event_profile_summary_mv');
+    expect(query).not.toContain('FROM events');
+  });
+
+  test('an unfiltered criterion still reads the summary MV', () => {
+    const { query } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 })
+      )
+    );
+
+    expect(query).toContain('FROM event_profile_summary_mv');
+    expect(query).toContain('HAVING countMerge(event_count) >= {p4:UInt64}');
   });
 });
