@@ -18,12 +18,19 @@ const COOKIE_OPTIONS: CookieOptions = {
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
-async function anonCaller() {
-  const { ctx } = stubHttpCtx({}, EMPTY_SESSION);
-  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+/** Capture response cookies so failed sign-ins cannot silently mutate auth state. */
+async function anonCallerWithHeaders(config = testCoreConfig()) {
+  const { ctx } = stubHttpCtx({ config }, EMPTY_SESSION);
+  const responseHeaders = new Headers();
+  const trpcCtx = await makeTrpcContext(ctx, responseHeaders, {
     cookieOptions: COOKIE_OPTIONS,
   });
-  return authRouter.createCaller(trpcCtx);
+  return { caller: authRouter.createCaller(trpcCtx), responseHeaders };
+}
+
+/** Use the same anonymous context for RPC cases that do not inspect cookies. */
+async function anonCaller(config = testCoreConfig()) {
+  return (await anonCallerWithHeaders(config)).caller;
 }
 
 test('providers reports which OAuth features are configured, as booleans only', async () => {
@@ -63,6 +70,51 @@ test('providers reports which OAuth features are configured, as booleans only', 
     devLogin: false,
   });
   expect(JSON.stringify(providers)).not.toContain('secret');
+});
+
+test('incomplete OAuth credentials hide the provider and reject sign-in', async () => {
+  for (const provider of ['github', 'google'] as const) {
+    for (const missing of [
+      'clientId',
+      'clientSecret',
+      'redirectUri',
+    ] as const) {
+      const config = testCoreConfig();
+      config.auth[provider] = {
+        clientId: 'fixture-id',
+        clientSecret: 'fixture-secret',
+        redirectUri: `https://api.example.com/oauth/${provider}/callback`,
+      };
+      config.auth[provider][missing] = '';
+      const { caller, responseHeaders } = await anonCallerWithHeaders(config);
+      expect((await caller.providers())[provider]).toBe(false);
+      await expect(caller.signInOAuth({ provider })).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      });
+      expect(responseHeaders.getSetCookie()).toEqual([]);
+    }
+  }
+});
+
+test('Search Console can remain configured while Google sign-in is hidden', async () => {
+  const config = testCoreConfig();
+  config.auth.google = {
+    clientId: 'google-id',
+    clientSecret: 'google-secret',
+    redirectUri: '',
+  };
+  config.auth.googleGsc = {
+    ...config.auth.google,
+    redirectUri: 'https://api.example.com/gsc/callback',
+  };
+  expect(await (await anonCaller(config)).providers()).toEqual({
+    google: false,
+    github: false,
+    gsc: true,
+    devLogin: false,
+  });
+  config.auth.googleGsc.clientSecret = '';
+  expect((await (await anonCaller(config)).providers()).gsc).toBe(false);
 });
 
 test('providers says a dev login exists without reporting its credentials', async () => {

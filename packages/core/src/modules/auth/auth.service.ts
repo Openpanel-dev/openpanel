@@ -357,16 +357,21 @@ export interface ConfiguredProviders {
   devLogin: boolean;
 }
 
-/** A provider counts as configured only when a sign-in could complete: the
- *  client id AND its redirect URI. The secret is never reported. */
+/** Report availability only; OAuth credentials never leave the server. */
 export function getConfiguredProviders(
   config: CoreConfig
 ): ConfiguredProviders {
   const { google, github, googleGsc, devLogin } = config.auth;
   return {
-    google: Boolean(google.clientId && google.redirectUri),
-    github: Boolean(github.clientId && github.redirectUri),
-    gsc: Boolean(googleGsc.clientId && googleGsc.redirectUri),
+    google: Boolean(
+      google.clientId && google.clientSecret && google.redirectUri
+    ),
+    github: Boolean(
+      github.clientId && github.clientSecret && github.redirectUri
+    ),
+    gsc: Boolean(
+      googleGsc.clientId && googleGsc.clientSecret && googleGsc.redirectUri
+    ),
     devLogin: devLogin !== undefined,
   };
 }
