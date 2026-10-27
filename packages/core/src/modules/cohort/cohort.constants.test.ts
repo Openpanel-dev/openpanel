@@ -90,8 +90,8 @@ describe('zEventCriteria filters', () => {
     'properties.plan',
     'profile.email',
     'profile.properties.plan',
-    'session.entry_path',
-  ])('accepts a filter the events table can evaluate (%s)', (name) => {
+    'session.duration',
+  ])('accepts a filter name the schema cannot rule out (%s)', (name) => {
     expect(zEventCriteria.safeParse(criteria(name)).success).toBe(true);
   });
 
@@ -105,7 +105,7 @@ describe('zEventCriteria filters', () => {
     const result = zEventCriteria.safeParse(criteria(name));
     expect(result.success).toBe(false);
     expect(JSON.stringify(result.error?.issues)).toContain(
-      'group properties or wildcard profile properties'
+      'not supported in event cohorts'
     );
   });
 });

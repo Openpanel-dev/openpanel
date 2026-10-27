@@ -225,29 +225,72 @@ function buildFilteredEventCriteriaQuery(
   return sql`SELECT DISTINCT profile_id ${matchingEvents}`;
 }
 
+/** A cohort filter the events-table query cannot evaluate. */
+export class UnsupportedCohortFilterError extends Error {
+  readonly filterName: string;
+
+  constructor(filterName: string) {
+    super(`${UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE}: ${filterName}`);
+    this.name = 'UnsupportedCohortFilterError';
+    this.filterName = filterName;
+  }
+}
+
+// A row the builder shows before a value is picked has nothing to compare
+// against, so it narrows nothing, as in a report.
+function hasComparand(filter: IChartEventFilter): boolean {
+  return (
+    filter.value.length > 0 ||
+    filter.operator === 'isNull' ||
+    filter.operator === 'isNotNull'
+  );
+}
+
+// Every filter with a value must become a clause. The compiler silently skips
+// names it cannot resolve (`session.entry_path`, a typo), and a skipped filter
+// would leave the criterion matching everyone who did the event — the exact
+// failure this module once had for `path`. Group and wildcard profile filters
+// do compile, but against joins this query does not build.
+function compileEventCriteriaFilters(
+  projectId: string,
+  filters: IChartEventFilter[]
+): SqlFragment | null {
+  const activeFilters = filters.filter(hasComparand);
+  const unsupportedByName = activeFilters.find((filter) =>
+    isUnsupportedEventCohortFilter(filter.name)
+  );
+  if (unsupportedByName) {
+    throw new UnsupportedCohortFilterError(unsupportedByName.name);
+  }
+
+  const compiled = getEventFiltersWhereClause(activeFilters, projectId);
+  const dropped = activeFilters.find((_, index) => !compiled[`f${index}`]);
+  if (dropped) {
+    throw new UnsupportedCohortFilterError(dropped.name);
+  }
+  return joinFilterClauses(compiled);
+}
+
+/** Throws UnsupportedCohortFilterError when a criterion cannot be evaluated. */
+export function assertCohortDefinitionSupported(
+  projectId: string,
+  definition: CohortDefinition
+): void {
+  if (definition.type !== 'event') {
+    return;
+  }
+  for (const criteria of definition.criteria.events) {
+    compileEventCriteriaFilters(projectId, criteria.filters);
+  }
+}
+
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria
 ): SqlFragment {
   const { name, filters, timeframe, frequency } = criteria;
 
-  // zEventCriteria refuses these at the API; a definition stored before that
-  // rule would otherwise fail inside ClickHouse with an unknown `_g` alias.
-  const unsupported = filters.find((filter) =>
-    isUnsupportedEventCohortFilter(filter.name)
-  );
-  if (unsupported) {
-    throw new Error(
-      `${UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE}: ${unsupported.name}`
-    );
-  }
-
-  // Compiled rather than counted: a filter the compiler drops (an empty value
-  // list, an unknown field) leaves the criterion unfiltered, and the MV path
-  // is the cheaper way to answer that.
-  const filterWhere = joinFilterClauses(
-    getEventFiltersWhereClause(filters, projectId)
-  );
+  const filterWhere = compileEventCriteriaFilters(projectId, filters);
   if (filterWhere) {
     return buildFilteredEventCriteriaQuery(projectId, criteria, filterWhere);
   }

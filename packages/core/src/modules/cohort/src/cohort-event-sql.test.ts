@@ -6,8 +6,10 @@ import type {
   EventCriteria,
 } from '../cohort.constants';
 import {
+  assertCohortDefinitionSupported,
   buildEventBasedCohortQuery,
   buildEventCriteriaQuery,
+  UnsupportedCohortFilterError,
 } from '../cohort.service';
 
 const PROJECT_ID = 'test-cohort-timeframe';
@@ -414,18 +416,30 @@ describe('buildEventCriteriaQuery with filters', () => {
     expect(query).not.toContain('JOIN');
   });
 
-  test('refuses a filter that would need a join the query does not build', () => {
-    expect(() =>
+  // A filter that does not become a clause would leave the criterion matching
+  // everyone who did the event, so anything the query cannot evaluate is
+  // refused instead.
+  test.each([
+    ['group.name', 'needs the groups join'],
+    ['profile.properties.*', 'needs the profile join'],
+    ['session.entry_path', 'is skipped by the compiler'],
+    ['session.country', 'is skipped by the compiler'],
+    ['temple_name', 'is an unknown field'],
+  ])('refuses %s, which %s', (name) => {
+    const build = () =>
       buildEventCriteriaQuery(
         PROJECT_ID,
         frequencyCriteria({ operator: 'gte', count: 1 }, [
-          { id: 'g', name: 'group.name', operator: 'is', value: ['Acme'] },
+          pathFilter,
+          { id: 'x', name, operator: 'is', value: ['x'] },
         ])
-      )
-    ).toThrow('group properties or wildcard profile properties: group.name');
+      );
+
+    expect(build).toThrow(UnsupportedCohortFilterError);
+    expect(build).toThrow(`not supported in event cohorts: ${name}`);
   });
 
-  test('a filter the compiler drops leaves the criterion on the summary MV', () => {
+  test('a row without a value yet narrows nothing and leaves the summary MV', () => {
     const { query } = render(
       buildEventCriteriaQuery(
         PROJECT_ID,
@@ -437,6 +451,46 @@ describe('buildEventCriteriaQuery with filters', () => {
 
     expect(query).toContain('FROM event_profile_summary_mv');
     expect(query).not.toContain('FROM events');
+  });
+
+  test('a row without a value yet does not hide the filters that have one', () => {
+    const { query, query_params } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          { id: 'empty', name: 'path', operator: 'is', value: [] },
+          { id: 'c', name: 'country', operator: 'is', value: ['SE'] },
+        ])
+      )
+    );
+
+    expect(query).toContain('FROM events');
+    expect(query).toContain('country = {p4:String}');
+    expect(query_params.p4).toBe('SE');
+  });
+
+  test('assertCohortDefinitionSupported checks every criterion', () => {
+    const definition = {
+      type: 'event',
+      criteria: {
+        operator: 'and',
+        events: [
+          frequencyCriteria({ operator: 'gte', count: 1 }, [pathFilter]),
+          frequencyCriteria({ operator: 'gte', count: 1 }, [
+            {
+              id: 's',
+              name: 'session.entry_path',
+              operator: 'is',
+              value: ['/'],
+            },
+          ]),
+        ],
+      },
+    } satisfies EventBasedCohortDefinition;
+
+    expect(() =>
+      assertCohortDefinitionSupported(PROJECT_ID, definition)
+    ).toThrow(UnsupportedCohortFilterError);
   });
 
   test('an unfiltered criterion still reads the summary MV', () => {
