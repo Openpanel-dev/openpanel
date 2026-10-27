@@ -19,6 +19,9 @@ interface FakeShare {
 
 interface FakeDashboardShare extends FakeShare {
   dashboardId: string;
+  /** The saved `dashboards.filters` JSON. */
+  filters?: unknown;
+  reportIds?: string[];
 }
 
 interface FakeReportShare extends FakeShare {
@@ -95,7 +98,15 @@ const shareOverview = {
 
 const shareDashboard = {
   findUnique: mock(
-    async ({ where }: { where: { id?: string; dashboardId?: string } }) => {
+    async ({
+      where,
+      include,
+    }: {
+      where: { id?: string; dashboardId?: string };
+      include?: {
+        dashboard?: { include?: { reports?: { where: { id: string } } } };
+      };
+    }) => {
       const share = where.id
         ? dashboardShareStore.get(where.id)
         : where.dashboardId
@@ -104,11 +115,18 @@ const shareDashboard = {
       if (!share) {
         return null;
       }
+      const reportId = include?.dashboard?.include?.reports?.where.id;
       return {
         ...share,
         organization: ORG,
         project: PROJECT,
-        dashboard: { name: 'Main' },
+        dashboard: {
+          name: 'Main',
+          filters: share.filters ?? [],
+          reports: (share.reportIds ?? [])
+            .filter((id) => id === reportId)
+            .map((id) => ({ id })),
+        },
       };
     }
   ),
@@ -507,6 +525,73 @@ test('getShareDashboardReports returns the dashboard reports once unlocked', asy
     expect.anything(),
     'dash_1'
   );
+});
+
+const SAVED_COUNTRY_FILTER = {
+  id: 'country',
+  name: 'country',
+  operator: 'is',
+  value: ['SE'],
+};
+
+test('getShareDashboard returns the saved dashboard filters, dropping invalid ones', async () => {
+  dashboardShareStore.set('share_1', {
+    id: 'share_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    dashboardId: 'dash_1',
+    public: true,
+    password: null,
+    filters: [SAVED_COUNTRY_FILTER, { name: 'browser', operator: 'nope' }],
+  });
+
+  const result = await subject.getShareDashboard('share_1', cookies());
+  expect(result).toMatchObject({
+    requiresPassword: false,
+    dashboard: { name: 'Main', filters: [SAVED_COUNTRY_FILTER] },
+  });
+});
+
+test('validateShareAccess carries a dashboard share’s saved filters', async () => {
+  dashboardShareStore.set('share_1', {
+    id: 'share_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    dashboardId: 'dash_1',
+    public: true,
+    password: null,
+    filters: [SAVED_COUNTRY_FILTER],
+    reportIds: ['report_1'],
+  });
+
+  const result = await subject.validateShareAccess('share_1', 'report_1', {
+    cookies: cookies(),
+  });
+  expect(result).toEqual({
+    projectId: 'proj_1',
+    isValid: true,
+    dashboardFilters: [SAVED_COUNTRY_FILTER],
+  });
+});
+
+test('validateShareAccess gives a report share no dashboard filters', async () => {
+  reportShareStore.set('share_r', {
+    id: 'share_r',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    reportId: 'report_1',
+    public: true,
+    password: null,
+  });
+
+  const result = await subject.validateShareAccess('share_r', 'report_1', {
+    cookies: cookies(),
+  });
+  expect(result).toEqual({
+    projectId: 'proj_1',
+    isValid: true,
+    dashboardFilters: [],
+  });
 });
 
 test('createShareReport throws NOT_FOUND when the report belongs to a different project', async () => {
