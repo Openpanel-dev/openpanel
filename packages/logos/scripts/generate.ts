@@ -143,7 +143,10 @@ export function getLogo(name: string): Logo | undefined {
 }
 
 /** The file to show for the theme; falls back to the light one. */
-export function getLogoUrl(name: string, theme: LogoTheme = 'light'): string | undefined {
+export function getLogoUrl(
+  name: string,
+  theme: LogoTheme = 'light'
+): string | undefined {
   const logo = getLogo(name);
   if (!logo) {
     return undefined;
@@ -183,16 +186,15 @@ async function main(): Promise<void> {
     }
   }
 
-  await writeFile(
-    indexFile,
-    renderIndex(slugs.filter((slug) => !failures.includes(slug)))
-  );
+  // The committed index stays as it is when a source fails, so a rerun with
+  // `--force` cannot drop a logo whose PNG is still there.
   if (failures.length > 0) {
     console.error(
       `\n${failures.length} logo(s) failed: ${failures.join(', ')}`
     );
     process.exit(1);
   }
+  await writeFile(indexFile, renderIndex(slugs));
 }
 
 await main();
