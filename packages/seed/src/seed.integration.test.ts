@@ -85,7 +85,7 @@ describe('seed against real databases', () => {
     expect(
       user?.accounts.some(
         (account) =>
-          account.provider === 'email' &&
+          account.provider === 'credential' &&
           account.password?.startsWith('$argon2')
       )
     ).toBe(true);

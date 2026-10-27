@@ -20,6 +20,8 @@ import {
 
 const MS_PER_YEAR = 365 * 86_400_000;
 const SECRET_HEX_CHARS = 20;
+/** The provider email sign-in looks the account up by; copied from core's auth service. */
+const CREDENTIAL_PROVIDER = 'credential';
 /** Sign-in accepts `$argon2` hashes made with these parameters; copied from core's auth `hashPassword`. */
 const ARGON2_OPTIONS = {
   memoryCost: 19_456,
@@ -71,13 +73,19 @@ async function upsertUser(): Promise<string> {
   });
   const password = await argon2Hash(SEED_USER.password, ARGON2_OPTIONS);
   const account = await db.account.findFirst({
-    where: { userId: user.id, provider: 'email' },
+    where: { userId: user.id, provider: CREDENTIAL_PROVIDER },
   });
   if (account) {
     await db.account.update({ where: { id: account.id }, data: { password } });
   } else {
     await db.account.create({
-      data: { userId: user.id, provider: 'email', email: user.email, password },
+      data: {
+        userId: user.id,
+        provider: CREDENTIAL_PROVIDER,
+        accountId: user.id,
+        email: user.email,
+        password,
+      },
     });
   }
   return user.id;
