@@ -27,7 +27,17 @@ export interface ProviderIcon {
 }
 
 /** One hop: a 3xx is returned, not followed, so the walk below can vet it. */
-export type FetchHop = (url: URL) => Promise<SafeFetchResult>;
+export type FetchHop = (
+  url: URL,
+  signal?: AbortSignal
+) => Promise<SafeFetchResult>;
+
+export interface FetchProviderIconOptions {
+  logger?: Pick<Logger, 'debug' | 'warn'>;
+  /** One deadline for every hop and provider of a lookup. */
+  signal?: AbortSignal;
+  fetch?: FetchHop;
+}
 
 export function isAllowedProviderUrl(url: URL): boolean {
   if (url.protocol !== 'https:') {
@@ -39,12 +49,13 @@ export function isAllowedProviderUrl(url: URL): boolean {
   );
 }
 
-function fetchHop(url: URL): Promise<SafeFetchResult> {
+function fetchHop(url: URL, signal?: AbortSignal): Promise<SafeFetchResult> {
   return safeFetch(url, {
     followRedirects: false,
     timeoutMs: FETCH_TIMEOUT_MS,
     maxBytes: MAX_ICON_BYTES,
     headers: { 'user-agent': FAVICON_USER_AGENT, accept: 'image/*' },
+    signal,
   });
 }
 
@@ -55,8 +66,7 @@ function fetchHop(url: URL): Promise<SafeFetchResult> {
  */
 export async function fetchProviderIcon(
   providerUrl: URL,
-  logger?: Pick<Logger, 'debug' | 'warn'>,
-  fetch: FetchHop = fetchHop
+  { logger, signal, fetch = fetchHop }: FetchProviderIconOptions = {}
 ): Promise<ProviderIcon | null> {
   let url = providerUrl;
   try {
@@ -68,7 +78,7 @@ export async function fetchProviderIcon(
         );
         return null;
       }
-      const result = await fetch(url);
+      const result = await fetch(url, signal);
       const location = result.headers.get('location');
       if (REDIRECT_STATUSES.has(result.status) && location) {
         url = new URL(location, url);

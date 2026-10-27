@@ -71,7 +71,7 @@ describe('fetchProviderIcon', () => {
         'content-type': 'application/octet-stream',
       }),
     });
-    const icon = await fetchProviderIcon(google, undefined, fetch);
+    const icon = await fetchProviderIcon(google, { fetch });
     expect(icon?.contentType).toBe('image/png');
     expect(requested).toHaveLength(2);
   });
@@ -82,23 +82,38 @@ describe('fetchProviderIcon', () => {
         location: 'https://attacker.example/anything.png',
       }),
     });
-    expect(await fetchProviderIcon(google, undefined, fetch)).toBeNull();
+    expect(await fetchProviderIcon(google, { fetch })).toBeNull();
     expect(requested).toEqual([google.toString()]);
+  });
+
+  it('hands the shared deadline to every hop', async () => {
+    const seen: (AbortSignal | undefined)[] = [];
+    const fetch = (url: URL, signal?: AbortSignal) => {
+      seen.push(signal);
+      return Promise.resolve(
+        url.hostname === 'www.google.com'
+          ? answer(302, '', { location: 'https://t1.gstatic.com/x' })
+          : answer(200, PNG)
+      );
+    };
+    const signal = AbortSignal.timeout(10_000);
+    await fetchProviderIcon(google, { signal, fetch });
+    expect(seen).toEqual([signal, signal]);
   });
 
   it('returns null for a non-image body, a 404 and a redirect loop', async () => {
     const html = network({ [google.toString()]: answer(200, '<html/>') });
-    expect(await fetchProviderIcon(google, undefined, html.fetch)).toBeNull();
+    expect(await fetchProviderIcon(google, { fetch: html.fetch })).toBeNull();
 
     const missing = network({ [google.toString()]: answer(404) });
     expect(
-      await fetchProviderIcon(google, undefined, missing.fetch)
+      await fetchProviderIcon(google, { fetch: missing.fetch })
     ).toBeNull();
 
     const loop = network({
       [google.toString()]: answer(302, '', { location: google.toString() }),
     });
-    expect(await fetchProviderIcon(google, undefined, loop.fetch)).toBeNull();
+    expect(await fetchProviderIcon(google, { fetch: loop.fetch })).toBeNull();
     expect(loop.requested.length).toBeLessThanOrEqual(4);
   });
 });

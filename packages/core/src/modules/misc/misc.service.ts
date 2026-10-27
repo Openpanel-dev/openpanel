@@ -14,6 +14,9 @@ import { FAVICON_PROVIDERS, fetchProviderIcon } from './src/favicon-providers';
 import { hostnameFromInput } from './src/hostname';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
+// Every provider and redirect hop of one lookup shares this deadline, so a
+// slow service cannot hold a request open for the sum of the per-hop timeouts.
+const FAVICON_LOOKUP_TIMEOUT_MS = 20_000;
 const CACHED_ASSET_CACHE_CONTROL = 'public, max-age=604800, immutable'; // 7d
 const FRESH_ASSET_CACHE_CONTROL = 'public, max-age=3600, immutable'; // 1h
 const STATS_CACHE_TTL_SECONDS = 60 * 60;
@@ -123,8 +126,12 @@ export async function getFavicon(
       );
     }
 
+    const signal = AbortSignal.timeout(FAVICON_LOOKUP_TIMEOUT_MS);
     for (const provider of FAVICON_PROVIDERS) {
-      const icon = await fetchProviderIcon(provider(hostname), logger);
+      const icon = await fetchProviderIcon(provider(hostname), {
+        logger,
+        signal,
+      });
       if (!icon) {
         continue;
       }
