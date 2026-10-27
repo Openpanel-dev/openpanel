@@ -2,13 +2,15 @@ import { round } from '@openpanel/shared';
 import { isNil } from 'ramda';
 
 export function fancyMinutes(time: number) {
-  const minutes = Math.floor(time / 60);
+  // Round before splitting, or 239.9s reads as "3m 60s".
+  const totalSeconds = Math.round(time);
+  const minutes = Math.floor(totalSeconds / 60);
   if (minutes > 60) {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return `${hours}h ${remainingMinutes}m`;
   }
-  const seconds = round(time - minutes * 60, 0);
+  const seconds = totalSeconds - minutes * 60;
   if (minutes === 0) {
     return `${seconds}s`;
   }
