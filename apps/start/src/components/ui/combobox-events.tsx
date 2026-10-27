@@ -5,6 +5,7 @@ import {
   GanttChartIcon,
   LayersIcon,
   type LucideIcon,
+  PlusIcon,
 } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
@@ -70,6 +71,11 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   customEvents?: CustomEventOption[];
   selectedCustomEventId?: string;
   onSelectCustomEvent?: (customEvent: CustomEventOption) => void;
+  /**
+   * Offer the typed name as an event when no known event matches, so a report
+   * can be built before the event is first tracked.
+   */
+  allowUnseenEvents?: boolean;
 }
 
 interface CustomEventOption {
@@ -81,7 +87,64 @@ type EventOption = RouterOutputs['chart']['events'][number];
 
 type Row =
   | { key: string; kind: 'custom'; customEvent: CustomEventOption }
-  | { key: string; kind: 'event'; item: EventOption };
+  | { key: string; kind: 'event'; item: EventOption }
+  | { key: string; kind: 'unseen'; name: string }
+  | { key: string; kind: 'add'; name: string };
+
+/**
+ * Selected names missing from `items` (only possible with `allowUnseenEvents`)
+ * stay listed so they can be seen and toggled off. The add row comes last, so
+ * Enter keeps picking the first known match while a name is still being typed.
+ */
+export function getEventRows({
+  items,
+  customEvents,
+  search,
+  selectedValues,
+  allowUnseenEvents,
+}: {
+  items: EventOption[];
+  customEvents: CustomEventOption[];
+  search: string;
+  selectedValues: string[];
+  allowUnseenEvents: boolean;
+}): Row[] {
+  const matchesSearch = (name: string) =>
+    search === '' || name.toLowerCase().includes(search.toLowerCase());
+  const knownNames = new Set(items.map((item) => item.name));
+  const unseenSelectedNames = allowUnseenEvents
+    ? selectedValues.filter((name) => name !== '' && !knownNames.has(name))
+    : [];
+
+  const rows: Row[] = [
+    ...customEvents
+      .filter((customEvent) => matchesSearch(customEvent.name))
+      .map((customEvent) => ({
+        key: `custom:${customEvent.id}`,
+        kind: 'custom' as const,
+        customEvent,
+      })),
+    ...unseenSelectedNames.filter(matchesSearch).map((name) => ({
+      key: `unseen:${name}`,
+      kind: 'unseen' as const,
+      name,
+    })),
+    ...items
+      .filter((item) => matchesSearch(item.name))
+      .map((item) => ({ key: item.name, kind: 'event' as const, item })),
+  ];
+
+  const typedName = search.trim();
+  const isTypedNameTaken =
+    knownNames.has(typedName) ||
+    unseenSelectedNames.includes(typedName) ||
+    customEvents.some((customEvent) => customEvent.name === typedName);
+  if (allowUnseenEvents && typedName !== '' && !isTypedNameTaken) {
+    rows.push({ key: `add:${typedName}`, kind: 'add', name: typedName });
+  }
+
+  return rows;
+}
 
 export function ComboboxEvents<
   T extends string,
@@ -105,6 +168,7 @@ export function ComboboxEvents<
   customEvents = [],
   selectedCustomEventId,
   onSelectCustomEvent,
+  allowUnseenEvents = false,
 }: ComboboxProps<T, TMultiple>) {
   const number = useNumber();
   const [open, setOpen] = React.useState(false);
@@ -131,20 +195,14 @@ export function ComboboxEvents<
     (customEvent) => customEvent.id === selectedCustomEventId
   );
 
-  const matchesSearch = (name: string) =>
-    search === '' || name.toLowerCase().includes(search.toLowerCase());
-  const rows: Row[] = [
-    ...customEvents
-      .filter((customEvent) => matchesSearch(customEvent.name))
-      .map((customEvent) => ({
-        key: `custom:${customEvent.id}`,
-        kind: 'custom' as const,
-        customEvent,
-      })),
-    ...items
-      .filter((item) => matchesSearch(item.name))
-      .map((item) => ({ key: item.name, kind: 'event' as const, item })),
-  ];
+  const rows = getEventRows({
+    items,
+    customEvents,
+    search,
+    // A selected custom event puts its own name in `value`.
+    selectedValues: currentCustomEvent ? [] : selectedValues,
+    allowUnseenEvents,
+  });
 
   const handleSelection = (selectedValue: string) => {
     if (multiple) {
@@ -269,6 +327,46 @@ export function ComboboxEvents<
                       </span>
                       <span className="text-muted-foreground text-xs">
                         Custom event
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                if (row.kind === 'add') {
+                  return (
+                    <CommandItem
+                      className="gap-4 p-4 py-2.5"
+                      key={row.key}
+                      onSelect={() => {
+                        handleSelection(row.name);
+                      }}
+                      value={row.key}
+                    >
+                      <PlusIcon className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 truncate font-medium">
+                        Add "{row.name}"
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Not tracked yet
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                if (row.kind === 'unseen') {
+                  return (
+                    <CommandItem
+                      className="gap-4 bg-accent p-4 py-2.5"
+                      key={row.key}
+                      onSelect={() => {
+                        handleSelection(row.name);
+                      }}
+                      value={row.key}
+                    >
+                      <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 truncate font-medium">
+                        {row.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Not tracked yet
                       </span>
                     </CommandItem>
                   );
