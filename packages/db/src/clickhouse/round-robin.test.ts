@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'bun:test';
+import type { ClickHouseClient } from '@clickhouse/client';
 import {
   classifyError,
   type ErrorClass,
   isRetriableConnectionError,
+  maskUrlCredentials,
+  RoundRobinPicker,
+  withRoundRobinRetry,
 } from './round-robin';
 
 /**
@@ -343,3 +347,92 @@ describe('isRetriableConnectionError', () => {
     }
   });
 });
+
+/**
+ * Issue #551: the retry logs name the node so an operator can tell which one
+ * failed, but `CLICKHOUSE_URL` is documented with `user:password@host` in it,
+ * so the password must not ride along into the api/worker logs.
+ */
+describe('withRoundRobinRetry retry logs', () => {
+  const CREDENTIAL_URL = 'http://openpanel:secret@clickhouse:8123/openpanel';
+  const PASSWORD = 'secret';
+
+  type RetryLogger = Parameters<typeof withRoundRobinRetry>[2];
+
+  interface LogRecord {
+    level: 'info' | 'warn';
+    fields: Record<string, unknown>;
+    msg: string;
+  }
+
+  function captureLogs(): { logger: RetryLogger; logs: LogRecord[] } {
+    const logs: LogRecord[] = [];
+    const capture =
+      (level: LogRecord['level']) => (fields: object, msg: string) => {
+        logs.push({ level, fields: fields as Record<string, unknown>, msg });
+      };
+    // Only the two levels the retry loop writes are needed here.
+    const logger = {
+      info: capture('info'),
+      warn: capture('warn'),
+    } as unknown as RetryLogger;
+    return { logger, logs };
+  }
+
+  function nodeDown(): Error {
+    return Object.assign(new Error('connect ECONNREFUSED 10.0.0.1:8123'), {
+      code: 'ECONNREFUSED',
+    });
+  }
+
+  it('never writes the password, and still names the node', async () => {
+    const { logger, logs } = captureLogs();
+    const picker = new RoundRobinPicker(
+      [{}, {}] as unknown as ClickHouseClient[],
+      [CREDENTIAL_URL, CREDENTIAL_URL],
+      60_000
+    );
+    let attempts = 0;
+
+    const result = await withRoundRobinRetry(
+      picker,
+      async () => {
+        attempts += 1;
+        if (attempts === 1) {
+          throw nodeDown();
+        }
+        return 'ok';
+      },
+      logger,
+      { baseDelayMs: 1, maxDelayMs: 1 }
+    );
+
+    expect(result).toBe('ok');
+    expect(logs.map((log) => log.level)).toEqual(['warn', 'info']);
+    for (const { fields, msg } of logs) {
+      const line = JSON.stringify({ fields, msg });
+      expect(line).not.toContain(PASSWORD);
+      expect(line).toContain('clickhouse:8123');
+    }
+  });
+});
+
+describe('maskUrlCredentials', () => {
+  it('keeps scheme, host, port and database', () => {
+    expect(maskUrlCredentials('http://openpanel:secret@clickhouse:8123/openpanel')).toBe(
+      'http://op*******:***@clickhouse:8123/openpanel'
+    );
+  });
+
+  it('masks the password of a one-character user instead of throwing', () => {
+    // repeat() went negative here, and the catch then returned the raw URL.
+    expect(maskUrlCredentials('http://u:p@clickhouse:8123/openpanel')).toBe(
+      'http://u:***@clickhouse:8123/openpanel'
+    );
+  });
+
+  it('labels an empty url instead of leaking whatever is left of it', () => {
+    expect(maskUrlCredentials('')).toBe('<unset>');
+  });
+});
+
