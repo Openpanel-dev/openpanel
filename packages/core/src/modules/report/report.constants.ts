@@ -211,6 +211,7 @@ export const chartTypes = {
   retention: 'Retention',
   conversion: 'Conversion',
   sankey: 'Sankey',
+  distribution: 'Distribution',
 } as const;
 
 export const chartSegments = {
@@ -225,6 +226,20 @@ export const chartSegments = {
   property_max: 'Max of property',
   property_min: 'Min of property',
 };
+
+/** How a distribution chart reduces each user's events to the one value it buckets them by. */
+export const perUserAggregations = {
+  count: 'Count of events',
+  sum: 'Sum of property',
+  avg: 'Average of property',
+  min: 'Min of property',
+  max: 'Max of property',
+  median: 'Median of property',
+  p90: 'P90 of property',
+  p95: 'P95 of property',
+  p99: 'P99 of property',
+  distinct_count: 'Distinct values of property',
+} as const;
 
 export const lineTypes = {
   monotone: 'Monotone',
@@ -713,6 +728,22 @@ export const zChartEventSegment = z
   .default('event')
   .describe('Defines how the event data should be segmented or aggregated');
 
+export const zPerUserAggregation = z.enum(
+  objectToZodEnums(perUserAggregations)
+);
+
+export const zChartEventPerUser = z.object({
+  aggregation: zPerUserAggregation.describe(
+    "How each user's events are reduced to one value"
+  ),
+  property: z
+    .string()
+    .optional()
+    .describe(
+      'Event property to aggregate; every aggregation but count needs one'
+    ),
+});
+
 const JOINED_FILTER_PREFIXES = ['profile.', 'group.'];
 const COHORT_OPERATORS: string[] = ['inCohort', 'notInCohort'];
 
@@ -754,6 +785,11 @@ export const zChartEvent = z.object({
       'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)'
     ),
   segment: zChartEventSegment,
+  perUser: zChartEventPerUser
+    .optional()
+    .describe(
+      'Distribution charts only: the per-user value users are bucketed by. Defaults to the count of events.'
+    ),
   filters: z
     .array(zChartEventFilter)
     .default([])
@@ -1016,6 +1052,8 @@ export type IChartFormula = z.infer<typeof zChartFormula>;
 export type IChartEventItem = z.infer<typeof zChartEventItem>;
 export type IChartSeries = z.infer<typeof zChartSeries>;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
+export type IChartEventPerUser = z.infer<typeof zChartEventPerUser>;
+export type IPerUserAggregation = z.infer<typeof zPerUserAggregation>;
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
   IChartEvent['filters'][number]['value'][number];

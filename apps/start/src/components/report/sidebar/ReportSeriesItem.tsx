@@ -6,6 +6,7 @@ import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
 import { DatabaseIcon, FilterIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
+import { ReportPerUser } from '../report-per-user';
 import { changeEvent } from '../reportSlice';
 import { FiltersList } from './filters/FiltersList';
 import { PropertiesCombobox } from './PropertiesCombobox';
@@ -19,6 +20,8 @@ export interface ReportSeriesItemProps
   index: number;
   showSegment: boolean;
   showAddFilter: boolean;
+  /** Distribution charts pick a per-user value instead of a segment. */
+  showPerUser?: boolean;
   isSelectManyEvents: boolean;
   renderDragHandle?: (index: number) => React.ReactNode;
 }
@@ -28,6 +31,7 @@ export function ReportSeriesItem({
   index,
   showSegment,
   showAddFilter,
+  showPerUser = false,
   isSelectManyEvents,
   renderDragHandle,
   ...props
@@ -42,6 +46,7 @@ export function ReportSeriesItem({
   const chartEvent = isFormula
     ? null
     : (normalizedEvent as IChartEventItem & { type: 'event' });
+  const perUserAggregation = chartEvent?.perUser?.aggregation ?? 'count';
 
   return (
     <div {...props}>
@@ -57,7 +62,7 @@ export function ReportSeriesItem({
       </div>
 
       {/* Segment and Filter buttons - only for events */}
-      {chartEvent && (showSegment || showAddFilter) && (
+      {chartEvent && (showSegment || showAddFilter || showPerUser) && (
         <div className="flex flex-wrap gap-1 px-3 pb-2.5 pl-10">
           {showSegment && (
             <ReportSegment
@@ -72,6 +77,28 @@ export function ReportSeriesItem({
               }}
               size="sm"
               value={chartEvent.segment}
+              variant="ghost"
+            />
+          )}
+          {showPerUser && (
+            <ReportPerUser
+              className="h-7 px-2 text-muted-foreground text-xs hover:text-foreground"
+              onChange={(aggregation) => {
+                dispatch(
+                  changeEvent({
+                    ...chartEvent,
+                    perUser: {
+                      aggregation,
+                      property:
+                        aggregation === 'count'
+                          ? undefined
+                          : chartEvent.perUser?.property,
+                    },
+                  })
+                );
+              }}
+              size="sm"
+              value={perUserAggregation}
               variant="ghost"
             />
           )}
@@ -147,6 +174,36 @@ export function ReportSeriesItem({
                 >
                   {chartEvent.property
                     ? `Property: ${chartEvent.property}`
+                    : 'Select property'}
+                </BuilderChip>
+              )}
+            </PropertiesCombobox>
+          )}
+          {showPerUser && perUserAggregation !== 'count' && (
+            <PropertiesCombobox
+              // A profile property has one value per user: nothing to aggregate.
+              categories={['event']}
+              event={chartEvent}
+              include={chartEvent.name === 'session_end' ? ['duration'] : []}
+              onSelect={(item) => {
+                dispatch(
+                  changeEvent({
+                    ...chartEvent,
+                    perUser: {
+                      aggregation: perUserAggregation,
+                      property: item.value,
+                    },
+                  })
+                );
+              }}
+            >
+              {(setOpen) => (
+                <BuilderChip
+                  icon={DatabaseIcon}
+                  onClick={() => setOpen((p) => !p)}
+                >
+                  {chartEvent.perUser?.property
+                    ? `Property: ${chartEvent.perUser.property}`
                     : 'Select property'}
                 </BuilderChip>
               )}

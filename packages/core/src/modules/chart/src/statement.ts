@@ -12,6 +12,7 @@ import {
   aggregateChartQuery,
   chartSeriesQuery,
   knownBreakdowns,
+  perUserDistributionQuery,
   type ResolvedChartBreakdowns,
   requestsAllCohortsBreakdown,
   withoutEmptyAllCohortsBreakdown,
@@ -73,7 +74,11 @@ export async function getChartSql(
     input.projectId,
     input.breakdowns
   );
-  return chartSeriesQuery({
+  const buildQuery =
+    input.chartType === 'distribution'
+      ? perUserDistributionQuery
+      : chartSeriesQuery;
+  return buildQuery({
     ...resolved,
     event: input.event,
     interval: input.interval,
