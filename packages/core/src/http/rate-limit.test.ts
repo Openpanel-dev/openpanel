@@ -5,12 +5,13 @@ import { describe, expect, test } from 'bun:test';
 import { HTTP_RATE_LIMITS, limitFor } from './rate-limit';
 
 // The published rate-limits page's numbers, for the first three entries;
-// `/mcp` is pinned here only.
+// `/mcp` and `/misc/favicon` are pinned here only.
 const PUBLISHED_LIMITS = {
   '/manage/clients': { max: 20, windowMs: 10_000 },
   '/export/events': { max: 100, windowMs: 10_000 },
   '/insights/acme-web/overview': { max: 100, windowMs: 10_000 },
   '/mcp': { max: 60, windowMs: 60_000 },
+  '/misc/favicon': { max: 100, windowMs: 10_000 },
 } as const;
 
 describe('HTTP rate limits', () => {
@@ -45,5 +46,11 @@ describe('HTTP rate limits', () => {
     const scopes = HTTP_RATE_LIMITS.map((limit) => limit.scope);
     expect(new Set(scopes).size).toBe(scopes.length);
     expect(scopes.every(Boolean)).toBe(true);
+  });
+
+  test('only the favicon route under /misc is limited', () => {
+    expect(limitFor('/misc/favicon')?.scope).toBe('favicon');
+    expect(limitFor('/misc/ping')).toBeUndefined();
+    expect(limitFor('/misc/stats')).toBeUndefined();
   });
 });

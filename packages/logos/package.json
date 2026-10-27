@@ -1,0 +1,20 @@
+{
+  "name": "@openpanel/logos",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "generate": "bun scripts/generate.ts"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "sharp": "0.35.5",
+    "typescript": "catalog:"
+  }
+}

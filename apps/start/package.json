@@ -35,6 +35,7 @@
     "@nivo/sankey": "0.99.0",
     "@number-flow/react": "0.5.10",
     "@openpanel/core": "workspace:^",
+    "@openpanel/logos": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/sdk-info": "workspace:^",
     "@openpanel/shared": "workspace:*",

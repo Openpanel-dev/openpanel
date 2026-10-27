@@ -83,7 +83,9 @@ export async function isRateLimited(
 /**
  * The first matching prefix wins. `/export`, `/insights` and `/manage` are the
  * published limits; `/track`, `/profile` and `/import` are absent on purpose:
- * the docs promise they are unlimited.
+ * the docs promise they are unlimited. `/misc/favicon` asks third-party icon
+ * services on the caller's behalf, and one dashboard page loads a few dozen
+ * icons at once.
  */
 export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
   prefix: string;
@@ -92,6 +94,7 @@ export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
   { prefix: '/export', scope: 'export', max: 100, windowMs: 10_000 },
   { prefix: '/insights', scope: 'insights', max: 100, windowMs: 10_000 },
   { prefix: '/mcp', scope: 'mcp', max: 60, windowMs: 60_000 },
+  { prefix: '/misc/favicon', scope: 'favicon', max: 100, windowMs: 10_000 },
 ];
 
 export function limitFor(pathname: string): HttpRateLimit | undefined {
