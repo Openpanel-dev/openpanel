@@ -83,6 +83,24 @@ export const dashboardRouter = createTRPCRouter({
       return ctx.services.dashboard.updateDashboard(input);
     }),
 
+  duplicate: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const dashboard = await ctx.services.dashboard.getDashboardByIdOrThrow(
+        input.id
+      );
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: dashboard.projectId,
+        level: 'write',
+      });
+      return ctx.services.dashboard.duplicateDashboard(input.id);
+    }),
+
   delete: protectedProcedure
     .input(
       z.object({

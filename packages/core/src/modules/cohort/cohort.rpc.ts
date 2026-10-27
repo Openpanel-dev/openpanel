@@ -188,6 +188,26 @@ export const cohortRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  duplicate: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const cohort = await ctx.db.cohort.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!cohort) {
+        throw new TRPCNotFoundError('Cohort not found');
+      }
+
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: cohort.projectId,
+        level: 'write',
+      });
+
+      return ctx.services.cohort.duplicate(cohort);
+    }),
+
   listProfiles: protectedProcedure
     .input(
       z.object({

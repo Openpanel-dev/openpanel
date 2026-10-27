@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
 import {
+  CopyIcon,
   DownloadIcon,
   PencilIcon,
   PlusIcon,
@@ -58,6 +59,16 @@ function Component() {
       onSuccess() {
         query.refetch();
         toast('Success', { description: 'Cohort deleted.' });
+      },
+    })
+  );
+
+  const duplication = useMutation(
+    trpc.cohort.duplicate.mutationOptions({
+      onError: handleError,
+      onSuccess(cohort) {
+        query.refetch();
+        toast('Success', { description: `Created "${cohort.name}".` });
       },
     })
   );
@@ -192,6 +203,16 @@ function Component() {
                     >
                       <PencilIcon size={16} />
                       Edit
+                    </button>
+                  </CardActionsItem>
+                  <CardActionsItem asChild className="w-full">
+                    <button
+                      disabled={duplication.isPending}
+                      onClick={() => duplication.mutate({ id: cohort.id })}
+                      type="button"
+                    >
+                      <CopyIcon size={16} />
+                      Duplicate
                     </button>
                   </CardActionsItem>
                   <CardActionsItem asChild className="w-full text-destructive">

@@ -131,6 +131,13 @@ test('refresh rejects an unauthenticated caller before enqueueing a recompute', 
   });
 });
 
+test('duplicate rejects an unauthenticated caller before reading a cohort', async () => {
+  const caller = await anonCaller();
+  await expect(caller.duplicate({ id: 'cohort_1' })).rejects.toMatchObject({
+    code: 'UNAUTHORIZED',
+  });
+});
+
 // The project-access middleware and the handler both ask this ladder; a
 // refusal from either must stop the write.
 function nonMemberCaller(write: ReturnType<typeof mock>) {
@@ -189,4 +196,42 @@ test('create refuses a signed-in user without write access to the project', asyn
     level: 'write',
   });
   expect(enqueueCompute).not.toHaveBeenCalled();
+});
+
+test('duplicate refuses a signed-in user without write access to the cohort', async () => {
+  const duplicate = mock(() => Promise.resolve());
+  const findUnique = mock(() =>
+    Promise.resolve({ id: 'cohort_1', projectId: 'proj_1' })
+  );
+  const requireProjectAccess = mock(() =>
+    Promise.reject(
+      new TRPCForbiddenError('You do not have access to this project')
+    )
+  );
+  const { ctx } = stubHttpCtx(
+    {
+      db: { cohort: { findUnique } },
+      services: {
+        auth: { requireProjectAccess },
+        cohort: { duplicate },
+      },
+    } as unknown as Parameters<typeof stubHttpCtx>[0],
+    { session: {}, user: {}, userId: 'user_outsider' }
+  );
+  const caller = cohortRouter.createCaller(
+    await makeTrpcContext(ctx, new Headers(), {
+      cookieOptions: COOKIE_OPTIONS,
+    })
+  );
+
+  await expect(caller.duplicate({ id: 'cohort_1' })).rejects.toMatchObject({
+    code: 'FORBIDDEN',
+  });
+  expect(findUnique).toHaveBeenCalled();
+  expect(requireProjectAccess).toHaveBeenCalledWith({
+    userId: 'user_outsider',
+    projectId: 'proj_1',
+    level: 'write',
+  });
+  expect(duplicate).not.toHaveBeenCalled();
 });

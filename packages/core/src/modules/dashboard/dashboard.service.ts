@@ -1,4 +1,8 @@
-import type { Dashboard, Prisma } from '@openpanel/db/src/prisma-client';
+import type {
+  Dashboard,
+  Prisma,
+  ReportLayout,
+} from '@openpanel/db/src/prisma-client';
 import { PrismaError } from 'prisma-error-enum';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
@@ -16,6 +20,12 @@ export type IServiceDashboards = Prisma.DashboardGetPayload<{
 export type DashboardWithProject = Prisma.DashboardGetPayload<{
   include: { project: true };
 }>;
+
+type ReportWithLayout = Prisma.ReportGetPayload<{
+  include: { layout: true };
+}>;
+
+const DUPLICATE_NAME_PREFIX = 'Copy of ';
 
 export interface DashboardListItem {
   id: string;
@@ -114,6 +124,63 @@ export function updateDashboard(
   });
 }
 
+function copyLayout({
+  id: _id,
+  reportId: _reportId,
+  createdAt: _createdAt,
+  updatedAt: _updatedAt,
+  ...position
+}: ReportLayout): Prisma.ReportLayoutCreateWithoutReportInput {
+  return position;
+}
+
+// Spreads every column so a field added to `Report` later is copied too.
+function copyReport(
+  deps: ServiceDeps,
+  {
+    id: _id,
+    dashboardId: _dashboardId,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    layout,
+    ...report
+  }: ReportWithLayout
+): Prisma.ReportUncheckedCreateWithoutDashboardInput {
+  return {
+    ...report,
+    events: report.events ?? [],
+    breakdowns: report.breakdowns ?? [],
+    globalFilters: report.globalFilters ?? [],
+    options: report.options ?? deps.prisma.DbNull,
+    display: report.display ?? deps.prisma.DbNull,
+    layout: layout ? { create: copyLayout(layout) } : undefined,
+  };
+}
+
+/** Copies the dashboard with its reports and tile layout; share links stay with the original. */
+export async function duplicateDashboard(
+  deps: ServiceDeps,
+  id: string
+): Promise<Dashboard> {
+  const source = await deps.db.dashboard.findUniqueOrThrow({
+    where: { id },
+    include: { reports: { include: { layout: true } } },
+  });
+  const name = `${DUPLICATE_NAME_PREFIX}${source.name}`;
+
+  return deps.db.dashboard.create({
+    data: {
+      id: await getId(deps, 'dashboard', name),
+      name,
+      projectId: source.projectId,
+      organizationId: source.organizationId,
+      reports: {
+        create: source.reports.map((report) => copyReport(deps, report)),
+      },
+    },
+  });
+}
+
 export async function deleteDashboard(
   deps: ServiceDeps,
   input: {
@@ -176,6 +243,8 @@ export function createDashboardService(
       id: string;
       name: string;
     }): Promise<Dashboard> => updateDashboard(deps, input),
+    duplicateDashboard: (id: string): Promise<Dashboard> =>
+      duplicateDashboard(deps, id),
     deleteDashboard: (input: {
       id: string;
       forceDelete?: boolean;
