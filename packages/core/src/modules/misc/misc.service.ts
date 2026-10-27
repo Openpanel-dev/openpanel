@@ -1,5 +1,4 @@
 import { getCache, getRedisCache } from '@openpanel/redis';
-import { safeFetch } from '@openpanel/shared/server';
 import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
@@ -11,30 +10,14 @@ import {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
 } from '../../shared/get-client-ip';
+import { FAVICON_PROVIDERS, fetchProviderIcon } from './src/favicon-providers';
 import { hostnameFromInput } from './src/hostname';
-import { contentTypeFor, detectImageFormat } from './src/image-format';
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;
-const MAX_ICON_BYTES = 256 * 1024;
-const FETCH_TIMEOUT_MS = 10_000;
-const FAVICON_USER_AGENT =
-  'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
 const CACHED_ASSET_CACHE_CONTROL = 'public, max-age=604800, immutable'; // 7d
 const FRESH_ASSET_CACHE_CONTROL = 'public, max-age=3600, immutable'; // 1h
 const STATS_CACHE_TTL_SECONDS = 60 * 60;
 const STATS_CACHE_KEY = 'api:stats';
-
-/**
- * Icon services asked in order; the first one answering with image bytes
- * wins. The caller's URL is reduced to a hostname and never fetched: the api
- * only connects to these two hosts, plus Google's redirect to
- * `t{n}.gstatic.com`.
- */
-const FAVICON_PROVIDERS: readonly ((hostname: string) => URL)[] = [
-  (hostname) => new URL(`https://icons.duckduckgo.com/ip3/${hostname}.ico`),
-  (hostname) =>
-    new URL(`https://www.google.com/s2/favicons?domain=${hostname}&sz=64`),
-];
 
 export interface ImageAssetOk {
   status: 200;
@@ -79,37 +62,6 @@ async function setToCacheBinary(
     redis.set(key, buffer.toString('base64'), 'EX', CACHE_TTL_SECONDS),
     redis.set(`${key}:ctype`, contentType, 'EX', CACHE_TTL_SECONDS),
   ]);
-}
-
-async function fetchIcon(
-  url: URL,
-  logger?: Pick<Logger, 'debug' | 'warn'>
-): Promise<{ buffer: Buffer; contentType: string } | null> {
-  try {
-    const result = await safeFetch(url, {
-      timeoutMs: FETCH_TIMEOUT_MS,
-      maxBytes: MAX_ICON_BYTES,
-      headers: { 'user-agent': FAVICON_USER_AGENT, accept: 'image/*' },
-    });
-    if (result.status !== 200) {
-      return null;
-    }
-    const format = detectImageFormat(result.body);
-    if (!format) {
-      logger?.debug(
-        { url: url.toString() },
-        'Icon service returned a non-image'
-      );
-      return null;
-    }
-    return { buffer: result.body, contentType: contentTypeFor(format) };
-  } catch (error) {
-    logger?.warn(
-      { err: error, url: url.toString() },
-      'Icon service fetch failed'
-    );
-    return null;
-  }
 }
 
 function imageHeaders(
@@ -172,7 +124,7 @@ export async function getFavicon(
     }
 
     for (const provider of FAVICON_PROVIDERS) {
-      const icon = await fetchIcon(provider(hostname), logger);
+      const icon = await fetchProviderIcon(provider(hostname), logger);
       if (!icon) {
         continue;
       }
