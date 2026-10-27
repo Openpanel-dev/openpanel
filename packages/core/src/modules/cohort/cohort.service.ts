@@ -12,15 +12,21 @@ import type { ServiceDeps, Services } from '../../services';
 import { formatClickhouseDate } from '../../shared/ch-dates';
 import { replicatedTarget } from '../../shared/ch-tables';
 import { PROFILE_SELECT_COLUMNS } from '../chart/chart.constants';
+import {
+  getEventFiltersWhereClause,
+  joinFilterClauses,
+} from '../chart/src/filter-where';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
-import type {
-  CohortDefinition,
-  EventBasedCohortDefinition,
-  EventCriteria,
-  Frequency,
-  PropertyBasedCohortDefinition,
-  Timeframe,
+import {
+  type CohortDefinition,
+  type EventBasedCohortDefinition,
+  type EventCriteria,
+  type Frequency,
+  isUnsupportedEventCohortFilter,
+  type PropertyBasedCohortDefinition,
+  type Timeframe,
+  UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE,
 } from './cohort.constants';
 
 // Physical ClickHouse table names this module reads/writes.
@@ -30,7 +36,6 @@ const TABLE = {
   cohortMembers: 'cohort_members',
   cohortMetadata: 'cohort_metadata',
   eventProfileSummaryMv: 'event_profile_summary_mv',
-  eventPropertyProfileSummaryMv: 'event_property_profile_summary_mv',
 } as const;
 
 // Max members materialized into cohort_members per compute. Larger cohorts are
@@ -132,46 +137,6 @@ function trimmedComparand(value: unknown): string {
   return String(value).trim();
 }
 
-// One event-property filter. Values bind; the property key is a Map key, so it
-// binds as a value too. An `IN`/`NOT IN` list becomes one `Array(String)`
-// param; an empty list matches nothing.
-function eventPropertyCondition(filter: IChartEventFilter): SqlFragment {
-  const propertyKey = sql.string(filter.name.replace('properties.', ''));
-  const { value, operator } = filter;
-  const list = sql.array('String', value.map(trimmedComparand));
-
-  switch (operator) {
-    case 'is':
-      if (value.length === 1) {
-        return sql`(property_key = ${propertyKey} AND property_value = ${sql.string(trimmedComparand(value[0]))})`;
-      }
-      return sql`(property_key = ${propertyKey} AND property_value IN ${list})`;
-    case 'isNot':
-      if (value.length === 1) {
-        return sql`(property_key = ${propertyKey} AND property_value != ${sql.string(trimmedComparand(value[0]))})`;
-      }
-      return sql`(property_key = ${propertyKey} AND property_value NOT IN ${list})`;
-    case 'contains':
-      return sql`(property_key = ${propertyKey} AND (${sql.join(
-        value.map(
-          (val) =>
-            sql`property_value LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
-        ),
-        ' OR '
-      )}))`;
-    case 'doesNotContain':
-      return sql`(property_key = ${propertyKey} AND (${sql.join(
-        value.map(
-          (val) =>
-            sql`property_value NOT LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
-        ),
-        ' AND '
-      )}))`;
-    default:
-      return sql`(property_key = ${propertyKey} AND property_value IN ${list})`;
-  }
-}
-
 // "Exactly 0" and "at most 0" both mean the profile never did the event.
 // Neither can be expressed as a HAVING on the summary MVs: those hold a row
 // only for a (project, profile, event, day) that actually happened, so every
@@ -210,66 +175,129 @@ function buildNeverDidEventQuery(
   `;
 }
 
+// A filtered criterion reads the events table with the same filter compiler
+// every report uses, so a cohort filter means exactly what it means in a
+// report: bare columns (path, country, has_profile), `properties.*` with every
+// operator, nested cohorts, and several filters AND-ed on one event. The
+// summary MVs cannot express that: they hold no columns, and one row per
+// property key, so they stay reserved for the unfiltered criteria below.
+//
+// `profile_id != device_id` keeps the MVs' identified-only membership.
+function buildFilteredEventCriteriaQuery(
+  projectId: string,
+  criteria: EventCriteria,
+  filterWhere: SqlFragment
+): SqlFragment {
+  const { name, timeframe, frequency } = criteria;
+  // toDate(created_at) is the second sort-key column, so the window prunes.
+  const timeConstraint = buildTimeConstraint(
+    timeframe,
+    sql`toDate(created_at)`
+  );
+  const matchingEvents = sql`
+    FROM ${sql.id(TABLE.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND name = ${sql.string(name)}
+      AND ${timeConstraint}
+      AND profile_id != device_id
+      AND ${filterWhere}
+  `;
+
+  if (frequency && isNeverFrequency(frequency)) {
+    // "Never did X where plan = pro" reads as "has no matching event", so the
+    // filters go inside the exclusion: someone who did X with plan = free is a
+    // member.
+    return buildNeverDidEventQuery(
+      projectId,
+      sql`SELECT DISTINCT profile_id ${matchingEvents}`
+    );
+  }
+
+  if (frequency) {
+    return sql`
+      SELECT profile_id
+      ${matchingEvents}
+      GROUP BY profile_id
+      HAVING count() ${getFrequencyOperator(frequency)}
+    `;
+  }
+
+  return sql`SELECT DISTINCT profile_id ${matchingEvents}`;
+}
+
+/** A cohort filter the events-table query cannot evaluate. */
+export class UnsupportedCohortFilterError extends Error {
+  readonly filterName: string;
+
+  constructor(filterName: string) {
+    super(`${UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE}: ${filterName}`);
+    this.name = 'UnsupportedCohortFilterError';
+    this.filterName = filterName;
+  }
+}
+
+// A row the builder shows before a value is picked has nothing to compare
+// against, so it narrows nothing, as in a report.
+function hasComparand(filter: IChartEventFilter): boolean {
+  return (
+    filter.value.length > 0 ||
+    filter.operator === 'isNull' ||
+    filter.operator === 'isNotNull'
+  );
+}
+
+// Every filter with a value must become a clause. The compiler silently skips
+// names it cannot resolve (`session.entry_path`, a typo), and a skipped filter
+// would leave the criterion matching everyone who did the event — the exact
+// failure this module once had for `path`. Group and wildcard profile filters
+// do compile, but against joins this query does not build.
+function compileEventCriteriaFilters(
+  projectId: string,
+  filters: IChartEventFilter[]
+): SqlFragment | null {
+  const activeFilters = filters.filter(hasComparand);
+  const unsupportedByName = activeFilters.find((filter) =>
+    isUnsupportedEventCohortFilter(filter.name)
+  );
+  if (unsupportedByName) {
+    throw new UnsupportedCohortFilterError(unsupportedByName.name);
+  }
+
+  const compiled = getEventFiltersWhereClause(activeFilters, projectId);
+  const dropped = activeFilters.find((_, index) => !compiled[`f${index}`]);
+  if (dropped) {
+    throw new UnsupportedCohortFilterError(dropped.name);
+  }
+  return joinFilterClauses(compiled);
+}
+
+/** Throws UnsupportedCohortFilterError when a criterion cannot be evaluated. */
+export function assertCohortDefinitionSupported(
+  projectId: string,
+  definition: CohortDefinition
+): void {
+  if (definition.type !== 'event') {
+    return;
+  }
+  for (const criteria of definition.criteria.events) {
+    compileEventCriteriaFilters(projectId, criteria.filters);
+  }
+}
+
 export function buildEventCriteriaQuery(
   projectId: string,
   criteria: EventCriteria
 ): SqlFragment {
   const { name, filters, timeframe, frequency } = criteria;
+
+  const filterWhere = compileEventCriteriaFilters(projectId, filters);
+  if (filterWhere) {
+    return buildFilteredEventCriteriaQuery(projectId, criteria, filterWhere);
+  }
+
   const timeConstraint = buildTimeConstraint(timeframe, sql.id('event_date'));
   const project = sql.string(projectId);
   const eventName = sql.string(name);
-  const hasEventPropertyFilters = filters.some((f) =>
-    f.name.startsWith('properties.')
-  );
-
-  if (hasEventPropertyFilters) {
-    const propertyConditions = sql.join(
-      filters
-        .filter((f) => f.name.startsWith('properties.'))
-        .map(eventPropertyCondition),
-      ' OR '
-    );
-
-    if (frequency) {
-      if (isNeverFrequency(frequency)) {
-        // "Never did X where plan = pro" reads as "has no matching (event,
-        // property) row", so the property predicates go inside the exclusion:
-        // someone who did the event with plan = free is a member.
-        return buildNeverDidEventQuery(
-          projectId,
-          sql`
-            SELECT profile_id
-            FROM ${sql.id(TABLE.eventPropertyProfileSummaryMv)}
-            WHERE project_id = ${project}
-              AND name = ${eventName}
-              AND ${timeConstraint}
-              AND (${propertyConditions})
-          `
-        );
-      }
-
-      const frequencyOp = getFrequencyOperator(frequency);
-      return sql`
-        SELECT profile_id
-        FROM ${sql.id(TABLE.eventPropertyProfileSummaryMv)}
-        WHERE project_id = ${project}
-          AND name = ${eventName}
-          AND ${timeConstraint}
-          AND (${propertyConditions})
-        GROUP BY profile_id
-        HAVING countMerge(event_count) ${frequencyOp}
-      `;
-    }
-
-    return sql`
-      SELECT DISTINCT profile_id
-      FROM ${sql.id(TABLE.eventPropertyProfileSummaryMv)}
-      WHERE project_id = ${project}
-        AND name = ${eventName}
-        AND ${timeConstraint}
-        AND (${propertyConditions})
-    `;
-  }
 
   if (frequency) {
     if (isNeverFrequency(frequency)) {
@@ -512,7 +540,7 @@ function getProfileFiltersWhereClause(
             (val) =>
               sql`${columnAccess} NOT LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
           ),
-          ' OR '
+          ' AND '
         )})`;
         break;
       }

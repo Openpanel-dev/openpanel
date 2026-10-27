@@ -41,11 +41,36 @@ export const zFrequency = z
 
 export type Frequency = z.infer<typeof zFrequency>;
 
+// An event criterion is evaluated on the events table alone. Group filters
+// and wildcard profile filters compile against joins only the chart engine
+// builds, so they are refused here; the service also refuses any filter the
+// compiler cannot turn into a clause.
+const GROUP_FILTER_PREFIX = 'group.';
+const PROFILE_FILTER_PREFIXES = ['profile.', 'profiles.'] as const;
+
+export function isUnsupportedEventCohortFilter(name: string): boolean {
+  if (name.startsWith(GROUP_FILTER_PREFIX)) {
+    return true;
+  }
+  const isProfileFilter = PROFILE_FILTER_PREFIXES.some((prefix) =>
+    name.startsWith(prefix)
+  );
+  return isProfileFilter && name.includes('*');
+}
+
+export const UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE =
+  'This filter is not supported in event cohorts';
+
 export const zEventCriteria = z.object({
   name: z.string().min(1).describe('The event name to match'),
   filters: z
     .array(zChartEventFilter)
     .default([])
+    .refine(
+      (filters) =>
+        !filters.some((filter) => isUnsupportedEventCohortFilter(filter.name)),
+      { message: UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE }
+    )
     .describe('Filters applied to event properties'),
   timeframe: zTimeframe.describe('When the event should have occurred'),
   frequency: zFrequency
