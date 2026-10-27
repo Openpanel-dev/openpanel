@@ -1,10 +1,4 @@
-import crypto from 'node:crypto';
 import { getCache, getRedisCache } from '@openpanel/redis';
-import {
-  assertPublicUrl,
-  BlockedUrlError,
-  safeFetch,
-} from '@openpanel/shared/server';
 import { chQuery } from '../../ch-query';
 import { type GeoLocation, getGeoLocation } from '../../clients/geo';
 import type { CoreConfig } from '../../config';
@@ -16,24 +10,17 @@ import {
   DEFAULT_IP_HEADER_ORDER,
   getClientIpFromHeaders,
 } from '../../shared/get-client-ip';
-import {
-  ALLOWED_IMAGE_CONTENT_TYPES,
-  normalizeContentType,
-  processImage,
-  processOgImage,
-} from './src/image-proxy';
-import { parseUrlMeta } from './src/parse-url-meta';
+import { FAVICON_PROVIDERS, fetchProviderIcon } from './src/favicon-providers';
+import { hostnameFromInput } from './src/hostname';
 
-const CACHE_TTL_SECONDS = 60 * 60 * 24; // 24h — binary favicon/og cache
-const MAX_FETCH_BYTES = 1_000_000; // 1MB cap
-const FETCH_TIMEOUT_MS = 10_000;
-const FAVICON_USER_AGENT =
-  'OpenPanel-FaviconProxy/1.0 (+https://openpanel.dev)';
+const CACHE_TTL_SECONDS = 60 * 60 * 24;
+// Every provider and redirect hop of one lookup shares this deadline, so a
+// slow service cannot hold a request open for the sum of the per-hop timeouts.
+const FAVICON_LOOKUP_TIMEOUT_MS = 20_000;
 const CACHED_ASSET_CACHE_CONTROL = 'public, max-age=604800, immutable'; // 7d
 const FRESH_ASSET_CACHE_CONTROL = 'public, max-age=3600, immutable'; // 1h
 const STATS_CACHE_TTL_SECONDS = 60 * 60;
 const STATS_CACHE_KEY = 'api:stats';
-const IMAGE_EXTENSIONS = ['svg', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'ico'];
 
 export interface ImageAssetOk {
   status: 200;
@@ -41,38 +28,16 @@ export interface ImageAssetOk {
   headers: Record<string, string>;
 }
 export interface ImageAssetFailure {
-  status: 400 | 404;
+  status: 404;
   body: string;
   headers: Record<string, string>;
 }
 export type ImageAssetResult = ImageAssetOk | ImageAssetFailure;
 
-function createCacheKey(url: string, prefix = 'favicon'): string {
-  const hash = crypto.createHash('sha256').update(url).digest('hex');
-  // v3: entries written before the SVG/raw-passthrough fix could hold
-  // attacker-controlled bytes with an attacker-chosen content type, so the
-  // old namespace is abandoned rather than served from.
-  return `${prefix}:v3:${hash}`;
-}
-
-/**
- * Shape check only. The destination is validated by `assertPublicUrl` /
- * `safeFetch` right before each outbound request, because a hostname can
- * resolve differently between validation and connection.
- */
-function validateUrl(raw?: string): URL | null {
-  try {
-    if (!raw) {
-      throw new Error('Missing ?url');
-    }
-    const url = new URL(raw);
-    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-      throw new Error('Only http/https URLs are allowed');
-    }
-    return url;
-  } catch {
-    return null;
-  }
+// v4: keyed by hostname. Earlier namespaces were keyed by the caller's URL and
+// held bytes rasterized from it.
+function createCacheKey(hostname: string): string {
+  return `favicon:v4:${hostname}`;
 }
 
 // Reaches the redis singleton directly: callers of these two functions hold no `deps`/`ctx`.
@@ -102,64 +67,6 @@ async function setToCacheBinary(
   ]);
 }
 
-async function fetchImage(
-  url: URL,
-  logger?: Pick<Logger, 'debug' | 'warn'>
-): Promise<{ buffer: Buffer; contentType: string; status: number }> {
-  try {
-    // `safeFetch` validates and pins every hop, so a redirect cannot be used
-    // to reach an internal address after the initial URL checks out.
-    const result = await safeFetch(url, {
-      timeoutMs: FETCH_TIMEOUT_MS,
-      maxBytes: MAX_FETCH_BYTES,
-      headers: {
-        'user-agent': FAVICON_USER_AGENT,
-        accept: 'image/*,*/*;q=0.8',
-      },
-    });
-
-    if (result.status !== 200) {
-      return {
-        buffer: Buffer.alloc(0),
-        contentType: 'text/plain',
-        status: result.status,
-      };
-    }
-
-    const contentType = normalizeContentType(
-      result.headers.get('content-type')
-    );
-    if (!ALLOWED_IMAGE_CONTENT_TYPES.has(contentType)) {
-      logger?.debug(
-        { url: url.toString(), contentType },
-        'Refusing non-image response'
-      );
-      return {
-        buffer: Buffer.alloc(0),
-        contentType: 'text/plain',
-        status: 415,
-      };
-    }
-
-    return { buffer: result.body, contentType, status: 200 };
-  } catch (error) {
-    if (error instanceof BlockedUrlError) {
-      logger?.warn(
-        { url: url.toString(), reason: error.message },
-        'Blocked image fetch'
-      );
-    }
-    return { buffer: Buffer.alloc(0), contentType: 'text/plain', status: 500 };
-  }
-}
-
-function isDirectImage(url: URL): boolean {
-  return (
-    IMAGE_EXTENSIONS.some((ext) => url.pathname.endsWith(`.${ext}`)) ||
-    url.toString().includes('googleusercontent.com')
-  );
-}
-
 function imageHeaders(
   contentType: string,
   cacheControl: string
@@ -173,162 +80,72 @@ function imageHeaders(
   };
 }
 
-function textFailure(status: 400 | 404, body: string): ImageAssetFailure {
-  return { status, body, headers: { 'content-type': 'text/plain' } };
+function imageOk(
+  buffer: Buffer,
+  contentType: string,
+  cacheControl: string
+): ImageAssetOk {
+  return {
+    status: 200,
+    buffer,
+    headers: imageHeaders(contentType, cacheControl),
+  };
 }
 
-function blockedOrErrorResult(
-  isProduction: boolean,
-  error: unknown
-): ImageAssetFailure {
-  if (error instanceof BlockedUrlError) {
-    return {
-      ...textFailure(400, 'Bad request'),
-      headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' },
-    };
-  }
-  const message = isProduction
-    ? 'Bad request'
-    : ((error as Error)?.message ?? 'Error');
+function notFound(): ImageAssetFailure {
   return {
-    ...textFailure(400, message),
+    status: 404,
+    body: 'Not found',
     headers: { 'content-type': 'text/plain', 'cache-control': 'no-store' },
   };
 }
 
+/** `GET /misc/favicon?url=` — the site's icon as the icon services have it, unmodified. */
 export async function getFavicon(
-  config: CoreConfig,
   rawUrl: string | undefined,
   logger?: Pick<Logger, 'debug' | 'warn' | 'error'>
 ): Promise<ImageAssetResult> {
-  const url = validateUrl(rawUrl);
-  if (!url) {
-    return textFailure(404, 'Not found');
+  const hostname = hostnameFromInput(rawUrl);
+  if (!hostname) {
+    return notFound();
   }
 
   try {
-    // Check the destination before anything else, so a blocked host is not
-    // leaked to the DuckDuckGo fallback below either.
-    await assertPublicUrl(url);
-
-    const cacheKey = createCacheKey(url.toString());
-    const cached = await getFromCacheBinary(cacheKey);
+    // The cache is an optimisation: a Redis failure must not turn a lookup
+    // into a 404 or discard an icon that was just fetched.
+    const cacheKey = createCacheKey(hostname);
+    const cached = await getFromCacheBinary(cacheKey).catch((error) => {
+      logger?.warn({ err: error, hostname }, 'Favicon cache read failed');
+      return null;
+    });
     if (cached) {
-      return {
-        status: 200,
-        buffer: cached.buffer,
-        headers: imageHeaders(cached.contentType, CACHED_ASSET_CACHE_CONTROL),
-      };
-    }
-
-    let imageUrl: URL;
-    if (isDirectImage(url)) {
-      imageUrl = url;
-    } else {
-      const meta = await parseUrlMeta(url.toString());
-      imageUrl = meta?.favicon
-        ? new URL(meta.favicon)
-        : new URL(`${url.origin}/favicon.ico`);
-    }
-
-    let { buffer, contentType } = await fetchImage(imageUrl, logger);
-
-    if (buffer.length === 0 && !imageUrl.hostname.includes('duckduckgo.com')) {
-      const duckduckgoUrl = new URL(
-        `https://icons.duckduckgo.com/ip3/${url.hostname}.ico`
+      return imageOk(
+        cached.buffer,
+        cached.contentType,
+        CACHED_ASSET_CACHE_CONTROL
       );
-      const duckduckgoResult = await fetchImage(duckduckgoUrl, logger);
-      buffer = duckduckgoResult.buffer;
-      contentType = duckduckgoResult.contentType;
-      imageUrl = duckduckgoUrl;
     }
 
-    if (buffer.length === 0) {
-      return textFailure(404, 'Not found');
-    }
-
-    // Process the image (resize to 30x30 PNG, or serve ICO as-is)
-    const processedBuffer = await processImage(
-      buffer,
-      imageUrl.toString(),
-      contentType,
-      logger
-    );
-
-    // `processImage` either passed an ICO through untouched or rasterized to
-    // PNG, so the response type is derived from what we produced rather than
-    // from whatever the upstream server claimed.
-    const responseContentType =
-      processedBuffer === buffer ? 'image/x-icon' : 'image/png';
-
-    await setToCacheBinary(cacheKey, processedBuffer, responseContentType);
-
-    return {
-      status: 200,
-      buffer: processedBuffer,
-      headers: imageHeaders(responseContentType, FRESH_ASSET_CACHE_CONTROL),
-    };
-  } catch (error) {
-    logger?.error?.({ err: error, url: rawUrl }, 'Favicon fetch error');
-    return blockedOrErrorResult(config.isProduction, error);
-  }
-}
-
-export async function getOgImage(
-  config: CoreConfig,
-  rawUrl: string | undefined,
-  logger?: Pick<Logger, 'debug' | 'warn' | 'error'>
-): Promise<ImageAssetResult> {
-  const url = validateUrl(rawUrl);
-  if (!url) {
-    return getFavicon(config, rawUrl, logger);
-  }
-
-  try {
-    await assertPublicUrl(url);
-
-    const cacheKey = createCacheKey(url.toString(), 'og');
-    const cached = await getFromCacheBinary(cacheKey);
-    if (cached) {
-      return {
-        status: 200,
-        buffer: cached.buffer,
-        headers: imageHeaders(cached.contentType, CACHED_ASSET_CACHE_CONTROL),
-      };
-    }
-
-    let imageUrl: URL;
-    if (isDirectImage(url)) {
-      imageUrl = url;
-    } else {
-      const meta = await parseUrlMeta(url.toString());
-      if (!meta?.ogImage) {
-        return getFavicon(config, rawUrl, logger);
+    const signal = AbortSignal.timeout(FAVICON_LOOKUP_TIMEOUT_MS);
+    for (const provider of FAVICON_PROVIDERS) {
+      const icon = await fetchProviderIcon(provider(hostname), {
+        logger,
+        signal,
+      });
+      if (!icon) {
+        continue;
       }
-      imageUrl = new URL(meta.ogImage);
+      await setToCacheBinary(cacheKey, icon.buffer, icon.contentType).catch(
+        (error) => {
+          logger?.warn({ err: error, hostname }, 'Favicon cache write failed');
+        }
+      );
+      return imageOk(icon.buffer, icon.contentType, FRESH_ASSET_CACHE_CONTROL);
     }
-
-    const { buffer, status } = await fetchImage(imageUrl, logger);
-    if (status !== 200 || buffer.length === 0) {
-      return getFavicon(config, rawUrl, logger);
-    }
-
-    // Rasterize to a 300px-wide PNG
-    const processedBuffer = await processOgImage(
-      buffer,
-      imageUrl.toString(),
-      logger
-    );
-    await setToCacheBinary(cacheKey, processedBuffer, 'image/png');
-
-    return {
-      status: 200,
-      buffer: processedBuffer,
-      headers: imageHeaders('image/png', FRESH_ASSET_CACHE_CONTROL),
-    };
+    return notFound();
   } catch (error) {
-    logger?.error?.({ err: error, url: rawUrl }, 'OG image fetch error');
-    return blockedOrErrorResult(config.isProduction, error);
+    logger?.error?.({ err: error, hostname }, 'Favicon lookup failed');
+    return notFound();
   }
 }
 
