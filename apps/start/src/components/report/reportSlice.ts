@@ -383,6 +383,21 @@ export const reportSlice = createSlice({
         state.options.yAxisScale = action.payload;
       }
     },
+    changeHoldProperties(state, action: PayloadAction<string[]>) {
+      state.dirty = true;
+      const holdProperties =
+        action.payload.length > 0 ? action.payload : undefined;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: undefined,
+          funnelWindow: undefined,
+          holdProperties,
+        };
+      } else {
+        state.options.holdProperties = holdProperties;
+      }
+    },
     changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
       state.dirty = true;
       state.options = action.payload || undefined;
@@ -503,6 +518,7 @@ export const {
   changeFunnelGroup,
   changeFunnelWindow,
   changeConversionYAxisScale,
+  changeHoldProperties,
   changeOptions,
   changeSankeyMode,
   changeSankeySteps,

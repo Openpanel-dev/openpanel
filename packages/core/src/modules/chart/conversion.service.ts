@@ -14,7 +14,9 @@ import {
   collectBreakdownCohortIds,
   extractCohortId,
   getSelectPropertyKey,
+  holdPropertyExpression,
   isKnownEventField,
+  knownHoldProperties,
 } from './src/field-resolution';
 import {
   getEventFiltersWhereClause,
@@ -100,6 +102,9 @@ export async function getConversion(
     funnelOptions?.funnelWindow ?? DEFAULT_FUNNEL_WINDOW_HOURS;
   const group: ConversionGroup =
     funnelGroup === 'profile_id' ? 'profile_id' : 'session_id';
+  const holdExpressions = knownHoldProperties(
+    funnelOptions?.holdProperties
+  ).map((name) => holdPropertyExpression(name, 'events'));
 
   // Same guard as the funnel service / getChartSql — drop breakdowns whose
   // name can't be resolved against the events schema.
@@ -177,6 +182,7 @@ export async function getConversion(
       secondEventWhere: whereB,
       breakdownSelects,
       breakdownExpressions,
+      holdExpressions,
       profileJoinFields: profileJoinFields(
         knownBreakdowns.filter((breakdown) =>
           breakdown.name.startsWith('profile.')

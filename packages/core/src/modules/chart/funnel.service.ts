@@ -10,7 +10,10 @@ import type {
   IReportInput,
 } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
-import { collectBreakdownCohortIds } from './src/field-resolution';
+import {
+  collectBreakdownCohortIds,
+  knownHoldProperties,
+} from './src/field-resolution';
 import {
   EMPTY_BREAKDOWN_LABEL,
   type FunnelBase,
@@ -89,6 +92,8 @@ export interface BuildFunnelBaseInput {
   breakdowns?: IChartBreakdown[];
   funnelWindow?: number;
   funnelGroup?: string;
+  /** Event properties every step must share a value of. */
+  holdProperties?: string[];
   timezone: string;
 }
 
@@ -108,6 +113,7 @@ export async function buildFunnelBase(
     breakdowns: initialBreakdowns = [],
     funnelWindow = DEFAULT_FUNNEL_WINDOW_HOURS,
     funnelGroup,
+    holdProperties,
     timezone,
   }: BuildFunnelBaseInput
 ): Promise<FunnelBase> {
@@ -133,6 +139,7 @@ export async function buildFunnelBase(
     group: getFunnelGroup(funnelGroup),
     funnelGroup,
     cohortMetadata,
+    holdProperties: knownHoldProperties(holdProperties),
     timezone,
   });
 }
@@ -306,6 +313,7 @@ export async function getFunnel(
     breakdowns: initialBreakdowns,
     funnelWindow: funnelOptions?.funnelWindow,
     funnelGroup: funnelOptions?.funnelGroup,
+    holdProperties: funnelOptions?.holdProperties,
     timezone,
   });
 

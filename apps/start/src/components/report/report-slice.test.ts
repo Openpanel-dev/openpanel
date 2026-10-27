@@ -4,6 +4,7 @@ import reducer, {
   applyDraft,
   changeConversionYAxisScale,
   changeFunnelWindow,
+  changeHoldProperties,
   ready,
   removeEvent,
   setReport,
@@ -65,6 +66,34 @@ describe('conversion y-axis scale', () => {
     expect(state.options?.type).toBe('funnel');
     expect(
       state.options?.type === 'funnel' ? state.options.yAxisScale : 'wrong'
+    ).toBeUndefined();
+  });
+});
+
+describe('hold properties', () => {
+  test('live on the funnel options and keep the other funnel settings', () => {
+    const withWindow = reducer(funnelWithStep(2), changeFunnelWindow(48));
+    const state = reducer(
+      withWindow,
+      changeHoldProperties(['properties.project', 'country'])
+    );
+    expect(state.dirty).toBe(true);
+    expect(state.options).toEqual({
+      type: 'funnel',
+      funnelGroup: undefined,
+      funnelWindow: 48,
+      holdProperties: ['properties.project', 'country'],
+    });
+  });
+
+  test('are unset when the last one is removed', () => {
+    const held = reducer(
+      funnelWithStep(2),
+      changeHoldProperties(['properties.project'])
+    );
+    const state = reducer(held, changeHoldProperties([]));
+    expect(
+      state.options?.type === 'funnel' ? state.options.holdProperties : 'wrong'
     ).toBeUndefined();
   });
 });
