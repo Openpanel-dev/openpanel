@@ -1,5 +1,6 @@
 import type { eventWithTime } from 'rrweb';
 import { record } from 'rrweb';
+import { fitOversizedEventPayload } from './oversize';
 
 export type ReplayRecorderConfig = {
   maskAllInputs?: boolean;
@@ -23,6 +24,14 @@ export type ReplayChunkPayload = {
 };
 
 let stopRecording: (() => void) | null = null;
+
+// rrweb's EventType.FullSnapshot. A literal, so this module needs only
+// `record` from rrweb at runtime.
+const FULL_SNAPSHOT_EVENT_TYPE = 2;
+
+function containsFullSnapshot(events: eventWithTime[]): boolean {
+  return events.some((event) => event.type === FULL_SNAPSHOT_EVENT_TYPE);
+}
 
 export function startReplayRecorder(
   config: ReplayRecorderConfig,
@@ -50,7 +59,7 @@ export function startReplayRecorder(
       return;
     }
 
-    const payloadJson = JSON.stringify(buffer);
+    let payloadJson = JSON.stringify(buffer);
     const payloadBytes = new TextEncoder().encode(payloadJson).length;
 
     if (payloadBytes > maxPayloadBytes) {
@@ -58,17 +67,22 @@ export function startReplayRecorder(
         const mid = Math.floor(buffer.length / 2);
         const firstHalf = buffer.slice(0, mid);
         const secondHalf = buffer.slice(mid);
-        const firstHasFullSnapshot =
-          isFullSnapshot && firstHalf.some((e) => e.type === 2);
         buffer = firstHalf;
-        flush(firstHasFullSnapshot);
+        flush(isFullSnapshot && containsFullSnapshot(firstHalf));
         buffer = secondHalf;
-        flush(false);
+        flush(isFullSnapshot && containsFullSnapshot(secondHalf));
         return;
       }
-      // Single event exceeds limit — drop it to avoid server rejection
-      buffer = [];
-      return;
+      const fitted = fitOversizedEventPayload(payloadJson);
+      if (!fitted) {
+        console.warn(
+          '[ReplayRecorder] dropping an event too large to send even without its data URIs',
+          { bytes: payloadBytes, type: buffer[0]?.type }
+        );
+        buffer = [];
+        return;
+      }
+      payloadJson = fitted;
     }
 
     const startedAt = buffer[0]!.timestamp;
@@ -92,9 +106,7 @@ export function startReplayRecorder(
   }
 
   function flushIfNeeded(isCheckout: boolean): void {
-    const isFullSnapshot =
-      isCheckout ||
-      buffer.some((e) => e.type === 2); /* EventType.FullSnapshot */
+    const isFullSnapshot = isCheckout || containsFullSnapshot(buffer);
     if (buffer.length >= maxEventsPerChunk) {
       flush(isFullSnapshot);
     } else if (isCheckout && buffer.length > 0) {
@@ -129,21 +141,21 @@ export function startReplayRecorder(
 
   flushTimer = setInterval(() => {
     if (buffer.length > 0) {
-      const hasFullSnapshot = buffer.some((e) => e.type === 2);
+      const hasFullSnapshot = containsFullSnapshot(buffer);
       flush(hasFullSnapshot);
     }
   }, flushIntervalMs);
 
   function onVisibilityChange(): void {
     if (document.visibilityState === 'hidden' && buffer.length > 0) {
-      const hasFullSnapshot = buffer.some((e) => e.type === 2);
+      const hasFullSnapshot = containsFullSnapshot(buffer);
       flush(hasFullSnapshot);
     }
   }
 
   function onPageHide(): void {
     if (buffer.length > 0) {
-      const hasFullSnapshot = buffer.some((e) => e.type === 2);
+      const hasFullSnapshot = containsFullSnapshot(buffer);
       flush(hasFullSnapshot);
     }
   }
@@ -154,7 +166,7 @@ export function startReplayRecorder(
   stopRecording = () => {
     // Flush any buffered events before tearing down (same logic as flushTimer)
     if (buffer.length > 0) {
-      const hasFullSnapshot = buffer.some((e) => e.type === 2);
+      const hasFullSnapshot = containsFullSnapshot(buffer);
       flush(hasFullSnapshot);
     }
     if (flushTimer) {
