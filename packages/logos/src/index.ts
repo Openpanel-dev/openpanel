@@ -92,10 +92,7 @@ export function getLogo(name: string): Logo | undefined {
 }
 
 /** The file to show for the theme; falls back to the light one. */
-export function getLogoUrl(
-  name: string,
-  theme: LogoTheme = 'light'
-): string | undefined {
+export function getLogoUrl(name: string, theme: LogoTheme = 'light'): string | undefined {
   const logo = getLogo(name);
   if (!logo) {
     return undefined;

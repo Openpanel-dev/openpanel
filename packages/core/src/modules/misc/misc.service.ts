@@ -26,8 +26,9 @@ const STATS_CACHE_KEY = 'api:stats';
 
 /**
  * Icon services asked in order; the first one answering with image bytes
- * wins. The api only ever connects to these two hosts for a favicon: the
- * caller's URL is reduced to a hostname and never fetched.
+ * wins. The caller's URL is reduced to a hostname and never fetched: the api
+ * only connects to these two hosts, plus Google's redirect to
+ * `t{n}.gstatic.com`.
  */
 const FAVICON_PROVIDERS: readonly ((hostname: string) => URL)[] = [
   (hostname) => new URL(`https://icons.duckduckgo.com/ip3/${hostname}.ico`),
@@ -155,8 +156,13 @@ export async function getFavicon(
   }
 
   try {
+    // The cache is an optimisation: a Redis failure must not turn a lookup
+    // into a 404 or discard an icon that was just fetched.
     const cacheKey = createCacheKey(hostname);
-    const cached = await getFromCacheBinary(cacheKey);
+    const cached = await getFromCacheBinary(cacheKey).catch((error) => {
+      logger?.warn({ err: error, hostname }, 'Favicon cache read failed');
+      return null;
+    });
     if (cached) {
       return imageOk(
         cached.buffer,
@@ -170,7 +176,11 @@ export async function getFavicon(
       if (!icon) {
         continue;
       }
-      await setToCacheBinary(cacheKey, icon.buffer, icon.contentType);
+      await setToCacheBinary(cacheKey, icon.buffer, icon.contentType).catch(
+        (error) => {
+          logger?.warn({ err: error, hostname }, 'Favicon cache write failed');
+        }
+      );
       return imageOk(icon.buffer, icon.contentType, FRESH_ASSET_CACHE_CONTROL);
     }
     return notFound();
