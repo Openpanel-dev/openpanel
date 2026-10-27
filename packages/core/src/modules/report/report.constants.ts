@@ -917,6 +917,12 @@ export const zFunnelOptions = z.object({
   yAxisScale: zConversionYAxisScale.optional(),
   /** Funnel only: how each step's time to convert is aggregated; unset hides it. */
   timeToConvert: zTimeToConvertAggregation.optional(),
+  holdProperties: z
+    .array(z.string())
+    .optional()
+    .describe(
+      'Event properties that must keep the same value on every step for a user to convert'
+    ),
 });
 
 export const zRetentionOptions = z.object({

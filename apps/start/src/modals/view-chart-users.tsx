@@ -349,6 +349,10 @@ function FunnelUsersView({
           report.options?.type === 'funnel'
             ? report.options.funnelGroup
             : undefined,
+        holdProperties:
+          report.options?.type === 'funnel'
+            ? report.options.holdProperties
+            : undefined,
         breakdowns: report.breakdowns,
         breakdownValues,
       },
