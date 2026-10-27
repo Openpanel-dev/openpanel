@@ -8,6 +8,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IReportInput,
+  ITimeToConvertAggregation,
 } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
 import { collectBreakdownCohortIds } from './src/field-resolution';
@@ -20,6 +21,7 @@ import {
   funnelChartQuery,
   funnelProfilesQuery,
   funnelSessionsQuery,
+  funnelTimeToConvertQuery,
   knownFunnelBreakdowns,
 } from './src/funnel.sql';
 import { runQuery } from './src/run-query';
@@ -48,6 +50,8 @@ export interface FunnelStep {
   previousCount: number;
   nextCount: number | null;
   isHighestDropoff: boolean;
+  /** Seconds from the previous step; null on the first step or when not requested. */
+  timeToConvert: number | null;
 }
 
 interface FunnelRow {
@@ -61,6 +65,19 @@ interface FunnelSerieRow {
   breakdowns: string[];
   level: number;
   count: number;
+}
+
+interface TimeToConvertRow {
+  step: number;
+  from_previous_step: number;
+  from_first_step: number;
+  [key: string]: string | number;
+}
+
+/** Seconds per 1-based step, keyed by the same series id `toSeries` gives. */
+interface SerieTimeToConvert {
+  fromPreviousStep: Map<number, number>;
+  fromFirstStep: Map<number, number>;
 }
 
 function normalizeBreakdownValue(value: unknown): string {
@@ -90,6 +107,7 @@ export interface BuildFunnelBaseInput {
   funnelWindow?: number;
   funnelGroup?: string;
   timezone: string;
+  withStepTimes?: boolean;
 }
 
 /**
@@ -109,6 +127,7 @@ export async function buildFunnelBase(
     funnelWindow = DEFAULT_FUNNEL_WINDOW_HOURS,
     funnelGroup,
     timezone,
+    withStepTimes,
   }: BuildFunnelBaseInput
 ): Promise<FunnelBase> {
   const breakdowns = knownFunnelBreakdowns(initialBreakdowns);
@@ -134,6 +153,7 @@ export async function buildFunnelBase(
     funnelGroup,
     cohortMetadata,
     timezone,
+    withStepTimes,
   });
 }
 
@@ -166,6 +186,33 @@ function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
   return filled.reverse();
 }
 
+function breakdownKey(
+  row: Record<string, string | number>,
+  breakdowns: { name: string }[]
+): string {
+  return breakdowns
+    .map((_, index) => normalizeBreakdownValue(row[`b_${index}`]))
+    .join('|');
+}
+
+export function toTimeToConvertBySerie(
+  rows: TimeToConvertRow[],
+  breakdowns: { name: string }[] = []
+): Map<string, SerieTimeToConvert> {
+  const bySerie = new Map<string, SerieTimeToConvert>();
+  for (const row of rows) {
+    const id = breakdowns.length === 0 ? 'none' : breakdownKey(row, breakdowns);
+    const serie = bySerie.get(id) ?? {
+      fromPreviousStep: new Map(),
+      fromFirstStep: new Map(),
+    };
+    serie.fromPreviousStep.set(Number(row.step), row.from_previous_step);
+    serie.fromFirstStep.set(Number(row.step), row.from_first_step);
+    bySerie.set(id, serie);
+  }
+  return bySerie;
+}
+
 export function toSeries(
   funnel: FunnelRow[],
   breakdowns: { name: string }[] = [],
@@ -185,9 +232,7 @@ export function toSeries(
   // Group by breakdown values (normalize empty/null to "Not set").
   const series = funnel.reduce(
     (acc, row) => {
-      const key = breakdowns
-        .map((_, index) => normalizeBreakdownValue(row[`b_${index}`]))
-        .join('|');
+      const key = breakdownKey(row, breakdowns);
       if (!acc[key]) {
         // The limit caps how many breakdown series come back, so it must only
         // reject NEW keys. Bailing out of the whole reduce dropped the
@@ -236,7 +281,8 @@ function isHighestDropoff(
 
 function toFunnelSteps(
   data: FunnelSerieRow[],
-  eventSeries: IChartEvent[]
+  eventSeries: IChartEvent[],
+  timeToConvert: SerieTimeToConvert | undefined
 ): { steps: FunnelStep[]; totalSessions: number } {
   const filledFunnel = fillFunnel(
     data.map((row) => ({ level: row.level, count: row.count })),
@@ -263,6 +309,8 @@ function toFunnelSteps(
             : null,
           previousCount: previous.count,
           nextCount: next?.count ?? null,
+          timeToConvert:
+            timeToConvert?.fromPreviousStep.get(item.level) ?? null,
         });
         return acc;
       },
@@ -297,6 +345,7 @@ export async function getFunnel(
   }
 
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
+  const timeToConvertAggregation = funnelOptions?.timeToConvert;
   const base = await buildFunnelBase(deps, {
     projectId,
     startDate,
@@ -307,22 +356,30 @@ export async function getFunnel(
     funnelWindow: funnelOptions?.funnelWindow,
     funnelGroup: funnelOptions?.funnelGroup,
     timezone,
+    withStepTimes: timeToConvertAggregation !== undefined,
   });
 
-  const funnelData = await runQuery<FunnelRow>(
-    deps,
-    funnelChartQuery(base),
-    base.timezone
-  );
+  const [funnelData, timeToConvertBySerie] = await Promise.all([
+    runQuery<FunnelRow>(deps, funnelChartQuery(base), base.timezone),
+    getTimeToConvertBySerie(deps, base, timeToConvertAggregation),
+  ]);
 
   return toSeries(funnelData, base.breakdowns, limit)
     .map((data) => {
-      const { steps, totalSessions } = toFunnelSteps(data, base.eventSeries);
+      const id = data[0]?.id ?? 'none';
+      const timeToConvert = timeToConvertBySerie.get(id);
+      const { steps, totalSessions } = toFunnelSteps(
+        data,
+        base.eventSeries,
+        timeToConvert
+      );
       return {
-        id: data[0]?.id ?? 'none',
+        id,
         breakdowns: data[0]?.breakdowns ?? [],
         steps,
         totalSessions,
+        timeToConvert:
+          timeToConvert?.fromFirstStep.get(base.eventSeries.length) ?? null,
         lastStep: last(steps) as FunnelStep,
         mostDropoffsStep: steps.find(
           (step) => step.isHighestDropoff
@@ -334,6 +391,22 @@ export async function getFunnel(
       const bTotal = b.steps.reduce((acc, step) => acc + step.count, 0);
       return bTotal - aTotal;
     });
+}
+
+async function getTimeToConvertBySerie(
+  deps: ServiceDeps,
+  base: FunnelBase,
+  aggregation: ITimeToConvertAggregation | undefined
+): Promise<Map<string, SerieTimeToConvert>> {
+  if (aggregation === undefined) {
+    return new Map();
+  }
+  const rows = await runQuery<TimeToConvertRow>(
+    deps,
+    funnelTimeToConvertQuery(base, aggregation),
+    base.timezone
+  );
+  return toTimeToConvertBySerie(rows, base.breakdowns);
 }
 
 export async function getFunnelCore(
