@@ -131,6 +131,25 @@ describe('event cohort membership with filters', () => {
     ).toEqual([]);
   });
 
+  it('does not contain several values means contains none of them', async () => {
+    // Alice: /home and /pricing; Charlie: /shop. OR-ed NOT LIKEs would let
+    // Charlie's /shop event through on the /pri half.
+    expect(
+      await members({
+        name: 'page_view',
+        filters: [
+          {
+            id: 'f',
+            name: 'path',
+            operator: 'doesNotContain',
+            value: ['/sh', '/pri'],
+          },
+        ],
+        timeframe: LAST_30_DAYS,
+      })
+    ).toEqual([FIXTURE.profiles.alice]);
+  });
+
   it('counts events, not property rows, for the frequency', async () => {
     expect(
       await members({

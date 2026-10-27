@@ -57,6 +57,11 @@ function anyOf(clauses: SqlFragment[]): SqlFragment {
   return sql`(${sql.join(clauses, ' OR ')})`;
 }
 
+/** The negation of `anyOf`: "does not contain a or b" is "contains neither". */
+function noneOf(clauses: SqlFragment[]): SqlFragment {
+  return sql`(${sql.join(clauses, ' AND ')})`;
+}
+
 /** No outer parentheses, unlike `anyOf` — `arrayExists` already wraps its predicate. */
 function anyItem(clauses: SqlFragment[], haystack: SqlSlot): SqlFragment {
   return sql`arrayExists(x -> ${sql.join(clauses, ' OR ')}, ${haystack})`;
@@ -211,7 +216,7 @@ export function getEventFiltersWhereClause(
           break;
         }
         case 'doesNotContain': {
-          where[id] = anyOf(
+          where[id] = noneOf(
             value.map(
               (val) =>
                 sql`${whereFrom} NOT LIKE ${sql.string(`%${String(val).trim()}%`)}`
@@ -329,7 +334,7 @@ export function getEventFiltersWhereClause(
                 value.map((val) => sql`x NOT LIKE ${like(val)}`),
                 whereFrom
               )
-            : anyOf(
+            : noneOf(
                 value.map((val) => sql`${whereFrom} NOT LIKE ${like(val)}`)
               );
           break;
@@ -516,7 +521,7 @@ export function getEventFiltersWhereClause(
           break;
         }
         case 'doesNotContain': {
-          where[id] = anyOf(
+          where[id] = noneOf(
             value.map(
               (val) =>
                 sql`${column} NOT LIKE ${sql.string(`%${String(val).trim()}%`)}`

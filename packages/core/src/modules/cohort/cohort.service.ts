@@ -484,7 +484,7 @@ function getProfileFiltersWhereClause(
             (val) =>
               sql`${columnAccess} NOT LIKE ${sql.string(`%${trimmedComparand(val)}%`)}`
           ),
-          ' OR '
+          ' AND '
         )})`;
         break;
       }
