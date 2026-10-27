@@ -758,6 +758,12 @@ export const zChartEvent = z.object({
     .array(zChartEventFilter)
     .default([])
     .describe('Filters applied specifically to this event'),
+  firstTime: z
+    .boolean()
+    .optional()
+    .describe(
+      "Count only each user's first-ever occurrence of this event, and only when that occurrence falls inside the selected range and matches this event's filters. Ignored for the any-event series ('*')."
+    ),
   customEventId: z
     .string()
     .optional()

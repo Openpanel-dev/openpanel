@@ -47,6 +47,11 @@ import {
   filterReadsProfileJoin,
   getEventFiltersWhereClause,
 } from './filter-where';
+import {
+  type FirstOccurrencePeriod,
+  firstTimeCondition,
+  rangePeriod,
+} from './first-time';
 
 const EVENTS_ALIAS = 'e';
 const ALL_COHORTS_ALIAS = '_all_cohorts';
@@ -79,7 +84,7 @@ const PROFILE_COLUMNS = [
 
 export type ChartQueryEvent = Pick<
   IChartEvent,
-  'name' | 'segment' | 'filters' | 'property' | 'anyOf'
+  'name' | 'segment' | 'filters' | 'property' | 'anyOf' | 'firstTime'
 >;
 
 /** Breakdowns after `resolveChartBreakdowns`, plus the cohort rows they need. */
@@ -309,6 +314,21 @@ function chartBody({
   }
   const dateRange = dateRangeWhere(startDate, endDate);
   Object.assign(where, dateRange);
+  const hasDateRange = Boolean(startDate && endDate);
+  const firstTime = hasDateRange
+    ? firstTimeCondition({
+        event,
+        projectId,
+        eventsAlias: EVENTS_ALIAS,
+        period: rangePeriod(
+          formatClickhouseDate(startDate),
+          formatClickhouseDate(endDate)
+        ),
+      })
+    : null;
+  if (firstTime) {
+    where.firstTime = firstTime;
+  }
 
   const needsProfileJoin = anyRefOn('profile.', profileJoinRefs);
   const needsGroupArrayJoin =
@@ -655,25 +675,29 @@ export interface ChartBucketProfilesInput {
   /** Bucket start as a `YYYY-MM-DD HH:mm:ss` string. */
   bucketDate: string;
   interval: IInterval;
-  event: Pick<IChartEvent, 'name' | 'filters' | 'anyOf'>;
+  event: Pick<IChartEvent, 'name' | 'filters' | 'anyOf' | 'firstTime'>;
   breakdowns: Record<string, string>;
   /** Cap on the ids handed to the drill-down modal. */
   limit: number;
 }
 
-function bucketEquals(interval: IInterval, bucketDate: string): SqlFragment {
+function bucketEquals(
+  interval: IInterval,
+  bucketDate: string,
+  column: SqlFragment = sql`created_at`
+): SqlFragment {
   const date = sql.string(bucketDate);
   switch (interval) {
     case 'minute':
-      return sql`toStartOfMinute(created_at) = toDateTime(${date})`;
+      return sql`toStartOfMinute(${column}) = toDateTime(${date})`;
     case 'hour':
-      return sql`toStartOfHour(created_at) = toDateTime(${date})`;
+      return sql`toStartOfHour(${column}) = toDateTime(${date})`;
     case 'day':
-      return sql`toStartOfDay(created_at) = toDate(${date})`;
+      return sql`toStartOfDay(${column}) = toDate(${date})`;
     case 'week':
-      return sql`toStartOfWeek(toDateTime(created_at)) = toDate(${date})`;
+      return sql`toStartOfWeek(toDateTime(${column})) = toDate(${date})`;
     case 'month':
-      return sql`toStartOfMonth(toDateTime(created_at)) = toDate(${date})`;
+      return sql`toStartOfMonth(toDateTime(${column})) = toDate(${date})`;
     default:
       throw new Error(`Unsupported chart interval: ${String(interval)}`);
   }
@@ -714,6 +738,18 @@ export function chartBucketProfilesQuery(
   const eventMatch = eventMatchCondition(event, projectId);
   if (eventMatch) {
     where.eventName = eventMatch;
+  }
+  const bucketPeriod: FirstOccurrencePeriod = {
+    contains: (firstSeen) => bucketEquals(interval, bucketDate, firstSeen),
+  };
+  const firstTime = firstTimeCondition({
+    event,
+    projectId,
+    eventsAlias: EVENTS_ALIAS,
+    period: bucketPeriod,
+  });
+  if (firstTime) {
+    where.firstTime = firstTime;
   }
 
   const joins: Parts = {};
