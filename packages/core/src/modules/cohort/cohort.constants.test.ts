@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test';
-import { zAbsoluteTimeframe, zFrequency } from './cohort.constants';
+import {
+  zAbsoluteTimeframe,
+  zEventCriteria,
+  zFrequency,
+} from './cohort.constants';
 
 describe('zAbsoluteTimeframe', () => {
   test('accepts a date without an end', () => {
@@ -69,6 +73,39 @@ describe('zFrequency', () => {
     );
     expect(zFrequency.safeParse({ operator: 'eq', count: 1.5 }).success).toBe(
       false
+    );
+  });
+});
+
+describe('zEventCriteria filters', () => {
+  const criteria = (name: string) => ({
+    name: 'purchase',
+    timeframe: { type: 'relative', value: '30d' },
+    filters: [{ id: 'f', name, operator: 'is', value: ['x'] }],
+  });
+
+  test.each([
+    'path',
+    'has_profile',
+    'properties.plan',
+    'profile.email',
+    'profile.properties.plan',
+    'session.entry_path',
+  ])('accepts a filter the events table can evaluate (%s)', (name) => {
+    expect(zEventCriteria.safeParse(criteria(name)).success).toBe(true);
+  });
+
+  // Group and wildcard profile filters read joins only the chart engine
+  // builds; letting them through would fail the refresh job in ClickHouse.
+  test.each([
+    'group.name',
+    'group.properties.tier',
+    'profile.properties.*',
+  ])('rejects a filter that needs a join (%s)', (name) => {
+    const result = zEventCriteria.safeParse(criteria(name));
+    expect(result.success).toBe(false);
+    expect(JSON.stringify(result.error?.issues)).toContain(
+      'group properties or wildcard profile properties'
     );
   });
 });

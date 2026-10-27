@@ -18,13 +18,15 @@ import {
 } from '../chart/src/filter-where';
 import type { IServiceProfile } from '../profile/profile.service';
 import type { IChartEventFilter } from '../report/report.constants';
-import type {
-  CohortDefinition,
-  EventBasedCohortDefinition,
-  EventCriteria,
-  Frequency,
-  PropertyBasedCohortDefinition,
-  Timeframe,
+import {
+  type CohortDefinition,
+  type EventBasedCohortDefinition,
+  type EventCriteria,
+  type Frequency,
+  isUnsupportedEventCohortFilter,
+  type PropertyBasedCohortDefinition,
+  type Timeframe,
+  UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE,
 } from './cohort.constants';
 
 // Physical ClickHouse table names this module reads/writes.
@@ -228,6 +230,17 @@ export function buildEventCriteriaQuery(
   criteria: EventCriteria
 ): SqlFragment {
   const { name, filters, timeframe, frequency } = criteria;
+
+  // zEventCriteria refuses these at the API; a definition stored before that
+  // rule would otherwise fail inside ClickHouse with an unknown `_g` alias.
+  const unsupported = filters.find((filter) =>
+    isUnsupportedEventCohortFilter(filter.name)
+  );
+  if (unsupported) {
+    throw new Error(
+      `${UNSUPPORTED_EVENT_COHORT_FILTER_MESSAGE}: ${unsupported.name}`
+    );
+  }
 
   // Compiled rather than counted: a filter the compiler drops (an empty value
   // list, an unknown field) leaves the criterion unfiltered, and the MV path

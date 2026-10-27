@@ -393,6 +393,38 @@ describe('buildEventCriteriaQuery with filters', () => {
     );
   });
 
+  test('a profile property filter compiles to a profiles subquery, no join', () => {
+    const { query } = render(
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          {
+            id: 'plan',
+            name: 'profile.properties.plan',
+            operator: 'is',
+            value: ['pro'],
+          },
+        ])
+      )
+    );
+
+    expect(query).toContain('FROM events');
+    expect(query).toContain('cityHash64(profile_id) IN (');
+    expect(query).toContain('FROM profiles');
+    expect(query).not.toContain('JOIN');
+  });
+
+  test('refuses a filter that would need a join the query does not build', () => {
+    expect(() =>
+      buildEventCriteriaQuery(
+        PROJECT_ID,
+        frequencyCriteria({ operator: 'gte', count: 1 }, [
+          { id: 'g', name: 'group.name', operator: 'is', value: ['Acme'] },
+        ])
+      )
+    ).toThrow('group properties or wildcard profile properties: group.name');
+  });
+
   test('a filter the compiler drops leaves the criterion on the summary MV', () => {
     const { query } = render(
       buildEventCriteriaQuery(

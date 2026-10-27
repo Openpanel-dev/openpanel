@@ -150,6 +150,23 @@ describe('event cohort membership with filters', () => {
     ).toEqual([FIXTURE.profiles.alice]);
   });
 
+  it('narrows by a profile property through the profiles subquery', async () => {
+    expect(
+      await members({
+        name: 'page_view',
+        filters: [
+          {
+            id: 'f',
+            name: 'profile.properties.browser',
+            operator: 'is',
+            value: ['Firefox'],
+          },
+        ],
+        timeframe: LAST_30_DAYS,
+      })
+    ).toEqual([FIXTURE.profiles.charlie]);
+  });
+
   it('counts events, not property rows, for the frequency', async () => {
     expect(
       await members({
