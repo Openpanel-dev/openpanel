@@ -837,3 +837,117 @@ describe('custom event series', () => {
     );
   });
 });
+
+describe('distribution (per-user) chart', () => {
+  const distribution = { ...base, chartType: 'distribution' as const };
+
+  it('buckets users by their event count by default', async () => {
+    const rendered = await getChartSql({
+      event: event(),
+      breakdowns: [],
+      ...distribution,
+    });
+    expect(rendered.text).toContain('count(*) as user_value');
+    expect(rendered.text).toContain('GROUP BY profile_id');
+    expect(Object.values(rendered.params)).toContainEqual([
+      '1',
+      '2',
+      '3',
+      '4-5',
+      '6-10',
+      '11+',
+    ]);
+    expect(rendered.text).not.toContain('WITH FILL');
+    await explain(rendered);
+  });
+
+  it('ignores the segment', async () => {
+    const rendered = await getChartSql({
+      event: event({ segment: 'group' }),
+      breakdowns: [],
+      ...distribution,
+    });
+    expect(rendered.text).not.toContain('ARRAY JOIN groups');
+    await explain(rendered);
+  });
+
+  it('aggregates a numeric column per user into equal-width bins', async () => {
+    const rendered = await getChartSql({
+      event: event({
+        name: 'session_end',
+        perUser: { aggregation: 'median', property: 'duration' },
+      }),
+      breakdowns: [],
+      ...distribution,
+    });
+    expect(rendered.text).toContain('quantile(0.5)(duration) as user_value');
+    expect(rendered.text).toContain('min(user_value) OVER ()');
+    await explain(rendered);
+  });
+
+  it('casts a properties-map value and keeps distinct counts discrete', async () => {
+    const sum = await getChartSql({
+      event: event({
+        perUser: { aggregation: 'sum', property: 'properties.value' },
+      }),
+      breakdowns: [],
+      ...distribution,
+    });
+    const distinct = await getChartSql({
+      event: event({
+        perUser: { aggregation: 'distinct_count', property: 'properties.sku' },
+      }),
+      breakdowns: [],
+      ...distribution,
+    });
+    expect(sum.text).toContain(
+      "sum(toFloat64OrNull(e.properties['value'])) as user_value"
+    );
+    expect(sum.text).toContain("notEmpty(e.properties['value'])");
+    expect(distinct.text).toContain(
+      "uniqExact(e.properties['sku']) as user_value"
+    );
+    expect(distinct.text).not.toContain('OVER ()');
+    await Promise.all([explain(sum), explain(distinct)]);
+  });
+
+  it('falls back to the event count while no property is picked', async () => {
+    const rendered = await getChartSql({
+      event: event({ perUser: { aggregation: 'p90' } }),
+      breakdowns: [],
+      ...distribution,
+    });
+    expect(rendered.text).toContain('count(*) as user_value');
+    await explain(rendered);
+  });
+
+  it('groups per user and breakdown with profile, group and cohort joins', async () => {
+    cohortFindMany.mockClear();
+    const rendered = await getChartSql({
+      event: event({
+        perUser: {
+          aggregation: 'max',
+          property: 'profile.properties.age',
+        },
+        filters: [
+          {
+            name: 'profile.properties.plan',
+            operator: 'is',
+            value: ['pro'],
+          },
+          { name: 'group.plan', operator: 'is', value: ['pro'] },
+        ],
+      }),
+      breakdowns: [
+        breakdown('country'),
+        breakdown('properties.__query.utm_source'),
+        breakdown('cohort'),
+      ],
+      ...distribution,
+    });
+    expect(rendered.text).toContain('GROUP BY label_1, label_2, profile_id');
+    expect(rendered.text).toContain('LEFT ANY JOIN profile');
+    expect(rendered.text).toContain('ARRAY JOIN groups');
+    await explain(rendered);
+  });
+});

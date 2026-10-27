@@ -433,6 +433,7 @@ enum ChartType {
   retention
   conversion
   sankey
+  distribution
 }
 
 model Dashboard {

@@ -3,6 +3,7 @@ import { chartTypes } from '@openpanel/core/modules/report/report.constants';
 import {
   AreaChartIcon,
   ChartBarIcon,
+  ChartColumnBigIcon,
   ChartColumnIncreasingIcon,
   ConeIcon,
   GaugeIcon,
@@ -61,6 +62,7 @@ export function ReportChartType({
     map: Globe2Icon,
     conversion: TrendingUpIcon,
     sankey: GitBranchIcon,
+    distribution: ChartColumnBigIcon,
   };
 
   return (

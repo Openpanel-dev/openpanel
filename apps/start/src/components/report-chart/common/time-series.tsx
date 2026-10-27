@@ -228,7 +228,7 @@ export function TimeSeriesFrame({
   );
 }
 
-function SeriesLegend({ series }: { series: IVisibleSeries }) {
+export function SeriesLegend({ series }: { series: IVisibleSeries }) {
   const { legendLimit } = useChartChrome();
   const hasRoom = legendLimit > 0;
   if (series.length < 2 || !hasRoom) {

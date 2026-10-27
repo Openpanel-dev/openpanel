@@ -36,7 +36,10 @@ export async function executeChart(
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(deps, input);
   const executionPlan = plan(normalized);
-  const previousPlan = input.previous
+  // Distribution buckets are not periods, and continuous bins differ between
+  // the two ranges, so there is nothing to line the previous period up with.
+  const comparePrevious = input.previous && input.chartType !== 'distribution';
+  const previousPlan = comparePrevious
     ? plan({
         ...normalized,
         ...getChartPrevStartEndDate({

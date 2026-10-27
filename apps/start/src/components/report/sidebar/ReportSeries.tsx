@@ -81,6 +81,7 @@ function SortableReportSeriesItem({
   index,
   showSegment,
   showAddFilter,
+  showPerUser,
   isSelectManyEvents,
   ...props
 }: Omit<ReportSeriesItemProps, 'renderDragHandle'>) {
@@ -110,6 +111,7 @@ function SortableReportSeriesItem({
           </button>
         )}
         showAddFilter={showAddFilter}
+        showPerUser={showPerUser}
         showSegment={showSegment}
         {...props}
       />
@@ -126,7 +128,13 @@ export function ReportSeries() {
     projectId,
   });
 
-  const showSegment = !['retention', 'funnel', 'sankey'].includes(chartType);
+  const showSegment = ![
+    'retention',
+    'funnel',
+    'sankey',
+    'distribution',
+  ].includes(chartType);
+  const showPerUser = chartType === 'distribution';
   // Retention supports property + cohort filters (hybrid cohort_events_mv /
   // raw-events engine), so the filter UI is enabled for it.
   const showAddFilter = !['sankey'].includes(chartType);
@@ -227,6 +235,7 @@ export function ReportSeries() {
                   isSelectManyEvents={isSelectManyEvents}
                   key={event.id}
                   showAddFilter={showAddFilter}
+                  showPerUser={showPerUser}
                   showSegment={showSegment}
                 >
                   {isFormula ? (

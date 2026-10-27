@@ -17,6 +17,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IInterval,
+  IPerUserAggregation,
 } from '../../report/report.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
 import { formatClickhouseDate } from './dates';
@@ -61,6 +62,26 @@ const MATH_FUNCTION_BY_SEGMENT: Record<string, string> = {
   property_min: 'min',
 };
 
+const PER_USER_AGGREGATE_FUNCTION: Record<
+  Exclude<IPerUserAggregation, 'count'>,
+  string
+> = {
+  sum: 'sum',
+  avg: 'avg',
+  min: 'min',
+  max: 'max',
+  median: 'quantile(0.5)',
+  p90: 'quantile(0.9)',
+  p95: 'quantile(0.95)',
+  p99: 'quantile(0.99)',
+  distinct_count: 'uniqExact',
+};
+// Inclusive upper bounds of the integer buckets; values above the last one
+// fall into the open-ended bucket.
+const DISCRETE_BUCKET_BOUNDS = [1, 2, 3, 5, 10];
+const DISCRETE_BUCKET_LABELS = ['1', '2', '3', '4-5', '6-10', '11+'];
+const CONTINUOUS_BUCKET_COUNT = 10;
+
 export const PROPERTY_VALUES_LIMIT = 100_000;
 /** `profiles` columns a `profile.<field>` reference may select. */
 const PROFILE_COLUMNS = [
@@ -79,7 +100,7 @@ const PROFILE_COLUMNS = [
 
 export type ChartQueryEvent = Pick<
   IChartEvent,
-  'name' | 'segment' | 'filters' | 'property' | 'anyOf'
+  'name' | 'segment' | 'filters' | 'property' | 'anyOf' | 'perUser'
 >;
 
 /** Breakdowns after `resolveChartBreakdowns`, plus the cohort rows they need. */
@@ -545,6 +566,107 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
       : sql`uniqMerge(_uc_state) OVER () as total_count`;
 
   return sql`${withClause(body.ctes)}SELECT * EXCEPT (_uc_state), ${totalCount} FROM (${selectClause(body.select)} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)}) ${orderByClause(orderBy)} ${fill}`;
+}
+
+/** The per-user value a distribution buckets by: one aggregate over each user's events. */
+function perUserValue(
+  event: ChartQueryEvent,
+  body: ChartBody,
+  projectId: string
+): { value: SqlFragment; discrete: boolean } {
+  const aggregation = event.perUser?.aggregation ?? 'count';
+  const property = event.perUser?.property;
+  if (aggregation === 'count' || !property) {
+    return { value: sql`count(*)`, discrete: true };
+  }
+  const propertyKey = fragmentWithProfileRefs(
+    getSelectPropertyKey(
+      property,
+      projectId,
+      undefined,
+      undefined,
+      EVENTS_ALIAS
+    ),
+    body.profileKeys
+  );
+  const aggregate = compiledText(PER_USER_AGGREGATE_FUNCTION[aggregation]);
+  if (isNumericColumn(property)) {
+    body.where.property = sql`${propertyKey} IS NOT NULL`;
+    return {
+      value: sql`${aggregate}(${propertyKey})`,
+      discrete: aggregation === 'distinct_count',
+    };
+  }
+  body.where.property = sql`${propertyKey} IS NOT NULL AND notEmpty(${propertyKey})`;
+  if (aggregation === 'distinct_count') {
+    return { value: sql`${aggregate}(${propertyKey})`, discrete: true };
+  }
+  return {
+    value: sql`${aggregate}(toFloat64OrNull(${propertyKey}))`,
+    discrete: false,
+  };
+}
+
+/**
+ * Users bucketed by a per-user value (event count, or an aggregate of an
+ * event property). Counts and distinct counts use fixed integer buckets,
+ * everything else equal-width bins between the smallest and largest value,
+ * shared by every breakdown so the series line up.
+ *
+ * Rows keep the series shape: the bucket label rides in `date` and the rows
+ * come back in bucket order, which `groupByLabels` preserves.
+ */
+export function perUserDistributionQuery(
+  input: ChartSeriesQueryInput
+): SqlFragment {
+  // The segment does not apply: every user counts once per series.
+  const event = { ...input.event, segment: 'event' as const };
+  const body = chartBody({
+    ...input,
+    event: { ...event, property: event.perUser?.property },
+  });
+  const groupBy: Parts = {};
+  addBreakdownLabels({ ...input, event }, body, groupBy);
+  const { value, discrete } = perUserValue(event, body, input.projectId);
+
+  const labels = Object.keys(body.select).map((key) => compiledText(key));
+  body.select.profile_id = sql`profile_id`;
+  body.select.user_value = sql`${value} as user_value`;
+  groupBy.profile_id = sql`profile_id`;
+
+  const perUser = sql`${selectClause(body.select)} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)}`;
+
+  const bins = sql.uint64(CONTINUOUS_BUCKET_COUNT);
+  const width = sql`((hi - lo) / ${bins})`;
+  const bucketCount = discrete
+    ? sql.uint64(DISCRETE_BUCKET_LABELS.length)
+    : sql`if(hi = lo, 1, ${bins})`;
+  const bucket = discrete
+    ? sql`arrayCount(bound -> user_value > bound, ${sql.array('Float64', DISCRETE_BUCKET_BOUNDS)})`
+    : sql`if(hi = lo, 0, least(toUInt32(floor((user_value - lo) / ${width})), ${bins} - 1))`;
+  // Read after the ARRAY JOIN, where the range travels as bucket_lo/bucket_hi.
+  const binWidth = sql`((bucket_hi - bucket_lo) / ${bins})`;
+  const bucketLabel = discrete
+    ? sql`${sql.array('String', DISCRETE_BUCKET_LABELS)}[bucket + 1]`
+    : sql`if(bucket_hi = bucket_lo, toString(round(bucket_lo, 2)), concat(toString(round(bucket_lo + bucket * ${binWidth}, 2)), ' - ', toString(round(bucket_lo + (bucket + 1) * ${binWidth}, 2))))`;
+  const range = discrete
+    ? sql`, 0 as lo, 0 as hi`
+    : sql`, min(user_value) OVER () as lo, max(user_value) OVER () as hi`;
+
+  // One count per bucket and series, empty buckets included, so the x-axis
+  // keeps its shape; ARRAY JOIN turns them back into rows.
+  return sql`${withClause(body.ctes)}SELECT ${sql.join(labels, ', ')}, ${bucketLabel} as date, count, total_count
+    FROM (
+      SELECT ${sql.join(labels, ', ')}, any(lo) as bucket_lo, any(hi) as bucket_hi, count(*) as total_count,
+        sumForEach(arrayMap(index -> toUInt64(index = bucket), range(${bucketCount}))) as counts
+      FROM (
+        SELECT *, ${bucket} as bucket
+        FROM (SELECT *${range} FROM (${perUser}) WHERE user_value IS NOT NULL)
+      )
+      GROUP BY ${sql.join(labels, ', ')}
+    )
+    ARRAY JOIN counts as count, range(length(counts)) as bucket
+    ORDER BY bucket ASC`;
 }
 
 /** One row per breakdown combination over the whole range. */

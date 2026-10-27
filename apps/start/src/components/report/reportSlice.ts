@@ -72,6 +72,28 @@ function clearStaleBreakdownSteps(state: InitialState) {
   }
 }
 
+// Each chart type exposes either the segment or the per-user value, never
+// both, so drop whichever one it hides; a saved or switched report must not
+// keep applying config the editor no longer shows.
+export function normalizeSeriesForChartType(
+  series: IChartEventItem[],
+  chartType: IChartType
+): IChartEventItem[] {
+  return series.map((serie) => {
+    if (serie.type !== 'event') {
+      return serie;
+    }
+    if (chartType === 'distribution') {
+      return { ...serie, segment: 'event' };
+    }
+    if (!serie.perUser) {
+      return serie;
+    }
+    const { perUser: _perUser, ...rest } = serie;
+    return rest;
+  });
+}
+
 export const reportSlice = createSlice({
   name: 'report',
   initialState,
@@ -95,6 +117,10 @@ export const reportSlice = createSlice({
       return {
         ...state,
         ...action.payload,
+        series: normalizeSeriesForChartType(
+          action.payload.series,
+          action.payload.chartType
+        ),
         globalFilters: action.payload.globalFilters ?? [],
         startDate: action.payload.startDate ?? null,
         endDate: action.payload.endDate ?? null,
@@ -108,6 +134,10 @@ export const reportSlice = createSlice({
         ...state,
         ...action.payload,
         lineType: action.payload.lineType ?? state.lineType,
+        series: normalizeSeriesForChartType(
+          action.payload.series,
+          action.payload.chartType
+        ),
         globalFilters: action.payload.globalFilters ?? [],
         startDate: action.payload.startDate ?? null,
         endDate: action.payload.endDate ?? null,
@@ -237,6 +267,7 @@ export const reportSlice = createSlice({
     changeChartType: (state, action: PayloadAction<IChartType>) => {
       state.dirty = true;
       state.chartType = action.payload;
+      state.series = normalizeSeriesForChartType(state.series, action.payload);
 
       // The Metric card has always shown the total unique count. Existing
       // reports are backfilled to 'count' by migration, so default a newly

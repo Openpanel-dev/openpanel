@@ -2,6 +2,7 @@ import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { describe, expect, test } from 'vitest';
 import reducer, {
   applyDraft,
+  changeChartType,
   changeConversionYAxisScale,
   changeFunnelWindow,
   ready,
@@ -93,5 +94,49 @@ describe('applyDraft', () => {
     expect(state.lineType).toBe('monotone');
     expect(state.globalFilters).toEqual([]);
     expect(state.series).toHaveLength(1);
+  });
+});
+
+describe('per-user value and segment', () => {
+  const perUser = { aggregation: 'sum' as const, property: 'properties.value' };
+  const report = (chartType: IReport['chartType']) =>
+    ({
+      projectId: 'project',
+      name: 'Report',
+      chartType,
+      lineType: 'monotone',
+      interval: 'day',
+      range: '30d',
+      previous: false,
+      metric: 'sum',
+      series: [
+        { ...event('a'), segment: 'property_sum', property: 'value', perUser },
+        { id: 'f', type: 'formula', formula: 'A*2' },
+      ],
+      breakdowns: [],
+    }) as IReport;
+
+  test('a distribution keeps the per-user value and drops the segment', () => {
+    const state = reducer(undefined, setReport(report('distribution')));
+    expect(state.series[0]).toMatchObject({ segment: 'event', perUser });
+  });
+
+  test('other chart types drop a saved per-user value', () => {
+    const state = reducer(undefined, setReport(report('linear')));
+    expect(state.series[0]).not.toHaveProperty('perUser');
+    expect(state.series[0]).toMatchObject({ segment: 'property_sum' });
+    expect(state.series[1]).toEqual(report('linear').series[1]);
+  });
+
+  test('switching chart type normalizes the series both ways', () => {
+    const distribution = reducer(
+      reducer(undefined, setReport(report('linear'))),
+      changeChartType('distribution')
+    );
+    expect(distribution.series[0]).toMatchObject({ segment: 'event' });
+
+    const withPerUser = reducer(undefined, setReport(report('distribution')));
+    const linear = reducer(withPerUser, changeChartType('linear'));
+    expect(linear.series[0]).not.toHaveProperty('perUser');
   });
 });
