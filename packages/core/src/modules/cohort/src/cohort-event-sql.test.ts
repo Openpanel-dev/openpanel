@@ -386,7 +386,11 @@ describe('buildEventCriteriaQuery with filters', () => {
     );
 
     expect(query).toContain('FROM events');
-    expect(query).toContain('path LIKE {p4:String}');
+    // The compiled has_profile clause sits after the path clause; the
+    // unconditional identified-only predicate alone would not prove it.
+    expect(query).toContain(
+      '(path LIKE {p4:String}) AND profile_id != device_id'
+    );
   });
 
   test('a filter the compiler drops leaves the criterion on the summary MV', () => {
