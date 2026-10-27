@@ -26,6 +26,12 @@ export type SessionReplayOptions = {
   blockClass?: string;
   ignoreSelector?: string;
   flushIntervalMs?: number;
+  /**
+   * How often (ms) a full snapshot of the page is recorded. Seeking replays
+   * from the closest earlier snapshot, so a shorter interval seeks faster in
+   * long sessions but stores far more. Defaults to 300000 (5 minutes).
+   */
+  fullSnapshotIntervalMs?: number;
   maxEventsPerChunk?: number;
   maxPayloadBytes?: number;
   /**
