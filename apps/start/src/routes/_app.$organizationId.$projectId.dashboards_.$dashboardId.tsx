@@ -1,3 +1,7 @@
+import {
+  isSameDashboardFilters,
+  parseDashboardFilters,
+} from '@openpanel/core/modules/dashboard/dashboard.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
@@ -5,11 +9,12 @@ import {
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
+  SaveIcon,
   SearchIcon,
   ShareIcon,
   TrashIcon,
 } from 'lucide-react';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import {
   DashboardGrid,
@@ -19,6 +24,7 @@ import {
   useDashboardLayout,
 } from '@/components/dashboard-grid';
 import { EmptyState } from '@/components/empty-state';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -29,6 +35,7 @@ import {
   ReportItem,
   ReportItemSkeleton,
 } from '@/components/report/report-item';
+import type { PropertiesComboboxCategory } from '@/components/report/sidebar/PropertiesCombobox';
 import { Button, LinkButton } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -39,10 +46,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
+import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTileViews } from '@/hooks/use-tile-views';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
+
+/** The same key the overview uses, so clicking a country on a map tile
+ *  filters the whole dashboard. */
+const DASHBOARD_FILTERS_URL_KEY = 'f';
+const DASHBOARD_FILTER_CATEGORIES: PropertiesComboboxCategory[] = [
+  'event',
+  'profile',
+  'group',
+  'cohort',
+  'session',
+];
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
@@ -127,6 +146,58 @@ function Component() {
   const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const dashboard = dashboardQuery.data;
   const [search, setSearch] = useState('');
+
+  const savedFilters = useMemo(
+    () => parseDashboardFilters(dashboard?.filters),
+    [dashboard?.filters]
+  );
+  // Replace, so Back does not land on the dashboard without its saved filters.
+  const [urlFilters, setUrlFilters] = useTableFilters(
+    DASHBOARD_FILTERS_URL_KEY,
+    { history: 'replace' }
+  );
+  const [seededDashboardId, setSeededDashboardId] = useState<string | null>(
+    null
+  );
+  const isSeeded = seededDashboardId === dashboardId;
+  // Until the saved filters are in the URL, tiles use them directly so they
+  // never fetch unfiltered data first.
+  const dashboardFilters =
+    !isSeeded && urlFilters.length === 0 ? savedFilters : urlFilters;
+  const filtersChanged = !isSameDashboardFilters(
+    dashboardFilters,
+    savedFilters
+  );
+
+  useEffect(() => {
+    if (isSeeded || !dashboard) {
+      return;
+    }
+    // A link that carries filters wins over the saved ones.
+    if (urlFilters.length === 0 && savedFilters.length > 0) {
+      setUrlFilters(savedFilters);
+    }
+    setSeededDashboardId(dashboardId);
+  }, [
+    isSeeded,
+    dashboard,
+    urlFilters.length,
+    savedFilters,
+    setUrlFilters,
+    dashboardId,
+  ]);
+
+  const saveFilters = useMutation(
+    trpc.dashboard.update.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess() {
+        queryClient.invalidateQueries(
+          trpc.dashboard.byId.queryFilter({ id: dashboardId, projectId })
+        );
+        toast('Dashboard filters saved');
+      },
+    })
+  );
 
   const filteredReports = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -235,6 +306,7 @@ function Component() {
         return (
           <div key={report.id}>
             <ReportItem
+              dashboardFilters={dashboardFilters}
               endDate={endDate}
               interval={interval}
               onDelete={(reportId) => deleteReport({ reportId })}
@@ -257,6 +329,7 @@ function Component() {
     [
       filteredReports,
       unsavedViews,
+      dashboardFilters,
       endDate,
       interval,
       range,
@@ -354,6 +427,40 @@ function Component() {
         description="View and manage your reports"
         title={dashboard.name}
       />
+
+      {reports.length > 0 && (
+        <div className="row mb-4 flex-wrap items-center gap-2">
+          <TableFilterPills
+            categories={DASHBOARD_FILTER_CATEGORIES}
+            title="Dashboard filters"
+            urlKey={DASHBOARD_FILTERS_URL_KEY}
+          />
+          {filtersChanged && (
+            <div className="row ml-auto gap-2">
+              <Button
+                onClick={() => setUrlFilters(savedFilters)}
+                size="sm"
+                variant="ghost"
+              >
+                Reset
+              </Button>
+              <Button
+                icon={SaveIcon}
+                loading={saveFilters.isPending}
+                onClick={() =>
+                  saveFilters.mutate({
+                    id: dashboardId,
+                    filters: dashboardFilters,
+                  })
+                }
+                size="sm"
+              >
+                Save filters
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {reports.length === 0 ? (
         <EmptyState

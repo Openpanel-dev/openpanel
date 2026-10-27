@@ -1,4 +1,6 @@
+import { mergeDashboardFilters } from '@openpanel/core/modules/dashboard/dashboard.constants';
 import {
+  type IChartEventFilter,
   type IReportDisplay,
   timeWindows,
 } from '@openpanel/core/modules/report/report.constants';
@@ -82,6 +84,7 @@ export function ReportItem({
   startDate,
   endDate,
   interval,
+  dashboardFilters,
   onDelete,
   onDuplicate,
   onMove,
@@ -94,6 +97,7 @@ export function ReportItem({
   startDate: any;
   endDate: any;
   interval: any;
+  dashboardFilters?: IChartEventFilter[];
   onDelete: (reportId: string) => void;
   onDuplicate: (reportId: string) => void;
   onMove?: (reportId: string) => void;
@@ -229,6 +233,10 @@ export function ReportItem({
             startDate: startDate ?? null,
             endDate: endDate ?? null,
             interval: interval ?? report.interval,
+            globalFilters: mergeDashboardFilters(
+              report.globalFilters,
+              dashboardFilters
+            ),
           }}
         />
       </div>

@@ -10,6 +10,7 @@
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCNotFoundError } from '../../rpc/errors';
+import { zDashboardFilters } from './dashboard.constants';
 
 export const dashboardRouter = createTRPCRouter({
   list: protectedProcedure
@@ -68,7 +69,8 @@ export const dashboardRouter = createTRPCRouter({
     .input(
       z.object({
         id: z.string(),
-        name: z.string(),
+        name: z.string().optional(),
+        filters: zDashboardFilters.optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {

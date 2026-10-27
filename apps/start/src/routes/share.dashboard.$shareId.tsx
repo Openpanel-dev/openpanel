@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
 import { DashboardGrid, useDashboardLayout } from '@/components/dashboard-grid';
 import { EmptyState } from '@/components/empty-state';
+import { ReadOnlyFilterPills } from '@/components/filters/TableFilterPills';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LoginNavbar } from '@/components/login-navbar';
 import { OverviewInterval } from '@/components/overview/overview-interval';
@@ -129,6 +130,7 @@ function RouteComponent() {
               <OverviewInterval />
             </div>
           </div>
+          <ReadOnlyFilterPills filters={share.dashboard.filters} />
         </div>
       </div>
       <div className="mx-auto max-w-7xl p-4">

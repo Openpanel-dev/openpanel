@@ -444,6 +444,7 @@ model Dashboard {
   project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reports        Report[]
   share          ShareDashboard?
+  filters        Json            @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
