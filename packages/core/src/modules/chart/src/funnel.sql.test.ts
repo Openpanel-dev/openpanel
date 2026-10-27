@@ -43,6 +43,7 @@ let buildFunnelBase: typeof import('../funnel.service').buildFunnelBase;
 let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
 let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
 let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
+let funnelTimeToConvertQuery: typeof import('./funnel.sql').funnelTimeToConvertQuery;
 let onlyReportEvents: typeof import('../../report/src/series').onlyReportEvents;
 let deps: import('../../../services').ServiceDeps;
 
@@ -159,8 +160,12 @@ const chartText = async (breakdowns: IChartBreakdown[]) =>
 beforeAll(async () => {
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
   ({ buildFunnelBase } = await import('../funnel.service'));
-  ({ funnelChartQuery, funnelProfilesQuery, funnelStepConditions } =
-    await import('./funnel.sql'));
+  ({
+    funnelChartQuery,
+    funnelProfilesQuery,
+    funnelStepConditions,
+    funnelTimeToConvertQuery,
+  } = await import('./funnel.sql'));
   ({ onlyReportEvents } = await import('../../report/src/series'));
   const { testServiceDeps } = await import('../../../../test/service-deps');
   deps = await testServiceDeps();
@@ -478,5 +483,38 @@ describe('funnel.sql — custom event steps', () => {
   it('parses and resolves', async () => {
     await explain(await chartStatement({ series }));
     await explain(await profilesStatement({ series }));
+  });
+});
+
+describe('funnel.sql / funnelTimeToConvertQuery', () => {
+  it('resolves without breakdowns', async () => {
+    const base = await buildFunnelBase(deps, {
+      ...baseInput(),
+      withStepTimes: true,
+    });
+    const statement = funnelTimeToConvertQuery(base, 'median');
+    expect(render(statement).sql).toContain(
+      'quantileExact(0.5)(step_times[step]'
+    );
+    await explain(statement);
+  });
+
+  it('shares step_events with a step breakdown and a profile breakdown', async () => {
+    const base = await buildFunnelBase(deps, {
+      ...baseInput({
+        breakdowns: [
+          { ...breakdown('properties.plan'), step: 2 },
+          breakdown('profile.properties.plan'),
+        ],
+      }),
+      withStepTimes: true,
+    });
+    const statement = funnelTimeToConvertQuery(base, 'avg');
+    expect(render(statement).sql.match(/AS step_events/g)).toHaveLength(1);
+    await explain(statement);
+  });
+
+  it('leaves step_times out of the chart unless asked', async () => {
+    expect(await chartSql([])).not.toContain('step_times');
   });
 });

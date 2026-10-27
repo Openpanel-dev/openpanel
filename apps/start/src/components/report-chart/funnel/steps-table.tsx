@@ -1,4 +1,8 @@
-import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
+import {
+  alphabetIds,
+  type ITimeToConvertAggregation,
+  timeToConvertAggregations,
+} from '@openpanel/core/modules/report/report.constants';
 import { UsersIcon } from 'lucide-react';
 import { useCallback, useMemo } from 'react';
 import { getPreviousMetric } from '../../../utils/previous-metric';
@@ -12,7 +16,7 @@ import {
   type ReportRowIdentity,
 } from '@/components/report-table/report-data-table';
 import { Button } from '@/components/ui/button';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
@@ -37,6 +41,10 @@ export function StepsTable({
   previous: Funnel | null;
 }) {
   const { report, shareId } = useReportChartContext();
+  const timeToConvert =
+    report.options?.type === 'funnel'
+      ? report.options.timeToConvert
+      : undefined;
   const rows = useMemo(
     () =>
       funnel.steps.map(
@@ -116,6 +124,17 @@ export function StepsTable({
         decorate: 'bar',
         width: 150,
       },
+      ...(timeToConvert
+        ? [
+            {
+              id: 'timeToConvert',
+              header: 'Time to convert',
+              value: (row: StepRow) => row.step.timeToConvert,
+              format: 'minutes' as const,
+              width: 140,
+            },
+          ]
+        : []),
       ...(shareId
         ? []
         : [
@@ -140,12 +159,16 @@ export function StepsTable({
             },
           ]),
     ],
-    [shareId, inspectStep]
+    [shareId, inspectStep, timeToConvert]
   );
 
   return (
     <div className="col">
-      <FunnelMetrics funnel={funnel} previous={previous} />
+      <FunnelMetrics
+        funnel={funnel}
+        previous={previous}
+        timeToConvert={timeToConvert}
+      />
       <ReportDataTable
         columns={columns}
         csvFilename={`${report.name || 'funnel'}${funnel.breakdowns.length ? ` ${funnel.breakdowns.join(' ')}` : ''}`}
@@ -161,20 +184,35 @@ export function StepsTable({
 function FunnelMetrics({
   funnel,
   previous,
+  timeToConvert,
 }: {
   funnel: Funnel;
   previous: Funnel | null;
+  timeToConvert: ITimeToConvertAggregation | undefined;
 }) {
   const number = useNumber();
-  const change = (current: number, before: number | undefined) =>
-    before === undefined ? undefined : (
+  const change = (
+    current: number,
+    before: number | null | undefined,
+    inverted?: boolean
+  ) =>
+    before == null ? undefined : (
       <PreviousDiffIndicatorPure
         {...getPreviousMetric(current, before)}
+        inverted={inverted}
         size="xs"
       />
     );
+  const totalTimeToConvert = timeToConvert ? funnel.timeToConvert : null;
   return (
-    <StatStrip className="border-b md:grid-cols-3" framed={false}>
+    <StatStrip
+      className={
+        totalTimeToConvert === null
+          ? 'border-b md:grid-cols-3'
+          : 'border-b md:grid-cols-4'
+      }
+      framed={false}
+    >
       <Stat
         change={change(funnel.lastStep.percent, previous?.lastStep.percent)}
         label="Conversion"
@@ -190,6 +228,15 @@ function FunnelMetrics({
           detail={`${number.format(funnel.mostDropoffsStep.dropoffCount ?? 0)} dropped after this step`}
           label="Most drop-offs after"
           value={funnel.mostDropoffsStep.event.displayName}
+        />
+      )}
+      {timeToConvert && totalTimeToConvert !== null && (
+        <Stat
+          // Faster is better, so a drop reads as an improvement.
+          change={change(totalTimeToConvert, previous?.timeToConvert, true)}
+          detail={`${timeToConvertAggregations[timeToConvert]}, first to last step`}
+          label="Time to convert"
+          value={fancyMinutes(totalTimeToConvert)}
         />
       )}
     </StatStrip>

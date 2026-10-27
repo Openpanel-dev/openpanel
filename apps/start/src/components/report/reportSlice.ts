@@ -11,6 +11,7 @@ import type {
   IReport,
   IReportInput,
   IReportOptions,
+  ITimeToConvertAggregation,
   zCriteria,
 } from '@openpanel/core/modules/report/report.constants';
 import {
@@ -383,6 +384,22 @@ export const reportSlice = createSlice({
         state.options.yAxisScale = action.payload;
       }
     },
+    changeTimeToConvert(
+      state,
+      action: PayloadAction<ITimeToConvertAggregation | undefined>
+    ) {
+      state.dirty = true;
+      if (!state.options || state.options.type !== 'funnel') {
+        state.options = {
+          type: 'funnel',
+          funnelGroup: undefined,
+          funnelWindow: undefined,
+          timeToConvert: action.payload,
+        };
+      } else {
+        state.options.timeToConvert = action.payload;
+      }
+    },
     changeOptions(state, action: PayloadAction<IReportOptions | undefined>) {
       state.dirty = true;
       state.options = action.payload || undefined;
@@ -503,6 +520,7 @@ export const {
   changeFunnelGroup,
   changeFunnelWindow,
   changeConversionYAxisScale,
+  changeTimeToConvert,
   changeOptions,
   changeSankeyMode,
   changeSankeySteps,

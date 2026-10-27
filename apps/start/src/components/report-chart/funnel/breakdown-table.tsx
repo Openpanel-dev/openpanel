@@ -56,8 +56,10 @@ export function BreakdownTable({
   onSelect,
 }: Props) {
   const {
-    report: { name },
+    report: { name, options },
   } = useReportChartContext();
+  const showTimeToConvert =
+    options?.type === 'funnel' && options.timeToConvert !== undefined;
   const rows = useMemo(
     () =>
       data.current.map(
@@ -101,6 +103,17 @@ export function BreakdownTable({
         header: 'Completed',
         value: (row) => row.funnel.lastStep.count,
       },
+      ...(showTimeToConvert
+        ? [
+            {
+              id: 'timeToConvert',
+              header: 'Time to convert',
+              value: (row: BreakdownRow) => row.funnel.timeToConvert,
+              format: 'minutes' as const,
+              width: 140,
+            },
+          ]
+        : []),
       {
         id: 'dropoff',
         header: 'Most drop-off after',
@@ -119,7 +132,7 @@ export function BreakdownTable({
         })
       ),
     ],
-    [steps]
+    [steps, showTimeToConvert]
   );
 
   return (
