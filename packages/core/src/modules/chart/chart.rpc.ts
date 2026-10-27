@@ -238,6 +238,7 @@ export const chartRouter = createTRPCRouter({
           ),
         funnelWindow: z.number().optional(),
         funnelGroup: z.string().optional(),
+        holdProperties: z.array(z.string()).optional(),
         breakdowns: z.array(z.object({ name: z.string() })).optional(),
         breakdownValues: z.array(z.string()).optional(),
         range: zRange,

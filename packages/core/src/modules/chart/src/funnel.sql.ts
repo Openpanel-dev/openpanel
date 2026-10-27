@@ -27,6 +27,7 @@ import {
   collectProfilePropertyKeys,
   extractCohortId,
   getSelectPropertyKey,
+  holdPropertyExpression,
   isAllCohortsBreakdown,
   isKnownEventField,
   latestProfileValue,
@@ -61,6 +62,9 @@ const FUNNEL_JOIN_COLUMNS = [...JOINABLE_PROFILE_COLUMNS, 'id'];
 /** The funnel CTE's events alias — `getSelectPropertyKey` needs the same one. */
 const EVENTS_ALIAS = 'events';
 
+/** The per-(group, held values) windowFunnel CTE, before it is collapsed per group. */
+const HELD_FUNNEL_ALIAS = 'held_funnel';
+
 /** The per-group array of step matches the breakdown replays read. */
 const STEP_EVENTS_ALIAS = 'step_events';
 
@@ -86,6 +90,11 @@ export interface FunnelBaseInput {
   /** The raw `funnelGroup` option — `'group'` forces the groups ARRAY JOIN. */
   funnelGroup?: string;
   cohortMetadata: Map<string, CohortMetadata>;
+  /**
+   * Event fields every step must share a value of, already vetted with
+   * `knownHoldProperties`. Empty means no hold.
+   */
+  holdProperties?: string[];
   /** Travels to `session_timezone`; `toDateTime('…')` parses in it. */
   timezone: string;
 }
@@ -342,6 +351,43 @@ function profileJoinFilters(eventSeries: IChartEvent[]): IChartEventFilter[] {
   );
 }
 
+/**
+ * With held properties, windowFunnel runs once per (group, held values), so a
+ * user who viewed in one country and bought in another never chains the two.
+ * This folds those rows back into one per group: the deepest level any single
+ * held value reached, with the breakdowns and profile of that same row. A
+ * user is still counted once, and step 1 is unchanged.
+ *
+ * Columns are qualified with the CTE name because the aliases reuse them: an
+ * unqualified `level` inside argMax would resolve to `max(level)` and nest
+ * aggregates.
+ */
+function collapseHeldFunnel(
+  input: FunnelBaseInput,
+  primaryKey: SqlFragment,
+  groupedBreakdownKeys: SqlFragment[]
+): SqlFragment {
+  const column = (name: string) => compiledText(`${HELD_FUNNEL_ALIAS}.${name}`);
+  const selects: SqlFragment[] = [
+    primaryKey,
+    sql`max(${column('level')}) AS level`,
+  ];
+  if (input.group === 'session_id') {
+    selects.push(
+      sql`argMax(${column('profile_id')}, ${column('level')}) AS profile_id`
+    );
+  }
+  input.breakdowns.forEach((breakdown, index) => {
+    const alias = compiledText(`b_${index}`);
+    selects.push(
+      breakdown.name.startsWith('group.')
+        ? alias
+        : sql`argMax(${column(`b_${index}`)}, ${column('level')}) AS ${alias}`
+    );
+  });
+  return sql`SELECT ${sql.join(selects)} FROM ${compiledText(HELD_FUNNEL_ALIAS)} GROUP BY ${sql.join([primaryKey, ...groupedBreakdownKeys])}`;
+}
+
 export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const { projectId, eventSeries, breakdowns, group } = input;
 
@@ -385,12 +431,16 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   }
   cteSelects.push(...selects);
 
-  const groupByKeys: SqlFragment[] = [primaryKey];
+  const groupedBreakdownKeys: SqlFragment[] = [];
   breakdowns.forEach((breakdown, index) => {
     if (breakdown.name.startsWith('group.')) {
-      groupByKeys.push(compiledText(`b_${index}`));
+      groupedBreakdownKeys.push(compiledText(`b_${index}`));
     }
   });
+  const holdKeys = (input.holdProperties ?? []).map((name) =>
+    holdPropertyExpression(name, EVENTS_ALIAS)
+  );
+  const groupByKeys = [primaryKey, ...groupedBreakdownKeys, ...holdKeys];
 
   const dateRange = sql`created_at BETWEEN toDateTime(${sql.string(input.startDate)}) AND toDateTime(${sql.string(input.endDate)})`;
   const eventNames = eventSeries.flatMap(eventNamesOf);
@@ -438,10 +488,15 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `
     : sql.empty;
 
-  // windowFunnel is computed per primary key, so the `funnel` CTE only has to
-  // drop the level-0 rows — no re-aggregation.
+  const sessionFunnel =
+    holdKeys.length > 0
+      ? sql`${compiledText(HELD_FUNNEL_ALIAS)} AS (${funnelCte}), session_funnel AS (${collapseHeldFunnel(input, primaryKey, groupedBreakdownKeys)})`
+      : sql`session_funnel AS (${funnelCte})`;
+
+  // `session_funnel` holds one row per primary key (held values are already
+  // folded away), so the `funnel` CTE only has to drop the level-0 rows.
   return {
-    ctes: sql`WITH ${groupsCte}session_funnel AS (${funnelCte}), funnel AS (SELECT * FROM session_funnel WHERE level != 0) `,
+    ctes: sql`WITH ${groupsCte}${sessionFunnel}, funnel AS (SELECT * FROM session_funnel WHERE level != 0) `,
     eventSeries,
     breakdowns,
     group,

@@ -57,6 +57,11 @@ export interface ConversionQueryInput {
   breakdownSelects: SqlFragment[];
   /** Compiled breakdown expressions, as written in the inner GROUP BY. */
   breakdownExpressions: SqlFragment[];
+  /**
+   * Compiled expressions of the event properties both steps must share a
+   * value of. Empty or absent means no hold.
+   */
+  holdExpressions?: SqlFragment[];
   /** Profile columns to select in the LEFT ANY JOIN, or [] for no join. */
   profileJoinFields: string[];
   needsGroupArrayJoin: boolean;
@@ -100,6 +105,27 @@ function groupJoin(needed: boolean, projectId: string): SqlFragment {
     : sql.empty;
 }
 
+/**
+ * With held properties, windowFunnel runs per (group, held values), so a step
+ * pair only converts when both carry the same value. This folds those rows
+ * back to one per group (and breakdown), keeping the best held value's
+ * result and its bucket, so a group is counted once in `total_first`.
+ * Columns are qualified because the aliases reuse their names.
+ */
+function collapseHeldRows(
+  groupKey: SqlFragment,
+  breakdownAliases: SqlFragment[],
+  funnelRows: SqlFragment
+): SqlFragment {
+  const keys = [groupKey, ...breakdownAliases];
+  return sql`SELECT
+          ${sql.join(keys)},
+          argMax(held.event_day, held.steps) AS event_day,
+          max(held.steps) AS steps
+        FROM ${funnelRows} AS held
+        GROUP BY ${sql.join(keys)}`;
+}
+
 /** One windowFunnel scan per bucket. */
 export function conversionQuery(input: ConversionQueryInput): SqlFragment {
   const {
@@ -116,6 +142,7 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
     secondEventWhere,
     breakdownSelects,
     breakdownExpressions,
+    holdExpressions = [],
     profileJoinFields,
     needsGroupArrayJoin,
     cohortJoins,
@@ -146,13 +173,11 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
     breakdownSelects.length > 0
       ? sql`${sql.join(breakdownSelects)},`
       : sql.empty;
+  const innerGroupBy = [...breakdownExpressions, ...holdExpressions];
   const innerBreakdownGroupBy =
-    breakdownExpressions.length > 0
-      ? sql`, ${sql.join(breakdownExpressions)}`
-      : sql.empty;
+    innerGroupBy.length > 0 ? sql`, ${sql.join(innerGroupBy)}` : sql.empty;
 
-  return sql`SELECT ${outerSelect} FROM (
-        (SELECT
+  const funnelRows = sql`(SELECT
           ${groupKey},
           any(${intervalBucket(interval)}) as event_day,
           ${innerBreakdownSelects}
@@ -168,6 +193,9 @@ export function conversionQuery(input: ConversionQueryInput): SqlFragment {
         WHERE project_id = ${sql.string(projectId)}
           ${eventNames.includes('*') ? sql.empty : sql`AND events.name IN ${sql.array('String', eventNames)}`}
           AND ${dateRange}
-        GROUP BY ${groupKey}${innerBreakdownGroupBy})
+        GROUP BY ${groupKey}${innerBreakdownGroupBy})`;
+
+  return sql`SELECT ${outerSelect} FROM (
+        ${holdExpressions.length > 0 ? collapseHeldRows(groupKey, breakdownAliases, funnelRows) : funnelRows}
       ) WHERE steps > 0 GROUP BY ${sql.join(outerKeys)} ORDER BY ${sql.join(outerKeys.map((key) => sql`${key} ASC`))}`;
 }
