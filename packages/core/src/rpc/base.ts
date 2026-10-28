@@ -8,6 +8,7 @@ import type { Logger } from '../logger';
 import { runWithAlsSession } from '../shared/als-session';
 import { type CookieOptions, serializeCookie } from '../shared/cookie';
 import { classifyDriverError } from '../shared/driver-errors';
+import { BadRequestError } from '../shared/errors';
 import { EMPTY_SESSION } from '../shared/session';
 import { cancelledCallError, raceCancellation } from './deadline';
 import { TRPCForbiddenError } from './errors';
@@ -90,20 +91,24 @@ const stopWhenCancelled = t.middleware(async ({ ctx, next }) => {
 });
 
 /**
- * Turns a driver failure caused by the CALLER into the status it deserves.
+ * Turns a failure caused by the CALLER into the status it deserves. Code below
+ * the transport says so with a `BadRequestError`; drivers only label theirs.
  *
  * A malformed id raises Prisma P2023 before any `findUnique` null check can
  * run, and the driver's message (for ClickHouse, the generated SQL) would
  * otherwise reach the client as a 500. Anything `classifyDriverError` does not
  * recognise stays a 500, because a query bug is not the caller's mistake.
  */
-const mapDriverErrors = t.middleware(async ({ next }) => {
+const mapCallerErrors = t.middleware(async ({ next }) => {
   const result = await next();
   if (result.ok) {
     return result;
   }
 
   const cause = result.error.cause;
+  if (cause instanceof BadRequestError) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: cause.message, cause });
+  }
   const failure = classifyDriverError(cause);
   if (!failure) {
     return result;
@@ -115,7 +120,7 @@ const mapDriverErrors = t.middleware(async ({ next }) => {
 /** The bare procedure. It authenticates NOTHING; prefer the builders below. */
 export const procedure = t.procedure
   .use(stopWhenCancelled)
-  .use(mapDriverErrors);
+  .use(mapCallerErrors);
 
 // Authentication runs before input parsing: tRPC runs `.use` middleware ahead
 // of the `.input` parser, so an anonymous caller gets UNAUTHORIZED whatever it

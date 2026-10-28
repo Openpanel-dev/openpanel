@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MS_PER_DAY } from '../../shared/time.constants';
 
 export type ImportProviderId = 'umami' | 'mixpanel' | 'amplitude';
 export type ImportProviderType = 'file' | 'api';
@@ -85,7 +86,6 @@ export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
 
 /** Twenty years of daily export chunks; a wider range is a typo, not a history. */
 export const MAX_IMPORT_RANGE_DAYS = 20 * 366;
-const MS_PER_DAY = 86_400_000;
 
 /** Days covered by a `YYYY-MM-DD` range, inclusive; `NaN` when either end is not a date. */
 export function getImportRangeDays(from: string, to: string): number {

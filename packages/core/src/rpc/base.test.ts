@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { testCoreConfig } from '../../test/config-fixture';
 import { stubHttpCtx, TEST_SESSION } from '../../test/rpc-fixtures';
 import type { CookieOptions } from '../shared/cookie';
+import { BadRequestError } from '../shared/errors';
 import * as baseModule from './base';
 import {
   createRateLimitMiddleware,
@@ -372,4 +373,21 @@ test('a limiter rejection stops the procedure and surfaces as 429', async () => 
   expect(ran).toBe(false);
   expect(response.status).toBe(429);
   expect(logger.lines[0]?.message).toBe('trpc rate limited');
+});
+
+test('a BadRequestError from below the transport answers BAD_REQUEST with its message', async () => {
+  const { ctx } = stubHttpCtx();
+  const router = createTRPCRouter({
+    series: procedure.query(() => {
+      throw new BadRequestError('Pick a shorter range.');
+    }),
+  });
+  const caller = router.createCaller(
+    await makeTrpcContext(ctx, new Headers(), { cookieOptions: COOKIE_OPTIONS })
+  );
+
+  await expect(caller.series()).rejects.toMatchObject({
+    code: 'BAD_REQUEST',
+    message: 'Pick a shorter range.',
+  });
 });

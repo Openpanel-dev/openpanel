@@ -9,12 +9,12 @@ import type {
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
 import { resolveProjectAccess } from '../../../shared/access-lookups';
+import { MS_PER_DAY } from '../../../shared/time.constants';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 // A brand-new project gets 48h to send its first event before we reach out.
-const NO_DATA_AFTER_MS = 2 * DAY_MS;
+const NO_DATA_AFTER_MS = 2 * MS_PER_DAY;
 // An active project whose newest event is older than this counts as stalled.
-const STALLED_AFTER_MS = 7 * DAY_MS;
+const STALLED_AFTER_MS = 7 * MS_PER_DAY;
 const DEFAULT_DASHBOARD_URL = 'https://dashboard.openpanel.dev';
 
 interface OrgAlert {
