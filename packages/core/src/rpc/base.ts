@@ -2,6 +2,7 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { has } from 'ramda';
 import superjson from 'superjson';
 import { ZodError, z } from 'zod';
+import type { IpHeaderConfig } from '../config';
 import type { HttpCtx, Session } from '../context';
 import type { Logger } from '../logger';
 import { runWithAlsSession } from '../shared/als-session';
@@ -437,6 +438,8 @@ export type EnforceRateLimit = (
     headers: Headers;
     ip: string;
     remoteAddress: string | undefined;
+    /** The deployment's `TRUSTED_IP_HEADER_ORDER`, which picks the bucket. */
+    ipHeaders: IpHeaderConfig;
     logger: Logger;
     /** tRPC procedure path - blocks are scoped to it. */
     path: string;
@@ -451,6 +454,7 @@ export const createRateLimitMiddleware =
         headers: ctx.headers,
         ip: ctx.ip,
         remoteAddress: ctx.remoteAddress,
+        ipHeaders: ctx.config.ipHeaders,
         logger: ctx.logger,
         path,
         ...options,

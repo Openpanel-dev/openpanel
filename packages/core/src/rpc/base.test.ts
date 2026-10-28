@@ -336,6 +336,7 @@ test('the rate limit middleware hands the limiter ctx fields, not a request', as
   expect(calls[0]).toEqual({
     headers: ctx.headers,
     ip: '203.0.113.7',
+    ipHeaders: ctx.config.ipHeaders,
     logger: ctx.logger,
     path: 'signIn',
     max: 5,
