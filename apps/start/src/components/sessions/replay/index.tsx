@@ -63,24 +63,30 @@ function ReplayChunkLoader({
   const { addEvent, refreshDuration } = useReplayContext();
 
   useEffect(() => {
-    function recursive(fromIndex: number) {
+    let cancelled = false;
+
+    function loadFrom(index: number) {
       queryClient
         .fetchQuery(
           trpc.session.replayChunksFrom.queryOptions({
             sessionId,
             projectId,
-            fromIndex,
+            fromIndex: index,
           })
         )
         .then((res) => {
-          res.data.forEach((row) => {
-            row?.events?.forEach((event) => {
+          if (cancelled) {
+            return;
+          }
+          for (const row of res.data) {
+            for (const event of row?.events ?? []) {
               addEvent(event);
-            });
-          });
+            }
+          }
           refreshDuration();
-          if (res.hasMore) {
-            recursive(fromIndex + res.data.length);
+          const advanced = res.nextIndex > index;
+          if (res.hasMore && advanced) {
+            loadFrom(res.nextIndex);
           }
         })
         .catch(() => {
@@ -88,7 +94,10 @@ function ReplayChunkLoader({
         });
     }
 
-    recursive(fromIndex);
+    loadFrom(fromIndex);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return null;
@@ -222,7 +231,7 @@ function ReplayContent({
       </div>
       {hasReplay && hasMore && (
         <ReplayChunkLoader
-          fromIndex={firstBatch?.data?.length ?? 0}
+          fromIndex={firstBatch?.nextIndex ?? 0}
           projectId={projectId}
           sessionId={sessionId}
         />
