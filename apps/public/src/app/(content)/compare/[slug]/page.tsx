@@ -91,7 +91,7 @@ export default async function ComparePage({
     <div>
       <Script
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(buildJsonLd(data, url(`/compare/${slug}`))),
+          __html: JSON.stringify(buildJsonLd(data, url(data.url))),
         }}
         id="compare-schema"
         strategy="beforeInteractive"

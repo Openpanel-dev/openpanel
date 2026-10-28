@@ -14,3 +14,9 @@ export const formatEventsCount = (value: number) => {
   }
   return value.toString();
 };
+
+// Content slugs reach the filesystem and the page's JSON-LD straight from the
+// URL, where Next has already decoded `%2F`; only plain file names get through.
+const CONTENT_SLUG = /^[a-z0-9-]+$/;
+
+export const isContentSlug = (slug: string) => CONTENT_SLUG.test(slug);
