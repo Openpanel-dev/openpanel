@@ -2,15 +2,22 @@
 /**
  * Verify an export directory against its manifest before importing it.
  *
- * Catches the two things that actually go wrong: a file that never finished
- * transferring (truncated gzip) and a file that is silently missing.
+ * Catches the things that actually go wrong: a file that never finished
+ * transferring (truncated gzip), a file that is silently missing, and a file
+ * the manifest does not list (left over from an earlier export, and imported
+ * anyway, since the importer reads the directory).
  *
  *   node verify-export.mjs ./op-export
  *
  * Exits non-zero if anything is wrong, so it chains: `node verify-export.mjs
  * ./op-export && node import-to-cloud.mjs --dir ./op-export ...`
  */
-import { createReadStream, existsSync, readFileSync } from 'node:fs';
+import {
+  createReadStream,
+  existsSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { createGunzip } from 'node:zlib';
@@ -90,6 +97,18 @@ for (const entry of entries) {
   checked++;
 }
 
+const listed = new Set(entries.map((entry) => `${entry.table}/${entry.file}`));
+for (const table of readdirSync(dir, { withFileTypes: true })) {
+  if (!table.isDirectory()) {
+    continue;
+  }
+  for (const file of readdirSync(path.join(dir, table.name))) {
+    if (!listed.has(`${table.name}/${file}`)) {
+      problems.push(`UNLISTED  ${table.name}/${file} — not in manifest.jsonl`);
+    }
+  }
+}
+
 console.log(`Checked ${checked}/${entries.length} files in ${dir}\n`);
 for (const [table, rows] of Object.entries(totals)) {
   console.log(`   ${table.padEnd(24)} ${String(rows).padStart(10)} rows`);
@@ -107,10 +126,13 @@ if (problems.length > 0) {
   for (const problem of problems) {
     console.error(`   ${problem}`);
   }
-  console.error('\n   Re-run your rsync — it will fetch just the bad files.');
+  console.error(
+    '\n   Re-run your rsync — it will fetch just the bad files. Delete UNLISTED'
+  );
+  console.error('   files, or re-export into an empty directory.');
   process.exit(1);
 }
 
 console.log(
-  '\n✅ Export is complete — no missing, truncated or corrupt files.'
+  '\n✅ Export is complete — no missing, truncated, corrupt or unlisted files.'
 );

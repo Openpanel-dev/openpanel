@@ -42,6 +42,7 @@ import {
   appendFileSync,
   createReadStream,
   existsSync,
+  lstatSync,
   readFileSync,
 } from 'node:fs';
 import { readdir } from 'node:fs/promises';
@@ -56,6 +57,10 @@ const IMPORT_ORDER = [
   'events',
   'session_replay_chunks',
 ];
+
+// What `openpanel export` writes. Anything else in the dump is ignored, which
+// also keeps a crafted filename (one with a newline, say) out of the state file.
+const EXPORT_FILE_NAME = /^[\w.-]+\.jsonl(\.gz)?$/;
 
 const CH_SETTINGS = {
   // The self-hosted schema may be slightly ahead of / behind the target.
@@ -291,6 +296,11 @@ async function main() {
     .digest('hex')
     .slice(0, 12);
   const stateFile = path.join(args.dir, `.import-state-${fingerprint}`);
+  // The dump comes from someone else's machine; a planted link would make the
+  // importer append to whatever file it points at.
+  if (lstatSync(stateFile, { throwIfNoEntry: false })?.isSymbolicLink()) {
+    throw new Error(`${stateFile} is a symbolic link; refusing to write to it`);
+  }
   const state = new Set(
     existsSync(stateFile)
       ? readFileSync(stateFile, 'utf8').split('\n').filter(Boolean)
@@ -317,7 +327,7 @@ async function main() {
     }
 
     const files = (await readdir(dir))
-      .filter((f) => f.includes('.jsonl'))
+      .filter((f) => EXPORT_FILE_NAME.test(f))
       .sort();
     if (files.length === 0) {
       continue;
