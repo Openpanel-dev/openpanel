@@ -35,12 +35,16 @@ async function main() {
     const nextHour = new Date(currentDate.getTime() + MS_PER_HOUR);
     console.log(`Processing hour: ${currentDate.toISOString()}`);
 
+    // Imported session ids can repeat across projects, so the mutation repeats
+    // the selection's project and hour rather than matching on id alone.
+    const hourOfProject = sql`created_at >= ${sql.string(datetime(currentDate))}
+        AND created_at < ${sql.string(datetime(nextHour))}
+        AND project_id = ${sql.string(PROJECT_ID)}`;
+
     const sessions = await chQuery<{ id: string }>(sql`
       SELECT id
       FROM ${sql.id(TABLE_NAMES.sessions)}
-      WHERE created_at >= ${sql.string(datetime(currentDate))}
-        AND created_at < ${sql.string(datetime(nextHour))}
-        AND project_id = ${sql.string(PROJECT_ID)}
+      WHERE ${hourOfProject}
       LIMIT ${sql.uint64(SESSIONS_PER_HOUR)}`);
 
     if (sessions.length === 0) {
@@ -70,7 +74,7 @@ async function main() {
     )}, revenue)`;
 
     const statement =
-      sql`ALTER TABLE ${sql.id(TABLE_NAMES.sessions)} UPDATE revenue = ${updateExpr} WHERE id IN ${sql.array('String', sessionIds)}`.toStatement();
+      sql`ALTER TABLE ${sql.id(TABLE_NAMES.sessions)} UPDATE revenue = ${updateExpr} WHERE ${hourOfProject} AND id IN ${sql.array('String', sessionIds)}`.toStatement();
 
     console.log(`Executing update: ${statement.query}`);
 

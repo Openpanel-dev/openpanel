@@ -113,8 +113,12 @@ const DEDUP_KEY = `cityHash64(
   )
 )`;
 
+function sqlString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
 function projectClause(project: string | null): string {
-  return project ? ` AND project_id = '${project.replace(/'/g, "''")}'` : '';
+  return project ? ` AND project_id = ${sqlString(project)}` : '';
 }
 
 async function query<T>(sql: string): Promise<T[]> {
@@ -256,30 +260,34 @@ async function deleteDuplicates(args: Args): Promise<void> {
       `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
       projectClause(args.project);
 
-    // Extra rows = every row in a duplicate group except the lowest id.
-    const extras = await query<{ id: string }>(`
-      SELECT id FROM (
-        SELECT id, row_number() OVER (
-          PARTITION BY ${DEDUP_KEY} ORDER BY id ASC
-        ) AS rn
+    // Extra rows = every row in a duplicate group except the lowest id. The
+    // delete matches on (project_id, id), so a copy that shares the survivor's
+    // id cannot be removed without removing the survivor too; it is skipped.
+    const extras = await query<{ project_id: string; id: string }>(`
+      SELECT project_id, id FROM (
+        SELECT project_id, id,
+          row_number() OVER w AS rn,
+          min(id) OVER w AS survivor_id
         FROM ${TABLE_NAMES.events}
         WHERE ${where}
-      ) WHERE rn > 1
+        WINDOW w AS (PARTITION BY ${DEDUP_KEY} ORDER BY id ASC)
+      ) WHERE rn > 1 AND id != survivor_id
     `);
 
     if (extras.length === 0) {
       continue;
     }
 
-    const ids = extras.map((e) => e.id);
     console.log(
-      `${startLiteral} → ${ids.length.toLocaleString()} duplicate rows to delete`
+      `${startLiteral} → ${extras.length.toLocaleString()} duplicate rows to delete`
     );
-    grandTotal += ids.length;
+    grandTotal += extras.length;
 
-    for (let i = 0; i < ids.length; i += args.batch) {
-      const slice = ids.slice(i, i + args.batch);
-      const idList = slice.map((id) => `'${id}'`).join(',');
+    for (let i = 0; i < extras.length; i += args.batch) {
+      const slice = extras.slice(i, i + args.batch);
+      const rowList = slice
+        .map((row) => `(${sqlString(row.project_id)},${sqlString(row.id)})`)
+        .join(',');
       // Scope the mutation to this bucket's time range so it only touches the
       // relevant monthly partition (and the primary index, when --project is
       // set) instead of scanning all history — `id` alone is not in the sort
@@ -288,7 +296,7 @@ async function deleteDuplicates(args: Args): Promise<void> {
         query:
           `ALTER TABLE ${target} DELETE WHERE ` +
           `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
-          `${projectClause(args.project)} AND id IN (${idList})`,
+          `${projectClause(args.project)} AND (project_id, id) IN (${rowList})`,
       });
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
