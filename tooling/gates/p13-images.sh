@@ -20,7 +20,10 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
-readonly RUN_DIR="${P13_IMAGES_RUN_DIR:-/tmp/openpanel-p13-images}"
+# A fresh private directory by default: a fixed name under /tmp can be created
+# first by another local user, who then controls where the logs are written.
+RUN_DIR="${P13_IMAGES_RUN_DIR:-$(mktemp -d "${TMPDIR:-/tmp}/openpanel-p13-images.XXXXXX")}"
+readonly RUN_DIR
 readonly API_BUILD_LOG="$RUN_DIR/api-build.log"
 readonly DASHBOARD_BUILD_LOG="$RUN_DIR/dashboard-build.log"
 readonly API_LOG="$RUN_DIR/api.log"
