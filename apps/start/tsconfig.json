@@ -5,7 +5,7 @@
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022", "ES2024.String", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
 
     /* Bundler mode */
