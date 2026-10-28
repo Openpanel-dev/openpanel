@@ -108,7 +108,7 @@ export async function getConversion(
   );
 
   const cohortIds = collectBreakdownCohortIds(knownBreakdowns);
-  const cohortMetadata = await fetchCohortsMetadata(deps, cohortIds);
+  const cohortMetadata = await fetchCohortsMetadata(deps, projectId, cohortIds);
   const cohortJoins = cohortIds.map((id) =>
     buildInlineCohortJoin(id, projectId, 'events')
   );

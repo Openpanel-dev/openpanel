@@ -441,3 +441,46 @@ describe('getChartBucketProfiles', () => {
     ).rejects.toThrow(/Refusing to inline identifier/);
   });
 });
+
+describe('getRetentionChart from a shared report', () => {
+  const nameFilter = (operator: 'is' | 'isNot', value: string) => ({
+    id: 'n',
+    name: 'name',
+    operator,
+    value: [value],
+  });
+  const savedReport = (
+    chartType: IReportInput['chartType'],
+    operator: 'is' | 'isNot'
+  ) =>
+    ({
+      ...report({
+        chartType,
+        series: [
+          pageView({ id: 'A', filters: [nameFilter(operator, 'signup')] }),
+          pageView({ id: 'B', filters: [nameFilter('is', 'purchase')] }),
+        ],
+      }),
+      id: 'report_1',
+    }) as unknown as Parameters<typeof service.getRetentionChart>[0];
+  const input = {
+    projectId: TEST_PROJECT_ID,
+    firstEvent: ['page_view'],
+    secondEvent: ['page_view'],
+    criteria: 'on_or_after' as const,
+    interval: 'day' as const,
+    range: '30d' as const,
+  };
+
+  it('refuses a report that is not a retention report', async () => {
+    await expect(
+      service.getRetentionChart(savedReport('linear', 'is'), input)
+    ).rejects.toThrow('Report is not a retention report');
+  });
+
+  it('refuses an excluded event as the cohort selector', async () => {
+    await expect(
+      service.getRetentionChart(savedReport('retention', 'isNot'), input)
+    ).rejects.toThrow('Report must have at least 2 event series');
+  });
+});
