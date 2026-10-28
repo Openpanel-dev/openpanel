@@ -47,9 +47,13 @@ export async function getProjectById(deps: DbScope, id: string) {
   return res;
 }
 
-/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. Empty cache name, so the Redis key is `cachable::<id>`. */
+/**
+ * L1 LRU (60s) + L2 Redis, one instance per Postgres client. Named so its keys
+ * never meet `getClientByIdCached`'s `cachable::<id>`: a project id is a slug
+ * of a user-chosen name and can spell out a client id.
+ */
 export const getProjectByIdCached = cacheablePerDb(
-  '',
+  'getProjectById',
   getProjectById,
   DAY_IN_SECONDS
 );
