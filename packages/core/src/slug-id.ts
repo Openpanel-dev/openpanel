@@ -15,6 +15,18 @@ const LONG_SUFFIX_DIGITS = 8;
 const SHORT_SUFFIX_ATTEMPTS = 5;
 const MAX_ATTEMPTS = 10;
 const NUMERIC_SUFFIX = /-\d{4}$/;
+// Session buffer keys are `session:{projectId}:{deviceId}` next to fixed
+// `session:<segment>:…` keys, so a project id equal to a segment could write
+// over another project's session state. The session keys are spread over the
+// buffer and the session module, so slug-id.test.ts scans the source for them.
+export const RESERVED_PROJECT_IDS = new Set([
+  'end',
+  'hwm',
+  'profile',
+  'projects',
+  'reaper',
+  'wallclock',
+]);
 
 function randomSuffix(digits: number): string {
   const lowest = 10 ** (digits - 1);
@@ -37,7 +49,8 @@ export async function getId(
 
   const base = slug(name);
   const unsuffixedBase = base.replace(NUMERIC_SUFFIX, '');
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  const isReserved = tableName === 'project' && RESERVED_PROJECT_IDS.has(base);
+  for (let attempt = isReserved ? 1 : 0; attempt < MAX_ATTEMPTS; attempt++) {
     const digits =
       attempt <= SHORT_SUFFIX_ATTEMPTS
         ? SHORT_SUFFIX_DIGITS
