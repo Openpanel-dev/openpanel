@@ -78,6 +78,29 @@ const overviewProcedure = publicProcedure.use(
   }
 );
 
+interface DateRange {
+  startDate: string;
+  endDate: string;
+}
+
+/** Ends a range at the organization's subscription cutoff, if it has one. */
+async function clampToSubscriptionEnd(
+  ctx: ServiceDeps,
+  projectId: string,
+  range: DateRange
+): Promise<DateRange> {
+  const endDate = await getOrganizationSubscriptionChartEndDate(
+    ctx,
+    projectId,
+    range.endDate
+  );
+  if (!endDate) {
+    return range;
+  }
+  const startsAfterCutoff = new Date(range.startDate) > new Date(endDate);
+  return { startDate: startsAfterCutoff ? endDate : range.startDate, endDate };
+}
+
 function getCurrentAndPrevious<
   T extends {
     startDate?: string | null;
@@ -90,36 +113,22 @@ function getCurrentAndPrevious<
   const previous = getChartPrevStartEndDate(current);
 
   return async <R>(
-    fn: (input: T & { startDate: string; endDate: string }) => Promise<R>
+    fn: (input: T & DateRange) => Promise<R>
   ): Promise<{
     current: R;
     previous: R | null;
   }> => {
-    const endDate = await getOrganizationSubscriptionChartEndDate(
-      ctx,
-      input.projectId,
-      current.endDate
-    );
-    if (endDate) {
-      current.endDate = endDate;
-      // Only expired trial scenarios
-      if (new Date(current.startDate) > new Date(current.endDate)) {
-        current.startDate = current.endDate;
-      }
-    }
-    const res = await Promise.all([
-      fn({
-        ...input,
-        startDate: current.startDate,
-        endDate: current.endDate,
-      }),
+    // Both ranges are clamped: after an expired trial the previous period can
+    // still end past the cutoff.
+    const [currentRange, previousRange] = await Promise.all([
+      clampToSubscriptionEnd(ctx, input.projectId, current),
       fetchPrevious
-        ? fn({
-            ...input,
-            startDate: previous.startDate,
-            endDate: previous.endDate,
-          })
-        : Promise.resolve(null),
+        ? clampToSubscriptionEnd(ctx, input.projectId, previous)
+        : null,
+    ]);
+    const res = await Promise.all([
+      fn({ ...input, ...currentRange }),
+      previousRange ? fn({ ...input, ...previousRange }) : null,
     ]);
 
     return {

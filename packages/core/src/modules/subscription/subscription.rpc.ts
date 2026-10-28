@@ -39,7 +39,10 @@ export const subscriptionRouter = createTRPCRouter({
   usage: protectedProcedure
     .input(z.object({ organizationId: z.string() }))
     .query(({ input, ctx }) =>
-      ctx.services.subscription.getUsage(input.organizationId)
+      ctx.services.subscription.getUsage(
+        ctx.session.userId,
+        input.organizationId
+      )
     ),
 
   cancelSubscription: protectedProcedure

@@ -2,7 +2,7 @@ import { FREE_PRODUCT_IDS } from '@openpanel/payments';
 import { subscriptionBlocksDashboard } from '@openpanel/payments/subscription-state';
 import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import BillingPrompt from '@/components/organization/billing-prompt';
 import { useProjectDocumentTitle } from '@/hooks/use-project-document-title';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -20,18 +20,29 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId')({
     };
   },
   loader: async ({ context, params }) => {
+    const projectQuery = context.trpc.project.getProjectWithClients.queryOptions(
+      { projectId: params.projectId }
+    );
     await Promise.all([
       context.queryClient.prefetchQuery(
         context.trpc.organization.get.queryOptions({
           organizationId: params.organizationId,
         })
       ),
-      context.queryClient.prefetchQuery(
-        context.trpc.project.getProjectWithClients.queryOptions({
-          projectId: params.projectId,
-        })
-      ),
+      context.queryClient.prefetchQuery(projectQuery),
     ]);
+    // The billing gate below reads the URL's organization, so it must be the
+    // one that owns the project.
+    const project = context.queryClient.getQueryData(projectQuery.queryKey);
+    if (project && project.organizationId !== params.organizationId) {
+      throw redirect({
+        to: '/$organizationId/$projectId',
+        params: {
+          organizationId: project.organizationId,
+          projectId: params.projectId,
+        },
+      });
+    }
   },
 });
 
