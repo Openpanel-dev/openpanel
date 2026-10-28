@@ -4,9 +4,10 @@ import {
   isValidModelId,
   MODEL_STORAGE_KEY,
 } from '@openpanel/core/modules/assistant/assistant.constants';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChatComposer } from './chat-composer';
 import { ChatEmpty } from './chat-empty';
+import { takeLaunchedQuestion } from './chat-launch';
 import { ChatMessages } from './chat-messages';
 import type { AssistantUIMessage } from './types';
 import { useChatSession } from './use-chat-session';
@@ -83,6 +84,18 @@ export function ChatView({
     },
     [messages.length, onFirstMessage, sendMessage]
   );
+
+  const tookLaunchedQuestion = useRef(false);
+  useEffect(() => {
+    if (tookLaunchedQuestion.current || messages.length > 0) {
+      return;
+    }
+    tookLaunchedQuestion.current = true;
+    const question = takeLaunchedQuestion();
+    if (question) {
+      send(question);
+    }
+  }, [messages.length, send]);
 
   return (
     <>
