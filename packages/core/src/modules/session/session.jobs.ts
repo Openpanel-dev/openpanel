@@ -86,7 +86,12 @@ export const sessionQueueJobs = {
   session: defineJob({
     payload: sessionEndPayload,
     handler: async ({ payload: data, ctx }) => {
-      const logger = ctx.logger.child({ payload: data.event });
+      // Child bindings bypass log redaction, so only ids: the event carries
+      // the visitor's IP and properties.
+      const logger = ctx.logger.child({
+        projectId: data.event.projectId,
+        sessionId: data.snapshot.id,
+      });
 
       await createSessionEnd(data, await sessionEndDeps(ctx, logger));
 
