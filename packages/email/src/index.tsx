@@ -23,14 +23,20 @@ export type EmailData<T extends TemplateKey> = z.infer<Templates[T]['schema']>;
 export type EmailTemplate = keyof Templates;
 
 function createSmtpTransport() {
+  const secure = process.env.SMTP_SECURE === 'true';
+  const auth =
+    process.env.SMTP_USER && process.env.SMTP_PASS
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      : undefined;
   return createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
+    secure,
+    auth,
+    // Without implicit TLS, STARTTLS is opportunistic: an attacker who strips
+    // it gets the credentials in plaintext. An unauthenticated relay (a local
+    // sidecar) is left alone.
+    requireTLS: !secure && auth !== undefined,
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 30_000,
@@ -65,7 +71,7 @@ export async function sendEmail<T extends TemplateKey>(
 
     if (unsubscribed) {
       console.log(
-        `Skipping email to ${to} - unsubscribed from ${template.category}`
+        `Skipping email to ${redactEmail(to)} - unsubscribed from ${template.category}`
       );
       return null;
     }
