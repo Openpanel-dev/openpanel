@@ -67,12 +67,12 @@ function org(overrides: Record<string, unknown> = {}) {
     onboarding: null,
     subscriptionStatus: 'trialing',
     subscriptionEndsAt: new Date('2026-06-16T12:00:00Z'),
-    createdBy: {
-      id: 'user-1',
-      email: 'user@example.com',
-      firstName: 'Alex',
-      deletedAt: null,
-    },
+    createdByUserId: 'user-1',
+    members: [
+      {
+        user: { id: 'user-1', email: 'user@example.com', firstName: 'Alex' },
+      },
+    ],
     projects: [{ id: 'proj-1' }],
     ...overrides,
   };

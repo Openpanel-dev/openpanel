@@ -2,8 +2,13 @@
 // the job is testable without `mock.module`. `misc.jobs.ts` binds them off
 // the job's ctx.
 
+import type {
+  AccessLevel,
+  ProjectScope,
+} from '@openpanel/db/src/prisma-client';
 import type { CoreConfig } from '../../../config';
 import type { Logger } from '../../../logger';
+import { resolveProjectAccess } from '../../../shared/access-lookups';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 // A brand-new project gets 48h to send its first event before we reach out.
@@ -34,7 +39,15 @@ export interface DataHealthProject {
 }
 
 export interface DataHealthMember {
+  role: string;
+  projectScope: ProjectScope;
+  projects: { projectId: string; level: AccessLevel | null }[];
   user: { email: string | null; firstName: string | null } | null;
+}
+
+interface Recipient {
+  firstName: string | undefined;
+  canOpen(projectId: string): boolean;
 }
 
 /** The Prisma surface this job touches — nothing wider. */
@@ -59,21 +72,41 @@ export interface DataHealthDeps {
   ): Promise<unknown>;
 }
 
-async function recipientsForOrg(organizationId: string, deps: DataHealthDeps) {
+/** Members by email; each alert lists only the projects that member can open. */
+async function recipientsForOrg(
+  organizationId: string,
+  deps: DataHealthDeps
+): Promise<Map<string, Recipient>> {
   const members = await deps.db.member.findMany({
     where: {
       organizationId,
       user: { deletedAt: null },
     },
-    include: { user: { select: { email: true, firstName: true } } },
+    select: {
+      role: true,
+      projectScope: true,
+      projects: { select: { projectId: true, level: true } },
+      user: { select: { email: true, firstName: true } },
+    },
   });
-  const seen = new Map<string, string | undefined>();
+  const recipients = new Map<string, Recipient>();
   for (const member of members) {
-    if (member.user?.email && !seen.has(member.user.email)) {
-      seen.set(member.user.email, member.user.firstName ?? undefined);
+    const email = member.user?.email;
+    if (!email || recipients.has(email)) {
+      continue;
     }
+    recipients.set(email, {
+      firstName: member.user?.firstName ?? undefined,
+      canOpen: (projectId) =>
+        resolveProjectAccess({
+          role: member.role,
+          projectScope: member.projectScope,
+          grant:
+            member.projects.find((row) => row.projectId === projectId) ?? null,
+        }) !== null,
+    });
   }
-  return seen;
+  return recipients;
 }
 
 export interface DataHealthResult extends Record<string, number> {
@@ -182,15 +215,19 @@ export async function runDataHealthCron(
       const dashboardUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${alert.organizationId}`;
 
       if (alert.noData.length > 0) {
-        for (const [to, firstName] of recipients) {
+        for (const [to, recipient] of recipients) {
+          const visible = alert.noData.filter((p) => recipient.canOpen(p.id));
+          if (visible.length === 0) {
+            continue;
+          }
           // Per-recipient guard: one bad address must not block the marker
           // update below — that would re-email everyone tomorrow.
           try {
             await deps.sendEmail('tracking-no-data', {
               to,
               data: {
-                firstName,
-                projectNames: alert.noData.map((p) => p.name),
+                firstName: recipient.firstName,
+                projectNames: visible.map((p) => p.name),
                 dashboardUrl,
               },
             });
@@ -209,16 +246,20 @@ export async function runDataHealthCron(
       }
 
       if (alert.stalled.length > 0) {
-        const newestLastEvent = alert.stalled
-          .map((p) => p.lastEventAt)
-          .sort((a, b) => b.getTime() - a.getTime())[0];
-        for (const [to, firstName] of recipients) {
+        for (const [to, recipient] of recipients) {
+          const visible = alert.stalled.filter((p) => recipient.canOpen(p.id));
+          if (visible.length === 0) {
+            continue;
+          }
+          const newestLastEvent = visible
+            .map((p) => p.lastEventAt)
+            .sort((a, b) => b.getTime() - a.getTime())[0];
           try {
             await deps.sendEmail('tracking-data-stopped', {
               to,
               data: {
-                firstName,
-                projectNames: alert.stalled.map((p) => p.name),
+                firstName: recipient.firstName,
+                projectNames: visible.map((p) => p.name),
                 lastEventDate: newestLastEvent?.toLocaleDateString('en-US', {
                   month: 'long',
                   day: 'numeric',
