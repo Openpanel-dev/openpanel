@@ -7,7 +7,11 @@ import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { getSafeJson } from '@openpanel/shared';
 import { createLogger } from '../logger';
-import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
+import {
+  nodeLabel,
+  RoundRobinPicker,
+  withRoundRobinRetry,
+} from './round-robin';
 import { type SqlFragment, toStatement } from './sql';
 
 export { createClient } from '@clickhouse/client';
@@ -194,30 +198,10 @@ const clients: ClickHouseClient[] = clickhouseUrls.map((url) =>
 
 const picker = new RoundRobinPicker(clients, clickhouseUrls, unhealthyMarkMs);
 
-function maskUrlCredentials(url: string): string {
-  if (!url) {
-    return '<unset>';
-  }
-  try {
-    const u = new URL(url);
-    if (u.username) {
-      u.username = u.username.slice(0, 2) + '*'.repeat(u.username.length - 2);
-    }
-    if (u.password) {
-      u.password = '***';
-    }
-    return u.toString();
-  } catch {
-    // Malformed URL — fall back to the original; better than crashing module
-    // load in test envs where CLICKHOUSE_URL may be empty/garbage.
-    return url;
-  }
-}
-
 logger.info(
   {
     nodeCount: clients.length,
-    urls: clickhouseUrls.map(maskUrlCredentials),
+    nodes: clickhouseUrls.map(nodeLabel),
     requestTimeoutMs,
     unhealthyMarkMs,
     options: { ...CLICKHOUSE_OPTIONS, log: undefined },

@@ -3,7 +3,22 @@ import {
   classifyError,
   type ErrorClass,
   isRetriableConnectionError,
+  nodeLabel,
 } from './round-robin';
+
+describe('nodeLabel', () => {
+  it('keeps only host and port, dropping credentials', () => {
+    expect(nodeLabel('http://a:secret@ch-1:8123/openpanel')).toBe('ch-1:8123');
+  });
+
+  it('never echoes a url it cannot parse', () => {
+    expect(nodeLabel('not a url :secret@')).toBe('<unparseable>');
+  });
+
+  it('labels an unset url', () => {
+    expect(nodeLabel('')).toBe('<unset>');
+  });
+});
 
 /**
  * The contract: anything from the ClickHouse server (errors that traveled
