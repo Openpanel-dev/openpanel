@@ -20,14 +20,14 @@ import { getIsDry, printBoxMessage } from './helpers';
  * Levels: `read` was a deliberate restriction and is kept. `write` and `admin`
  * were the unenforced defaults, so they become NULL and derive from the role.
  *
- * Pending invites got the column default `all`; one with grants was
- * restricted and becomes `selected`. `project_access` rows with no membership
- * are reported and left alone: they never granted access, so making them
- * memberships would.
+ * Pending invites are converted by the Prisma migration
+ * `invite_project_scope_backfill`, before the api can accept one.
+ * `project_access` rows with no membership are reported and left alone: they
+ * never granted access, so making them memberships would.
  *
  * An install that upgrades past the next build gets `project_access` folded in
  * and dropped by that build's Prisma migration before this runs, so only the
- * invite and slug steps are left to do.
+ * slug step is left to do.
  */
 
 interface Count {
@@ -77,23 +77,6 @@ function copyGrants() {
   `;
 }
 
-async function countInvitesToScope(): Promise<number> {
-  const rows = await db.$queryRaw<Count[]>`
-    SELECT COUNT(*) AS count FROM invites
-    WHERE "projectScope" = 'all' AND jsonb_array_length("projectAccess") > 0
-  `;
-  return Number(rows[0]?.count ?? 0);
-}
-
-function scopeInvites() {
-  return db.$executeRaw`
-    UPDATE invites
-    SET "projectScope" = 'selected'
-    WHERE "projectScope" = 'all'
-      AND jsonb_array_length("projectAccess") > 0
-  `;
-}
-
 async function countGrantsWithoutMembership(): Promise<number> {
   const rows = await db.$queryRaw<Count[]>`
     SELECT COUNT(*) AS count
@@ -135,13 +118,11 @@ export async function up() {
   const isDry = getIsDry();
   const hasGrants = await hasProjectAccessTable();
 
-  const [membersToScope, grantsToCopy, invitesToScope, orphanGrants] =
-    await Promise.all([
-      hasGrants ? countMembersToScope() : 0,
-      hasGrants ? countGrants() : 0,
-      countInvitesToScope(),
-      hasGrants ? countGrantsWithoutMembership() : 0,
-    ]);
+  const [membersToScope, grantsToCopy, orphanGrants] = await Promise.all([
+    hasGrants ? countMembersToScope() : 0,
+    hasGrants ? countGrants() : 0,
+    hasGrants ? countGrantsWithoutMembership() : 0,
+  ]);
   const orphanLine = `project_access rows without a membership, left as is: ${orphanGrants}`;
 
   if (isDry) {
@@ -149,7 +130,6 @@ export async function up() {
     printBoxMessage('🧪 Dry run: member project scope', [
       `Members to set to "selected": ${membersToScope}`,
       `project_access rows to copy: ${grantsToCopy}`,
-      `Pending invites to set to "selected": ${invitesToScope}`,
       orphanLine,
       `Organizations without a slug: ${slugs}`,
     ]);
@@ -159,13 +139,11 @@ export async function up() {
   const [scoped, copied] = hasGrants
     ? await db.$transaction([scopeMembers(), copyGrants()])
     : [0, 0];
-  const invitesScoped = await scopeInvites();
   const slugs = await backfillSlugs();
 
   printBoxMessage('✅ Member project scope', [
     `Members set to "selected": ${scoped}`,
     `member_projects rows inserted: ${copied} (of ${grantsToCopy} grants)`,
-    `Pending invites set to "selected": ${invitesScoped}`,
     orphanLine,
     `Organization slugs set: ${slugs}`,
   ]);
