@@ -609,33 +609,30 @@ export async function backfillSessionsToProduction(
   }
 }
 
-export async function getImportDateBounds(
+/**
+ * The days that actually hold staged events, ascending. Walking every calendar
+ * day between the first and last event instead lets a file with a few far-apart
+ * timestamps schedule thousands of empty moves.
+ */
+export async function getImportStagedDates(
   deps: ServiceDeps,
   importId: string,
-  fromCreatedAt?: string
-): Promise<{ min: string | null; max: string | null }> {
-  const ch = deps.ch;
-  const res = await ch.query({
+  fromDate?: string
+): Promise<string[]> {
+  const res = await deps.ch.query({
     query: `
-      SELECT min(created_at) AS min, max(created_at) AS max
+      SELECT DISTINCT toString(toDate(created_at)) AS date
       FROM ${TABLE_NAMES.events_imports}
       WHERE import_id = {importId:String}
       AND name NOT IN ('session_start', 'session_end')
-      ${fromCreatedAt ? 'AND created_at >= {fromCreatedAt:String}' : ''}
+      ${fromDate ? 'AND toDate(created_at) >= {fromDate:Date}' : ''}
+      ORDER BY date ASC
     `,
-    query_params: { importId, fromCreatedAt },
+    query_params: { importId, fromDate },
     format: 'JSONEachRow',
   });
-  const rows = (await res.json()) as Array<{
-    min: string | null;
-    max: string | null;
-  }>;
-  return rows.length > 0
-    ? {
-        min: fromCreatedAt ?? rows[0]?.min ?? null,
-        max: rows[0]?.max ?? null,
-      }
-    : { min: null, max: null };
+  const rows = (await res.json()) as Array<{ date: string }>;
+  return rows.map(({ date }) => date);
 }
 
 /**
@@ -850,7 +847,12 @@ export async function runImportJob(
     include: { project: true },
   });
 
-  const jobLogger = logger.child({ importId, config: record.config });
+  // Bindings bypass the redacting log formatter, and the config carries
+  // provider credentials.
+  const jobLogger = logger.child({
+    importId,
+    provider: record.config.provider,
+  });
   jobLogger.info('Starting import job');
 
   const providerInstance = await createImportProvider(
@@ -1069,25 +1071,19 @@ export async function runImportJob(
       return next.toISOString().split('T')[0]!;
     })();
 
-    const bounds = await getImportDateBounds(deps, importId, moveFromDate);
-    if (bounds.min && bounds.max) {
-      const startDate = bounds.min.split(' ')[0]!;
-      const endDate = bounds.max.split(' ')[0]!;
-      const cursor = new Date(`${startDate}T12:00:00Z`);
-      const end = new Date(`${endDate}T12:00:00Z`);
+    const stagedDates = await getImportStagedDates(
+      deps,
+      importId,
+      moveFromDate
+    );
+    for (const dateStr of stagedDates) {
+      await moveImportsToProduction(deps, importId, dateStr);
+      await updateImportStatus(deps, jobLogger, progress, importId, {
+        step: 'moving',
+        batch: dateStr,
+      });
 
-      while (cursor <= end) {
-        const dateStr = cursor.toISOString().split('T')[0]!;
-
-        await moveImportsToProduction(deps, importId, dateStr);
-        await updateImportStatus(deps, jobLogger, progress, importId, {
-          step: 'moving',
-          batch: dateStr,
-        });
-
-        await yieldToEventLoop();
-        cursor.setUTCDate(cursor.getUTCDate() + 1);
-      }
+      await yieldToEventLoop();
     }
 
     jobLogger.info('Move to production complete');
