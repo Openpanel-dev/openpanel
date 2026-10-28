@@ -67,7 +67,7 @@ function CounterWidget({ shareId, data }: RealtimeWidgetProps) {
 
   // WebSocket subscription for real-time updates
   useWS<number>(
-    `/live/visitors/${data.projectId}`,
+    `/live/visitors/${data.projectId}?shareId=${shareId}`,
     () => {
       if (!document.hidden) {
         queryClient.refetchQueries(

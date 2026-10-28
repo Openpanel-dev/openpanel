@@ -315,6 +315,38 @@ export async function hasAnonymousShareAccessToProject(
   );
 }
 
+/**
+ * Whether `shareId` lets an anonymous viewer watch a project's live visitor
+ * count: a public widget of that project, or a public overview share of it
+ * that is not locked behind a password the viewer has not entered.
+ */
+export async function canShareViewLiveVisitors(
+  deps: ServiceDeps,
+  { projectId, shareId }: { projectId: string; shareId: string },
+  cookies: CookieReader
+): Promise<boolean> {
+  const db = deps.db;
+  const [widget, overview] = await Promise.all([
+    db.shareWidget.findUnique({
+      where: { id: shareId },
+      select: { projectId: true, public: true },
+    }),
+    db.shareOverview.findUnique({
+      where: { id: shareId },
+      select: { id: true, projectId: true, public: true, password: true },
+    }),
+  ]);
+
+  if (widget?.public && widget.projectId === projectId) {
+    return true;
+  }
+  return (
+    !!overview?.public &&
+    overview.projectId === projectId &&
+    isUnlocked(deps, cookies, 'overview', overview)
+  );
+}
+
 /** Shape returned to a viewer who has not unlocked a password-protected share. */
 function lockedShare(
   id: string,
@@ -695,6 +727,10 @@ export function createShareService(
       kinds?: ShareType[]
     ): Promise<boolean> =>
       hasAnonymousShareAccessToProject(deps, projectId, cookies, kinds),
+    canShareViewLiveVisitors: (
+      input: { projectId: string; shareId: string },
+      cookies: CookieReader
+    ): Promise<boolean> => canShareViewLiveVisitors(deps, input, cookies),
     getShareOverview: (
       shareId: string,
       cookies: CookieReader

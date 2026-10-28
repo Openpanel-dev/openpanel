@@ -33,7 +33,13 @@ const subscribeToProjectEventBatches = mock(
   }
 );
 
-const subscribeToProjectNotifications = mock(async () => () => undefined);
+let notificationCallback: ((notification: unknown) => void) | undefined;
+const subscribeToProjectNotifications = mock(
+  async (_projectId: string, onNotification: (n: unknown) => void) => {
+    notificationCallback = onNotification;
+    return () => undefined;
+  }
+);
 const subscribeToOrganizationSubscriptionUpdates = mock(
   async (_organizationId: string, _onUpdate: (message: unknown) => void) =>
     () =>
@@ -83,11 +89,22 @@ mock.module('../../http/session', () => ({
   resolveSession,
 }));
 
+// The share rows `canShareViewLiveVisitors` reads, keyed by share id.
+let shareWidgets: Record<string, { projectId: string; public: boolean }> = {};
+const findShareWidget = mock(
+  async ({ where }: { where: { id: string } }) => shareWidgets[where.id] ?? null
+);
+const findShareOverview = mock(async () => null);
+
 let app: ReturnType<typeof realtimeRoutes>;
 let port: number;
 
 beforeEach(async () => {
   const { deps } = stubAppDeps();
+  deps.db = {
+    shareWidget: { findUnique: findShareWidget },
+    shareOverview: { findUnique: findShareOverview },
+  } as unknown as typeof deps.db;
   app = realtimeRoutes(deps);
   await new Promise<void>((resolve) => {
     app.listen(0, () => resolve());
@@ -100,6 +117,8 @@ beforeEach(async () => {
   activeVisitorCount = 0;
   visitorActivityCallback = undefined;
   eventBatchCallback = undefined;
+  notificationCallback = undefined;
+  shareWidgets = {};
   for (const m of [
     subscribeToVisitorActivity,
     subscribeToProjectEventBatches,
@@ -110,6 +129,7 @@ beforeEach(async () => {
     getProjectAccess,
     getOrganizationAccess,
     getActiveVisitorCount,
+    findShareWidget,
   ]) {
     m.mockClear();
   }
@@ -179,16 +199,21 @@ function connect(path: string): Promise<WsHarness> {
   });
 }
 
-test('wsVisitors: no session required (ADR-011 invariant 10) — upgrades and streams the active count', async () => {
-  const { ws, nextMessage } = await connect('/live/visitors/proj_1');
-  activeVisitorCount = 5;
-
-  // The subscription is registered async (behind `await subscribeTo...`);
-  // give the open handler's microtask a turn before firing the callback.
-  while (!visitorActivityCallback) {
+async function waitFor(condition: () => boolean) {
+  while (!condition()) {
     await new Promise((resolve) => setTimeout(resolve, 1));
   }
-  visitorActivityCallback();
+}
+
+test('wsVisitors: a public widget share of the project streams the active count without a session', async () => {
+  shareWidgets = { widget_1: { projectId: 'proj_1', public: true } };
+  const { ws, nextMessage } = await connect(
+    '/live/visitors/proj_1?shareId=widget_1'
+  );
+  activeVisitorCount = 5;
+
+  await waitFor(() => !!visitorActivityCallback);
+  visitorActivityCallback?.();
 
   await expect(nextMessage()).resolves.toBe('5');
   expect(subscribeToVisitorActivity).toHaveBeenCalledWith(
@@ -197,6 +222,38 @@ test('wsVisitors: no session required (ADR-011 invariant 10) — upgrades and st
   );
 
   ws.close();
+});
+
+test('wsVisitors: a project member streams the active count', async () => {
+  session = { userId: 'user_1' };
+  projectAccess = { level: 'read' };
+  const { ws } = await connect('/live/visitors/proj_1');
+
+  await waitFor(() => !!visitorActivityCallback);
+  expect(getProjectAccess).toHaveBeenCalledWith({
+    userId: 'user_1',
+    projectId: 'proj_1',
+  });
+
+  ws.close();
+});
+
+test("wsVisitors: a bare project id, a private widget or another project's widget is refused", async () => {
+  shareWidgets = {
+    private_widget: { projectId: 'proj_1', public: false },
+    other_widget: { projectId: 'proj_2', public: true },
+  };
+
+  for (const path of [
+    '/live/visitors/proj_1',
+    '/live/visitors/proj_1?shareId=private_widget',
+    '/live/visitors/proj_1?shareId=other_widget',
+  ]) {
+    const { nextMessage, nextClose } = await connect(path);
+    await expect(nextMessage()).resolves.toBe('No access');
+    await nextClose();
+  }
+  expect(subscribeToVisitorActivity).not.toHaveBeenCalled();
 });
 
 test('wsProjectEvents: no session -> "No active session" then close (reject-after-upgrade)', async () => {
@@ -325,4 +382,25 @@ test('wsProjectNotifications: no session -> "No active session" then close', asy
   await expect(nextMessage()).resolves.toBe('No active session');
   await nextClose();
   expect(subscribeToProjectNotifications).not.toHaveBeenCalled();
+});
+
+test('wsProjectNotifications: a member removed after connecting gets no further notifications', async () => {
+  session = { userId: 'user_1' };
+  projectAccess = { level: 'read' };
+
+  const { nextMessage, nextClose } = await connect(
+    '/live/notifications/proj_1'
+  );
+  await waitFor(() => !!notificationCallback);
+
+  notificationCallback?.({ projectId: 'proj_1', title: 'first' });
+  expect(getSuperJson<{ title: string }>(await nextMessage())?.title).toBe(
+    'first'
+  );
+
+  projectAccess = null;
+  notificationCallback?.({ projectId: 'proj_1', title: 'second' });
+
+  await expect(nextMessage()).resolves.toBe('No access');
+  await nextClose();
 });
