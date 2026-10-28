@@ -20,18 +20,62 @@ const TOO_MANY_REQUESTS_BODY = {
 } as const;
 
 /**
- * The API client if there is one, otherwise the TRUSTED ip.
  * `x-client-ip` and `x-forwarded-for` are caller-set, so keying on the
  * attribution address would hand out a fresh bucket per request.
  */
 const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
+const MCP_TOKEN_SEPARATOR = ':';
 
-function fingerprintFor(headers: Headers, remoteAddress?: string): string {
-  const clientId = headers.get('openpanel-client-id');
+/**
+ * Who a bucket belongs to. The limiter runs before authentication, so a
+ * caller-supplied id only names the bucket where it also names the credential
+ * that request is checked against:
+ * - `client`: the `openpanel-client-id` header the route authenticates.
+ * - `mcp-token`: the client id inside the MCP token, which MCP authenticates;
+ *   its callers share egress addresses (hosted AI clients), so not the ip.
+ * - `ip`: an unauthenticated route, where any header is free to rotate.
+ */
+export type RateLimitKey = 'client' | 'mcp-token' | 'ip';
+
+function mcpTokenClientId(request: Request): string | undefined {
+  const token =
+    new URL(request.url).searchParams.get('token') ??
+    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+  if (!token) {
+    return undefined;
+  }
+  const decoded = Buffer.from(token, 'base64').toString('utf-8');
+  const separator = decoded.indexOf(MCP_TOKEN_SEPARATOR);
+  return separator > 0 ? decoded.slice(0, separator) : undefined;
+}
+
+function callerIdFor(
+  keyBy: RateLimitKey,
+  request: Request
+): string | undefined {
+  if (keyBy === 'client') {
+    return request.headers.get('openpanel-client-id') ?? undefined;
+  }
+  if (keyBy === 'mcp-token') {
+    return mcpTokenClientId(request);
+  }
+  return undefined;
+}
+
+export function fingerprintFor(
+  keyBy: RateLimitKey,
+  request: Request,
+  remoteAddress?: string
+): string {
+  const clientId = callerIdFor(keyBy, request);
   if (clientId) {
     return `client:${clientId}`;
   }
-  const { ip } = getTrustedIpFromHeaders(TRUSTED_ONLY, headers, remoteAddress);
+  const { ip } = getTrustedIpFromHeaders(
+    TRUSTED_ONLY,
+    request.headers,
+    remoteAddress
+  );
   // Fail closed: an edge that stops forwarding IPs should throttle, not open.
   return `ip:${ip || 'unknown'}`;
 }
@@ -42,6 +86,7 @@ export interface HttpRateLimit {
   windowMs: number;
   /** Groups every route under one bucket. */
   scope: string;
+  keyBy: RateLimitKey;
 }
 
 /**
@@ -50,12 +95,12 @@ export interface HttpRateLimit {
  * credential.
  */
 export async function isRateLimited(
-  { max, windowMs, scope }: HttpRateLimit,
-  headers: Headers,
+  { max, windowMs, scope, keyBy }: HttpRateLimit,
+  request: Request,
   remoteAddress: string | undefined,
   logger: Logger
 ): Promise<boolean> {
-  const key = `rl:http:${scope}:${fingerprintFor(headers, remoteAddress)}`;
+  const key = `rl:http:${scope}:${fingerprintFor(keyBy, request, remoteAddress)}`;
 
   try {
     const redis = getRedisCache();
@@ -90,11 +135,41 @@ export async function isRateLimited(
 export const HTTP_RATE_LIMITS: readonly (HttpRateLimit & {
   prefix: string;
 })[] = [
-  { prefix: '/manage', scope: 'manage', max: 20, windowMs: 10_000 },
-  { prefix: '/export', scope: 'export', max: 100, windowMs: 10_000 },
-  { prefix: '/insights', scope: 'insights', max: 100, windowMs: 10_000 },
-  { prefix: '/mcp', scope: 'mcp', max: 60, windowMs: 60_000 },
-  { prefix: '/misc/favicon', scope: 'favicon', max: 100, windowMs: 10_000 },
+  {
+    prefix: '/manage',
+    scope: 'manage',
+    keyBy: 'client',
+    max: 20,
+    windowMs: 10_000,
+  },
+  {
+    prefix: '/export',
+    scope: 'export',
+    keyBy: 'client',
+    max: 100,
+    windowMs: 10_000,
+  },
+  {
+    prefix: '/insights',
+    scope: 'insights',
+    keyBy: 'client',
+    max: 100,
+    windowMs: 10_000,
+  },
+  {
+    prefix: '/mcp',
+    scope: 'mcp',
+    keyBy: 'mcp-token',
+    max: 60,
+    windowMs: 60_000,
+  },
+  {
+    prefix: '/misc/favicon',
+    scope: 'favicon',
+    keyBy: 'ip',
+    max: 100,
+    windowMs: 10_000,
+  },
 ];
 
 export function limitFor(pathname: string): HttpRateLimit | undefined {
@@ -119,7 +194,7 @@ export function httpRateLimit(deps: AppDeps) {
       // share the fail-closed `unknown` bucket.
       const limited = await isRateLimited(
         limit,
-        request.headers,
+        request,
         undefined,
         ctx.logger
       );

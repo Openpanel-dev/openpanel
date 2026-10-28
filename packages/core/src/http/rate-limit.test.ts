@@ -2,7 +2,7 @@
 // and the paths the docs call unlimited must stay absent from it.
 
 import { describe, expect, test } from 'bun:test';
-import { HTTP_RATE_LIMITS, limitFor } from './rate-limit';
+import { fingerprintFor, HTTP_RATE_LIMITS, limitFor } from './rate-limit';
 
 // The published rate-limits page's numbers, for the first three entries;
 // `/mcp` and `/misc/favicon` are pinned here only.
@@ -52,5 +52,37 @@ describe('HTTP rate limits', () => {
     expect(limitFor('/misc/favicon')?.scope).toBe('favicon');
     expect(limitFor('/misc/ping')).toBeUndefined();
     expect(limitFor('/misc/stats')).toBeUndefined();
+  });
+});
+
+describe('rate-limit buckets', () => {
+  const CLIENT_ID = '11111111-1111-4111-8111-111111111111';
+  const ROTATED_ID = '22222222-2222-4222-8222-222222222222';
+  const mcpToken = Buffer.from(`${CLIENT_ID}:wrong-secret`).toString('base64');
+
+  test('a public route ignores the client-id header', () => {
+    const request = new Request('https://api.test/misc/favicon', {
+      headers: { 'openpanel-client-id': ROTATED_ID },
+    });
+    expect(fingerprintFor('ip', request)).toBe('ip:unknown');
+  });
+
+  test('MCP buckets on the token, not on a rotated header', () => {
+    const request = new Request(`https://api.test/mcp?token=${mcpToken}`, {
+      headers: { 'openpanel-client-id': ROTATED_ID },
+    });
+    expect(fingerprintFor('mcp-token', request)).toBe(`client:${CLIENT_ID}`);
+
+    const bearer = new Request('https://api.test/mcp', {
+      headers: { authorization: `Bearer ${mcpToken}` },
+    });
+    expect(fingerprintFor('mcp-token', bearer)).toBe(`client:${CLIENT_ID}`);
+  });
+
+  test('authenticated surfaces bucket on the client they authenticate', () => {
+    const request = new Request('https://api.test/export/events', {
+      headers: { 'openpanel-client-id': CLIENT_ID },
+    });
+    expect(fingerprintFor('client', request)).toBe(`client:${CLIENT_ID}`);
   });
 });
