@@ -1163,6 +1163,61 @@ export async function insertRawEventsBatch(
   return { writtenRows };
 }
 
+/** Provider credentials are write-only: the worker needs them, a project reader does not. */
+function toPublicImportConfig(config: IImportConfig) {
+  switch (config.provider) {
+    case 'amplitude': {
+      const { apiKey: _apiKey, secretKey: _secretKey, ...rest } = config;
+      return rest;
+    }
+    case 'mixpanel': {
+      const {
+        serviceAccount: _serviceAccount,
+        serviceSecret: _serviceSecret,
+        ...rest
+      } = config;
+      return rest;
+    }
+    default:
+      return { ...config, fileUrl: stripUrlCredentials(config.fileUrl) };
+  }
+}
+
+export function toPublicImport<T extends { config: IImportConfig }>(
+  importRecord: T
+) {
+  return { ...importRecord, config: toPublicImportConfig(importRecord.config) };
+}
+
+/** A presigned export URL carries its signature in the query string. */
+function stripUrlCredentials(fileUrl: string): string {
+  try {
+    const { origin, pathname } = new URL(fileUrl);
+    return `${origin}${pathname}`;
+  } catch {
+    return '';
+  }
+}
+
+/** An Umami import writes into every mapped project, not just the one it was started from. */
+export async function requireMappedProjectsWriteAccess(
+  auth: Services['auth'],
+  userId: string,
+  config: IImportConfig
+): Promise<void> {
+  if (!('projectMapper' in config)) {
+    return;
+  }
+  const mappedProjectIds = new Set(config.projectMapper.map(({ to }) => to));
+  for (const projectId of mappedProjectIds) {
+    await auth.requireProjectAccess({
+      userId,
+      projectId,
+      level: 'write',
+    });
+  }
+}
+
 /** `ctx.services.import` — a thin binding of the job body above to a Ctx's queues. */
 export function createImportService(
   deps: ServiceDeps,
