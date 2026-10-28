@@ -59,3 +59,17 @@ test('a local gc returns before/after for this process and logs it', async () =>
   expect(body.freed.heapUsed).toBe(body.before.heapUsed - body.after.heapUsed);
   expect(info).toHaveBeenCalledTimes(1);
 });
+
+test('a request another site started is refused even with valid credentials', async () => {
+  for (const [method, url] of ROUTES) {
+    for (const site of ['cross-site', 'same-site']) {
+      const response = await app.handle(
+        new Request(url, {
+          method,
+          headers: { ...basic('ops', 'secret-pass'), 'sec-fetch-site': site },
+        })
+      );
+      expect(response.status).toBe(403);
+    }
+  }
+});
