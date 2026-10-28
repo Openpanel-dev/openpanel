@@ -212,12 +212,12 @@ const webhookServer: IServerIntegration<'webhook'> = {
     return { valid: true };
   },
   notification: {
-    deliver: ({ config, notification, payload }) => {
+    deliver: async ({ config, notification, payload }) => {
       let body: unknown;
       if (config.mode === 'javascript') {
         // We only transform event payloads for now (not funnel)
         if (config.javascriptTemplate && payload.type === 'event') {
-          body = executeJavaScriptTemplate(
+          body = await executeJavaScriptTemplate(
             config.javascriptTemplate,
             payload.event as Record<string, unknown>
           );
