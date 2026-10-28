@@ -103,6 +103,12 @@ function stringify(obj: unknown): string {
 
 export interface CacheableOptions {
   cacheEmptyArray?: boolean;
+  /**
+   * Keep an in-process L1 copy. Turn it off for answers that must be revocable:
+   * `clear()` reaches Redis and this process only, so every other process would
+   * keep serving its L1 copy for up to a minute.
+   */
+  localCache?: boolean;
 }
 
 function shouldCache(result: unknown, options: CacheableOptions = {}): boolean {
@@ -212,19 +218,21 @@ export function cacheable<T extends (...args: any) => any>(
   const getKey = (...args: Parameters<T>) =>
     `${cachePrefix}:${stringify(args)}`.replaceAll(/\s/g, '');
 
-  const lruCache = new LRUCache<string, any>({
-    max: CACHEABLE_LRU_MAX,
-    ttl: CACHEABLE_LRU_TTL_MS,
-  });
+  const lruCache =
+    options.localCache === false
+      ? null
+      : new LRUCache<string, any>({
+          max: CACHEABLE_LRU_MAX,
+          ttl: CACHEABLE_LRU_TTL_MS,
+        });
 
-  // L1 LRU (60s) + L2 Redis. clear() deletes Redis + local LRU; other nodes may serve stale from LRU for up to 60s.
   const cachedFn = async (
     ...args: Parameters<T>
   ): Promise<Awaited<ReturnType<T>>> => {
     const key = getKey(...args);
 
     // L1: in-memory LRU first (offloads Redis on hot keys)
-    const lruHit = lruCache.get(key);
+    const lruHit = lruCache?.get(key);
     if (lruHit !== undefined && shouldCache(lruHit, options)) {
       return lruHit as Awaited<ReturnType<T>>;
     }
@@ -234,7 +242,7 @@ export function cacheable<T extends (...args: any) => any>(
     if (cached) {
       const parsed = parseCache(cached);
       if (shouldCache(parsed, options)) {
-        lruCache.set(key, parsed);
+        lruCache?.set(key, parsed);
         return parsed;
       }
     }
@@ -242,7 +250,7 @@ export function cacheable<T extends (...args: any) => any>(
     const result = await fn(...(args as any));
 
     if (shouldCache(result, options)) {
-      lruCache.set(key, result);
+      lruCache?.set(key, result);
       getRedisCache()
         .setex(key, expireInSec, JSON.stringify(result))
         .catch(() => {
@@ -256,7 +264,7 @@ export function cacheable<T extends (...args: any) => any>(
   cachedFn.getKey = getKey;
   cachedFn.clear = (...args: Parameters<T>) => {
     const key = getKey(...args);
-    lruCache.delete(key);
+    lruCache?.delete(key);
     return getRedisCache().del(key);
   };
   cachedFn.set =
@@ -264,7 +272,7 @@ export function cacheable<T extends (...args: any) => any>(
     (payload: Awaited<ReturnType<T>>) => {
       const key = getKey(...args);
       if (shouldCache(payload, options)) {
-        lruCache.set(key, payload);
+        lruCache?.set(key, payload);
         return getRedisCache()
           .setex(key, expireInSec, JSON.stringify(payload))
           .catch(() => {
