@@ -47,7 +47,12 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
     ? `${window.location.origin}/share/report/${existingShare.id}`
     : '';
 
-  const { register, handleSubmit, watch } = useForm<IForm>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { dirtyFields },
+  } = useForm<IForm>({
     resolver: zodResolver(validator),
     // `values` rather than `defaultValues`: the share settings arrive after
     // the first render, and the field must then show the stored password.
@@ -165,7 +170,10 @@ export default function ShareReportModal({ reportId }: { reportId: string }) {
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            password: getSharePasswordToSubmit(values.password),
+            password: getSharePasswordToSubmit(
+              values.password,
+              !!dirtyFields.password
+            ),
           });
         })}
       >
