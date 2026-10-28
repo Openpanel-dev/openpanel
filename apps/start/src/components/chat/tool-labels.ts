@@ -104,6 +104,8 @@ export function approvalPrompt(toolName: string, input: unknown): string {
       return 'Update the project settings?';
     case 'change_plan':
       return 'Change the workspace plan?';
+    case 'diagnose_tracking':
+      return `Load ${String(fields.url ?? '')} to check its tracking?`;
     default:
       return `Run ${toolName.replace(/_/g, ' ')}?`;
   }

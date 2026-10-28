@@ -161,11 +161,19 @@ export const CHAT_TRIGGERS = ['submit-message', 'regenerate-message'] as const;
 
 const MAX_MESSAGE_ID_LENGTH = 64;
 
+// The AI SDK downloads a file part's URL from the API's network before the
+// model sees it, and the chat has no attachments, so a file part is refused.
+const zChatRequestPart = z
+  .record(z.string(), z.unknown())
+  .refine((part) => part.type !== 'file', {
+    message: 'File attachments are not supported',
+  });
+
 /** The one message the client sends per turn: the new user message, or the assistant message it responded to (tool approvals, client tool results). */
 export const zChatRequestMessage = z.object({
   id: z.string().min(1).max(MAX_MESSAGE_ID_LENGTH),
   role: z.enum(CHAT_MESSAGE_ROLES),
-  parts: z.array(z.record(z.string(), z.unknown())),
+  parts: z.array(zChatRequestPart),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 

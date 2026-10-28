@@ -15,6 +15,7 @@ export function ChatComposer({
   modelId,
   onModelChange,
   autoFocus,
+  initialText = '',
 }: {
   onSend: (text: string) => void;
   onStop: () => void;
@@ -23,8 +24,9 @@ export function ChatComposer({
   modelId: string | null;
   onModelChange: (id: string) => void;
   autoFocus?: boolean;
+  initialText?: string;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {

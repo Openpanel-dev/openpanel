@@ -4,8 +4,8 @@ import { usePageContextRef } from '@/contexts/page-context';
 import { useAppParams } from '@/hooks/use-app-params';
 
 /**
- * Opens the chat page. A question travels in `q` and is sent on arrival; the
- * page the user came from travels in `hint`.
+ * Opens the chat page. A question travels in `q` and prefills the composer;
+ * the page the user came from travels in `hint`.
  */
 export function useChatLaunch() {
   const navigate = useNavigate();
