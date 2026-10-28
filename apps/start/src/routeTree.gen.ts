@@ -33,6 +33,7 @@ import { Route as ShareReportShareIdRouteImport } from './routes/share.report.$s
 import { Route as ShareOverviewShareIdRouteImport } from './routes/share.overview.$shareId'
 import { Route as ShareDashboardShareIdRouteImport } from './routes/share.dashboard.$shareId'
 import { Route as StepsOnboardingProjectRouteImport } from './routes/_steps.onboarding.project'
+import { Route as PublicInviteInviteIdRouteImport } from './routes/_public.invite.$inviteId'
 import { Route as AppOrganizationIdSettingsRouteImport } from './routes/_app.$organizationId.settings'
 import { Route as AppOrganizationIdBillingRouteImport } from './routes/_app.$organizationId.billing'
 import { Route as AppOrganizationIdProjectIdRouteImport } from './routes/_app.$organizationId.$projectId'
@@ -250,6 +251,11 @@ const StepsOnboardingProjectRoute = StepsOnboardingProjectRouteImport.update({
   id: '/onboarding/project',
   path: '/onboarding/project',
   getParentRoute: () => StepsRoute,
+} as any)
+const PublicInviteInviteIdRoute = PublicInviteInviteIdRouteImport.update({
+  id: '/invite/$inviteId',
+  path: '/invite/$inviteId',
+  getParentRoute: () => PublicRoute,
 } as any)
 const AppOrganizationIdSettingsRoute =
   AppOrganizationIdSettingsRouteImport.update({
@@ -715,6 +721,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
+  '/invite/$inviteId': typeof PublicInviteInviteIdRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
   '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
@@ -801,6 +808,7 @@ export interface FileRoutesByTo {
   '/widget/realtime': typeof WidgetRealtimeRoute
   '/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
+  '/invite/$inviteId': typeof PublicInviteInviteIdRoute
   '/onboarding/project': typeof StepsOnboardingProjectRoute
   '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
@@ -884,6 +892,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId': typeof AppOrganizationIdProjectIdRouteWithChildren
   '/_app/$organizationId/billing': typeof AppOrganizationIdBillingRoute
   '/_app/$organizationId/settings': typeof AppOrganizationIdSettingsRoute
+  '/_public/invite/$inviteId': typeof PublicInviteInviteIdRoute
   '/_steps/onboarding/project': typeof StepsOnboardingProjectRoute
   '/share/dashboard/$shareId': typeof ShareDashboardShareIdRoute
   '/share/overview/$shareId': typeof ShareOverviewShareIdRoute
@@ -984,6 +993,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
+    | '/invite/$inviteId'
     | '/onboarding/project'
     | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
@@ -1070,6 +1080,7 @@ export interface FileRouteTypes {
     | '/widget/realtime'
     | '/$organizationId/billing'
     | '/$organizationId/settings'
+    | '/invite/$inviteId'
     | '/onboarding/project'
     | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
@@ -1152,6 +1163,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId'
     | '/_app/$organizationId/billing'
     | '/_app/$organizationId/settings'
+    | '/_public/invite/$inviteId'
     | '/_steps/onboarding/project'
     | '/share/dashboard/$shareId'
     | '/share/overview/$shareId'
@@ -1420,6 +1432,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding/project'
       preLoaderRoute: typeof StepsOnboardingProjectRouteImport
       parentRoute: typeof StepsRoute
+    }
+    '/_public/invite/$inviteId': {
+      id: '/_public/invite/$inviteId'
+      path: '/invite/$inviteId'
+      fullPath: '/invite/$inviteId'
+      preLoaderRoute: typeof PublicInviteInviteIdRouteImport
+      parentRoute: typeof PublicRoute
     }
     '/_app/$organizationId/settings': {
       id: '/_app/$organizationId/settings'
@@ -2466,10 +2485,12 @@ const LoginRouteWithChildren = LoginRoute._addFileChildren(LoginRouteChildren)
 
 interface PublicRouteChildren {
   PublicOnboardingRoute: typeof PublicOnboardingRoute
+  PublicInviteInviteIdRoute: typeof PublicInviteInviteIdRoute
 }
 
 const PublicRouteChildren: PublicRouteChildren = {
   PublicOnboardingRoute: PublicOnboardingRoute,
+  PublicInviteInviteIdRoute: PublicInviteInviteIdRoute,
 }
 
 const PublicRouteWithChildren =
