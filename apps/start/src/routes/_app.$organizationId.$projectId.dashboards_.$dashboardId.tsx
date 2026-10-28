@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
   ChartLineIcon,
+  CopyIcon,
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
@@ -118,6 +119,24 @@ function Component() {
           params: {
             organizationId,
             projectId,
+          },
+        });
+      },
+    })
+  );
+
+  const dashboardDuplication = useMutation(
+    trpc.dashboard.duplicate.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess(copy) {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
+        toast(`Created "${copy.name}"`);
+        router.navigate({
+          to: '/$organizationId/$projectId/dashboards/$dashboardId',
+          params: {
+            organizationId,
+            projectId,
+            dashboardId: copy.id,
           },
         });
       },
@@ -330,6 +349,15 @@ function Component() {
                   >
                     <RotateCcw className="mr-2 size-4" />
                     Reset layout
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={dashboardDuplication.isPending}
+                    onClick={() =>
+                      dashboardDuplication.mutate({ id: dashboardId })
+                    }
+                  >
+                    <CopyIcon className="mr-2 size-4" />
+                    Duplicate dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
