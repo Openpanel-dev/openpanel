@@ -38,6 +38,7 @@ import type {
   ITrackHandlerPayload,
   ITrackPayload,
 } from './ingest.constants';
+import { zTrackHandlerPayload } from './ingest.constants';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
 import { isDuplicatedEvent } from './src/deduplicate';
@@ -225,7 +226,10 @@ export type TrackOutcome =
   | { status: 'missing-project-id' }
   | { status: 'replay-missing-session-id' }
   | { status: 'profile-not-found' }
-  | { status: 'profile-property-not-a-number' };
+  | { status: 'profile-property-not-a-number' }
+  // Only a batch item can be invalid: a single body is validated at the
+  // boundary. `path` is relative to the request body, like a boundary error's.
+  | { status: 'invalid-payload'; path: string; message: string };
 
 async function buildContext(
   deps: IngestScope,
@@ -534,6 +538,34 @@ export async function ingestTrack(
     deviceId: context.deviceId,
     sessionId: context.sessionId,
   };
+}
+
+/** `POST /track` with `type: 'batch'`. One item at a time, in the caller's
+ *  order: a device's events share a Kafka partition, and the consumer reads
+ *  them in the order they were produced. Each item is validated on its own,
+ *  so one bad item is answered in place and the rest are still ingested. */
+export async function ingestTrackBatch(
+  request: Omit<TrackRequest, 'body'> & { items: unknown[] },
+  transport: IngestTransport
+): Promise<TrackOutcome[]> {
+  const { items, ...shared } = request;
+  const outcomes: TrackOutcome[] = [];
+  for (const [index, item] of items.entries()) {
+    const parsed = zTrackHandlerPayload.safeParse(item);
+    if (parsed.success) {
+      outcomes.push(
+        await ingestTrack({ ...shared, body: parsed.data }, transport)
+      );
+      continue;
+    }
+    const issue = parsed.error.issues[0];
+    outcomes.push({
+      status: 'invalid-payload',
+      path: ['payload', index, ...(issue?.path ?? [])].join('.'),
+      message: issue?.message ?? 'Invalid input',
+    });
+  }
+  return outcomes;
 }
 
 /**

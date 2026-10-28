@@ -127,7 +127,9 @@ export function requestLogging(
             method: request.method,
             elapsed,
             headers: pickHeaders(request.headers, LOGGED_INGEST_HEADERS),
-            body: path.startsWith('/track') ? body : undefined,
+            body: path.startsWith('/track')
+              ? summarizeTrackBody(body)
+              : undefined,
             clientIp: verbose ? ctx.ip : '',
             clientIpHeader: verbose ? clientIpHeader : '',
             userAgent: verbose ? (request.headers.get('user-agent') ?? '') : '',
@@ -188,6 +190,22 @@ function parseTrpcInput(input: string | undefined): unknown {
   } catch {
     return undefined;
   }
+}
+
+// A `/track` batch can be a few hundred KiB; its items are not worth a log line.
+function summarizeTrackBody(body: unknown): unknown {
+  const isBatch =
+    typeof body === 'object' &&
+    body !== null &&
+    (body as { type?: unknown }).type === 'batch' &&
+    Array.isArray((body as { payload?: unknown }).payload);
+  if (!isBatch) {
+    return body;
+  }
+  return {
+    type: 'batch',
+    items: (body as { payload: unknown[] }).payload.length,
+  };
 }
 
 function pickHeaders(

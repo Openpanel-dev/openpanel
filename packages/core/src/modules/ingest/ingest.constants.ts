@@ -343,6 +343,35 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
     .meta({ title: 'Assign Group' }),
 ]) satisfies z.ZodType<ITrackHandlerPayload>;
 
+/** Items in one `batch` body. They are ingested one after another, so this
+ *  bounds how long the request takes; at about 1 KiB per item it also stays
+ *  inside the default body limit. */
+export const TRACK_BATCH_MAX_EVENTS = 250;
+
+// The batch's items are validated one by one in `ingestTrackBatch`, so one bad
+// item does not reject the rest. The schema here only sees `unknown[]`; the
+// `items` meta keeps the OpenAPI reference documenting each item's real shape.
+const { $schema: _itemJsonSchemaDialect, ...trackItemJsonSchema } =
+  z.toJSONSchema(zTrackHandlerPayload);
+
+export const zTrackBatchPayload = z
+  .object({
+    type: z.enum(['batch']),
+    payload: z
+      .array(z.unknown())
+      .min(1)
+      .max(TRACK_BATCH_MAX_EVENTS)
+      .meta({ items: trackItemJsonSchema }),
+  })
+  .meta({ title: 'Batch' });
+
+/** `POST /track`'s body: one payload, or a `batch` of them that each go
+ *  through the same pipeline as if sent alone. */
+export const zTrackRequestBody = z.discriminatedUnion('type', [
+  ...zTrackHandlerPayload.options,
+  zTrackBatchPayload,
+]);
+
 // Deprecated types for beta version of the SDKs
 
 export interface DeprecatedOpenpanelEventOptions {
