@@ -1,6 +1,6 @@
-// Per-route cookie signing is not wired yet, so `ctx.cookies.get` reads the
-// raw, unsigned cookie value; this route only re-checks the state match and is
-// not a signature-verified equivalent.
+// The OAuth cookies are signed only when COOKIE_SECRET is set, so the callback
+// does not trust them for authorization: the signed-in user must be able to
+// write the project they name.
 
 import { redirect } from 'elysia';
 import { z } from 'zod';
@@ -25,6 +25,14 @@ export const gscRoutes = defineRoutes((app) =>
   app.get(
     '/gsc/callback',
     async ({ query, ctx }) => {
+      const userId = (await ctx.session())?.userId;
+      if (!userId) {
+        return loginErrorRedirect(
+          ctx.config.dashboardUrl,
+          'Sign in to finish connecting Google Search Console'
+        );
+      }
+
       const storedState = ctx.cookies.get('gsc_oauth_state');
       const codeVerifier = ctx.cookies.get('gsc_code_verifier');
       const projectId = ctx.cookies.get('gsc_project_id');
@@ -43,6 +51,7 @@ export const gscRoutes = defineRoutes((app) =>
           storedState,
           codeVerifier,
           projectId,
+          userId,
         });
         return redirect(
           `${ctx.config.dashboardUrl}/${organizationId}/${projectId}/settings/gsc`

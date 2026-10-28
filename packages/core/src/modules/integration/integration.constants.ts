@@ -135,7 +135,9 @@ export type IWebhookConfig = z.infer<typeof zWebhookConfig>;
 
 export const zDiscordConfig = z.object({
   type: z.literal('discord'),
-  url: z.string().url(),
+  // The webhook URL is a bearer credential, so it is write-only too: blank on
+  // update keeps the stored one.
+  url: z.string().url().or(z.literal('')),
 });
 export type IDiscordConfig = z.infer<typeof zDiscordConfig>;
 

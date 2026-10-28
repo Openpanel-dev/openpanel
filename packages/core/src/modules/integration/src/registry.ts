@@ -101,9 +101,8 @@ type SecretPath<C> =
 export interface IConfigSecret<C> {
   path: SecretPath<C>;
   /**
-   * Also encrypt at rest, and treat the value as a required credential:
-   * rejected if it arrives already encrypted (a replay), and rejected if it is
-   * still blank after carry-over.
+   * Also encrypt at rest, and reject the value if it arrives already encrypted
+   * (a replay).
    *
    * Only for values whose readers decrypt at use. The object-store adapters
    * do; the notification senders read `config.url` / `config.headers` /
@@ -117,6 +116,12 @@ export interface IConfigSecret<C> {
    * are set, and carry-over is per key.
    */
   record?: boolean;
+  /**
+   * The config value that receives this secret. The stored secret is carried
+   * over only while that value is unchanged: otherwise an edit could point a
+   * credential the editor never saw at a destination they control.
+   */
+  boundTo?: SecretPath<C>;
 }
 
 /**
@@ -163,6 +168,9 @@ const slackServer: IServerIntegration<'slack'> = {
 
 const discordServer: IServerIntegration<'discord'> = {
   type: 'discord',
+  // The webhook URL is the credential: anyone holding it can post to the
+  // channel. Redact-only, the sender reads it raw.
+  secretFields: [{ path: 'url' }],
   testConnection: async (config) => {
     const res = await sendTestDiscordNotification(
       config.url,
@@ -191,8 +199,9 @@ const webhookServer: IServerIntegration<'webhook'> = {
   type: 'webhook',
   // Header VALUES routinely carry an Authorization bearer. Keys stay visible so
   // the form still shows which headers are configured; blank values carry over
-  // per key on update. Redact-only — postWebhook sends them raw.
-  secretFields: [{ path: 'headers', record: true }],
+  // per key on update, but only to the same URL. Redact-only — postWebhook
+  // sends them raw.
+  secretFields: [{ path: 'headers', record: true, boundTo: 'url' }],
   validateConfig: (config) => {
     if (config.mode === 'javascript' && config.javascriptTemplate) {
       const result = validateJavaScriptTemplate(config.javascriptTemplate);
@@ -424,6 +433,12 @@ export function carryOverConfigSecrets<C>(next: C, stored: unknown): C {
     if (value !== '') {
       return undefined;
     }
+    const isDestinationChanged =
+      secret.boundTo !== undefined &&
+      readPath(next, secret.boundTo) !== readPath(stored, secret.boundTo);
+    if (isDestinationChanged) {
+      return undefined;
+    }
     const previous = readPath(stored, secret.path);
     if (recordKey === undefined) {
       return typeof previous === 'string' ? previous : undefined;
@@ -456,7 +471,9 @@ export function findEncryptedSecretField(config: unknown): string | undefined {
 }
 
 /**
- * Paths of the required credentials that are present but blank.
+ * Paths of the credentials that are present but blank. Blank is what a read
+ * returns, so a blank credential is indistinguishable from "keep the stored
+ * one" and is never a value worth saving.
  *
  * An ABSENT field is not missing — it is not applicable to this config variant
  * (an `iam_role` S3 config carries no `secretAccessKey` at all), and the zod
@@ -466,12 +483,21 @@ export function findMissingSecretFields(config: unknown): string[] {
   if (typeof config !== 'object' || config === null) {
     return [];
   }
-  return secretsFor(config)
-    .filter(
-      (secret) =>
-        secret.encrypted &&
-        readPath(config, secret.path) === '' &&
-        !secret.record
-    )
-    .map((secret) => secret.path);
+  const missing: string[] = [];
+  for (const secret of secretsFor(config)) {
+    const value = readPath(config, secret.path);
+    if (value === '') {
+      missing.push(secret.path);
+      continue;
+    }
+    if (!secret.record || typeof value !== 'object' || value === null) {
+      continue;
+    }
+    for (const [key, recordValue] of Object.entries(value as LooseConfig)) {
+      if (recordValue === '') {
+        missing.push(`${secret.path}.${key}`);
+      }
+    }
+  }
+  return missing;
 }
