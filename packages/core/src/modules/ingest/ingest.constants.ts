@@ -205,15 +205,22 @@ export const zProfileId = z.union([
   z.number(),
 ]) satisfies z.ZodType<IProfileId>;
 
+/** Group membership is copied onto every session write, so both are bounded. */
+export const MAX_GROUPS_PER_EVENT = 100;
+export const MAX_GROUP_ID_LENGTH = 256;
+
+const zGroupId = z.string().min(1).max(MAX_GROUP_ID_LENGTH);
+const zGroupIds = z.array(zGroupId).max(MAX_GROUPS_PER_EVENT);
+
 export const zGroupPayload = z.object({
-  id: z.string().min(1),
+  id: zGroupId,
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).optional(),
 }) satisfies z.ZodType<IGroupPayload>;
 
 export const zAssignGroupPayload = z.object({
-  groupIds: z.array(z.string().min(1)),
+  groupIds: zGroupIds,
   profileId: zProfileId.optional(),
 }) satisfies z.ZodType<IAssignGroupPayload>;
 
@@ -222,7 +229,7 @@ export const zTrackPayload = z
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: zProfileId.optional(),
-    groups: z.array(z.string().min(1)).nullish(),
+    groups: zGroupIds.nullish(),
   })
   .refine(
     (data) => !(RESERVED_EVENT_NAMES as readonly string[]).includes(data.name),

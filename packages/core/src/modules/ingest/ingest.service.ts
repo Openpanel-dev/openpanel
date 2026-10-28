@@ -613,6 +613,12 @@ export type LegacyEventOutcome =
   | { status: 'ok' }
   | { status: 'missing-project-id' };
 
+function legacyProfileId(raw: unknown): string | undefined {
+  return typeof raw === 'string' || typeof raw === 'number'
+    ? String(raw)
+    : undefined;
+}
+
 export async function ingestLegacyEvent(
   request: {
     projectId: string | null | undefined;
@@ -686,8 +692,14 @@ export async function ingestLegacyEvent(
       id: uuid(),
       projectId,
       headers,
+      // Picked, not spread: this route has no body schema, and a stray field
+      // (`groups` as an object, the body's `clientSecret`) would otherwise
+      // ride into Kafka and onto the shared buffers' insert batches.
       event: {
-        ...request.body,
+        name,
+        profileId: legacyProfileId(request.body?.profileId),
+        properties: request.body?.properties,
+        groups: [],
         timestamp,
         isTimestampFromThePast,
       },
