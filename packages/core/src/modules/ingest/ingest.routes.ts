@@ -14,12 +14,14 @@ import type { AppDeps, HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
 import { toIngestHeaders } from '../../shared/headers';
 import type { DeprecatedPostEventPayload } from './ingest.constants';
-import { zTrackHandlerPayload } from './ingest.constants';
+import { zTrackRequestBody } from './ingest.constants';
 import {
   checkIngestBot,
   fetchDeviceIdentity,
+  type IngestTransport,
   ingestLegacyEvent,
   ingestTrack,
+  ingestTrackBatch,
   isDuplicateIngestRequest,
   isIngestionWoundDown,
   type TrackOutcome,
@@ -99,14 +101,25 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
         status: 400,
         message: 'Property value is not a number',
       });
+    // The same body the global validation handler gives a bad single request.
+    case 'invalid-payload':
+      return status(400, {
+        status: 400,
+        error: 'Error',
+        message: `body/${outcome.path} ${outcome.message}`,
+      });
     default: {
-      // `outcome` narrows to `never`: an eighth TrackOutcome variant fails the
+      // `outcome` narrows to `never`: a new TrackOutcome variant fails the
       // compile here instead of silently getting the 400 above.
       const unhandled: never = outcome;
       return unhandled;
     }
   }
 }
+
+// A batch answers each item with the body that item would have got alone,
+// which already carries its own `status` when it failed.
+const batchItemResponse: StatusFn = (_code, body) => body;
 
 // A route-level `beforeHandle`, which runs after the macro resolved the
 // principal, so it can read `client.secretVerified`.
@@ -181,33 +194,41 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
         .post(
           '/track',
           async ({ body, client, ctx, status, timestamp }) => {
-            const outcome = await ingestTrack(
-              {
-                projectId: client.projectId,
-                clientIp: ctx.ip,
-                headers: toIngestHeaders(ctx.headers),
-                clientSecretAuth: client.secretVerified,
-                timestamp,
-                body,
-              },
-              {
-                buffers: ctx.buffers,
-                produceIncomingEvent: (payload, partitionKey) =>
-                  produceIncomingEvent(ctx.config, payload, partitionKey),
-                deps: ctx,
-              }
-            );
+            const request = {
+              projectId: client.projectId,
+              clientIp: ctx.ip,
+              headers: toIngestHeaders(ctx.headers),
+              clientSecretAuth: client.secretVerified,
+              timestamp,
+            };
+            const transport: IngestTransport = {
+              buffers: ctx.buffers,
+              produceIncomingEvent: (payload, partitionKey) =>
+                produceIncomingEvent(ctx.config, payload, partitionKey),
+              deps: ctx,
+            };
 
+            if (body.type === 'batch') {
+              const outcomes = await ingestTrackBatch(
+                { ...request, items: body.payload },
+                transport
+              );
+              return outcomes.map((outcome) =>
+                respondToOutcome(outcome, batchItemResponse)
+              );
+            }
+
+            const outcome = await ingestTrack({ ...request, body }, transport);
             return respondToOutcome(outcome, status);
           },
           {
             clientAuth: { ingest: validateIngestRequest },
-            body: zTrackHandlerPayload,
+            body: zTrackRequestBody,
             beforeHandle: [refuseOversizedBody, botGuard, blockWhenWoundDown],
             detail: {
               tags: TAGS,
               description:
-                'Ingest a tracking event (track, identify, group, increment, decrement, replay).',
+                'Ingest a tracking event (track, identify, group, increment, decrement, replay), or a batch of up to 250 of them.',
             },
           }
         )

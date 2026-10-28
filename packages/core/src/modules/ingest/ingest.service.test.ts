@@ -54,6 +54,7 @@ let getOverrideDeviceId: typeof import('./ingest.service').getOverrideDeviceId;
 let getTimestamp: typeof import('./ingest.service').getTimestamp;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
+let ingestTrackBatch: typeof import('./ingest.service').ingestTrackBatch;
 
 // The profile module is spread and then overridden by name: event.service
 // imports more of profile.service than ingest.service does. Overriding
@@ -78,8 +79,13 @@ beforeAll(async () => {
     ...realSaltService,
     getSalts,
   }));
-  ({ getOverrideDeviceId, getTimestamp, handleReplay, ingestTrack } =
-    await import('./ingest.service'));
+  ({
+    getOverrideDeviceId,
+    getTimestamp,
+    handleReplay,
+    ingestTrack,
+    ingestTrackBatch,
+  } = await import('./ingest.service'));
 });
 
 afterAll(() => {
@@ -307,5 +313,109 @@ describe('ingestTrack — events transport', () => {
 
     expect(produce).not.toHaveBeenCalled();
     expect(identifyProfile).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ingestTrackBatch', () => {
+  const { body: _body, ...shared } = request(track());
+  const named = (name: string, properties: Record<string, unknown> = {}) => ({
+    type: 'track',
+    payload: { name, properties: { __deviceId: DEVICE_ID, ...properties } },
+  });
+  const producedEvents = (produce: ReturnType<typeof mock>) =>
+    produce.mock.calls.map(
+      (call) =>
+        (
+          call as unknown as [{ event: { name: string; properties: object } }]
+        )[0].event
+    );
+
+  it('produces every item in the order the caller sent them', async () => {
+    const produce = mock(async () => undefined);
+
+    const outcomes = await ingestTrackBatch(
+      { ...shared, items: [named('first'), named('second'), named('third')] },
+      transport(produce)
+    );
+
+    expect(producedEvents(produce).map((event) => event.name)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
+    expect(outcomes.map((outcome) => outcome.status)).toEqual([
+      'ok',
+      'ok',
+      'ok',
+    ]);
+  });
+
+  it('answers an invalid item in place and still ingests the others', async () => {
+    const produce = mock(async () => undefined);
+
+    const outcomes = await ingestTrackBatch(
+      {
+        ...shared,
+        items: [
+          named('before'),
+          { type: 'track', payload: { name: '' } },
+          { type: 'batch', payload: [named('nested')] },
+          named('after'),
+        ],
+      },
+      transport(produce)
+    );
+
+    expect(producedEvents(produce).map((event) => event.name)).toEqual([
+      'before',
+      'after',
+    ]);
+    expect(outcomes[0]?.status).toBe('ok');
+    expect(outcomes[1]).toEqual({
+      status: 'invalid-payload',
+      path: 'payload.1.payload.name',
+      message: 'Too small: expected string to have >=1 characters',
+    });
+    expect(outcomes[2]).toMatchObject({
+      status: 'invalid-payload',
+      path: 'payload.2.type',
+    });
+    expect(outcomes[3]?.status).toBe('ok');
+  });
+
+  it('answers a refused item on its own and still ingests the rest', async () => {
+    const produce = mock(async () => undefined);
+
+    const outcomes = await ingestTrackBatch(
+      {
+        ...shared,
+        items: [
+          named('before'),
+          { type: 'alias', payload: { profileId: 'p1', alias: 'a1' } },
+          named('after'),
+        ],
+      },
+      transport(produce)
+    );
+
+    expect(outcomes.map((outcome) => outcome.status)).toEqual([
+      'ok',
+      'alias-not-supported',
+      'ok',
+    ]);
+    expect(produce).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops at a produce failure, like a single event does', async () => {
+    const produce = mock(() => Promise.reject(new Error('kafka unavailable')));
+
+    await expect(
+      ingestTrackBatch(
+        { ...shared, items: [named('first'), named('second')] },
+        transport(produce)
+      )
+    ).rejects.toThrow('kafka unavailable');
+
+    expect(produce).toHaveBeenCalledTimes(1);
   });
 });

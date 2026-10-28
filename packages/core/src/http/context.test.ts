@@ -345,4 +345,24 @@ describe('requestLogging', () => {
       userAgent: 'op-sdk/1.0',
     });
   });
+
+  test('logs a /track batch as its item count, not its items', async () => {
+    const stub = build();
+    const item = { type: 'track', payload: { name: 'screen_view' } };
+
+    await stub.app.handle(
+      new Request('http://localhost/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'batch', payload: [item, item, item] }),
+      })
+    );
+
+    await settled();
+
+    expect(lines(stub)).toHaveLength(1);
+    expect(lines(stub)[0]?.payload).toMatchObject({
+      body: { type: 'batch', items: 3 },
+    });
+  });
 });
