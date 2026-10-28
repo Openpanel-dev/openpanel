@@ -189,15 +189,24 @@ const enforceAccess = t.middleware(
   }
 );
 
+// Only the input's field names are logged: mutation inputs carry credentials
+// (integration configs, second-factor codes) under names and inside values
+// that no key-based redaction can recognise.
+function getInputKeys(rawInput: unknown): string[] | undefined {
+  if (rawInput === null || typeof rawInput !== 'object') {
+    return undefined;
+  }
+  return Object.keys(rawInput);
+}
+
 const loggerMiddleware = t.middleware(
-  async ({ ctx, next, getRawInput, path, input, type }) => {
+  async ({ ctx, next, getRawInput, path, type }) => {
     const rawInput = await getRawInput();
     if (type === 'mutation') {
       ctx.logger.info(
         {
           path,
-          rawInput,
-          input,
+          inputKeys: getInputKeys(rawInput),
           userId: ctx.session?.userId,
           organizationId: has('organizationId', rawInput)
             ? rawInput.organizationId
