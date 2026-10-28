@@ -33,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useEventProperties } from '@/hooks/use-event-properties';
-import { useTRPC } from '@/integrations/trpc/react';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
 interface Props {
@@ -88,6 +88,7 @@ export default function AddNotificationRule({ rule }: Props) {
         );
         popModal();
       },
+      onError: handleError,
     })
   );
   const integrationsQuery = useQuery(
