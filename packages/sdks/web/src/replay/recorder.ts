@@ -22,6 +22,11 @@ export type ReplayChunkPayload = {
   payload: string;
 };
 
+// rrweb's maskAllInputs skips hidden inputs, which carry CSRF tokens and
+// similar. They render nothing, so blocking them costs the replay nothing.
+const HIDDEN_INPUT_SELECTOR = 'input[type="hidden" i]';
+const DEFAULT_BLOCK_SELECTOR = '[data-openpanel-replay-block]';
+
 let stopRecording: (() => void) | null = null;
 
 export function startReplayRecorder(
@@ -122,7 +127,7 @@ export function startReplayRecorder(
             return text.replace(/\S/g, '*');
           }
         : undefined,
-    blockSelector: config.blockSelector ?? '[data-openpanel-replay-block]',
+    blockSelector: `${config.blockSelector ?? DEFAULT_BLOCK_SELECTOR}, ${HIDDEN_INPUT_SELECTOR}`,
     blockClass: config.blockClass,
     ignoreSelector: config.ignoreSelector,
   });
