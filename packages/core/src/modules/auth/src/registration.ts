@@ -25,7 +25,7 @@ export async function getIsRegistrationAllowed(
     return true;
   }
 
-  // 2. If there is an invite, check if it is valid
+  // 2. If there is an invite, it must exist and be unexpired
   if (inviteId) {
     if (allowInvitation === false) {
       return false;
@@ -37,7 +37,7 @@ export async function getIsRegistrationAllowed(
       },
     });
 
-    return !!invite;
+    return !!invite && invite.expiresAt >= new Date();
   }
 
   return allowRegistration;
