@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
+import { createConcurrencyLimit } from './concurrency-limit';
 import { SANDBOX_EXIT_CODE } from './sandbox-protocol';
 import { validate } from './validate';
 
@@ -29,9 +30,17 @@ const MAX_OUTPUT_BYTES = 1_000_000;
  */
 const MEMORY_LIMIT_KIB = 1024 * 1024;
 
-const SANDBOX_CHILD_PATH = fileURLToPath(
-  new URL('./sandbox-child.ts', import.meta.url)
-);
+/**
+ * Children alive at once per process, each up to MEMORY_LIMIT_KIB, whatever
+ * the notification worker's concurrency. Further runs wait for a slot.
+ */
+const MAX_CONCURRENT_SANDBOXES = 3;
+
+const limitSandboxes = createConcurrencyLimit(MAX_CONCURRENT_SANDBOXES);
+
+// `apps/start` typechecks this source without Bun's types, which declare `dir`.
+const { dir: MODULE_DIR } = import.meta as ImportMeta & { dir: string };
+const SANDBOX_CHILD_PATH = join(MODULE_DIR, 'sandbox-child.ts');
 
 /**
  * `ulimit` applies to the shell and survives `exec`, so the cap is in place
@@ -69,6 +78,14 @@ export function runInSandbox(
   code: string,
   payload: Record<string, unknown>,
   limits: SandboxLimits = DEFAULT_LIMITS
+): Promise<string> {
+  return limitSandboxes(() => spawnSandbox(code, payload, limits));
+}
+
+function spawnSandbox(
+  code: string,
+  payload: Record<string, unknown>,
+  limits: SandboxLimits
 ): Promise<string> {
   const [command, args] = sandboxCommand();
   const child = spawn(command, args, {

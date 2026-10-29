@@ -12,10 +12,33 @@ interface SandboxInput {
   maxOutputBytes: number;
 }
 
+// A type guard rather than zod: importing zod would add to every child's start.
+function isSandboxInput(value: unknown): value is SandboxInput {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'code' in value &&
+    typeof value.code === 'string' &&
+    'payload' in value &&
+    'timeoutMs' in value &&
+    typeof value.timeoutMs === 'number' &&
+    'maxOutputBytes' in value &&
+    typeof value.maxOutputBytes === 'number'
+  );
+}
+
+function parseSandboxInput(json: string): SandboxInput {
+  const input: unknown = JSON.parse(json);
+  if (!isSandboxInput(input)) {
+    throw new Error('Malformed sandbox input');
+  }
+  return input;
+}
+
 async function readStdin(): Promise<string> {
   const chunks: Buffer[] = [];
   for await (const chunk of process.stdin) {
-    chunks.push(chunk as Buffer);
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)));
   }
   return Buffer.concat(chunks).toString('utf8');
 }
@@ -57,7 +80,7 @@ function run(input: SandboxInput): void {
 }
 
 try {
-  run(JSON.parse(await readStdin()) as SandboxInput);
+  run(parseSandboxInput(await readStdin()));
 } catch (error) {
   finish(
     SANDBOX_EXIT_CODE.templateError,
