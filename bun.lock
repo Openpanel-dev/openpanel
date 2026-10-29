@@ -176,6 +176,7 @@
         "@visx/shape": "4.0.1-alpha.0",
         "@visx/zoom": "4.0.1-alpha.0",
         "ai": "7.0.144",
+        "better-auth": "1.7.10",
         "bind-event-listener": "3.0.0",
         "class-variance-authority": "0.7.1",
         "clsx": "2.1.1",
@@ -209,6 +210,7 @@
         "nuqs": "2.5.2",
         "prisma-error-enum": "0.1.3",
         "pushmodal": "1.0.3",
+        "qrcode": "1.5.4",
         "ramda": "0.29.1",
         "random-animal-name": "0.1.1",
         "rc-virtual-list": "3.14.5",
@@ -268,6 +270,7 @@
         "@types/lodash.debounce": "4.0.9",
         "@types/lodash.isequal": "4.5.8",
         "@types/lodash.throttle": "4.1.9",
+        "@types/qrcode": "1.5.6",
         "@types/ramda": "0.31.0",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
@@ -327,7 +330,6 @@
         "@openpanel/shared": "workspace:*",
         "@oslojs/crypto": "1.0.1",
         "@oslojs/encoding": "1.1.0",
-        "@oslojs/otp": "1.1.0",
         "@slack/bolt": "3.21.4",
         "@slack/oauth": "3.0.1",
         "@trpc/server": "11.6.0",
@@ -349,7 +351,6 @@
         "pino-pretty": "catalog:",
         "prisma-error-enum": "0.1.3",
         "prom-client": "15.1.3",
-        "qrcode": "1.5.4",
         "ramda": "0.29.1",
         "short-unique-id": "5.0.3",
         "superjson": "2.2.2",
@@ -361,7 +362,6 @@
         "@clickhouse/client": "1.18.5",
         "@openpanel/tsconfig": "workspace:*",
         "@types/js-yaml": "4.0.9",
-        "@types/qrcode": "1.5.6",
         "@types/ramda": "0.31.0",
         "@types/unzipper": "0.10.11",
         "@types/uuid": "10.0.0",
@@ -1861,8 +1861,6 @@
     "@oslojs/encoding": ["@oslojs/encoding@1.1.0", "", {}, "sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ=="],
 
     "@oslojs/jwt": ["@oslojs/jwt@0.2.0", "", { "dependencies": { "@oslojs/encoding": "0.4.1" } }, "sha512-bLE7BtHrURedCn4Mco3ma9L4Y1GR2SMBuIvjWr7rmQ4/W/4Jy70TIAgZ+0nIlk0xHz1vNP8x8DCns45Sb2XRbg=="],
-
-    "@oslojs/otp": ["@oslojs/otp@1.1.0", "", { "dependencies": { "@oslojs/binary": "1.0.0", "@oslojs/crypto": "1.0.0", "@oslojs/encoding": "1.0.0" } }, "sha512-tpdxlnCLcY6IZLLqH8kGD8PSvIVyev/+Gbglgvrk9e4YzgKO7+7FL8NWBofL7LZI6MgQ1HnNUuotRG6t1JJ0dg=="],
 
     "@oxc-minify/binding-android-arm64": ["@oxc-minify/binding-android-arm64@0.102.0", "", { "os": "android", "cpu": "arm64" }, "sha512-pknM+ttJTwRr7ezn1v5K+o2P4RRjLAzKI10bjVDPybwWQ544AZW6jxm7/YDgF2yUbWEV9o7cAQPkIUOmCiW8vg=="],
 
@@ -6331,10 +6329,6 @@
     "@opentelemetry/sdk-trace-base/@opentelemetry/semantic-conventions": ["@opentelemetry/semantic-conventions@1.28.0", "", {}, "sha512-lp4qAiMTD4sNWW4DbKLBkfiMZ4jbAboJIGOQr5DvciMRI494OapieI9qiODpOt0XBr1LjIDy1xAGAnVs5supTA=="],
 
     "@oslojs/jwt/@oslojs/encoding": ["@oslojs/encoding@0.4.1", "", {}, "sha512-hkjo6MuIK/kQR5CrGNdAPZhS01ZCXuWDRJ187zh6qqF2+yMHZpD9fAYpX8q2bOO6Ryhl3XpCT6kUX76N8hhm4Q=="],
-
-    "@oslojs/otp/@oslojs/crypto": ["@oslojs/crypto@1.0.0", "", { "dependencies": { "@oslojs/asn1": "1.0.0", "@oslojs/binary": "1.0.0" } }, "sha512-dVz8TkkgYdr3tlwxHd7SCYGxoN7ynwHLA0nei/Aq9C+ERU0BK+U8+/3soEzBUxUNKYBf42351DyJUZ2REla50w=="],
-
-    "@oslojs/otp/@oslojs/encoding": ["@oslojs/encoding@1.0.0", "", {}, "sha512-dyIB0SdZgMm5BhGwdSp8rMxEFIopLKxDG1vxIBaiogyom6ZqH2aXPb6DEC2WzOOWKdPSq1cxdNeRx2wAn1Z+ZQ=="],
 
     "@oxc-minify/binding-wasm32-wasi/@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.2.3", "", { "dependencies": { "@tybys/wasm-util": "^0.10.3" }, "peerDependencies": { "@emnapi/core": "^1.7.1 || ^2.0.0-alpha.4", "@emnapi/runtime": "^1.7.1 || ^2.0.0-alpha.4" } }, "sha512-UMduMbqO5s5zF2NkNacMT/yK5Y5QiKvWr2+50bzIIxFDwVJ2h49b+oyjaCGPhJxd2/gC2x39EHv/gHVuu36x2Q=="],
 

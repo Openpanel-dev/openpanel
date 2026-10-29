@@ -106,9 +106,6 @@ export {
   Arctic,
   cookieOptions,
   createAuthService,
-  deleteSessionTokenCookie,
-  githubClient,
-  googleClient,
   googleGscClient,
   parseCookieDomain,
 } from './modules/auth/auth.service';

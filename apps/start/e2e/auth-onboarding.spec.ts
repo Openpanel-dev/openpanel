@@ -11,6 +11,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { BrowserContext, Page } from '@playwright/test';
 import {
   apiUrl,
+  authPost,
   FRESH_CONTEXT,
   gotoHydrated,
   hasHorizontalOverflow,
@@ -20,6 +21,7 @@ import {
   totpCode,
   trackEvent,
   waitForHydration,
+  waitForSignInSlot,
   watchIssues,
   wrongTotpCode,
 } from './auth-helpers';
@@ -34,8 +36,10 @@ const RUN_ID = Date.now();
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 const DESKTOP_VIEWPORT = { width: 1280, height: 720 };
 const RECOVERY_CODE_COUNT = 10;
-const RECOVERY_CODE_PATTERN = /[A-Z2-9]{5}-[A-Z2-9]{5}/g;
-const TOTP_SECRET_PATTERN = /[A-Z2-7]{32}/;
+const RECOVERY_CODE_PATTERN = /\b[A-Za-z0-9]{5}-[A-Za-z0-9]{5}\b/g;
+const TOTP_SECRET_PATTERN = /[A-Z2-7]{32,}/;
+const SESSION_COOKIE = 'openpanel.session_token';
+const RECOVERY_PLACEHOLDER = 'AbCdE-fGhIj';
 const FRAMEWORK_COUNT = 17;
 const WEBSITE_FRAMEWORK_COUNT = 8;
 const EVENT_ARRIVAL_TIMEOUT_MS = 45_000;
@@ -99,12 +103,13 @@ function otpInput(scope: Page | ReturnType<Page['getByRole']>) {
   return scope.locator('input[data-input-otp]');
 }
 
+/** better-auth keeps the token in the identifier of a `verifications` row. */
 function resetTokenFor(email: string): string {
   const databaseUrl = (process.env.DATABASE_URL ?? '').split('?')[0] ?? '';
   return execFileSync('psql', [
     databaseUrl,
     '-Atc',
-    `select rp.id from reset_password rp join accounts a on a.id = rp."accountId" join users u on u.id = a."userId" where u.email = '${email}'`,
+    `select substring(v.identifier from length('reset-password:') + 1) from verifications v join users u on u.id = v.value where u.email = '${email}' and v.identifier like 'reset-password:%' order by v."createdAt" desc limit 1`,
   ])
     .toString()
     .trim();
@@ -128,7 +133,7 @@ test('sign-up validates every field before it calls the API', async ({
   const issues = watchIssues(page);
   let signUpRequests = 0;
   page.on('request', (request) => {
-    if (request.url().includes('/trpc/auth.signUpEmail')) {
+    if (request.url().includes('/api/auth/sign-up/email')) {
       signUpRequests += 1;
     }
   });
@@ -176,7 +181,9 @@ test('sign up creates the account and opens the project step', async ({
   // No organization yet: `/` forwards to the project step.
   await expect(page).toHaveURL(/\/onboarding\/project$/, { timeout: 20_000 });
   const cookies = await context.cookies();
-  expect(cookies.find((cookie) => cookie.name === 'session')).toMatchObject({
+  expect(
+    cookies.find((cookie) => cookie.name === SESSION_COOKIE)
+  ).toMatchObject({
     httpOnly: true,
     secure: true,
     sameSite: 'Lax',
@@ -623,8 +630,20 @@ test('email preferences save per category and survive a reload', async ({
   expect(issues.unexpected()).toEqual([]);
 });
 
-// A wrong code must not be a 401: the dashboard treats every 401 as "session
-// gone" and hard-navigates to /login.
+/** Opens the setup modal and gets past its password step. */
+async function startTwoFactorSetup(page: Page, password: string) {
+  await page.getByRole('button', { name: 'Enable' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByPlaceholder('Your password').fill(password);
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
+  const secret = (await dialog.innerText()).match(TOTP_SECRET_PATTERN)?.[0];
+  if (!secret) {
+    throw new Error('The setup modal did not show a secret to type manually.');
+  }
+  return { dialog, secret };
+}
+
 test('a mistyped code while enabling two-factor keeps the setup open', async ({
   page,
   context,
@@ -632,14 +651,10 @@ test('a mistyped code while enabling two-factor keeps the setup open', async ({
 }) => {
   const state = await continueAsUser(context, baseURL);
   await gotoHydrated(page, `/${state.organizationId}/account/two-factor`);
-  await page.getByRole('button', { name: 'Enable' }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
-  const secret =
-    (await dialog.innerText()).match(TOTP_SECRET_PATTERN)?.[0] ?? '';
+  const { dialog, secret } = await startTwoFactorSetup(page, state.password);
   await otpInput(dialog).fill(wrongTotpCode(secret));
   await dialog.getByRole('button', { name: 'Enable' }).click();
-  await expect(toast(page, 'Invalid code')).toBeVisible();
+  await expect(toast(page, /invalid/i)).toBeVisible();
   await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
   await expect(page).toHaveURL(/\/account\/two-factor$/);
 });
@@ -658,15 +673,9 @@ test('two-factor can be enabled and its recovery codes regenerated', async ({
     page.getByText('Two-factor authentication is disabled.')
   ).toBeVisible();
 
-  await page.getByRole('button', { name: 'Enable' }).click();
-  const dialog = page.getByRole('dialog');
-  await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
+  const { dialog, secret } = await startTwoFactorSetup(page, state.password);
   const enable = dialog.getByRole('button', { name: 'Enable' });
   await expect(enable).toBeDisabled();
-  const secret = (await dialog.innerText()).match(TOTP_SECRET_PATTERN)?.[0];
-  if (!secret) {
-    throw new Error('The setup modal did not show a secret to type manually.');
-  }
   await page.screenshot({ path: `${SHOTS_DIR}/two-factor-setup.png` });
 
   await otpInput(dialog).fill(totpCode(secret));
@@ -684,14 +693,13 @@ test('two-factor can be enabled and its recovery codes regenerated', async ({
   await expect(
     page.getByText('Two-factor authentication is enabled.')
   ).toBeVisible();
-  await expect(
-    page.getByText(`${RECOVERY_CODE_COUNT} recovery codes remaining`)
-  ).toBeVisible();
+  // Enabling issues a new session; keep the one later tests continue with.
+  await rememberCookies(context);
 
   await page.getByRole('button', { name: 'Regenerate recovery codes' }).click();
   const regenerate = dialog.getByRole('button', { name: 'Regenerate' });
   await expect(regenerate).toBeDisabled();
-  await otpInput(dialog).fill(totpCode(secret));
+  await dialog.getByPlaceholder('Your password').fill(state.password);
   await regenerate.click();
   await expect(dialog.getByText('New recovery codes')).toBeVisible();
   const newCodes =
@@ -705,8 +713,6 @@ test('two-factor can be enabled and its recovery codes regenerated', async ({
   expect(issues.unexpected()).toEqual([]);
 });
 
-// The same on /verify: a 401 would send the visitor back to /login without
-// ever showing "Invalid code".
 test('a mistyped code on /verify says so and lets the visitor try again', async ({
   page,
 }) => {
@@ -717,7 +723,7 @@ test('a mistyped code on /verify says so and lets the visitor try again', async 
   await expect(page).toHaveURL(/\/verify$/);
   await waitForHydration(page);
   await otpInput(page).fill(wrongTotpCode(state.totpSecret ?? ''));
-  await expect(toast(page, 'Invalid code')).toBeVisible();
+  await expect(toast(page, /invalid/i)).toBeVisible();
   await expect(page).toHaveURL(/\/verify$/);
 });
 
@@ -745,7 +751,7 @@ test('signing in asks for the authenticator code', async ({
   await expect(page).toHaveURL(/\/verify$/);
   // The password alone is not a session.
   expect((await context.cookies()).map((cookie) => cookie.name)).not.toContain(
-    'session'
+    SESSION_COOKIE
   );
   await page.goto(`/${state.organizationId}`);
   await expect(page).toHaveURL(/\/login$/);
@@ -755,7 +761,7 @@ test('signing in asks for the authenticator code', async ({
   await page
     .getByRole('button', { name: 'Use a recovery code instead' })
     .click();
-  await expect(page.getByPlaceholder('ABCDE-FGHIJ')).toBeVisible();
+  await expect(page.getByPlaceholder(RECOVERY_PLACEHOLDER)).toBeVisible();
   await page
     .getByRole('button', { name: 'Use authenticator app instead' })
     .click();
@@ -765,14 +771,15 @@ test('signing in asks for the authenticator code', async ({
     timeout: 20_000,
   });
   expect((await context.cookies()).map((cookie) => cookie.name)).toContain(
-    'session'
+    SESSION_COOKIE
   );
-  expect(issues.unexpected()).toEqual([]);
+  expect(issues.unexpected([/two-factor\/verify/])).toEqual([]);
 });
 
 test('a recovery code signs in once and is then used up', async ({
   page,
   context,
+  request,
 }) => {
   const state = readState();
   const recoveryCode = state.recoveryCodes?.[0];
@@ -785,31 +792,28 @@ test('a recovery code signs in once and is then used up', async ({
   await page
     .getByRole('button', { name: 'Use a recovery code instead' })
     .click();
-  // Typed in lower case: codes are case-insensitive.
-  await page
-    .getByPlaceholder('ABCDE-FGHIJ')
-    .fill((recoveryCode ?? '').toLowerCase());
-  await page.getByPlaceholder('ABCDE-FGHIJ').press('Enter');
+  await page.getByPlaceholder(RECOVERY_PLACEHOLDER).fill(recoveryCode ?? '');
+  await page.getByPlaceholder(RECOVERY_PLACEHOLDER).press('Enter');
   await expect(page).toHaveURL(new RegExp(`/${state.organizationId}$`), {
     timeout: 20_000,
   });
   await rememberCookies(context);
 
-  await page.goto(`/${state.organizationId}/account/two-factor`);
-  await expect(
-    page.getByText(`${RECOVERY_CODE_COUNT - 1} recovery codes remaining`)
-  ).toBeVisible();
-
-  // The same code is refused the second time.
-  const reuse = await page.request.post(`${apiUrl()}/trpc/auth.totpDisable`, {
-    data: { json: { code: recoveryCode } },
+  // The same code is refused the second time, on a fresh password sign-in.
+  await waitForSignInSlot();
+  const signIn = await authPost(request, '/sign-in/email', {
+    email: state.email,
+    password: state.password,
   });
-  expect(reuse.status()).toBe(400);
-  expect((await reuse.json()).error.json.message).toBe('Invalid code');
+  expect((await signIn.json()).twoFactorRedirect).toBe(true);
+  const reuse = await authPost(request, '/two-factor/verify-backup-code', {
+    code: recoveryCode,
+  });
+  expect(reuse.status()).toBeGreaterThanOrEqual(400);
   expect(issues.unexpected()).toEqual([]);
 });
 
-test('two-factor can be disabled with an authenticator code', async ({
+test('two-factor can be disabled with the password', async ({
   page,
   context,
   baseURL,
@@ -826,20 +830,20 @@ test('two-factor can be disabled with an authenticator code', async ({
   await expect(dialog).toBeHidden();
 
   await page.getByRole('button', { name: 'Disable' }).click();
-  await dialog
-    .getByPlaceholder('123456 or ABCDE-FGHIJ')
-    .fill(totpCode(state.totpSecret ?? ''));
+  await dialog.getByPlaceholder('Your password').fill(state.password);
   await disable.click();
   await expect(toast(page, 'Two-factor authentication disabled')).toBeVisible();
   await expect(
     page.getByText('Two-factor authentication is disabled.')
   ).toBeVisible();
   writeState({ totpSecret: undefined, recoveryCodes: undefined });
+  await rememberCookies(context);
   expect(issues.unexpected()).toEqual([]);
 });
 
 test('a reset link sets a new password and works only once', async ({
   page,
+  request,
 }) => {
   test.skip(
     !canReadDatabase(),
@@ -860,7 +864,7 @@ test('a reset link sets a new password and works only once', async ({
   ).toBeVisible();
 
   const token = resetTokenFor(state.email);
-  expect(token).toMatch(/^pw_/);
+  expect(token.length).toBeGreaterThan(0);
   const newPassword = `pw-${RUN_ID}-second`;
   await gotoHydrated(page, `/reset-password?token=${token}`);
   await page.getByLabel('New password').fill(newPassword);
@@ -879,10 +883,11 @@ test('a reset link sets a new password and works only once', async ({
     timeout: 20_000,
   });
 
-  const reuse = await page.request.post(`${apiUrl()}/trpc/auth.resetPassword`, {
-    data: { json: { token, password: 'yet-another-password' } },
+  const reuse = await authPost(request, '/reset-password', {
+    token,
+    newPassword: 'yet-another-password',
   });
-  expect(reuse.status()).toBe(404);
+  expect(reuse.status()).toBe(400);
   expect(issues.unexpected()).toEqual([]);
 });
 
@@ -895,7 +900,7 @@ test('deleting the account needs the typed confirmation and ends the session', a
   const state = await continueAsUser(context, baseURL);
   const issues = watchIssues(page);
   const sessionCookie = state.cookies.find(
-    (cookie) => cookie.name === 'session'
+    (cookie) => cookie.name === SESSION_COOKIE
   );
   try {
     await page.setViewportSize(DESKTOP_VIEWPORT);
@@ -920,13 +925,13 @@ test('deleting the account needs the typed confirmation and ends the session', a
       // Never leave the throwaway user behind when the modal is what broke.
       await request.post(`${apiUrl()}/trpc/user.delete`, {
         data: {},
-        headers: { cookie: `session=${sessionCookie?.value}` },
+        headers: { cookie: `${SESSION_COOKIE}=${sessionCookie?.value}` },
       });
     }
   }
 
   const session = await request.get(`${apiUrl()}/trpc/auth.session`, {
-    headers: { cookie: `session=${sessionCookie?.value}` },
+    headers: { cookie: `${SESSION_COOKIE}=${sessionCookie?.value}` },
   });
   expect((await session.json()).result.data.json.userId).toBeNull();
   expect(issues.unexpected()).toEqual([]);

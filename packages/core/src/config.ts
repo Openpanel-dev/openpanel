@@ -30,6 +30,8 @@ export interface AuthConfig {
    * changing it signs everyone out. Unset leaves only legacy sessions.
    */
   secret: string | undefined;
+  /** DASHBOARD_URL plus API_CORS_ORIGINS: who may call `/api/auth`. */
+  trustedOrigins: string[];
   /**
    * `undefined` means the variable is unset, which is what cloud runs and what
    * makes registration unconditionally open — distinct from an explicit

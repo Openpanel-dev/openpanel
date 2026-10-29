@@ -6,48 +6,51 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export default function DisableTwoFactor() {
   const trpc = useTRPC();
+  const authClient = useAuthClient();
   const queryClient = useQueryClient();
-  const [code, setCode] = useState('');
+  const [password, setPassword] = useState('');
 
-  const mutation = useMutation(
-    trpc.auth.totpDisable.mutationOptions({
-      onSuccess: () => {
-        toast.success('Two-factor authentication disabled');
-        queryClient.invalidateQueries(trpc.auth.totpStatus.pathFilter());
-        popModal();
-      },
-      onError: (error) => {
-        toast.error(error.message);
-        setCode('');
-      },
-    })
-  );
+  const mutation = useMutation({
+    mutationFn: () => unwrap(authClient.twoFactor.disable({ password })),
+    onSuccess: () => {
+      toast.success('Two-factor authentication disabled');
+      queryClient.invalidateQueries(trpc.auth.twoFactorStatus.pathFilter());
+      popModal();
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      setPassword('');
+    },
+  });
 
   return (
     <ModalContent>
       <ModalHeader
-        text="Enter a code from your authenticator app, or a recovery code, to confirm."
+        text="Enter your password to confirm."
         title="Disable two-factor authentication"
       />
       <Input
-        autoCapitalize="characters"
+        aria-label="Password"
+        autoComplete="current-password"
         autoFocus
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="123456 or ABCDE-FGHIJ"
-        value={code}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Your password"
+        type="password"
+        value={password}
       />
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
           Cancel
         </Button>
         <Button
-          disabled={!code.trim()}
+          disabled={!password}
           loading={mutation.isPending}
-          onClick={() => mutation.mutate({ code })}
+          onClick={() => mutation.mutate()}
           variant="destructive"
         >
           Disable

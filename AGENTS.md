@@ -113,9 +113,9 @@ curl -sS -X POST "$API_URL/track" \
 # Management API (root client)
 curl -sS "$API_URL/manage/projects" -H "openpanel-client-id: $ROOT_ID" -H "openpanel-client-secret: $ROOT_SECRET"
 
-# tRPC as the seeded user: sign in, keep the `session` cookie, call any procedure
-curl -sS -c cookies.txt -X POST "$API_URL/trpc/auth.signInEmail" -H 'content-type: application/json' \
-  -d '{"json":{"email":"admin@openpanel.local","password":"openpanel"}}'
+# tRPC as the seeded user: sign in through better-auth, keep its cookie, call any procedure
+curl -sS -c cookies.txt -X POST "$API_URL/api/auth/sign-in/email" -H 'content-type: application/json' \
+  -H "origin: $DASHBOARD_URL" -d '{"email":"admin@openpanel.local","password":"openpanel"}'
 curl -sS -b cookies.txt "$API_URL/trpc/organization.list"
 
 # The product's MCP (streamable HTTP; url with token is `.seed.json` → mcp.url)

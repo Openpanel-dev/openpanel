@@ -18,6 +18,9 @@ import { chQuery } from '../../ch-query';
 import { sendEmail } from '../../clients/email';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+
+type MembershipDeps = Pick<ServiceDeps, 'db' | 'config'>;
+
 import {
   getOrganizationAccess,
   getProjectAccess,
@@ -191,7 +194,7 @@ export async function getMembers(
 }
 
 function writeMemberProjects(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   memberId: string,
   projectScope: ProjectScope,
   grants: IProjectAccessGrant[]
@@ -223,7 +226,7 @@ function writeMemberProjects(
  * concurrent request can cache the old answer again.
  */
 async function clearMemberAccessCache(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   { userId, organizationId }: { userId: string; organizationId: string }
 ): Promise<void> {
   const projects = await deps.db.project.findMany({
@@ -239,12 +242,12 @@ async function clearMemberAccessCache(
 }
 
 export async function connectUserToOrganization(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   {
     user,
     inviteId,
   }: {
-    user: User;
+    user: Pick<User, 'id' | 'email'>;
     inviteId: string;
   }
 ) {

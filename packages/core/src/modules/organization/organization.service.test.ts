@@ -992,7 +992,8 @@ test('runDeleteCron is a no-op when nothing is due', async () => {
   expect(organizationStore.has('org_healthy')).toBe(true);
 });
 
-// The previous build still writes `org:admin` while a rollout replaces it.
+// An install keeps `org:admin` until code migration 29 has run, and its
+// crons can start first.
 test('runDeleteCron keeps an organization whose only admin has the old role spelling', async () => {
   organizationStore.set('org_rollout', makeOrganization({ id: 'org_rollout' }));
   memberStore.set('member_1', {

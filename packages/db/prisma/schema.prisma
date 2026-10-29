@@ -153,6 +153,8 @@ model User {
   name                 String?
   emailVerified        Boolean              @default(false)
   image                String?
+  twoFactorEnabled     Boolean              @default(false)
+  twoFactor            TwoFactor?
   createdOrganizations Organization[]       @relation("organizationCreatedBy")
   subscriptions        Organization[]       @relation("subscriptionCreatedBy")
   membership           Member[]
@@ -181,6 +183,23 @@ model UserTotp {
   updatedAt     DateTime  @default(now()) @updatedAt
 
   @@map("user_totp")
+}
+
+// better-auth's twoFactor plugin. `secret` and `backupCodes` are encrypted
+// with the auth secret.
+model TwoFactor {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @default(now()) @updatedAt
+
+  @@map("two_factor")
 }
 
 model TwoFactorChallenge {

@@ -1,5 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zSignInEmail } from '@openpanel/core/modules/auth/auth.constants';
+import {
+  INVITE_HEADER,
+  zSignInEmail,
+} from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
 import {
   type SubmitErrorHandler,
@@ -12,7 +15,7 @@ import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
-import { useTRPC } from '@/integrations/trpc/react';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { pushModal } from '@/modals';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
@@ -26,30 +29,32 @@ export function SignInEmailForm({
   isLastUsed?: boolean;
   inviteId?: string;
 }) {
-  const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.auth.signInEmail.mutationOptions({
-      async onSuccess(data) {
-        trackFunnel('auth_signin_succeeded', {
-          provider: 'email',
-          totpRequired: data.type === 'totp_required',
-        });
-        if (data.type === 'totp_required') {
-          window.location.href = '/verify';
-          return;
-        }
-        toast.success('Successfully signed in');
-        window.location.href = '/';
-      },
-      onError(error) {
-        trackFunnel('auth_signin_failed', {
-          provider: 'email',
-          reason: failureReason(error),
-        });
-        toast.error(error.message);
-      },
-    })
-  );
+  const authClient = useAuthClient();
+  const mutation = useMutation({
+    mutationFn: (values: IForm) =>
+      unwrap(
+        authClient.signIn.email(values, {
+          headers: inviteId ? { [INVITE_HEADER]: inviteId } : undefined,
+        })
+      ),
+    onSuccess(data) {
+      const totpRequired = 'twoFactorRedirect' in data;
+      trackFunnel('auth_signin_succeeded', { provider: 'email', totpRequired });
+      if (totpRequired) {
+        window.location.href = '/verify';
+        return;
+      }
+      toast.success('Successfully signed in');
+      window.location.href = '/';
+    },
+    onError(error) {
+      trackFunnel('auth_signin_failed', {
+        provider: 'email',
+        reason: failureReason(error),
+      });
+      toast.error(error.message);
+    },
+  });
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -63,10 +68,7 @@ export function SignInEmailForm({
       provider: 'email',
       isLastUsed: Boolean(isLastUsed),
     });
-    mutation.mutate({
-      ...values,
-      inviteId,
-    });
+    mutation.mutate(values);
   };
   const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
     trackFunnel('auth_form_invalid', {

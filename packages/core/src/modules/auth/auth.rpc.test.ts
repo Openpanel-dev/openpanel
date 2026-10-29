@@ -138,39 +138,11 @@ test('signInDev is refused when DEV_LOGIN is not configured', async () => {
   });
 });
 
-test('totpStatus rejects an unauthenticated caller', async () => {
+test('twoFactorStatus rejects an unauthenticated caller', async () => {
   const caller = await anonCaller();
-  await expect(caller.totpStatus()).rejects.toMatchObject({
+  await expect(caller.twoFactorStatus()).rejects.toMatchObject({
     code: 'UNAUTHORIZED',
   });
-});
-
-test('totpSetup rejects an unauthenticated caller', async () => {
-  const caller = await anonCaller();
-  await expect(caller.totpSetup()).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
-});
-
-test('totpEnable rejects an unauthenticated caller before checking a code', async () => {
-  const caller = await anonCaller();
-  await expect(caller.totpEnable({ code: '123456' })).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
-});
-
-test('totpDisable rejects an unauthenticated caller before checking a code', async () => {
-  const caller = await anonCaller();
-  await expect(caller.totpDisable({ code: '123456' })).rejects.toMatchObject({
-    code: 'UNAUTHORIZED',
-  });
-});
-
-test('totpRegenerateRecoveryCodes rejects an unauthenticated caller', async () => {
-  const caller = await anonCaller();
-  await expect(
-    caller.totpRegenerateRecoveryCodes({ code: '123456' })
-  ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
 });
 
 test('session returns the caller session unauthenticated (no login required)', async () => {

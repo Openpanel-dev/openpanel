@@ -15,7 +15,7 @@ test.use({ storageState: FRESH_CONTEXT });
 // The dev server hydrates slowly when several suites share it.
 test.describe.configure({ timeout: 90_000 });
 
-const RESET_REQUEST = '/trpc/auth.resetPassword';
+const RESET_REQUEST = '/api/auth/reset-password';
 const UNKNOWN_TOKEN = 'pw_e2e-does-not-exist';
 
 test('the forgot password modal validates and answers the same for an unknown email', async ({
@@ -37,7 +37,7 @@ test('the forgot password modal validates and answers the same for an unknown em
 
   await email.fill('not-an-email');
   await dialog.getByRole('button', { name: 'Continue' }).click();
-  await expect(dialog.getByText('Issues')).toBeVisible();
+  await expect(dialog.getByText('Invalid email address')).toBeVisible();
   await page.screenshot({ path: `${SHOTS_DIR}/forgot-password-invalid.png` });
 
   await dialog.getByRole('button', { name: 'Cancel' }).click();
@@ -82,14 +82,12 @@ test('/reset-password refuses an unknown token and keeps the visitor on the page
     response.url().includes(RESET_REQUEST)
   );
   await page.getByLabel('New password').press('Enter');
-  expect((await answer).status()).toBe(404);
-  await expect(toast(page, 'Reset password not found')).toBeVisible();
+  expect((await answer).status()).toBe(400);
+  await expect(toast(page, /invalid token/i)).toBeVisible();
   await expect(page).toHaveURL(/\/reset-password\?token=/);
-  expect(issues.unexpected([/auth\.resetPassword/])).toEqual([]);
+  expect(issues.unexpected([/api\/auth\/reset-password/])).toEqual([]);
 });
 
-// Open defect: the password input is rendered without the `error` prop, so a
-// too-short password makes the button do nothing.
 test('/reset-password tells the visitor when the new password is too short', async ({
   page,
 }) => {
@@ -102,8 +100,8 @@ test('/reset-password tells the visitor when the new password is too short', asy
   await gotoHydrated(page, `/reset-password?token=${UNKNOWN_TOKEN}`);
   await page.getByLabel('New password').fill('short');
   await page.getByRole('button', { name: 'Reset password' }).click();
+  await expect(page.getByText('Use at least 8 characters')).toBeVisible();
   expect(resetRequests).toBe(0);
-  await expect(page.getByText('Issues')).toBeVisible();
 });
 
 test('/unsubscribe with missing or malformed parameters shows a friendly page', async ({
