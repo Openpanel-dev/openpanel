@@ -5,6 +5,10 @@ import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
 import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import { zCreateImport } from './import.constants';
+import {
+  requireMappedProjectsWriteAccess,
+  toPublicImport,
+} from './import.service';
 
 export const importRouter = createTRPCRouter({
   list: protectedProcedure
@@ -17,11 +21,11 @@ export const importRouter = createTRPCRouter({
         level: 'read',
       });
 
-      const db = ctx.db;
-      return db.import.findMany({
+      const imports = await ctx.db.import.findMany({
         where: { projectId: input.projectId },
         orderBy: { createdAt: 'desc' },
       });
+      return imports.map(toPublicImport);
     }),
 
   create: protectedProcedure
@@ -33,6 +37,11 @@ export const importRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
+      await requireMappedProjectsWriteAccess(
+        ctx.services.auth,
+        userId,
+        input.config
+      );
 
       const db = ctx.db;
       const organization = await db.organization.findFirst({
@@ -66,7 +75,7 @@ export const importRouter = createTRPCRouter({
         data: { jobId },
       });
 
-      return { ...importRecord, jobId };
+      return toPublicImport({ ...importRecord, jobId });
     }),
 
   delete: protectedProcedure
@@ -88,7 +97,9 @@ export const importRouter = createTRPCRouter({
         await ctx.queues.import.import.remove(importRecord.jobId);
       }
 
-      return db.import.delete({ where: { id: input.id } });
+      return toPublicImport(
+        await db.import.delete({ where: { id: input.id } })
+      );
     }),
 
   retry: protectedProcedure
@@ -106,15 +117,23 @@ export const importRouter = createTRPCRouter({
         level: 'write',
       });
 
+      await requireMappedProjectsWriteAccess(
+        ctx.services.auth,
+        userId,
+        importRecord.config
+      );
+
       if (importRecord.status !== 'failed') {
         throw new Error('Only failed imports can be retried');
       }
 
       const jobId = await ctx.services.import.enqueue(importRecord.id);
 
-      return db.import.update({
-        where: { id: importRecord.id },
-        data: { jobId, status: 'pending', errorMessage: null },
-      });
+      return toPublicImport(
+        await db.import.update({
+          where: { id: importRecord.id },
+          data: { jobId, status: 'pending', errorMessage: null },
+        })
+      );
     }),
 });

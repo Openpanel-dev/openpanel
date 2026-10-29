@@ -512,6 +512,24 @@ describe('cachable', () => {
       expect(cached).toBeNull();
     });
 
+    it('should not keep an L1 copy when localCache is off', async () => {
+      let value = 'granted';
+      const fn = async (arg1: string) => value;
+      const cachedFn = cacheable('revocableFn', fn, 3600, {
+        localCache: false,
+      });
+      const otherProcessFn = cacheable('revocableFn', fn, 3600, {
+        localCache: false,
+      });
+
+      expect(await otherProcessFn('arg1')).toBe('granted');
+
+      value = 'revoked';
+      await cachedFn.clear('arg1');
+
+      expect(await otherProcessFn('arg1')).toBe('revoked');
+    });
+
     it('should provide set method', async () => {
       const fn = async (arg1: string, arg2: string) => ({});
       const cachedFn = cacheable(fn, 3600);

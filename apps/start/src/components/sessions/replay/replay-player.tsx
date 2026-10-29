@@ -92,7 +92,6 @@ export function ReplayPlayer({
             autoPlay: false,
             showController: false,
             speedOption: [0.5, 1, 2, 4, 8],
-            UNSAFE_replayCanvas: true,
             skipInactive: false,
           },
         }) as ReplayPlayerInstance;

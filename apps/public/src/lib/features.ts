@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isContentSlug } from './utils';
 
 export interface FeatureSeo {
   title: string;
@@ -105,6 +106,9 @@ const contentDir = join(process.cwd(), 'content', 'features');
 export async function getFeatureData(
   slug: string
 ): Promise<FeatureData | null> {
+  if (!isContentSlug(slug)) {
+    return null;
+  }
   try {
     const filePath = join(contentDir, `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');

@@ -24,6 +24,8 @@ import { BaseImportProvider } from '../base-provider';
 /** Bounds for a remote Umami export. */
 const MAX_IMPORT_BYTES = 2_000_000_000; // 2 GB
 const MAX_IMPORT_ROWS = 50_000_000;
+/** Characters per CSV row; caps what the parser buffers while waiting for a row to end. */
+const MAX_IMPORT_RECORD_SIZE = 1_000_000;
 /** Bounds the connection and redirect walk only, not the download itself. */
 const IMPORT_CONNECT_TIMEOUT_MS = 30_000;
 
@@ -204,6 +206,7 @@ export class UmamiProvider extends BaseImportProvider<UmamiRawEvent> {
       bom: true, // handle UTF-8 BOM
       relax_column_count: true,
       skip_empty_lines: true,
+      max_record_size: MAX_IMPORT_RECORD_SIZE,
     });
 
     // Wire the pipeline for proper backpressure & error propagation

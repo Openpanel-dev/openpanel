@@ -10,6 +10,7 @@ import {
   toRangeBoundaryDate,
   toRangeBoundaryLiteral,
 } from '../../../shared/ch-dates';
+import { assertTimeBucketBudget } from '../../../shared/time-buckets';
 import { compiledText } from '../../chart/src/compiled';
 import { getSelectPropertyKey } from '../../chart/src/field-resolution';
 import type { IInterval } from '../../report/report.constants';
@@ -97,6 +98,7 @@ export function fillClause(
   startDate: string,
   endDate: string
 ): SqlFragment {
+  assertTimeBucketBudget({ startDate, endDate, interval });
   return sql`WITH FILL FROM ${fillFrom(interval, startDate)} TO ${fillBoundaryParam(interval, endDate, 'end')} STEP ${compiledText(toIntervalStep(interval))}`;
 }
 

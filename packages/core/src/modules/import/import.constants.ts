@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MS_PER_DAY } from '../../shared/time.constants';
 
 export type ImportProviderId = 'umami' | 'mixpanel' | 'amplitude';
 export type ImportProviderType = 'file' | 'api';
@@ -83,35 +84,57 @@ export type IUmamiImportConfig = z.infer<typeof zUmamiImportConfig>;
 export const zPlausibleImportConfig = createFileImportConfig('plausible');
 export type IPlausibleImportConfig = z.infer<typeof zPlausibleImportConfig>;
 
+/** Twenty years of daily export chunks; a wider range is a typo, not a history. */
+export const MAX_IMPORT_RANGE_DAYS = 20 * 366;
+
+/** Days covered by a `YYYY-MM-DD` range, inclusive; `NaN` when either end is not a date. */
+export function getImportRangeDays(from: string, to: string): number {
+  return (Date.parse(to) - Date.parse(from)) / MS_PER_DAY + 1;
+}
+
+const isImportRangeSupported = ({ from, to }: { from: string; to: string }) => {
+  const days = getImportRangeDays(from, to);
+  return days >= 1 && days <= MAX_IMPORT_RANGE_DAYS;
+};
+
+const IMPORT_RANGE_ISSUE = {
+  path: ['to'],
+  message: `The end date must be on or after the start date and at most ${MAX_IMPORT_RANGE_DAYS} days later`,
+};
+
 export const zAmplitudeDataResidency = z.enum(['us', 'eu']);
 export type IAmplitudeDataResidency = z.infer<typeof zAmplitudeDataResidency>;
 
-export const zAmplitudeImportConfig = z.object({
-  provider: z.literal('amplitude'),
-  type: z.literal('api'),
-  apiKey: z.string().min(1),
-  secretKey: z.string().min(1),
-  from: z.string().min(1),
-  to: z.string().min(1),
-  mapScreenViewProperty: z.string().optional(),
-  dataResidency: zAmplitudeDataResidency.optional(),
-});
+export const zAmplitudeImportConfig = z
+  .object({
+    provider: z.literal('amplitude'),
+    type: z.literal('api'),
+    apiKey: z.string().min(1),
+    secretKey: z.string().min(1),
+    from: z.iso.date(),
+    to: z.iso.date(),
+    mapScreenViewProperty: z.string().optional(),
+    dataResidency: zAmplitudeDataResidency.optional(),
+  })
+  .refine(isImportRangeSupported, IMPORT_RANGE_ISSUE);
 export type IAmplitudeImportConfig = z.infer<typeof zAmplitudeImportConfig>;
 
 export const zMixpanelDataResidency = z.enum(['us', 'eu', 'in']);
 export type IMixpanelDataResidency = z.infer<typeof zMixpanelDataResidency>;
 
-export const zMixpanelImportConfig = z.object({
-  provider: z.literal('mixpanel'),
-  type: z.literal('api'),
-  serviceAccount: z.string().min(1),
-  serviceSecret: z.string().min(1),
-  projectId: z.string().min(1),
-  from: z.string().min(1),
-  to: z.string().min(1),
-  mapScreenViewProperty: z.string().optional(),
-  dataResidency: zMixpanelDataResidency.optional(),
-});
+export const zMixpanelImportConfig = z
+  .object({
+    provider: z.literal('mixpanel'),
+    type: z.literal('api'),
+    serviceAccount: z.string().min(1),
+    serviceSecret: z.string().min(1),
+    projectId: z.string().min(1),
+    from: z.iso.date(),
+    to: z.iso.date(),
+    mapScreenViewProperty: z.string().optional(),
+    dataResidency: zMixpanelDataResidency.optional(),
+  })
+  .refine(isImportRangeSupported, IMPORT_RANGE_ISSUE);
 export type IMixpanelImportConfig = z.infer<typeof zMixpanelImportConfig>;
 
 export type IImportConfig =

@@ -1,5 +1,6 @@
-// The `/live` websocket surface. `/live/visitors/:projectId` stays
-// unauthenticated by intent; the other three require a session plus
+// The `/live` websocket surface. `/live/visitors/:projectId` admits a
+// `?shareId=` of a public widget or overview share of that project as an
+// alternative to a session; the other three require a session plus
 // project/org access. All four use REJECT-AFTER-UPGRADE: the socket accepts
 // the upgrade, then the open handler sends a text frame and closes it. None
 // of these routes uses the `session` macro, because that macro would 401 the
@@ -8,6 +9,7 @@
 
 import { setSuperJson } from '@openpanel/shared';
 import { z } from 'zod';
+import type { HttpCtx } from '../../context';
 import { defineRoutes } from '../../http/define';
 import {
   getActiveVisitorCount,
@@ -20,7 +22,12 @@ import {
 const NO_ACTIVE_SESSION_MESSAGE = 'No active session';
 const NO_ACCESS_MESSAGE = 'No access';
 
+// A visitor socket outlives the share or membership that admitted it, and
+// fires on every event batch, so access is re-proved at most this often.
+const VISITOR_ACCESS_RECHECK_MS = 60_000;
+
 const projectParams = z.object({ projectId: z.string() });
+const visitorQuery = z.object({ shareId: z.string().optional() });
 const organizationParams = z.object({ organizationId: z.string() });
 
 interface ClosableSocket {
@@ -53,20 +60,69 @@ function rejectNoAccess(ws: ClosableSocket) {
   ws.close();
 }
 
+// The delivery callbacks are fire-and-forget, so a failed lookup must
+// resolve to "no access" rather than reject unhandled.
+function hasMemberProjectAccess(
+  ctx: HttpCtx,
+  userId: string,
+  projectId: string
+): Promise<boolean> {
+  return ctx.services.auth
+    .getProjectAccess({ userId, projectId })
+    .then((access) => !!access)
+    .catch(() => false);
+}
+
+async function canWatchVisitors(
+  ctx: HttpCtx,
+  projectId: string,
+  shareId: string | undefined
+): Promise<boolean> {
+  const sharedWithViewer =
+    !!shareId &&
+    (await ctx.services.share
+      .canShareViewLiveVisitors({ projectId, shareId }, ctx.cookies)
+      .catch(() => false));
+  if (sharedWithViewer) {
+    return true;
+  }
+  const userId = (await ctx.session().catch(() => null))?.userId;
+  return !!userId && (await hasMemberProjectAccess(ctx, userId, projectId));
+}
+
 export const realtimeRoutes = defineRoutes((app) =>
   app
     .ws('/live/visitors/:projectId', {
       params: projectParams,
+      query: visitorQuery,
       async open(ws) {
         const { projectId } = ws.data.params;
+        const { shareId } = ws.data.query;
         const { ctx } = ws.data;
+        if (!(await canWatchVisitors(ctx, projectId, shareId))) {
+          rejectNoAccess(ws);
+          return;
+        }
+
+        let accessCheckedAt = Date.now();
+        const sendCount = () =>
+          getActiveVisitorCount(ctx, projectId).then(
+            (count) => ws.send(String(count)),
+            () => ws.send('0')
+          );
         rememberUnsubscribe(
           ws,
-          await subscribeToVisitorActivity(projectId, () => {
-            getActiveVisitorCount(ctx, projectId).then(
-              (count) => ws.send(String(count)),
-              () => ws.send('0')
-            );
+          await subscribeToVisitorActivity(projectId, async () => {
+            const recheckDue =
+              Date.now() - accessCheckedAt > VISITOR_ACCESS_RECHECK_MS;
+            if (recheckDue) {
+              accessCheckedAt = Date.now();
+              if (!(await canWatchVisitors(ctx, projectId, shareId))) {
+                rejectNoAccess(ws);
+                return;
+              }
+            }
+            await sendCount();
           })
         );
       },
@@ -123,11 +179,21 @@ export const realtimeRoutes = defineRoutes((app) =>
           return;
         }
 
+        // Re-proved per delivery: notifications are rare, and a member removed
+        // from the project must stop receiving them on a socket opened before.
         rememberUnsubscribe(
           ws,
-          await subscribeToProjectNotifications(projectId, (notification) => {
-            ws.send(setSuperJson(notification));
-          })
+          await subscribeToProjectNotifications(
+            projectId,
+            async (notification) => {
+              const ctx = ws.data.ctx;
+              if (!(await hasMemberProjectAccess(ctx, userId, projectId))) {
+                rejectNoAccess(ws);
+                return;
+              }
+              ws.send(setSuperJson(notification));
+            }
+          )
         );
       },
       close(ws) {

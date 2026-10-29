@@ -14,6 +14,7 @@ export const SENSITIVE_KEY_PATTERNS = [
   'apikey',
   'accesskey',
   'privatekey',
+  'serviceaccount',
   'cookie',
   'bearer',
   'credential',

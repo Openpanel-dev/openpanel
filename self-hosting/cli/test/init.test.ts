@@ -69,6 +69,16 @@ describe('init output', () => {
     expect(files.get('.env')).toContain(`DATABASE_URL_DIRECT="${url}"`);
   });
 
+  test('placeholder text inside an external url is kept literally', async () => {
+    const url = `redis://user:${DOLLAR}ENCRYPTION_KEY@redis.internal:6379`;
+    const env = (await generate({ external: { redis: url } })).get(
+      '.env'
+    ) as string;
+
+    expect(env).toContain(`REDIS_URL="${url}"`);
+    expect(env).not.toContain(`${secrets.encryptionKey}@`);
+  });
+
   test('an external clickhouse skips its config files', async () => {
     const files = await generate({
       external: { clickhouse: 'http://ch.internal:8123/op' },

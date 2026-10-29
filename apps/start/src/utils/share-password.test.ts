@@ -7,17 +7,21 @@ import {
 
 describe('getSharePasswordToSubmit', () => {
   it('omits the password when the placeholder is untouched', () => {
-    expect(getSharePasswordToSubmit(STORED_PASSWORD_PLACEHOLDER)).toBe(
+    expect(getSharePasswordToSubmit(STORED_PASSWORD_PLACEHOLDER, false)).toBe(
       undefined
     );
   });
 
+  it('omits the password when an empty field was never edited', () => {
+    expect(getSharePasswordToSubmit('', false)).toBe(undefined);
+  });
+
   it('removes the password when the field was cleared', () => {
-    expect(getSharePasswordToSubmit('')).toBe(null);
+    expect(getSharePasswordToSubmit('', true)).toBe(null);
   });
 
   it('sends a typed password', () => {
-    expect(getSharePasswordToSubmit('hunter2')).toBe('hunter2');
+    expect(getSharePasswordToSubmit('hunter2', true)).toBe('hunter2');
   });
 });
 

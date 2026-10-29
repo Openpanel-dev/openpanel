@@ -21,10 +21,18 @@ export const integrationRoutes = defineRoutes((app) =>
   app.get(
     '/webhook/slack',
     async ({ query, ctx }) => {
+      const userId = (await ctx.session())?.userId;
+      if (!userId) {
+        return loginErrorRedirect(
+          ctx.config.dashboardUrl,
+          'Sign in to finish connecting Slack'
+        );
+      }
+
       try {
         const { organizationId, projectId } = await completeSlackOAuthCallback(
           ctx,
-          query
+          { ...query, userId }
         );
 
         // Installs started before integrations were project-scoped may lack

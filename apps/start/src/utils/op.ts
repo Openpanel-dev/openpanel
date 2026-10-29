@@ -1,4 +1,5 @@
 import { OpenPanel } from '@openpanel/web';
+import { shouldSendAnalyticsEvent } from '@/utils/op-filter';
 
 const clientId = import.meta.env.VITE_OP_CLIENT_ID;
 
@@ -9,6 +10,7 @@ export const op = new OpenPanel({
   trackScreenViews: true,
   trackOutgoingLinks: true,
   trackAttributes: true,
+  filter: shouldSendAnalyticsEvent,
   // sessionReplay: {
   //   enabled: true,
   // }

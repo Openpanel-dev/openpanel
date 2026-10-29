@@ -46,7 +46,8 @@ async function promptForInput() {
       message: 'Enter your Polar organization ID:',
     },
     {
-      type: 'string',
+      type: 'password',
+      mask: '*',
       name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
@@ -187,8 +188,9 @@ async function main() {
   });
 
   console.log('\nReview the following settings:');
+  const { polarApiKey: _polarApiKey, ...reviewable } = input;
   console.table({
-    ...input,
+    ...reviewable,
     organization: organization?.name,
     email: user?.email,
     name:

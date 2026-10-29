@@ -143,7 +143,6 @@ describe('config secret handling', () => {
     const submitted = carryOverConfigSecrets(
       {
         ...stored,
-        url: 'https://acme.test/hook-v2',
         // Authorization came back blank (redacted, untouched); X-Env retyped;
         // a third header added; nothing removed.
         headers: { Authorization: '', 'X-Env': 'staging', 'X-New': 'v' },
@@ -156,7 +155,43 @@ describe('config secret handling', () => {
       'X-Env': 'staging',
       'X-New': 'v',
     });
-    expect(submitted.url).toBe('https://acme.test/hook-v2');
+  });
+
+  it('drops stored header values when the webhook URL changes', () => {
+    const stored = {
+      type: 'webhook',
+      url: 'https://acme.test/hook',
+      mode: 'message',
+      headers: { Authorization: 'Bearer sk-live-123' },
+    };
+    const submitted = carryOverConfigSecrets(
+      {
+        ...stored,
+        url: 'https://attacker.test/hook',
+        headers: { Authorization: '' },
+      },
+      stored
+    );
+
+    expect(submitted.headers).toEqual({ Authorization: '' });
+    expect(findMissingSecretFields(submitted)).toEqual([
+      'headers.Authorization',
+    ]);
+  });
+
+  it('redacts the Discord webhook URL and carries it over when left blank', () => {
+    const stored = {
+      type: 'discord',
+      url: 'https://discord.com/api/webhooks/1/secret',
+    };
+
+    expect(redactConfigSecrets(stored).url).toBe('');
+    expect(
+      carryOverConfigSecrets({ type: 'discord', url: '' }, stored).url
+    ).toBe(stored.url);
+    expect(findMissingSecretFields({ type: 'discord', url: '' })).toEqual([
+      'url',
+    ]);
   });
 
   it('lets a removed header stay removed', () => {

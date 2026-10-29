@@ -1,4 +1,4 @@
-import { applyFixes, type Finding, runDoctor } from '../doctor';
+import { applyFixes, type Finding, runDoctor, smtpStartTls } from '../doctor';
 import { checkHost } from '../host';
 import { isInstallDir, loadInstall, writeInstall } from '../install';
 import { bold, dim, green, log, red, SEVERITY_LABEL } from '../ui';
@@ -56,7 +56,10 @@ export const doctor = async ({
   }
 
   const install = loadInstall(dir);
-  const findings = runDoctor(install);
+  // Network probes stay out of runDoctor, which reload and upgrade call
+  // offline and synchronously.
+  const smtp = await smtpStartTls(install.env);
+  const findings = [...runDoctor(install), ...(smtp ? [smtp] : [])];
   log(bold(`Install (${dir})`));
   if (findings.length === 0) {
     log(`${green('ok')}  Nothing to fix.`);

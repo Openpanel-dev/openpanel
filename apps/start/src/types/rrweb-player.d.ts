@@ -6,7 +6,6 @@ declare module 'rrweb-player' {
     autoPlay?: boolean;
     showController?: boolean;
     speedOption?: number[];
-    UNSAFE_replayCanvas?: boolean;
     skipInactive?: boolean;
   }
 

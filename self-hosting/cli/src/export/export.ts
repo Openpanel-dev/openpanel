@@ -1,5 +1,5 @@
 import { createWriteStream } from 'node:fs';
-import { appendFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -221,12 +221,30 @@ const exportTable = async (
   return { table, rows, files };
 };
 
+// The importer reads every file in the directory, not just the manifest, and
+// the operator archives the whole directory. Files left by an earlier, broader
+// export would ship along with this one.
+const assertEmptyOutput = async (out: string): Promise<void> => {
+  const entries = await readdir(out).catch((error: NodeJS.ErrnoException) => {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  });
+  if (entries.length > 0) {
+    throw new Error(
+      `${out} is not empty. Export into a new directory, or remove it first.`
+    );
+  }
+};
+
 export const runExport = async (
   client: ClickHouse,
   options: ExportOptions,
   progress: ExportProgress
 ) => {
   validateOptions(options);
+  await assertEmptyOutput(options.out);
   await client.query('SELECT 1');
   await mkdir(options.out, { recursive: true });
   const manifest = join(options.out, 'manifest.jsonl');

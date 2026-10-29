@@ -170,6 +170,17 @@ export const organizationRouter = createTRPCRouter({
       return ctx.services.organization.invitations(input.organizationId);
     }),
 
+  // Membership-exempt: the caller is not a member yet. The service binds the
+  // invite to the session's email.
+  acceptInvite: protectedProcedureWithoutAccess
+    .input(z.object({ inviteId: z.string() }))
+    .mutation(({ input, ctx }) =>
+      ctx.services.organization.acceptInvite({
+        userId: ctx.session.userId,
+        inviteId: input.inviteId,
+      })
+    ),
+
   getInvite: publicProcedure
     .input(z.object({ inviteId: z.string().optional() }))
     .query(async ({ input, ctx }) => {

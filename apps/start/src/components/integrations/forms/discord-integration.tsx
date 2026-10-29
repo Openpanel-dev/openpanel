@@ -61,7 +61,7 @@ export function DiscordIntegrationForm({
   const handleTest = async () => {
     const url = form.getValues('config.url');
     if (!url) {
-      return toast.error('Webhook URL is required');
+      return toast.error('Enter the webhook URL to test it');
     }
     const res = await testMutation.mutateAsync({
       projectId,
@@ -87,6 +87,11 @@ export function DiscordIntegrationForm({
       />
       <InputWithLabel
         label="Discord Webhook URL"
+        // The URL is a credential and never sent back to the browser, so an
+        // edit starts blank and blank means "keep the stored URL".
+        placeholder={
+          defaultValues?.id ? 'Leave blank to keep the current URL' : undefined
+        }
         {...form.register('config.url')}
         error={path(['config', 'url', 'message'], form.formState.errors)}
       />

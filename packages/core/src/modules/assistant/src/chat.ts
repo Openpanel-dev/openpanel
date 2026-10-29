@@ -28,7 +28,7 @@ import {
   resolveChatModel,
 } from './providers';
 import { generateConversationTitle } from './title';
-import { CHAT_TOOL_APPROVAL, createChatTools } from './tools';
+import { createChatToolApproval, createChatTools } from './tools';
 
 /** Dashboard-building turns chain many tool calls; the ceiling stops runaway loops. */
 const MAX_STEPS = 30;
@@ -186,7 +186,7 @@ export async function runChat(
         }),
         messages: modelMessages,
         tools,
-        toolApproval: CHAT_TOOL_APPROVAL,
+        toolApproval: createChatToolApproval(toolContext),
         stopWhen: isStepCount(MAX_STEPS),
         reasoning: entry.reasoning,
         providerOptions: reasoningProviderOptions(entry),

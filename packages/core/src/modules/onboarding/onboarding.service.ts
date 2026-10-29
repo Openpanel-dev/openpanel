@@ -15,6 +15,12 @@ import {
   getOrganizationById,
   getOrganizationEventsCount,
 } from '../organization/organization.service';
+import {
+  getOrganizationContact,
+  ORGANIZATION_ADMINS_INCLUDE,
+  type OrganizationContact,
+  type OrganizationWithAdmins,
+} from '../organization/src/contact';
 import { getUserById } from '../user/user.service';
 import type { IOnboardingProject } from './onboarding.constants';
 
@@ -195,24 +201,18 @@ interface OnboardingUsage {
   hasData: boolean;
 }
 
-interface OnboardingCronOrg {
+interface OnboardingCronOrg extends OrganizationWithAdmins {
   id: string;
   createdAt: Date;
   onboarding: string | null;
   subscriptionStatus: string | null;
   subscriptionEndsAt: Date | null;
-  createdBy: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    deletedAt: Date | null;
-  } | null;
   projects: { id: string }[];
 }
 
 interface OnboardingContext {
   org: OnboardingCronOrg;
-  user: NonNullable<OnboardingCronOrg['createdBy']>;
+  user: OrganizationContact;
   dashboardUrl: string;
   // Lazy + memoized: only emails past the day gate pay for the ClickHouse count.
   getUsage: () => Promise<OnboardingUsage>;
@@ -356,40 +356,33 @@ export async function runOnboardingCron(
     where: {
       OR: [{ onboarding: null }, { onboarding: { notIn: ['completed'] } }],
       deleteAt: null,
-      createdBy: { deletedAt: null },
     },
     include: {
-      createdBy: {
-        select: { id: true, email: true, firstName: true, deletedAt: true },
-      },
+      ...ORGANIZATION_ADMINS_INCLUDE,
       projects: { select: { id: true } },
     },
   });
 
   logger.info(`Found ${orgs.length} organizations in onboarding`);
 
-  const contactable = orgs.filter(
-    (org) => org.createdBy && !org.createdBy.deletedAt
-  );
-  const withoutCreator = orgs.length - contactable.length;
-
-  const subjects: SequenceSubject<OnboardingContext>[] = contactable.map(
-    (org) => {
-      const user = org.createdBy as NonNullable<OnboardingCronOrg['createdBy']>;
-      return {
-        id: org.id,
-        email: user.email,
-        anchor: org.createdAt,
-        pointer: org.onboarding,
-        ctx: {
-          org,
-          user,
-          dashboardUrl: deps.config.dashboardUrl,
-          getUsage: createUsageGetter(deps, org),
-        },
-      };
+  const subjects: SequenceSubject<OnboardingContext>[] = orgs.flatMap((org) => {
+    const user = getOrganizationContact(org);
+    if (!user) {
+      return [];
     }
-  );
+    return {
+      id: org.id,
+      email: user.email,
+      anchor: org.createdAt,
+      pointer: org.onboarding,
+      ctx: {
+        org,
+        user,
+        dashboardUrl: deps.config.dashboardUrl,
+        getUsage: createUsageGetter(deps, org),
+      },
+    };
+  });
 
   const result = await runSequence({
     name: 'onboarding',
@@ -414,7 +407,8 @@ export async function runOnboardingCron(
     totalOrgs: orgs.length,
     emailsSent: result.emailsSent,
     orgsCompleted: result.completed,
-    orgsSkipped: result.deferred + result.stepsSkipped + withoutCreator,
+    orgsSkipped:
+      result.deferred + result.stepsSkipped + orgs.length - subjects.length,
   };
 
   logger.info({ ...summary }, 'Completed onboarding email job');

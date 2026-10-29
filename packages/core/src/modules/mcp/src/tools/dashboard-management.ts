@@ -6,6 +6,7 @@ import { getId } from '../../../../slug-id';
 import { getProjectById } from '../../../project/project.service';
 import {
   GRID_COLUMNS,
+  GRID_MAX_ROWS,
   GRID_ROW_HEIGHT,
   zReport,
 } from '../../../report/report.constants';
@@ -57,17 +58,19 @@ const reportSchema = zReport
 const GRID_DESCRIPTION = `Grid units: ${GRID_COLUMNS} columns across the dashboard, rows ${GRID_ROW_HEIGHT}px tall. A half-width chart is w ${GRID_COLUMNS / 2}, h 8.`;
 const zColumn = z.number().int().nonnegative().max(GRID_COLUMNS);
 const zColumnSpan = z.number().int().positive().max(GRID_COLUMNS);
+const zRow = z.number().int().nonnegative().max(GRID_MAX_ROWS);
+const zRowSpan = z.number().int().positive().max(GRID_MAX_ROWS);
 
 const layoutSchema = z
   .object({
     x: zColumn,
-    y: z.number().int().nonnegative(),
+    y: zRow,
     w: zColumnSpan,
-    h: z.number().int().positive(),
+    h: zRowSpan,
     minW: zColumnSpan.optional(),
-    minH: z.number().int().positive().optional(),
+    minH: zRowSpan.optional(),
     maxW: zColumnSpan.optional(),
-    maxH: z.number().int().positive().optional(),
+    maxH: zRowSpan.optional(),
   })
   .superRefine((layout, ctx) => {
     if (

@@ -55,6 +55,7 @@ interface FakeInvite {
 interface FakeUser {
   id: string;
   email: string;
+  emailVerified?: boolean;
 }
 
 const EPOCH = new Date('2026-09-03T00:00:00.000Z');
@@ -377,6 +378,9 @@ const invite = {
     inviteStore.delete(id);
     return found;
   }),
+  deleteMany: mock(async ({ where: { id } }: { where: { id: string } }) => ({
+    count: inviteStore.delete(id) ? 1 : 0,
+  })),
 };
 
 const user = {
@@ -384,6 +388,15 @@ const user = {
     async ({ where }: { where: { email: { equals: string } } }) =>
       [...userStore.values()].find((u) => u.email === where.email.equals) ??
       null
+  ),
+  findUniqueOrThrow: mock(
+    async ({ where: { id } }: { where: { id: string } }) => {
+      const found = userStore.get(id);
+      if (!found) {
+        throw new Error(`user ${id} not found`);
+      }
+      return found;
+    }
   ),
 };
 
@@ -886,8 +899,12 @@ test('inviteUserToOrganization refuses a duplicate pending invite', async () => 
   ).rejects.toThrow(/already invited/);
 });
 
-test('inviteUserToOrganization connects an existing user immediately, with no email sent', async () => {
-  userStore.set('user_2', { id: 'user_2', email: 'c@example.com' });
+test('inviteUserToOrganization connects an existing verified user immediately, with no email sent', async () => {
+  userStore.set('user_2', {
+    id: 'user_2',
+    email: 'c@example.com',
+    emailVerified: true,
+  });
 
   const result = await subject.inviteUserToOrganization(deps, {
     organizationId: 'org_1',
@@ -918,6 +935,95 @@ test('inviteUserToOrganization emails a new user and leaves the invite pending',
     templateKey: 'invite',
     to: 'new@example.com',
   });
+});
+
+test('inviteUserToOrganization emails an unverified existing user instead of connecting them', async () => {
+  userStore.set('user_2', { id: 'user_2', email: 'c@example.com' });
+
+  const result = await subject.inviteUserToOrganization(deps, {
+    organizationId: 'org_1',
+    email: 'c@example.com',
+    role: 'member',
+    projectScope: 'all',
+    access: [],
+    invitedById: 'user_admin',
+  });
+
+  expect(result.type).toBe('is_invited');
+  expect(memberStore.size).toBe(0);
+  expect(sentEmails).toMatchObject([
+    { templateKey: 'invite', to: 'c@example.com' },
+  ]);
+});
+
+function seedPendingInvite(overrides: Partial<FakeInvite> = {}) {
+  inviteStore.set('invite_1', {
+    id: 'invite_1',
+    email: 'invitee@example.com',
+    organizationId: 'org_1',
+    role: 'viewer',
+    createdById: 'user_admin',
+    projectScope: 'selected',
+    projectAccess: [{ projectId: 'proj_1', level: 'write' }],
+    expiresAt: new Date(Date.now() + 60_000),
+    createdAt: EPOCH,
+    ...overrides,
+  });
+}
+
+test('acceptInvite joins with the invite role and grants, matching the email case-insensitively', async () => {
+  userStore.set('user_3', { id: 'user_3', email: 'Invitee@Example.com' });
+  seedPendingInvite();
+
+  const result = await subject.acceptInvite(deps, {
+    userId: 'user_3',
+    inviteId: 'invite_1',
+  });
+
+  expect(result).toEqual({ organizationId: 'org_1' });
+  const member = [...memberStore.values()].find((m) => m.userId === 'user_3');
+  expect(member).toMatchObject({ role: 'viewer', projectScope: 'selected' });
+  expect(memberProjectStore).toMatchObject([{ projectId: 'proj_1' }]);
+  expect(inviteStore.has('invite_1')).toBe(false);
+});
+
+test('acceptInvite twice at once creates one membership and both succeed', async () => {
+  userStore.set('user_3', { id: 'user_3', email: 'invitee@example.com' });
+  seedPendingInvite();
+
+  const results = await Promise.all([
+    subject.acceptInvite(deps, { userId: 'user_3', inviteId: 'invite_1' }),
+    subject.acceptInvite(deps, { userId: 'user_3', inviteId: 'invite_1' }),
+  ]);
+
+  expect(results).toEqual([
+    { organizationId: 'org_1' },
+    { organizationId: 'org_1' },
+  ]);
+  expect(
+    [...memberStore.values()].filter((m) => m.userId === 'user_3')
+  ).toHaveLength(1);
+});
+
+test('acceptInvite refuses a session whose email is not the invited one', async () => {
+  userStore.set('user_3', { id: 'user_3', email: 'someone@example.com' });
+  seedPendingInvite();
+
+  await expect(
+    subject.acceptInvite(deps, { userId: 'user_3', inviteId: 'invite_1' })
+  ).rejects.toMatchObject({ code: 'FORBIDDEN' });
+  expect(memberStore.size).toBe(0);
+  expect(inviteStore.has('invite_1')).toBe(true);
+});
+
+test('acceptInvite refuses an expired invite', async () => {
+  userStore.set('user_3', { id: 'user_3', email: 'invitee@example.com' });
+  seedPendingInvite({ expiresAt: new Date(Date.now() - 60_000) });
+
+  await expect(
+    subject.acceptInvite(deps, { userId: 'user_3', inviteId: 'invite_1' })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  expect(memberStore.size).toBe(0);
 });
 
 test('revokeInvite deletes the invite row', async () => {

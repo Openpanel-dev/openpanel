@@ -6,6 +6,8 @@ import {
   createPortal,
   getProduct,
   getProducts,
+  type IPolarProduct,
+  isCustomProduct,
   pauseSubscription as pausePolarSubscription,
   reactivateSubscription,
   resumeSubscription as resumePolarSubscription,
@@ -37,6 +39,10 @@ import {
 const POLAR_PRODUCTS_CACHE_KEY = 'polar:products';
 const POLAR_PRODUCTS_CACHE_TTL_SECONDS = 60 * 60 * 24;
 const TRAILING_USAGE_WINDOW_DAYS = 30;
+const PRODUCT_OVER_LIMIT_MESSAGE =
+  'This product is not applicable since you have exceeded the limits for this subscription.';
+const PRODUCT_UNAVAILABLE_MESSAGE =
+  'This product is not available for this organization';
 
 export type IOrganizationUsage = IOrganizationBillingUsage & {
   projects: { id: string; name: string }[];
@@ -50,6 +56,40 @@ async function requireOrgAdmin(
 ): Promise<void> {
   const { requireOrganizationAdmin } = await getAccessChecks();
   await requireOrganizationAdmin({ userId, organizationId });
+}
+
+/**
+ * Why an organization may not move to a product, or null when it may. The
+ * catalog shows it and checkout enforces it, so the two cannot drift.
+ */
+function getProductIneligibility(
+  product: Pick<IPolarProduct, 'metadata' | 'isArchived'>,
+  organization: { id: string; subscriptionPeriodEventsCount: number }
+): string | null {
+  const isOtherOrganizationsProduct =
+    isCustomProduct(product) &&
+    product.metadata.organizationId !== organization.id;
+  if (product.isArchived || isOtherOrganizationsProduct) {
+    return PRODUCT_UNAVAILABLE_MESSAGE;
+  }
+  const eventsLimit = product.metadata.eventsLimit;
+  const isOverLimit =
+    typeof eventsLimit === 'number' &&
+    organization.subscriptionPeriodEventsCount >= eventsLimit;
+  return isOverLimit ? PRODUCT_OVER_LIMIT_MESSAGE : null;
+}
+
+async function requireEligibleProduct(
+  productId: string,
+  organization: { id: string; subscriptionPeriodEventsCount: number }
+): Promise<void> {
+  const ineligibility = getProductIneligibility(
+    await getProduct(productId),
+    organization
+  );
+  if (ineligibility) {
+    throw new TRPCBadRequestError(ineligibility);
+  }
 }
 
 export async function getCurrentSubscriptionProduct(
@@ -112,10 +152,12 @@ export async function checkout(
       return null;
     }
 
+    await requireEligibleProduct(input.productId, organization);
     await changeSubscription(organization.subscriptionId, input.productId);
     return null;
   }
 
+  await requireEligibleProduct(input.productId, organization);
   const checkoutSession = await createCheckout({
     productId: input.productId,
     organizationId: input.organizationId,
@@ -129,7 +171,7 @@ export async function checkout(
 export async function listProducts(deps: ServiceDeps, organizationId: string) {
   const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
-    select: { subscriptionPeriodEventsCount: true },
+    select: { id: true, subscriptionPeriodEventsCount: true },
   });
 
   return (
@@ -138,23 +180,19 @@ export async function listProducts(deps: ServiceDeps, organizationId: string) {
       POLAR_PRODUCTS_CACHE_TTL_SECONDS,
       () => getProducts()
     )
-  ).map((product) => {
-    const eventsLimit = product.metadata.eventsLimit;
-    return {
-      ...product,
-      disabled:
-        typeof eventsLimit === 'number' &&
-        organization.subscriptionPeriodEventsCount >= eventsLimit
-          ? 'This product is not applicable since you have exceeded the limits for this subscription.'
-          : null,
-    };
-  });
+  ).map((product) => ({
+    ...product,
+    disabled: getProductIneligibility(product, organization),
+  }));
 }
 
+/** Admin-only: it names and counts every project, including ones a `selected`-scope member cannot open. */
 export async function getUsage(
   deps: ServiceDeps,
+  userId: string,
   organizationId: string
 ): Promise<IOrganizationUsage> {
+  await requireOrgAdmin(userId, organizationId);
   const organization = await deps.db.organization.findUniqueOrThrow({
     where: { id: organizationId },
     include: {
@@ -797,8 +835,10 @@ export function createSubscriptionService(
     ): ReturnType<typeof checkout> => checkout(deps, userId, input, ipAddress),
     listProducts: (organizationId: string): ReturnType<typeof listProducts> =>
       listProducts(deps, organizationId),
-    getUsage: (organizationId: string): ReturnType<typeof getUsage> =>
-      getUsage(deps, organizationId),
+    getUsage: (
+      userId: string,
+      organizationId: string
+    ): ReturnType<typeof getUsage> => getUsage(deps, userId, organizationId),
     cancelSubscription: (
       userId: string,
       input: ICancelSubscription

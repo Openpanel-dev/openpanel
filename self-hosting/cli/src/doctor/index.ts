@@ -1,6 +1,7 @@
 import { checks } from './checks';
 import type { Finding, Install } from './types';
 
+export { SMTP_STARTTLS_CHECK_ID, smtpStartTls } from './smtp';
 export type { Finding, Install, Severity } from './types';
 
 export const runDoctor = (install: Install): Finding[] =>

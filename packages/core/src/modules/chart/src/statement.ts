@@ -23,15 +23,17 @@ export type AggregateChartSqlInput = Omit<
   'interval' | 'chartType'
 > & { timezone: string };
 
+/** Ids from another project resolve to nothing, so their names never reach a label. */
 export async function fetchCohortsMetadata(
   deps: ServiceDeps,
+  projectId: string,
   cohortIds: string[]
 ): Promise<Map<string, CohortMetadata>> {
   if (cohortIds.length === 0) {
     return new Map();
   }
   const cohorts = await deps.db.cohort.findMany({
-    where: { id: { in: cohortIds } },
+    where: { projectId, id: { in: cohortIds } },
     select: { id: true, name: true },
   });
   return new Map(cohorts.map((c) => [c.id, { id: c.id, name: c.name }]));
@@ -59,6 +61,7 @@ export async function resolveChartBreakdowns(
   const breakdowns = withoutEmptyAllCohortsBreakdown(known, allCohorts);
   const cohortMetadata = await fetchCohortsMetadata(
     deps,
+    projectId,
     collectBreakdownCohortIds(breakdowns)
   );
   return { breakdowns, allCohorts, cohortMetadata };

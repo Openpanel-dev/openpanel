@@ -13,6 +13,7 @@
 // clauses by key keeps a stable clause order.
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import { assertTimeBucketBudget } from '../../../shared/time-buckets';
 import type {
   IChartBreakdown,
   IChartEvent,
@@ -512,8 +513,12 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   const bucket = intervalBucket(interval, timezone);
   // ClickHouse rejects WITH FILL when TO < FROM, so only emit a fill clause
   // for a valid range. The SELECT bucket truncation is always safe.
+  const hasDateRange = !!startDate && !!endDate;
+  if (hasDateRange) {
+    assertTimeBucketBudget({ startDate, endDate, interval });
+  }
   const hasValidFillRange =
-    !!startDate && !!endDate && new Date(endDate) >= new Date(startDate);
+    hasDateRange && new Date(endDate) >= new Date(startDate);
   const fill = hasValidFillRange
     ? sql`WITH FILL ${bucket.fill(startDate, endDate)}`
     : sql.empty;
