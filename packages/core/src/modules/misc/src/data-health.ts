@@ -215,10 +215,16 @@ export async function runDataHealthCron(
       const dashboardUrl = `${deps.config.dashboardUrl || DEFAULT_DASHBOARD_URL}/${alert.organizationId}`;
 
       if (alert.noData.length > 0) {
+        // Only projects someone was told about: one nobody here can open
+        // stays unmarked, so a member granted access later still hears of it.
+        const alertedIds = new Set<string>();
         for (const [to, recipient] of recipients) {
           const visible = alert.noData.filter((p) => recipient.canOpen(p.id));
           if (visible.length === 0) {
             continue;
+          }
+          for (const p of visible) {
+            alertedIds.add(p.id);
           }
           // Per-recipient guard: one bad address must not block the marker
           // update below — that would re-email everyone tomorrow.
@@ -240,16 +246,20 @@ export async function runDataHealthCron(
           }
         }
         await deps.db.project.updateMany({
-          where: { id: { in: alert.noData.map((p) => p.id) } },
+          where: { id: { in: [...alertedIds] } },
           data: { noDataNotifiedAt: new Date() },
         });
       }
 
       if (alert.stalled.length > 0) {
+        const alertedIds = new Set<string>();
         for (const [to, recipient] of recipients) {
           const visible = alert.stalled.filter((p) => recipient.canOpen(p.id));
           if (visible.length === 0) {
             continue;
+          }
+          for (const p of visible) {
+            alertedIds.add(p.id);
           }
           const newestLastEvent = visible
             .map((p) => p.lastEventAt)
@@ -276,7 +286,7 @@ export async function runDataHealthCron(
           }
         }
         await deps.db.project.updateMany({
-          where: { id: { in: alert.stalled.map((p) => p.id) } },
+          where: { id: { in: [...alertedIds] } },
           data: { dataStoppedNotifiedAt: new Date() },
         });
       }

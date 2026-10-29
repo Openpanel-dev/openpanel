@@ -20,9 +20,10 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId')({
     };
   },
   loader: async ({ context, params }) => {
-    const projectQuery = context.trpc.project.getProjectWithClients.queryOptions(
-      { projectId: params.projectId }
-    );
+    const projectQuery =
+      context.trpc.project.getProjectWithClients.queryOptions({
+        projectId: params.projectId,
+      });
     await Promise.all([
       context.queryClient.prefetchQuery(
         context.trpc.organization.get.queryOptions({

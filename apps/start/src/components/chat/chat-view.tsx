@@ -11,6 +11,7 @@ import { takeLaunchedQuestion } from './chat-launch';
 import { ChatMessages } from './chat-messages';
 import type { AssistantUIMessage } from './types';
 import { useChatSession } from './use-chat-session';
+import { useAppParams } from '@/hooks/use-app-params';
 
 function readStoredModel(): string | null {
   if (typeof window === 'undefined') {
@@ -85,17 +86,18 @@ export function ChatView({
     [messages.length, onFirstMessage, sendMessage]
   );
 
+  const { projectId } = useAppParams();
   const tookLaunchedQuestion = useRef(false);
   useEffect(() => {
     if (tookLaunchedQuestion.current || messages.length > 0) {
       return;
     }
     tookLaunchedQuestion.current = true;
-    const question = takeLaunchedQuestion();
+    const question = takeLaunchedQuestion(projectId);
     if (question) {
       send(question);
     }
-  }, [messages.length, send]);
+  }, [messages.length, projectId, send]);
 
   return (
     <>

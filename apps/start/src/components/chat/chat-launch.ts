@@ -5,17 +5,26 @@ import { useAppParams } from '@/hooks/use-app-params';
 
 // A question the user asked inside the app is sent on arrival. It is handed
 // over in memory, not in the URL, so a crafted link can only prefill one.
-let launchedQuestion: string | null = null;
+// Bound to its project: a launch whose chat never opened must not be sent in
+// another project's chat later.
+let launchedQuestion: { projectId: string; question: string } | null = null;
 
 /** Call right before navigating to the chat page. */
-export function setLaunchedQuestion(question?: string): void {
-  launchedQuestion = question?.trim() || null;
+export function setLaunchedQuestion(
+  projectId: string,
+  question?: string
+): void {
+  const text = question?.trim();
+  launchedQuestion = text ? { projectId, question: text } : null;
 }
 
-export function takeLaunchedQuestion(): string | null {
-  const question = launchedQuestion;
+export function takeLaunchedQuestion(projectId: string): string | null {
+  const pending = launchedQuestion;
+  if (pending?.projectId !== projectId) {
+    return null;
+  }
   launchedQuestion = null;
-  return question;
+  return pending.question;
 }
 
 /** Opens the chat page; the page the user came from travels in `hint`. */
@@ -26,7 +35,7 @@ export function useChatLaunch() {
 
   return useCallback(
     (question?: string) => {
-      setLaunchedQuestion(question);
+      setLaunchedQuestion(projectId, question);
       navigate({
         to: '/$organizationId/$projectId/chat',
         params: { organizationId, projectId },

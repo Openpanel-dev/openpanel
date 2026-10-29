@@ -546,17 +546,17 @@ export interface RetentionChartInput {
 }
 
 /**
- * The events a retention series selects. Only an `is` filter on `name` is a
- * selector: reading any other `filters[0]` as one would turn an exclusion
- * into the events the cohort is built from.
+ * The events a retention series selects: its `is` filter on `name`, wherever
+ * it sits among the filters. Reading any other filter as the selector would
+ * turn an exclusion into the events the cohort is built from.
  */
 function retentionEventNames(
   serie: ReturnType<typeof onlyEventSeries>[number] | undefined
 ): string[] {
-  const selector = serie?.filters?.[0];
-  const isEventNameSelector =
-    selector?.name === 'name' && selector.operator === 'is';
-  return isEventNameSelector ? selector.value.map(String) : [];
+  const selector = serie?.filters?.find(
+    (filter) => filter.name === 'name' && filter.operator === 'is'
+  );
+  return selector ? selector.value.map(String) : [];
 }
 
 /**

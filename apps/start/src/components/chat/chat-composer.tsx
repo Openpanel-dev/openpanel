@@ -29,6 +29,14 @@ export function ChatComposer({
   const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  // A new ?q= on an open chat replaces the draft; the q being cleared after a
+  // send must not.
+  useEffect(() => {
+    if (initialText) {
+      setText(initialText);
+    }
+  }, [initialText]);
+
   useEffect(() => {
     if (autoFocus) {
       textareaRef.current?.focus();

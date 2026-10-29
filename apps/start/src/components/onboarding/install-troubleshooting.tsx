@@ -118,7 +118,7 @@ export function InstallTroubleshooting({
         <Link
           className={cn(buttonVariants({ size: 'default' }))}
           onClick={() => {
-            setLaunchedQuestion(diagnoseQuestion(project));
+            setLaunchedQuestion(project.id, diagnoseQuestion(project));
             trackFunnel('onboarding_assistant_opened', {
               projectId: project.id,
               hasDomain: Boolean(project.domain),

@@ -449,15 +449,25 @@ describe('getRetentionChart from a shared report', () => {
     operator,
     value: [value],
   });
+  const pathFilter = {
+    id: 'p',
+    name: 'path',
+    operator: 'is' as const,
+    value: ['/signup'],
+  };
   const savedReport = (
     chartType: IReportInput['chartType'],
-    operator: 'is' | 'isNot'
+    operator: 'is' | 'isNot',
+    leadingFilters: (typeof pathFilter)[] = []
   ) =>
     ({
       ...report({
         chartType,
         series: [
-          pageView({ id: 'A', filters: [nameFilter(operator, 'signup')] }),
+          pageView({
+            id: 'A',
+            filters: [...leadingFilters, nameFilter(operator, 'signup')],
+          }),
           pageView({ id: 'B', filters: [nameFilter('is', 'purchase')] }),
         ],
       }),
@@ -482,5 +492,14 @@ describe('getRetentionChart from a shared report', () => {
     await expect(
       service.getRetentionChart(savedReport('retention', 'isNot'), input)
     ).rejects.toThrow('Report must have at least 2 event series');
+  });
+
+  it('finds the event selector behind a property filter', async () => {
+    await expect(
+      service.getRetentionChart(
+        savedReport('retention', 'is', [pathFilter]),
+        input
+      )
+    ).resolves.toBeDefined();
   });
 });
