@@ -507,3 +507,19 @@ test('an unverified Google email cannot sign up', async () => {
   expect(location.searchParams.get('error')).toBe('unable_to_get_user_info');
   expect(await deps.db.user.findUnique({ where: { email } })).toBeNull();
 });
+
+test('GitHub asks only for the scope users already granted', async () => {
+  const github = {
+    clientId: 'github-client',
+    clientSecret: 'github-secret',
+    redirectUri: 'http://api.test/oauth/github/callback',
+  };
+  const start = await call(authWith({ github }), '/sign-in/social', {
+    provider: 'github',
+    callbackURL: DASHBOARD_URL,
+  });
+  const { url } = (await start.json()) as { url: string };
+  const params = new URL(url).searchParams;
+  expect(params.get('scope')).toBe('user:email');
+  expect(params.get('redirect_uri')).toBe(github.redirectUri);
+});

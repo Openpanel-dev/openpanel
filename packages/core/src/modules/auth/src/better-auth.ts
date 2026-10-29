@@ -217,6 +217,10 @@ function socialProviders(config: CoreConfig) {
     clientId: github.clientId,
     clientSecret: github.clientSecret,
     redirectURI: github.redirectUri,
+    // What users already granted: profile reads need no scope, so asking for
+    // better-auth's default `read:user` would re-prompt every existing user.
+    disableDefaultScope: true,
+    scope: ['user:email'],
     mapProfileToUser: (profile: { name?: string | null; login: string }) => ({
       firstName: profile.name || profile.login,
       lastName: '',
