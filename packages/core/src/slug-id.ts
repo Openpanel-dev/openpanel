@@ -8,12 +8,24 @@
 import { slug } from '@openpanel/shared';
 import type { ServiceDeps } from './services';
 
+// Dashboard ids are global and names like "Overview" repeat across every
+// organization, so the 4-digit suffix space of a popular name can fill up.
+const SHORT_SUFFIX_DIGITS = 4;
+const LONG_SUFFIX_DIGITS = 8;
+const SHORT_SUFFIX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = 10;
+const NUMERIC_SUFFIX = /-\d{4}$/;
+
+function randomSuffix(digits: number): string {
+  const lowest = 10 ** (digits - 1);
+  return String(lowest + Math.floor(Math.random() * 9 * lowest));
+}
+
 export async function getId(
   deps: Pick<ServiceDeps, 'db'>,
   tableName: 'project' | 'dashboard' | 'organization',
   name: string
 ): Promise<string> {
-  const newId = slug(name);
   const db = deps.db;
   if (!db[tableName]) {
     throw new Error('Table does not exists');
@@ -23,24 +35,23 @@ export async function getId(
     throw new Error('findUnique does not exists');
   }
 
-  // @ts-expect-error
-  const existingProject = await db[tableName].findUnique({
-    where: {
-      id: newId,
-    },
-  });
-
-  function random(str: string) {
-    const numbers = Math.floor(1000 + Math.random() * 9000);
-    if (str.match(/-\d{4}$/g)) {
-      return str.replace(/-\d{4}$/g, `-${numbers}`);
+  const base = slug(name);
+  const unsuffixedBase = base.replace(NUMERIC_SUFFIX, '');
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const digits =
+      attempt <= SHORT_SUFFIX_ATTEMPTS
+        ? SHORT_SUFFIX_DIGITS
+        : LONG_SUFFIX_DIGITS;
+    const candidate =
+      attempt === 0 ? base : `${unsuffixedBase}-${randomSuffix(digits)}`;
+    // @ts-expect-error
+    const existing = await db[tableName].findUnique({
+      where: { id: candidate },
+    });
+    if (!existing) {
+      return candidate;
     }
-    return `${str}-${numbers}`;
   }
 
-  if (existingProject) {
-    return getId(deps, tableName, random(name));
-  }
-
-  return newId;
+  throw new Error(`Could not generate a unique ${tableName} id`);
 }
