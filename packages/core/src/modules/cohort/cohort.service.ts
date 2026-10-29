@@ -360,9 +360,11 @@ function profileColumnAccess(normalizedName: string): SqlFragment {
   return sql.id(normalizedName, COHORT_PROFILE_COLUMNS);
 }
 
+const LATEST_ROW_KEY = sql`latest_row_key`;
+
 function buildProfileCohortHavingClause(
   definition: PropertyBasedCohortDefinition
-): SqlFragment | null {
+): { latestRowKey: SqlFragment; having: SqlFragment } | null {
   const { properties, operator } = definition.criteria;
 
   // Every argMax below must order candidate rows IDENTICALLY, or equal-version
@@ -370,14 +372,15 @@ function buildProfileCohortHavingClause(
   // AND cohort against a combination no stored row contains. One shared key (the
   // version column, tie-broken by a hash of every referenced column) makes all
   // aggregates pick the same winning row. The hash keeps comparison state at a
-  // fixed 8 bytes.
+  // fixed 8 bytes. The key is written once, in WITH, and referenced by alias:
+  // inlined into every argMax it grew the statement quadratically.
   const referencedColumns = Array.from(
     new Set(properties.map((f) => normalizeProfileColumn(f.name)))
   ).map(profileColumnAccess);
   const latestRowKey = sql`tuple(last_seen_at, cityHash64(${sql.join(referencedColumns)}))`;
 
   const filterWhere = getProfileFiltersWhereClause(properties, {
-    latestPerProfileKey: latestRowKey,
+    latestPerProfileKey: LATEST_ROW_KEY,
   });
   const filterClauses = Object.values(filterWhere);
 
@@ -385,7 +388,10 @@ function buildProfileCohortHavingClause(
     return null;
   }
 
-  return sql.join(filterClauses, operator === 'and' ? ' AND ' : ' OR ');
+  return {
+    latestRowKey,
+    having: sql.join(filterClauses, operator === 'and' ? ' AND ' : ' OR '),
+  };
 }
 
 export function buildPropertyBasedCohortQuery(
@@ -393,9 +399,9 @@ export function buildPropertyBasedCohortQuery(
   definition: PropertyBasedCohortDefinition,
   limit?: number
 ): SqlFragment {
-  const havingClause = buildProfileCohortHavingClause(definition);
+  const clause = buildProfileCohortHavingClause(definition);
 
-  if (!havingClause) {
+  if (!clause) {
     return sql`SELECT id as profile_id FROM ${sql.id(TABLE.profiles)} WHERE 1=0`;
   }
 
@@ -404,11 +410,12 @@ export function buildPropertyBasedCohortQuery(
   // is what runs out of memory. The aggregate shape spills normally under
   // profileCohortQuerySettings, and filters on aggregates move to HAVING.
   return sql`
+    WITH ${clause.latestRowKey} AS ${LATEST_ROW_KEY}
     SELECT id as profile_id
     FROM ${sql.id(TABLE.profiles)}
     WHERE project_id = ${sql.string(projectId)}
     GROUP BY id
-    HAVING (${havingClause})
+    HAVING (${clause.having})
     ${limit ? sql`LIMIT ${sql.uint64(limit)}` : sql.empty}
   `;
 }

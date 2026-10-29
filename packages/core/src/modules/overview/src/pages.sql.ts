@@ -206,16 +206,19 @@ export function pageConversionsQuery(
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
   `;
 
+  // ASOF pairs each view with only its next conversion: whether that one is
+  // inside the window decides attribution, and a plain join would enumerate
+  // every view x conversion pair of a profile first.
   const viewsBeforeConversions = sql`
     SELECT DISTINCT e.profile_id, e.path, e.origin
     FROM events AS e
-    INNER JOIN conversion_events AS c ON e.profile_id = c.profile_id
+    ASOF INNER JOIN conversion_events AS c
+      ON e.profile_id = c.profile_id AND e.created_at < c.conv_time
     WHERE e.project_id = ${sql.string(input.projectId)}
       AND e.name = 'screen_view'
       AND e.path != ''
       AND ${dateRangeWhere('e.created_at', input.startDate, input.endDate)}
-      AND e.created_at < c.conv_time
-      AND e.created_at >= c.conv_time - INTERVAL ${sql.uint64(input.windowHours)} HOUR
+      AND c.conv_time <= e.created_at + INTERVAL ${sql.uint64(input.windowHours)} HOUR
   `;
 
   const totalVisitors = sql`
