@@ -556,13 +556,23 @@ function retentionEventNames(
   const selector = serie?.filters?.find(
     (filter) => filter.name === 'name' && filter.operator === 'is'
   );
-  return selector ? selector.value.map(String) : [];
+  if (!selector) {
+    return [];
+  }
+  // A series' filters combine with AND, so its `isNot` names are not events
+  // of that series either.
+  const excluded = new Set(
+    (serie?.filters ?? [])
+      .filter((filter) => filter.name === 'name' && filter.operator === 'isNot')
+      .flatMap((filter) => filter.value.map(String))
+  );
+  return selector.value.map(String).filter((name) => !excluded.has(name));
 }
 
 /**
  * A shared retention report takes its events from the saved series: each
- * series' `filters[0]` is the event-name selector, everything else is an
- * audience filter.
+ * series' name filters select its events, everything else is an audience
+ * filter.
  */
 function retentionInputFromReport(
   report: NonNullable<IServiceReport>,

@@ -20,11 +20,8 @@ export function setLaunchedQuestion(
 
 export function takeLaunchedQuestion(projectId: string): string | null {
   const pending = launchedQuestion;
-  if (pending?.projectId !== projectId) {
-    return null;
-  }
   launchedQuestion = null;
-  return pending.question;
+  return pending?.projectId === projectId ? pending.question : null;
 }
 
 /** Opens the chat page; the page the user came from travels in `hint`. */

@@ -21,7 +21,7 @@
  *   --bucket=<day|hour>    Reporting granularity (default: day)
  *   --project=<projectId>  Restrict to a single project (default: all)
  *   --limit=<n>            Max example duplicate groups to print (default: 20)
- *   --batch=<n>            Ids per DELETE statement when deleting (default: 10000)
+ *   --batch=<n>            Rows per DELETE statement when deleting (default: 2000)
  *   --danger-yes-delete    Actually delete the extra rows. Keeps the lowest `id`
  *                          per duplicate group, deletes the rest. Without this
  *                          flag the script only reports.
@@ -79,9 +79,10 @@ function parseArgs(): Args {
     bucket,
     project: getArg('project') ?? null,
     limit: Number.parseInt(getArg('limit') ?? '20', 10),
-    // Ids are inlined into `id IN (...)`. ~39 bytes/uuid, so 5000 ≈ 195KB stays
-    // safely under ClickHouse's default max_query_size (256KB).
-    batch: Number.parseInt(getArg('batch') ?? '5000', 10),
+    // Each row inlines (project_id, id, content hash), about 110 bytes with
+    // uuid ids, so 2000 rows ≈ 220KB stays under ClickHouse's default
+    // max_query_size (256KB).
+    batch: Number.parseInt(getArg('batch') ?? '2000', 10),
     delete: hasFlag('danger-yes-delete'),
   };
 }

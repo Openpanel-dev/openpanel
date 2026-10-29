@@ -494,6 +494,22 @@ describe('getRetentionChart from a shared report', () => {
     ).rejects.toThrow('Report must have at least 2 event series');
   });
 
+  it('refuses a series whose selected events are all excluded', async () => {
+    const excludedSelection = {
+      ...savedReport('retention', 'is'),
+      series: [
+        pageView({
+          id: 'A',
+          filters: [nameFilter('isNot', 'signup'), nameFilter('is', 'signup')],
+        }),
+        pageView({ id: 'B', filters: [nameFilter('is', 'purchase')] }),
+      ],
+    } as unknown as Parameters<typeof service.getRetentionChart>[0];
+    await expect(
+      service.getRetentionChart(excludedSelection, input)
+    ).rejects.toThrow('Report must have at least 2 event series');
+  });
+
   it('finds the event selector behind a property filter', async () => {
     await expect(
       service.getRetentionChart(
