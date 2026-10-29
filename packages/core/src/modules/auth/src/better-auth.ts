@@ -22,6 +22,7 @@ import type { ISetCookie } from '../../../shared/cookie';
 import { connectUserToOrganization } from '../../organization/organization.service';
 import { INVITE_HEADER } from '../auth.constants';
 import { cookieOptions } from './constants';
+import { isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
 import { getIsRegistrationAllowed } from './registration';
 import { generateSessionToken } from './token';
@@ -227,24 +228,22 @@ function socialProviders(config: CoreConfig) {
     }),
   };
   return {
-    ...(google.clientId &&
-      google.redirectUri && {
-        google: {
-          ...googleOptions,
-          getUserInfo: requireVerifiedEmail(
-            googleProvider(googleOptions).getUserInfo
-          ),
-        },
-      }),
-    ...(github.clientId &&
-      github.redirectUri && {
-        github: {
-          ...githubOptions,
-          getUserInfo: requireVerifiedEmail(
-            githubProvider(githubOptions).getUserInfo
-          ),
-        },
-      }),
+    ...(isOAuthClientConfigured(google) && {
+      google: {
+        ...googleOptions,
+        getUserInfo: requireVerifiedEmail(
+          googleProvider(googleOptions).getUserInfo
+        ),
+      },
+    }),
+    ...(isOAuthClientConfigured(github) && {
+      github: {
+        ...githubOptions,
+        getUserInfo: requireVerifiedEmail(
+          githubProvider(githubOptions).getUserInfo
+        ),
+      },
+    }),
   };
 }
 
