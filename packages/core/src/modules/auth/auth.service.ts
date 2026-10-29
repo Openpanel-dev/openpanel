@@ -28,6 +28,7 @@ import {
 } from './src/better-auth';
 import { deleteSessionTokenCookie } from './src/cookie';
 import { parseCookieDomain } from './src/cookie-domain';
+import { isOAuthClientConfigured } from './src/oauth';
 import { hashPassword, verifyPasswordHash } from './src/password';
 import { decodeSessionToken, hashSessionToken } from './src/token';
 
@@ -245,15 +246,9 @@ export function getConfiguredProviders(
 ): ConfiguredProviders {
   const { google, github, googleGsc, devLogin } = config.auth;
   return {
-    google: Boolean(
-      google.clientId && google.clientSecret && google.redirectUri
-    ),
-    github: Boolean(
-      github.clientId && github.clientSecret && github.redirectUri
-    ),
-    gsc: Boolean(
-      googleGsc.clientId && googleGsc.clientSecret && googleGsc.redirectUri
-    ),
+    google: isOAuthClientConfigured(google),
+    github: isOAuthClientConfigured(github),
+    gsc: isOAuthClientConfigured(googleGsc),
     devLogin: devLogin !== undefined,
   };
 }

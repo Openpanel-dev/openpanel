@@ -508,6 +508,18 @@ test('an unverified Google email cannot sign up', async () => {
   expect(await deps.db.user.findUnique({ where: { email } })).toBeNull();
 });
 
+test('a provider missing any credential cannot start a sign-in', async () => {
+  for (const missing of ['clientId', 'clientSecret', 'redirectUri'] as const) {
+    const google = { ...GOOGLE, [missing]: '' };
+    const start = await call(authWith({ google }), '/sign-in/social', {
+      provider: 'google',
+      callbackURL: DASHBOARD_URL,
+    });
+    expect(start.status).toBe(404);
+    expect(cookieNames(start)).toEqual([]);
+  }
+});
+
 test('GitHub asks only for the scope users already granted', async () => {
   const github = {
     clientId: 'github-client',
