@@ -1,6 +1,5 @@
 // None of the behaviour below is decoration: the `ignoreCorsAndSecret`
-// short-circuit, the unanchored wildcard origin regex, CORS-before-secret
-// ordering, the ip and profile_id project filters, the `__revenue` gate, the
+// short-circuit, CORS-before-secret ordering, the ip and profile_id project filters, the `__revenue` gate, the
 // body-field credential fallback, the `mixan-*` header fallback, and the
 // 5-minute verify cache whose key holds base64(<plaintext secret>) are all
 // deliberate.
