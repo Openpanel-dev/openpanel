@@ -145,12 +145,15 @@ export interface PageTimeseriesQueryInput {
 export function pageTimeseriesQuery(
   input: PageTimeseriesQueryInput
 ): SqlFragment {
-  const originFilter = input.filterOrigin
-    ? sql`AND e.origin = ${sql.string(input.filterOrigin)}`
-    : sql.empty;
-  const pathFilter = input.filterPath
-    ? sql`AND e.path = ${sql.string(input.filterPath)}`
-    : sql.empty;
+  // An empty selector still selects: '' is a page's origin or path, not "any".
+  const originFilter =
+    input.filterOrigin === undefined
+      ? sql.empty
+      : sql`AND e.origin = ${sql.string(input.filterOrigin)}`;
+  const pathFilter =
+    input.filterPath === undefined
+      ? sql.empty
+      : sql`AND e.path = ${sql.string(input.filterPath)}`;
 
   // `WITH FILL` attaches to the ORDER BY expression it follows, so the
   // ranking columns go after it, not before. ClickHouse fills AFTER
