@@ -17,9 +17,11 @@ afterEach(() => {
 const fakeSmtp = async ({
   greeting = '220-mail.test ESMTP\r\n220 ready\r\n',
   extensions,
+  ehloReply,
 }: {
   greeting?: string | null;
   extensions: string[];
+  ehloReply?: string;
 }) => {
   const state = { connections: 0, port: 0 };
   const server = createServer((socket) => {
@@ -29,6 +31,10 @@ const fakeSmtp = async ({
     }
     socket.on('data', (data) => {
       if (!data.toString().startsWith('EHLO')) {
+        return;
+      }
+      if (ehloReply) {
+        socket.write(ehloReply);
         return;
       }
       const lines = ['mail.test', ...extensions];
@@ -87,6 +93,15 @@ describe('smtp STARTTLS check', () => {
       envFor(server.port, 'SMTP_SECURE=false\n')
     );
     expect(finding?.severity).toBe('error');
+  });
+
+  test('warns when the server refuses EHLO', async () => {
+    const server = await fakeSmtp({
+      extensions: [],
+      ehloReply: '502 5.5.2 command not recognized\r\n',
+    });
+    const finding = await smtpStartTls(envFor(server.port));
+    expect(finding?.severity).toBe('warn');
   });
 
   test('warns when nothing listens on the port', async () => {

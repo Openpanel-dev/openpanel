@@ -261,11 +261,17 @@ async function deleteDuplicates(args: Args): Promise<void> {
       projectClause(args.project);
 
     // Extra rows = every row in a duplicate group except the lowest id. The
-    // delete matches on (project_id, id), so a copy that shares the survivor's
-    // id cannot be removed without removing the survivor too; it is skipped.
-    const extras = await query<{ project_id: string; id: string }>(`
-      SELECT project_id, id FROM (
+    // delete matches on (project_id, id, content), so a copy that shares the
+    // survivor's id cannot be removed without removing the survivor too; it is
+    // skipped. A distinct event that reuses the id has other content and stays.
+    const extras = await query<{
+      project_id: string;
+      id: string;
+      dedup_hash: string;
+    }>(`
+      SELECT project_id, id, dedup_hash FROM (
         SELECT project_id, id,
+          ${DEDUP_KEY} AS dedup_hash,
           row_number() OVER w AS rn,
           min(id) OVER w AS survivor_id
         FROM ${TABLE_NAMES.events}
@@ -286,7 +292,10 @@ async function deleteDuplicates(args: Args): Promise<void> {
     for (let i = 0; i < extras.length; i += args.batch) {
       const slice = extras.slice(i, i + args.batch);
       const rowList = slice
-        .map((row) => `(${sqlString(row.project_id)},${sqlString(row.id)})`)
+        .map(
+          (row) =>
+            `(${sqlString(row.project_id)},${sqlString(row.id)},toUInt64(${sqlString(row.dedup_hash)}))`
+        )
         .join(',');
       // Scope the mutation to this bucket's time range so it only touches the
       // relevant monthly partition (and the primary index, when --project is
@@ -296,7 +305,7 @@ async function deleteDuplicates(args: Args): Promise<void> {
         query:
           `ALTER TABLE ${target} DELETE WHERE ` +
           `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
-          `${projectClause(args.project)} AND (project_id, id) IN (${rowList})`,
+          `${projectClause(args.project)} AND (project_id, id, ${DEDUP_KEY}) IN (${rowList})`,
       });
       await new Promise((resolve) => setTimeout(resolve, 200));
     }

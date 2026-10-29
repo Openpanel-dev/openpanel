@@ -42,6 +42,17 @@ describe('shouldSendAnalyticsEvent', () => {
     ).toBe(false);
   });
 
+  it('drops outgoing-link events that point at the reset-password page', () => {
+    expect(
+      shouldSendAnalyticsEvent(
+        screenView({
+          __path: `${window.location.origin}/login`,
+          href: `${window.location.origin}/reset-password?token=secret`,
+        })
+      )
+    ).toBe(false);
+  });
+
   it('drops every event while the browser is on a credential page', () => {
     window.history.replaceState(null, '', '/reset-password?token=secret');
     expect(

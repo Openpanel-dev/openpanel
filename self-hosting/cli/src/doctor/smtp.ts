@@ -65,8 +65,11 @@ export const probeStartTls = ({
         socket.write('EHLO openpanel-doctor\r\n');
         return;
       }
-      const offersStartTls =
-        reply.startsWith(SMTP_OK) && STARTTLS_EXTENSION.test(reply);
+      if (!reply.startsWith(SMTP_OK)) {
+        finish({ reachable: false, reason: `EHLO failed: ${reply.trim()}` });
+        return;
+      }
+      const offersStartTls = STARTTLS_EXTENSION.test(reply);
       socket.write('QUIT\r\n');
       finish({ reachable: true, offersStartTls });
     });

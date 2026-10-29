@@ -3,7 +3,8 @@ import type { TrackHandlerPayload } from '@openpanel/web';
 // These pages carry a credential (reset token, unsubscribe token) in the URL.
 const PATHS_WITH_URL_CREDENTIALS = new Set(['/reset-password', '/unsubscribe']);
 
-const URL_PROPERTIES = ['__path', '__referrer'] as const;
+// Outgoing-link events carry their destination in `href`.
+const URL_PROPERTIES = ['__path', '__referrer', 'href'] as const;
 
 function pointsAtCredentialPage(url: unknown): boolean {
   if (typeof url !== 'string' || url === '') {
