@@ -612,7 +612,8 @@ export async function backfillSessionsToProduction(
 /**
  * The days that actually hold staged events, ascending. Walking every calendar
  * day between the first and last event instead lets a file with a few far-apart
- * timestamps schedule thousands of empty moves.
+ * timestamps schedule thousands of empty moves. Session events count: a
+ * session_end can be the only event of the day after its session.
  */
 export async function getImportStagedDates(
   deps: ServiceDeps,
@@ -624,7 +625,6 @@ export async function getImportStagedDates(
       SELECT DISTINCT toString(toDate(created_at)) AS date
       FROM ${TABLE_NAMES.events_imports}
       WHERE import_id = {importId:String}
-      AND name NOT IN ('session_start', 'session_end')
       ${fromDate ? 'AND toDate(created_at) >= {fromDate:Date}' : ''}
       ORDER BY date ASC
     `,
