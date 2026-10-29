@@ -687,9 +687,8 @@ export async function identifyProfile(
   payload: IdentifyProfileInput,
   request: ProfileRequestContext
 ): Promise<void> {
-  // Picked, not spread: `/profile` has no body schema and `__identify` is an
-  // unchecked property, so a spread would let any extra field (`groups`)
-  // reach the shared profile buffer.
+  // Picked, not spread: a spread would let any extra field (`groups`) reach
+  // the shared profile buffer.
   await upsertProfile(deps, {
     firstName: payload.firstName,
     lastName: payload.lastName,

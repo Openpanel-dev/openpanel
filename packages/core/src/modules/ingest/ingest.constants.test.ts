@@ -1,0 +1,54 @@
+import { describe, expect, test } from 'bun:test';
+import {
+  MAX_PROFILE_AVATAR_LENGTH,
+  MAX_PROFILE_EMAIL_LENGTH,
+  MAX_PROFILE_NAME_LENGTH,
+  zIdentifyPayload,
+} from './ingest.constants';
+
+describe('zIdentifyPayload', () => {
+  test('accepts a well-formed identify', () => {
+    expect(
+      zIdentifyPayload.safeParse({
+        profileId: 'user-1',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+        avatar: 'https://example.com/ada.png',
+        properties: { plan: 'pro', nested: { seats: 3 } },
+      }).success
+    ).toBe(true);
+  });
+
+  test('refuses profile fields past their length caps', () => {
+    for (const oversized of [
+      { firstName: 'x'.repeat(MAX_PROFILE_NAME_LENGTH + 1) },
+      { lastName: 'x'.repeat(MAX_PROFILE_NAME_LENGTH + 1) },
+      { email: `${'x'.repeat(MAX_PROFILE_EMAIL_LENGTH)}@example.com` },
+      {
+        avatar: `https://example.com/${'x'.repeat(MAX_PROFILE_AVATAR_LENGTH)}`,
+      },
+    ]) {
+      const result = zIdentifyPayload.safeParse({
+        profileId: 'user-1',
+        ...oversized,
+      });
+      expect([oversized, result.success]).toEqual([oversized, false]);
+    }
+  });
+
+  test('refuses non-string profile fields and non-record properties', () => {
+    for (const malformed of [
+      { firstName: { nested: true } },
+      { email: ['ada@example.com'] },
+      { properties: ['a', 'b'] },
+      { properties: 'plan=pro' },
+    ]) {
+      const result = zIdentifyPayload.safeParse({
+        profileId: 'user-1',
+        ...malformed,
+      });
+      expect([malformed, result.success]).toEqual([malformed, false]);
+    }
+  });
+});

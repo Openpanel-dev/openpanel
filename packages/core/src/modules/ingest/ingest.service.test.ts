@@ -309,3 +309,66 @@ describe('ingestTrack — events transport', () => {
     expect(identifyProfile).toHaveBeenCalledTimes(1);
   });
 });
+
+// `__identify` has no body schema, and what it carries lands in the shared
+// profile buffer and in the event's profile id.
+describe('ingestTrack — __identify', () => {
+  beforeEach(() => {
+    identifyProfile.mockClear();
+  });
+
+  const trackWithIdentify = async (identify: unknown, profileId?: string) => {
+    const produce = mock(async () => undefined);
+    await ingestTrack(
+      request({
+        type: 'track',
+        payload: {
+          name: 'page_view',
+          profileId,
+          properties: { __deviceId: DEVICE_ID, __identify: identify },
+        },
+      } as ITrackHandlerPayload),
+      transport(produce)
+    );
+    const [queueData] = produce.mock.calls[0] as unknown as [
+      { event: { profileId?: unknown } },
+    ];
+    return queueData.event.profileId;
+  };
+
+  it('drops fields of the wrong type or size and keeps the rest', async () => {
+    await trackWithIdentify({
+      profileId: 'user-1',
+      firstName: 'Ada',
+      lastName: { nested: true },
+      email: ['a@b.co'],
+      avatar: 'x'.repeat(5000),
+      properties: ['not', 'a', 'record'],
+      groups: ['smuggled'],
+    });
+
+    expect(identifyProfile).toHaveBeenCalledTimes(1);
+    const [, , identity] = identifyProfile.mock.calls[0] as unknown as [
+      unknown,
+      string,
+      Record<string, unknown>,
+    ];
+    expect(identity).toEqual({
+      profileId: 'user-1',
+      firstName: 'Ada',
+      lastName: undefined,
+      email: undefined,
+      avatar: undefined,
+      properties: undefined,
+    });
+  });
+
+  it('ignores an identity without a usable profile id', async () => {
+    for (const identify of [{ profileId: { id: 1 } }, 'user-1', null, {}]) {
+      identifyProfile.mockClear();
+      const eventProfileId = await trackWithIdentify(identify, 'fallback');
+      expect([identify, eventProfileId]).toEqual([identify, 'fallback']);
+      expect(identifyProfile).not.toHaveBeenCalled();
+    }
+  });
+});

@@ -263,13 +263,36 @@ export const zTrackPayload = z
     }
   ) satisfies z.ZodType<ITrackPayload>;
 
+/** Profile columns are plain strings that every later write merges into. */
+export const MAX_PROFILE_NAME_LENGTH = 256;
+export const MAX_PROFILE_EMAIL_LENGTH = 320;
+export const MAX_PROFILE_AVATAR_LENGTH = 2048;
+
+const zProfileName = z.string().max(MAX_PROFILE_NAME_LENGTH);
+const zProfileProperties = z.record(z.string(), z.unknown());
+
 export const zIdentifyPayload = z.object({
   profileId: zProfileId,
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  email: z.string().email().optional(),
-  avatar: z.string().url().optional(),
-  properties: z.record(z.string(), z.unknown()).optional(),
+  firstName: zProfileName.optional(),
+  lastName: zProfileName.optional(),
+  email: z.string().email().max(MAX_PROFILE_EMAIL_LENGTH).optional(),
+  avatar: z.string().url().max(MAX_PROFILE_AVATAR_LENGTH).optional(),
+  properties: zProfileProperties.optional(),
+}) satisfies z.ZodType<IIdentifyPayload>;
+
+/**
+ * An identity that arrives without a body schema: `/track`'s
+ * `properties.__identify` and `/profile`. A field of the wrong type or size is
+ * dropped rather than failing the request, as for the other `__` properties;
+ * only a missing or malformed `profileId` rejects the identity as a whole.
+ */
+export const zLooseIdentifyPayload = z.object({
+  profileId: zProfileId,
+  firstName: zProfileName.optional().catch(undefined),
+  lastName: zProfileName.optional().catch(undefined),
+  email: z.string().max(MAX_PROFILE_EMAIL_LENGTH).optional().catch(undefined),
+  avatar: z.string().max(MAX_PROFILE_AVATAR_LENGTH).optional().catch(undefined),
+  properties: zProfileProperties.optional().catch(undefined),
 }) satisfies z.ZodType<IIdentifyPayload>;
 
 export const zIncrementPayload = z.object({

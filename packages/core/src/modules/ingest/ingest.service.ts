@@ -27,16 +27,17 @@ import {
 } from '../profile/profile.service';
 import { getSalts } from '../salt/salt.service';
 import { convertClickhouseDateToJs } from '../session/src/dates';
-import type {
-  DeprecatedPostEventPayload,
-  IAssignGroupPayload,
-  IDecrementPayload,
-  IGroupPayload,
-  IIdentifyPayload,
-  IIncrementPayload,
-  IReplayPayload,
-  ITrackHandlerPayload,
-  ITrackPayload,
+import {
+  type DeprecatedPostEventPayload,
+  type IAssignGroupPayload,
+  type IDecrementPayload,
+  type IGroupPayload,
+  type IIdentifyPayload,
+  type IIncrementPayload,
+  type IReplayPayload,
+  type ITrackHandlerPayload,
+  type ITrackPayload,
+  zLooseIdentifyPayload,
 } from './ingest.constants';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
@@ -119,12 +120,12 @@ export function getStringHeaders(
 
 function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
   if (body.type === 'track') {
-    const identity = body.payload.properties?.__identify as
-      | IIdentifyPayload
-      | undefined;
-
-    if (identity) {
-      return identity;
+    const submitted = body.payload.properties?.__identify;
+    if (submitted !== undefined) {
+      const identity = zLooseIdentifyPayload.safeParse(submitted);
+      if (identity.success) {
+        return identity.data;
+      }
     }
 
     return body.payload.profileId
