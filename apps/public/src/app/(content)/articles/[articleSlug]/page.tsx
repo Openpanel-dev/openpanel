@@ -18,7 +18,7 @@ import { getMDXComponents } from '@/mdx-components';
 const RELATED_LIMIT = 3;
 // Reading column in the middle, table of contents to the right on large screens.
 const ARTICLE_GRID =
-  'mx-auto grid max-w-3xl grid-cols-1 gap-12 lg:max-w-none lg:grid-cols-[1fr_minmax(0,48rem)_1fr]';
+  'mx-auto grid max-w-3xl grid-cols-1 gap-12 lg:max-w-none lg:grid-cols-[minmax(0,1fr)_13rem]';
 
 export async function generateStaticParams() {
   const articles = await articleSource.getPages();
@@ -109,8 +109,7 @@ export default async function Page({
       />
       <article className="container pt-32 md:pt-40">
         <div className={ARTICLE_GRID}>
-          <div className="hidden lg:block" />
-          <header className="col gap-6">
+          <header className="col max-w-3xl gap-6">
             <div className="row items-center gap-2 text-muted-foreground text-sm">
               <Link className="hover:text-foreground" href="/articles">
                 Articles
@@ -163,8 +162,7 @@ export default async function Page({
         </div>
 
         <div className={cn(ARTICLE_GRID, 'mt-12')}>
-          <div className="hidden lg:block" />
-          <div className="prose min-w-0 max-w-none [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_table]:w-auto">
+          <div className="prose min-w-0 max-w-3xl [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_table]:w-auto">
             <Body components={getMDXComponents()} />
           </div>
           <aside className="hidden lg:block">
