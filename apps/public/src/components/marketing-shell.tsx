@@ -12,7 +12,7 @@ export function MarketingShell({
   mainClassName?: string;
 }) {
   return (
-    <div className="light col min-h-screen bg-background text-foreground">
+    <div className="light col min-h-screen bg-canvas text-foreground">
       <Navbar />
       <main className={cn('flex-1', mainClassName)}>{children}</main>
       <Footer />

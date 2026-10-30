@@ -64,10 +64,10 @@ const Navbar = () => {
     <nav
       className={cn(
         'fixed top-0 z-50 w-full border-b transition-colors duration-300',
-        isMobileMenuOpen && 'border-border bg-background',
+        isMobileMenuOpen && 'border-border bg-canvas',
         !isMobileMenuOpen &&
           (isScrolled || isFeaturesOpen
-            ? 'border-border bg-background/90 backdrop-blur-md'
+            ? 'border-border bg-canvas/90 backdrop-blur-md'
             : 'border-transparent bg-transparent')
       )}
       ref={navbarRef}

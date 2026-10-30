@@ -1,7 +1,7 @@
 import { CtaBanner } from './_sections/cta-banner';
 import { Faq } from './_sections/faq';
+import { FeaturesBento } from './_sections/features-bento';
 import { Hero } from './_sections/hero';
-import { MoreFeatures } from './_sections/more-features';
 import { Pillars } from './_sections/pillars';
 import { SocialProof } from './_sections/social-proof';
 import { Trust } from './_sections/trust';
@@ -54,7 +54,7 @@ export default function HomePage() {
       <Hero />
       <SocialProof />
       <Pillars />
-      <MoreFeatures />
+      <FeaturesBento />
       <Trust />
       <Faq />
       <CtaBanner />
