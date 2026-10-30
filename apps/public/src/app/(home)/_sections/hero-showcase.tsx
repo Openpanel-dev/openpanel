@@ -69,10 +69,6 @@ export function HeroShowcase() {
       </div>
       <div className="relative">
         <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-16 bottom-0 bg-[radial-gradient(60%_60%_at_50%_0%,rgba(37,99,235,0.14),transparent_70%)]"
-        />
-        <div
           className="relative max-h-[680px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)] max-md:overflow-x-auto"
           key={active.id}
         >
