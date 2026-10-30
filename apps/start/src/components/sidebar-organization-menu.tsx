@@ -136,7 +136,7 @@ export function ActionCTAButton() {
   }
 
   return (
-    <div className="mb-3">
+    <div className="mb-3 shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
