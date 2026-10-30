@@ -21,17 +21,20 @@ interface PillarProps {
   reverse?: boolean;
 }
 
-// A piece of the dashboard, cut off at the panel edge like a window into the product.
+// A piece of the dashboard, cut off at the panel edge like a window into the
+// product. The panel runs off the viewport on the side away from the text.
 function Inset({
   children,
   className,
   width = 760,
   side = 'right',
+  bleed = 'right',
 }: {
   children: React.ReactNode;
   className?: string;
   width?: number;
   side?: 'right' | 'bottom';
+  bleed?: 'left' | 'right';
 }) {
   const cutBottom = side === 'bottom';
   return (
@@ -39,7 +42,8 @@ function Inset({
       aria-hidden
       className={cn(
         'relative overflow-hidden rounded-3xl bg-neutral-100 pt-8 md:pt-12',
-        cutBottom ? 'px-6 md:px-8' : 'pl-8 md:pl-12',
+        bleed === 'right' ? 'bleed-right' : 'bleed-left',
+        cutBottom ? 'px-6 md:px-10' : 'pl-8 md:pl-12',
         className
       )}
     >
@@ -122,7 +126,7 @@ export function Pillars() {
         ]}
         title="Every AI call, with a price tag"
         visual={
-          <Inset className="max-h-[520px]" width={820}>
+          <Inset className="max-h-[520px]" width={900}>
             <AiOverviewContent />
           </Inset>
         }
@@ -149,7 +153,7 @@ export function Pillars() {
         reverse
         title="Ask for the numbers instead of building charts"
         visual={
-          <div className="rounded-3xl bg-neutral-100 p-6 md:p-10">
+          <div className="bleed-left rounded-3xl bg-neutral-100 p-6 md:p-10 md:pl-[max(2.5rem,calc((100vw-1000px)/2+3.5rem))]">
             <ChatMock />
           </div>
         }
@@ -175,9 +179,9 @@ export function Pillars() {
         ]}
         title="Know what people do after they sign up"
         visual={
-          <Inset className="max-h-[520px]" width={820}>
+          <Inset className="max-h-[520px]" width={900}>
             <FunnelContent />
-            <RetentionContent compact />
+            <RetentionContent />
           </Inset>
         }
       />
@@ -203,8 +207,8 @@ export function Pillars() {
         reverse
         title="One script. The whole picture of your traffic."
         visual={
-          <Inset className="max-h-[520px]" side="bottom">
-            <WebOverviewContent compact />
+          <Inset bleed="left" className="max-h-[520px]" side="bottom">
+            <WebOverviewContent />
           </Inset>
         }
       />

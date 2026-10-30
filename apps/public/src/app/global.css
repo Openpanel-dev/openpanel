@@ -151,6 +151,23 @@ code {
   }
 }
 
+/* Extend a block from the container edge to the viewport edge. */
+@layer components {
+  @media (width >= 48rem) {
+    .bleed-right {
+      width: calc(100% + max(1rem, (100vw - 1000px) / 2 + 1rem));
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .bleed-left {
+      width: calc(100% + max(1rem, (100vw - 1000px) / 2 + 1rem));
+      margin-left: calc(-1 * max(1rem, (100vw - 1000px) / 2 + 1rem));
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
 @utility pulled {
   @apply -mx-2 md:-mx-6 lg:-mx-10 xl:-mx-20;
 }
