@@ -1,17 +1,19 @@
 import Link from 'next/link';
 import { GetStartedButton } from '@/components/get-started-button';
+import { GrowthLine } from '@/components/growth-line';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 const SNIPPET_LINES: { text: string; tone?: 'muted' | 'string' }[] = [
-  { text: '<script>' },
-  { text: "  window.op('init', {" },
-  { text: "    clientId: 'YOUR_CLIENT_ID',", tone: 'string' },
-  { text: '    trackScreenViews: true,' },
-  { text: '    trackOutgoingLinks: true,' },
-  { text: '  });' },
-  { text: '</script>' },
-  { text: '<script src="https://openpanel.dev/op1.js"' },
-  { text: '  defer async></script>' },
+  { text: 'npm install @openpanel/web', tone: 'muted' },
+  { text: '' },
+  { text: "import { OpenPanel } from '@openpanel/web';" },
+  { text: '' },
+  { text: 'const op = new OpenPanel({' },
+  { text: "  clientId: 'YOUR_CLIENT_ID',", tone: 'string' },
+  { text: '  trackScreenViews: true,' },
+  { text: '  trackOutgoingLinks: true,' },
+  { text: '});' },
 ];
 
 function InstallSnippet() {
@@ -21,7 +23,8 @@ function InstallSnippet() {
       className="overflow-hidden rounded-2xl bg-neutral-900 text-neutral-200 shadow-[0_30px_60px_-24px_rgba(0,0,0,0.35)]"
     >
       <div className="row items-center gap-4 border-white/10 border-b px-5 py-3 text-[12px]">
-        <span className="font-medium text-white">Script</span>
+        <span className="font-medium text-white">Web</span>
+        <span className="text-neutral-500">Script tag</span>
         <span className="text-neutral-500">React</span>
         <span className="text-neutral-500">Next.js</span>
         <span className="text-neutral-500">Vue</span>
@@ -29,12 +32,16 @@ function InstallSnippet() {
         <span className="text-neutral-500">iOS</span>
       </div>
       <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed">
-        {SNIPPET_LINES.map((line) => (
+        {SNIPPET_LINES.map((line, index) => (
           <div
-            className={line.tone === 'string' ? 'text-emerald-300' : undefined}
-            key={line.text}
+            className={cn(
+              line.tone === 'string' && 'text-emerald-300',
+              line.tone === 'muted' && 'text-neutral-500'
+            )}
+            // biome-ignore lint/suspicious/noArrayIndexKey: static lines, some of them blank
+            key={index}
           >
-            {line.text}
+            {line.text || ' '}
           </div>
         ))}
       </pre>
@@ -54,8 +61,9 @@ export function CtaBanner({
   ctaLink?: string;
 }) {
   return (
-    <section className="bg-stone-200/50 py-20 md:py-28">
-      <div className="container grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
+    <section className="relative overflow-hidden bg-stone-200/50 py-20 md:py-28">
+      <GrowthLine className="absolute inset-x-0 bottom-0 h-[72%] w-full" />
+      <div className="container relative grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
         <div className="col gap-6">
           <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
             {title}

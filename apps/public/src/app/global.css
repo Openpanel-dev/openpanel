@@ -110,6 +110,17 @@ code {
       transform: translate(calc(-50% - 0.5rem));
     }
   }
+
+  --animate-draw-line: draw-line 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+  @keyframes draw-line {
+    from {
+      stroke-dashoffset: 1400;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
 }
 
 /* Extend a block from the container edge to the viewport edge. */
