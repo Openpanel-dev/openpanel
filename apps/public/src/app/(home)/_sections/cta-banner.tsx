@@ -61,10 +61,10 @@ export function CtaBanner({
   ctaLink?: string;
 }) {
   return (
-    <section className="relative overflow-hidden bg-stone-200/50 py-20 md:py-28">
-      <GrowthLine className="absolute inset-x-0 bottom-0 h-[60%] w-full" />
-      <div className="container relative grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
-        <div className="col gap-6">
+    <section className="relative overflow-hidden bg-linear-to-b from-white to-stone-200/70 py-20 md:py-28">
+      <GrowthLine className="absolute inset-x-0 bottom-0 h-[62%] w-full" />
+      <div className="container pointer-events-none relative grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
+        <div className="col pointer-events-auto gap-6">
           <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
             {title}
           </h2>
