@@ -555,12 +555,13 @@
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
+        "bun-types": "1.4.4",
         "tsup": "7.3.0",
         "typescript": "catalog:",
       },
       "peerDependencies": {
-        "expo-application": "5 - 7",
-        "expo-constants": "14 - 18",
+        "expo-application": "5 - 7 || 55",
+        "expo-constants": "14 - 18 || 55",
         "react-native": "*",
       },
     },
