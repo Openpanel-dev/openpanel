@@ -115,7 +115,7 @@ code {
 
   @keyframes draw-line {
     from {
-      stroke-dashoffset: 1400;
+      stroke-dashoffset: 1800;
     }
     to {
       stroke-dashoffset: 0;
