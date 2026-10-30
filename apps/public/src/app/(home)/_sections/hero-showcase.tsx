@@ -10,16 +10,19 @@ const VIEWS = [
   {
     id: 'web',
     label: 'Web analytics',
+    dot: 'bg-blue-600',
     render: () => <WebOverviewMock />,
   },
   {
     id: 'product',
     label: 'Product analytics',
+    dot: 'bg-emerald-600',
     render: () => <ProductAnalyticsMock />,
   },
   {
     id: 'ai',
     label: 'AI observability',
+    dot: 'bg-violet-600',
     render: () => <AiOverviewMock />,
   },
 ] as const;
@@ -38,7 +41,7 @@ export function HeroShowcase() {
           <button
             aria-selected={view.id === activeId}
             className={cn(
-              'rounded-full px-4 py-2 font-medium text-sm transition-colors',
+              'row items-center gap-2 rounded-full py-2 pr-4 pl-3 font-medium text-sm transition-colors',
               view.id === activeId
                 ? 'bg-neutral-100 text-neutral-900'
                 : 'text-neutral-500 hover:text-neutral-900'
@@ -48,6 +51,13 @@ export function HeroShowcase() {
             role="tab"
             type="button"
           >
+            <span
+              className={cn(
+                'size-2 rounded-full transition-opacity',
+                view.dot,
+                view.id === activeId ? 'opacity-100' : 'opacity-40'
+              )}
+            />
             {view.label}
           </button>
         ))}

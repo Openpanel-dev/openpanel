@@ -37,7 +37,9 @@ export function Hero() {
             className="max-w-4xl animate-rise text-balance font-semibold text-5xl leading-[1.02] tracking-[-0.03em] md:text-7xl"
             style={rise(1)}
           >
-            One place for your web, product and AI analytics
+            One place for your <span className="text-blue-600">web</span>,{' '}
+            <span className="text-emerald-600">product</span> and{' '}
+            <span className="text-violet-600">AI</span> analytics
           </h1>
           <p
             className="max-w-2xl animate-rise text-balance text-lg text-neutral-600 md:text-xl"
