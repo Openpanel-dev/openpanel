@@ -3,7 +3,6 @@ import { Footer } from '@/components/footer';
 import Navbar from '@/components/navbar';
 import { cn } from '@/lib/utils';
 
-// Marketing pages are always light; the docs keep the user's theme.
 export function MarketingShell({
   children,
   mainClassName,
@@ -12,7 +11,7 @@ export function MarketingShell({
   mainClassName?: string;
 }) {
   return (
-    <div className="light col min-h-screen bg-canvas text-foreground">
+    <div className="col min-h-screen bg-canvas text-foreground">
       <Navbar />
       <main className={cn('flex-1', mainClassName)}>{children}</main>
       <Footer />

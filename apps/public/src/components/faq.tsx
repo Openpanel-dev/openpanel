@@ -19,7 +19,7 @@ export const Faqs = ({
       : {})}
   >
     <Accordion
-      className="w-full max-w-screen-md self-center rounded-3xl border bg-background-dark [&_button]:px-4 [&_div.answer]:bg-background-light"
+      className="w-full max-w-screen-md self-center rounded-3xl border bg-white [&_button]:px-4"
       collapsible
       type="single"
     >

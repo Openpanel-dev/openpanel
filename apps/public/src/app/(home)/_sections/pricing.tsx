@@ -79,7 +79,7 @@ export function Pricing() {
                     + VAT if applicable
                   </span>
                 </div>
-                <span className="mt-2 text-emerald-600 text-sm dark:text-emerald-500">
+                <span className="mt-2 text-emerald-600 text-sm">
                   Pay yearly and get 2 months free
                 </span>
               </>

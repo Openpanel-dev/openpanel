@@ -21,10 +21,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   userScalable: true,
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#fafafa' },
-    { media: '(prefers-color-scheme: dark)', color: '#171717' },
-  ],
+  themeColor: '#fafaf9',
 };
 
 export const metadata: Metadata = getRootMetadata();
@@ -37,7 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       suppressHydrationWarning
     >
       <body className="flex min-h-screen flex-col bg-background">
-        <RootProvider>
+        <RootProvider theme={{ forcedTheme: 'light' }}>
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
         <ScrollTracker />

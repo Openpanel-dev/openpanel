@@ -20,6 +20,7 @@ export function baseOptions(): BaseLayoutProps {
       title: siteName,
     },
     links: [],
+    themeSwitch: { enabled: false },
   };
 }
 
