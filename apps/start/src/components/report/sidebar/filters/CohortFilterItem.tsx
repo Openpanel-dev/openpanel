@@ -174,7 +174,6 @@ export function PureCohortFilterItem({
           placeholder="Select cohorts..."
           size="sm"
           value={selectedIds}
-          variant="input"
         />
       </div>
     </div>

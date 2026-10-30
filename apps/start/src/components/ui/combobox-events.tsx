@@ -1,7 +1,7 @@
 import { PopoverPortal } from '@radix-ui/react-popover';
 import {
   CheckIcon,
-  ChevronsUpDown,
+  ChevronDown,
   GanttChartIcon,
   LayersIcon,
   type LucideIcon,
@@ -93,7 +93,7 @@ export function ComboboxEvents<
   className,
   searchable,
   size,
-  variant = 'outline',
+  variant = 'input',
   icon: PlaceholderIcon = GanttChartIcon,
   align = 'start',
   portal,
@@ -216,7 +216,7 @@ export function ComboboxEvents<
               {renderTriggerContent()}
             </span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverPortal>

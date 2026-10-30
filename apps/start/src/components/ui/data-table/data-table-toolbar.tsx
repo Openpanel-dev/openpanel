@@ -73,7 +73,6 @@ export function DataTableToolbar<TData>({
             aria-label="Reset filters"
             className="border-dashed"
             onClick={onReset}
-            size="sm"
             variant="outline"
           >
             <XIcon className="mr-2 size-4" />
@@ -121,11 +120,10 @@ function DataTableToolbarFilter<TData>({
           return (
             <div className="relative">
               <Input
-                className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
+                className={cn('w-[120px]', columnMeta.unit && 'pr-8')}
                 inputMode="numeric"
                 onChange={(event) => column.setFilterValue(event.target.value)}
                 placeholder={getTitle()}
-                size="sm"
                 type="number"
                 value={(column.getFilterValue() as string) ?? ''}
               />
@@ -197,7 +195,7 @@ export function AnimatedSearchInput({
       className={cn(
         'relative flex items-center rounded-md border border-input bg-background text-sm transition-[width] duration-300 ease-out',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
-        'h-8 min-h-8',
+        'h-9 min-h-9',
         isExpanded ? 'w-56 lg:w-72' : 'w-32'
       )}
       role="search"
