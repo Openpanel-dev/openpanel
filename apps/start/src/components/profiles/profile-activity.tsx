@@ -21,9 +21,11 @@ import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '@/components/widget';
 import { cn } from '@/utils/cn';
 
-type Props = {
+const VISIBLE_MONTH_OFFSETS = [1, 0];
+
+interface Props {
   data: { count: number; date: string }[];
-};
+}
 
 function getOpacityLevel(count: number, maxCount: number): number {
   if (count === 0 || maxCount === 0) {
@@ -130,8 +132,8 @@ export const ProfileActivity = ({ data }: Props) => {
         </WidgetAbsoluteButtons>
       </WidgetHead>
       <WidgetBody>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {[3, 2, 1, 0].map((offset) => (
+        <div className="grid grid-cols-2 gap-4">
+          {VISIBLE_MONTH_OFFSETS.map((offset) => (
             <MonthCalendar
               data={data}
               key={offset}

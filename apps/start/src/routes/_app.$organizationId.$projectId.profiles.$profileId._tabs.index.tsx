@@ -98,12 +98,8 @@ function Component() {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-      <div className="col-span-1 md:col-span-2">
-        <ProfileMetrics data={metrics.data} />
-      </div>
-      {/* Profile properties - full width */}
-      <div className="col-span-1 flex flex-col gap-3 md:col-span-2">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+      <aside className="col gap-6">
         <ProfileProperties profile={profile.data!} />
         {profile.data?.groups?.length ? (
           <ProfileGroups
@@ -112,39 +108,23 @@ function Component() {
             projectId={projectId}
           />
         ) : null}
-      </div>
-
-      <div className="col-span-1 md:col-span-2">
         <AiUsageWidget
-          className="w-full"
           entity={{ kind: 'profile', profileId }}
           projectId={projectId}
         />
-      </div>
+      </aside>
 
-      <div className="col-span-1">
-        <ProfileActivity data={activity.data} />
-      </div>
-
-      <div className="col-span-1">
-        <LatestEvents
-          organizationId={organizationId}
-          profileId={profileId}
-          projectId={projectId}
-        />
-      </div>
-
-      <div className="col-span-1">
-        <MostEvents data={mostEvents.data} />
-      </div>
-
-      <div className="col-span-1">
-        <PopularRoutes data={popularRoutes.data} />
-      </div>
-
-      {/* Charts - spans both columns */}
-      <div className="col-span-1 md:col-span-2">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <div className="col min-w-0 gap-6">
+        <ProfileMetrics data={metrics.data} />
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          <ProfileActivity data={activity.data} />
+          <LatestEvents
+            organizationId={organizationId}
+            profileId={profileId}
+            projectId={projectId}
+          />
+          <MostEvents data={mostEvents.data} />
+          <PopularRoutes data={popularRoutes.data} />
           <ProfileCharts profileId={profileId} projectId={projectId} />
         </div>
       </div>

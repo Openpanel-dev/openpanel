@@ -8,9 +8,9 @@ import { Widget } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 
-type Props = {
+interface Props {
   profile: IServiceProfile;
-};
+}
 
 export const ProfileProperties = ({ profile }: Props) => {
   const [tab, setTab] = useQueryState(
@@ -21,7 +21,7 @@ export const ProfileProperties = ({ profile }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Profile Information</div>
+        <div className="title">Profile</div>
         <WidgetButtons>
           {[
             {
@@ -48,7 +48,7 @@ export const ProfileProperties = ({ profile }: Props) => {
       {tab === 'profile' && profile && (
         <KeyValueGrid
           className="border-0"
-          columns={3}
+          columns={1}
           copyable
           data={[
             { name: 'id', value: profile.id },
@@ -100,7 +100,7 @@ export const ProfileProperties = ({ profile }: Props) => {
       {tab === 'properties' && profile && (
         <KeyValueGrid
           className="border-0"
-          columns={3}
+          columns={1}
           copyable
           data={Object.entries(profile.properties)
             .filter(([, value]) => value !== undefined && value !== '')
