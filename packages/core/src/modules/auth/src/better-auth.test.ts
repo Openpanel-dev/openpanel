@@ -274,21 +274,34 @@ test('a Clerk password is refused with a reset prompt until the user resets it',
     where: { user: { email }, provider: 'credential' },
     data: { password: CLERK_BCRYPT_HASH },
   });
+  // Recovery codes are only offered once two-factor is on.
+  await deps.db.user.update({
+    where: { email },
+    data: { twoFactorEnabled: true },
+  });
 
   const signIn = await call(auth, '/sign-in/email', {
     email,
     password: PASSWORD,
   });
-  const enable = await call(
-    auth,
-    '/two-factor/enable',
-    { password: PASSWORD },
-    { cookie: sessionCookie }
-  );
   expect(signIn.status).toBe(400);
   expect(await signIn.json()).toMatchObject({ code: PASSWORD_RESET_REQUIRED });
-  expect(enable.status).toBe(400);
-  expect(await enable.json()).toMatchObject({ code: PASSWORD_RESET_REQUIRED });
+  for (const path of [
+    '/two-factor/enable',
+    '/two-factor/disable',
+    '/two-factor/generate-backup-codes',
+  ]) {
+    const response = await call(
+      auth,
+      path,
+      { password: PASSWORD },
+      { cookie: sessionCookie }
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      code: PASSWORD_RESET_REQUIRED,
+    });
+  }
 
   sentEmails.length = 0;
   await call(auth, '/request-password-reset', {
