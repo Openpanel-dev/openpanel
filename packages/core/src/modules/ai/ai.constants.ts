@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { zGroupIds } from '../../shared/group-limits';
 
 export const AI_EVENT_KINDS = [
   'generation',
@@ -198,7 +199,7 @@ export const zAiPayload = z
     privacyMode: z.boolean().optional(),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: z.union([z.string().min(1), z.number()]).optional(),
-    groups: z.array(z.string().min(1)).nullish(),
+    groups: zGroupIds.nullish(),
     deviceId: z.string().min(1).max(64).optional(),
     timestamp: z.string().datetime({ offset: true }).optional(),
   })

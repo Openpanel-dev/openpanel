@@ -1,5 +1,11 @@
 import { z } from 'zod';
+import { zGroupId, zGroupIds } from '../../shared/group-limits';
 import { type IAiPayload, zAiPayload } from '../ai/ai.constants';
+
+export {
+  MAX_GROUP_ID_LENGTH,
+  MAX_GROUPS_PER_EVENT,
+} from '../../shared/group-limits';
 
 /** Event names the ingestion pipeline mints itself; a caller may not send them. */
 export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
@@ -206,13 +212,6 @@ export const zProfileId = z.union([
   z.string().min(1),
   z.number(),
 ]) satisfies z.ZodType<IProfileId>;
-
-/** Group membership is copied onto every session write, so both are bounded. */
-export const MAX_GROUPS_PER_EVENT = 100;
-export const MAX_GROUP_ID_LENGTH = 256;
-
-const zGroupId = z.string().min(1).max(MAX_GROUP_ID_LENGTH);
-const zGroupIds = z.array(zGroupId).max(MAX_GROUPS_PER_EVENT);
 
 export const zGroupPayload = z.object({
   id: zGroupId,
