@@ -61,14 +61,11 @@ export function Hero() {
               </Link>
             </Button>
           </div>
-          <p className="animate-rise text-neutral-500 text-sm" style={rise(4)}>
-            30-day free trial. No credit card.
-          </p>
         </div>
       </div>
       <div
         className="mx-auto mt-14 max-w-6xl animate-rise px-4 md:mt-20"
-        style={rise(5)}
+        style={rise(4)}
       >
         <HeroShowcase />
       </div>
