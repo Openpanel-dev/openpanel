@@ -9,31 +9,21 @@ import type {
   LanguageModelV4Usage,
 } from '@ai-sdk/provider';
 import type { AiPayload, AiUsage } from '@openpanel/sdk';
-import { type AiCallContext, createAiTraceId, getAiContext } from './context';
+import type { AiCallContext } from './context';
 import { toMessages, toOutputMessages, toTools } from './messages';
+import {
+  type AiCall,
+  type AiCallOutcome,
+  type AiIntegrationOptions,
+  recordCall,
+  resolveContext,
+} from './payload';
 
-/** The part of the OpenPanel client the middleware uses. */
-export interface AiEventSink {
-  ai(payload: AiPayload): unknown;
-}
+export type { AiEventSink } from './payload';
 
-export interface OpenPanelAiMiddlewareOptions {
-  op: AiEventSink;
-  /** Never send prompts, completions or tool definitions. */
-  privacyMode?: boolean;
-  /** Fallback context for calls with no `withAiContext` and no `providerOptions.openpanel`. */
-  defaults?: AiCallContext;
-  /** Reported instead of the model's provider id, e.g. `openrouter` behind a gateway. */
-  provider?: string;
-}
+export interface OpenPanelAiMiddlewareOptions extends AiIntegrationOptions {}
 
-interface CallState {
-  context: AiCallContext;
-  model: LanguageModelV4;
-  params: LanguageModelV4CallOptions;
-  startedAt: number;
-}
-
+/** What a stream or generate call hands back, in AI SDK terms. */
 interface CallResult {
   content: LanguageModelV4Content[];
   usage?: LanguageModelV4Usage;
@@ -46,33 +36,10 @@ interface CallResult {
 
 const PROVIDER_OPTIONS_KEY = 'openpanel';
 const PROVIDER_ID_SEPARATOR = '.';
-const MAX_ERROR_MESSAGE_LENGTH = 2000;
-const HTTP_STATUS_MIN = 100;
-const HTTP_STATUS_MAX = 599;
 
 /** `openai.chat` → `openai`; `amazon-bedrock` stays as is. */
 function providerName(model: LanguageModelV4): string {
   return model.provider.split(PROVIDER_ID_SEPARATOR)[0] || model.provider;
-}
-
-function contextFor(
-  params: LanguageModelV4CallOptions,
-  options: OpenPanelAiMiddlewareOptions
-): AiCallContext {
-  const perCall = params.providerOptions?.[PROVIDER_OPTIONS_KEY] as
-    | AiCallContext
-    | undefined;
-  const ambient = getAiContext();
-  return {
-    ...options.defaults,
-    ...ambient,
-    ...perCall,
-    properties: {
-      ...options.defaults?.properties,
-      ...ambient?.properties,
-      ...perCall?.properties,
-    },
-  };
 }
 
 function modelParameters(
@@ -101,73 +68,35 @@ function usageOf(usage: LanguageModelV4Usage | undefined): AiUsage {
   };
 }
 
-function errorOf(error: unknown): AiPayload['error'] {
-  if (!(error instanceof Error)) {
-    return { message: String(error).slice(0, MAX_ERROR_MESSAGE_LENGTH) };
-  }
-  const statusCode = (error as { statusCode?: unknown }).statusCode;
-  const httpStatus =
-    typeof statusCode === 'number' &&
-    statusCode >= HTTP_STATUS_MIN &&
-    statusCode <= HTTP_STATUS_MAX
-      ? statusCode
-      : undefined;
-  return {
-    message: error.message.slice(0, MAX_ERROR_MESSAGE_LENGTH),
-    code: error.name,
-    httpStatus,
-  };
-}
-
-function buildPayload(
-  call: CallState,
-  result: CallResult,
+function beginCall(
+  params: LanguageModelV4CallOptions,
+  model: LanguageModelV4,
   options: OpenPanelAiMiddlewareOptions
-): AiPayload {
-  const { context, params, model } = call;
-  const privacyMode = options.privacyMode || context.privacyMode;
-  const hasProperties = Object.keys(context.properties ?? {}).length > 0;
+): AiCall {
+  const perCall = params.providerOptions?.[PROVIDER_OPTIONS_KEY] as
+    | AiCallContext
+    | undefined;
   return {
-    kind: 'generation',
-    traceId: context.traceId ?? createAiTraceId(),
-    parentId: context.parentId,
-    name: context.name,
-    conversationId: context.conversationId,
-    model: result.modelId ?? model.modelId,
-    provider: options.provider ?? providerName(model),
-    input: privacyMode ? undefined : toMessages(params.prompt),
-    output: privacyMode ? undefined : toOutputMessages(result.content),
-    tools: privacyMode ? undefined : toTools(params.tools),
-    usage: usageOf(result.usage),
-    latencyMs: Date.now() - call.startedAt,
-    timeToFirstTokenMs: result.timeToFirstTokenMs,
-    error: result.error === undefined ? undefined : errorOf(result.error),
-    stopReason: result.finishReason?.unified,
-    stream: result.stream,
+    context: resolveContext(perCall, options),
+    model: model.modelId,
+    provider: providerName(model),
+    startedAt: Date.now(),
+    input: toMessages(params.prompt),
+    tools: toTools(params.tools),
     modelParameters: modelParameters(params),
-    privacyMode: privacyMode || undefined,
-    properties: hasProperties ? context.properties : undefined,
-    profileId: context.profileId,
-    groups: context.groups,
-    deviceId: context.deviceId,
-    // The call's start, so a trace timeline places steps where they began.
-    timestamp: new Date(call.startedAt).toISOString(),
   };
 }
 
-function send(
-  call: CallState,
-  result: CallResult,
-  options: OpenPanelAiMiddlewareOptions
-): void {
-  try {
-    const outcome = options.op.ai(buildPayload(call, result, options));
-    if (outcome instanceof Promise) {
-      outcome.catch(() => undefined);
-    }
-  } catch {
-    // Observability must never fail the model call.
-  }
+function outcomeOf(result: CallResult): AiCallOutcome {
+  return {
+    output: toOutputMessages(result.content),
+    usage: usageOf(result.usage),
+    model: result.modelId,
+    stopReason: result.finishReason?.unified,
+    error: result.error,
+    timeToFirstTokenMs: result.timeToFirstTokenMs,
+    stream: result.stream,
+  };
 }
 
 /** Accumulates a stream into the same shape a generate call returns. */
@@ -299,55 +228,44 @@ function observedStream(
 export function openpanelAiMiddleware(
   options: OpenPanelAiMiddlewareOptions
 ): LanguageModelV4Middleware {
-  const begin = (
-    params: LanguageModelV4CallOptions,
-    model: LanguageModelV4
-  ): CallState => ({
-    context: contextFor(params, options),
-    model,
-    params,
-    startedAt: Date.now(),
-  });
+  const send = (call: AiCall, result: CallResult) =>
+    recordCall(call, outcomeOf(result), options);
 
   return {
     specificationVersion: 'v4',
 
     async wrapGenerate({ doGenerate, params, model }) {
-      const call = begin(params, model);
+      const call = beginCall(params, model, options);
       let result: LanguageModelV4GenerateResult;
       try {
         result = await doGenerate();
       } catch (error) {
-        send(call, { content: [], error, stream: false }, options);
+        send(call, { content: [], error, stream: false });
         throw error;
       }
-      send(
-        call,
-        {
-          content: result.content,
-          usage: result.usage,
-          finishReason: result.finishReason,
-          modelId: result.response?.modelId,
-          stream: false,
-        },
-        options
-      );
+      send(call, {
+        content: result.content,
+        usage: result.usage,
+        finishReason: result.finishReason,
+        modelId: result.response?.modelId,
+        stream: false,
+      });
       return result;
     },
 
     async wrapStream({ doStream, params, model }) {
-      const call = begin(params, model);
+      const call = beginCall(params, model, options);
       let result: Awaited<ReturnType<typeof doStream>>;
       try {
         result = await doStream();
       } catch (error) {
-        send(call, { content: [], error, stream: true }, options);
+        send(call, { content: [], error, stream: true });
         throw error;
       }
       return {
         ...result,
         stream: observedStream(result.stream, (observer, error) => {
-          send(call, observer.result(call.startedAt, error), options);
+          send(call, observer.result(call.startedAt, error));
         }),
       };
     },
