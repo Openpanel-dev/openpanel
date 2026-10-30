@@ -105,6 +105,7 @@ export function ReportInterval({
         <Button
           className={cn('justify-start', className)}
           icon={ClockIcon}
+          responsive
           size={size}
           variant={variant}
         >
