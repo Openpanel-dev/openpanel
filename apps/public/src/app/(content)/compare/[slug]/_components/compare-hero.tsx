@@ -84,7 +84,7 @@ export function CompareHero({
   meta,
 }: CompareHeroProps) {
   return (
-    <HeroContainer className="-mb-32" divider={false}>
+    <HeroContainer>
       <div className="col w-full gap-10">
         <div className="col max-w-4xl gap-6">
           <div className="row items-center gap-3 text-muted-foreground text-sm">

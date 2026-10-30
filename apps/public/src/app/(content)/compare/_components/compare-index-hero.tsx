@@ -18,7 +18,7 @@ export function CompareIndexHero({
   badges,
 }: CompareIndexHeroProps) {
   return (
-    <HeroContainer className="-mb-32" divider={false}>
+    <HeroContainer>
       <div className="col gap-6">
         <SectionHeader
           as="h1"

@@ -1,209 +1,101 @@
-'use client';
-
-import { useEffect, useMemo, useRef } from 'react';
-import { InfiniteMovingCards } from '@/components/infinite-moving-cards';
+import Image from 'next/image';
 import { Section, SectionHeader } from '@/components/section';
-import { TwitterCard } from '@/components/twitter-card';
+import { cn } from '@/lib/utils';
 
-const testimonials = [
+interface Quote {
+  avatarUrl: string;
+  name: string;
+  handle: string;
+  quote: string;
+}
+
+const QUOTES: Quote[] = [
   {
-    verified: true,
     avatarUrl: '/twitter-steven.jpg',
     name: 'Steven Tey',
     handle: 'steventey',
-    content: [
-      'Open-source Mixpanel alternative just dropped → http://git.new/openpanel',
-      'It combines the power of Mixpanel + the ease of use of @PlausibleHQ into a fully open-source product.',
-      'Built by @CarlLindesvard and it’s already tracking 750K+ events 🤩',
-    ],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
+    quote:
+      'It combines the power of Mixpanel with the ease of use of Plausible into a fully open-source product.',
   },
   {
-    verified: true,
-    avatarUrl: '/twitter-pontus.jpg',
-    name: 'Pontus Abrahamsson - oss/acc',
-    handle: 'pontusab',
-    content: ['Thanks, OpenPanel is a beast, love it!'],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
-  },
-  {
-    verified: true,
-    avatarUrl: '/twitter-piotr.jpg',
-    name: 'Piotr Kulpinski',
-    handle: 'piotrkulpinski',
-    content: [
-      'The Overview tab in OpenPanel is great. It has everything I need from my analytics: the stats, the graph, traffic sources, locations, devices, etc.',
-      'The UI is beautiful ✨ Clean, modern look, very pleasing to the eye.',
-    ],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
-  },
-  {
-    verified: true,
-    avatarUrl: '/twitter-greg.png',
-    name: 'greg hodson 🍜',
-    handle: 'h0dson',
-    content: ['i second this, openpanel is killing it'],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
-  },
-  {
-    verified: true,
-    avatarUrl: '/twitter-jacob.jpg',
-    name: 'Jacob 🍀 Build in Public',
-    handle: 'javayhuwx',
-    content: [
-      "🤯 wow, it's amazing! Just integrate @OpenPanelDev into http://indiehackers.site last night, and now I can see visitors coming from all round the world.",
-      'OpenPanel has a more beautiful UI and much more powerful features when compared to Umami.',
-      '#buildinpublic #indiehackers',
-    ],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
-  },
-  {
-    verified: true,
-    avatarUrl: '/twitter-lee.jpg',
-    name: 'Lee',
-    handle: 'DutchEngIishman',
-    content: [
-      'Day two of marketing.',
-      'I like this upward trend..',
-      'P.S. website went live on Sunday',
-      'P.P.S. Openpanel by @CarlLindesvard is awesome.',
-    ],
-    replies: 25,
-    retweets: 68,
-    likes: 648,
-  },
-  {
-    verified: true,
     avatarUrl: '/twitter-thomas.jpg',
     name: 'Thomas Sanlis',
     handle: 'T_Zahil',
-    content: [
-      `We're now sponsoring @OpenPanelDev with Uneed 🥳`,
-      `If you're looking for open source analytics, OpenPanel is BY FAR the best I've ever seen`,
-      'Bonus: 1-click install on Coolify 🥰',
-    ],
-    replies: 8,
-    retweets: 3,
-    likes: 23,
+    quote:
+      "If you're looking for open source analytics, OpenPanel is by far the best I've ever seen. Bonus: 1-click install on Coolify.",
+  },
+  {
+    avatarUrl: '/twitter-piotr.jpg',
+    name: 'Piotr Kulpinski',
+    handle: 'piotrkulpinski',
+    quote:
+      'The Overview tab has everything I need from my analytics: the stats, the graph, traffic sources, locations, devices. The UI is beautiful.',
+  },
+  {
+    avatarUrl: '/twitter-jacob.jpg',
+    name: 'Jacob',
+    handle: 'javayhuwx',
+    quote:
+      'Integrated OpenPanel last night, and now I can see visitors coming from all around the world. More beautiful UI and much more powerful than Umami.',
+  },
+  {
+    avatarUrl: '/twitter-pontus.jpg',
+    name: 'Pontus Abrahamsson',
+    handle: 'pontusab',
+    quote: 'OpenPanel is a beast, love it!',
+  },
+  {
+    avatarUrl: '/twitter-lee.jpg',
+    name: 'Lee',
+    handle: 'DutchEngIishman',
+    quote:
+      'Day two of marketing. I like this upward trend. P.S. OpenPanel is awesome.',
   },
 ];
 
-export function Testimonials() {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number>(0);
-  const isPausedRef = useRef(false);
-
-  // Duplicate items to create the illusion of infinite scrolling
-  const duplicatedTestimonials = useMemo(
-    () => [...testimonials, ...testimonials],
-    []
-  );
-
-  useEffect(() => {
-    const scrollerElement = scrollerRef.current;
-    if (!scrollerElement) {
-      return;
-    }
-
-    const handleScroll = () => {
-      // When we've scrolled to the end of the first set, reset to the beginning
-      // This creates a seamless infinite scroll effect
-      const scrollWidth = scrollerElement.scrollWidth;
-      const clientWidth = scrollerElement.clientWidth;
-      const scrollLeft = scrollerElement.scrollLeft;
-
-      // Reset scroll position when we reach halfway (end of first set)
-      if (scrollLeft + clientWidth >= scrollWidth / 2) {
-        scrollerElement.scrollLeft = scrollLeft - scrollWidth / 2;
-      }
-    };
-
-    // Auto-scroll functionality
-    const autoScroll = () => {
-      if (!isPausedRef.current && scrollerElement) {
-        scrollerElement.scrollLeft += 0.5; // Adjust speed here
-        animationFrameRef.current = requestAnimationFrame(autoScroll);
-      }
-    };
-
-    scrollerElement.addEventListener('scroll', handleScroll);
-
-    // Start auto-scrolling
-    animationFrameRef.current = requestAnimationFrame(autoScroll);
-
-    // Pause on hover
-    const handleMouseEnter = () => {
-      isPausedRef.current = true;
-    };
-    const handleMouseLeave = () => {
-      isPausedRef.current = false;
-      animationFrameRef.current = requestAnimationFrame(autoScroll);
-    };
-
-    scrollerElement.addEventListener('mouseenter', handleMouseEnter);
-    scrollerElement.addEventListener('mouseleave', handleMouseLeave);
-
-    return () => {
-      scrollerElement.removeEventListener('scroll', handleScroll);
-      scrollerElement.removeEventListener('mouseenter', handleMouseEnter);
-      scrollerElement.removeEventListener('mouseleave', handleMouseLeave);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
-
+export function Testimonials({
+  limit = 6,
+  withHeader = true,
+  className,
+}: {
+  limit?: number;
+  withHeader?: boolean;
+  className?: string;
+}) {
   return (
-    <Section className="overflow-hidden">
-      <div className="container mb-16">
+    <Section className={cn('container gap-12', className)}>
+      {withHeader && (
         <SectionHeader
-          description="From indie hackers to global teams, OpenPanel helps people understand their users effortlessly."
-          title="Loved by builders everywhere"
+          align="center"
+          description="From indie hackers to teams running billions of events."
+          title="Loved by people who ship"
         />
-      </div>
-      <div className="relative -mx-4 px-4">
-        {/* Gradient masks for fade effect */}
-        <div
-          className="pointer-events-none absolute top-0 bottom-0 left-0 z-10 w-32"
-          style={{
-            background:
-              'linear-gradient(to right, hsl(var(--background)), transparent)',
-          }}
-        />
-        <div
-          className="pointer-events-none absolute top-0 right-0 bottom-0 z-10 w-32"
-          style={{
-            background:
-              'linear-gradient(to left, hsl(var(--background)), transparent)',
-          }}
-        />
-
-        <InfiniteMovingCards
-          className="gap-8"
-          direction="left"
-          items={testimonials}
-          pauseOnHover
-          renderItem={(item) => (
-            <TwitterCard
-              avatarUrl={item.avatarUrl}
-              content={item.content}
-              handle={item.handle}
-              name={item.name}
-            />
-          )}
-          speed="slow"
-        />
-      </div>
+      )}
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {QUOTES.slice(0, limit).map((item) => (
+          <li
+            className="col justify-between gap-6 rounded-2xl border p-6"
+            key={item.handle}
+          >
+            <blockquote className="text-pretty leading-relaxed">
+              {item.quote}
+            </blockquote>
+            <figcaption className="row items-center gap-3">
+              <Image
+                alt={item.name}
+                className="size-9 rounded-full object-cover"
+                height={36}
+                src={item.avatarUrl}
+                width={36}
+              />
+              <span className="col text-sm">
+                <span className="font-medium">{item.name}</span>
+                <span className="text-muted-foreground">@{item.handle}</span>
+              </span>
+            </figcaption>
+          </li>
+        ))}
+      </ul>
     </Section>
   );
 }

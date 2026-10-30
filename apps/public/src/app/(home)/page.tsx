@@ -1,16 +1,10 @@
-import { AnalyticsInsights } from './_sections/analytics-insights';
-import { Collaboration } from './_sections/collaboration';
 import { CtaBanner } from './_sections/cta-banner';
-import { DataPrivacy } from './_sections/data-privacy';
 import { Faq } from './_sections/faq';
-import { FeatureSpotlight } from './_sections/feature-spotlight';
 import { Hero } from './_sections/hero';
-import { Mcp } from './_sections/mcp';
-import { MixpanelAlternative } from './_sections/mixpanel-alternative';
-import { Pricing } from './_sections/pricing';
-import { Sdks } from './_sections/sdks';
-import { Testimonials } from './_sections/testimonials';
-import { WhyOpenPanel } from './_sections/why-openpanel';
+import { MoreFeatures } from './_sections/more-features';
+import { Pillars } from './_sections/pillars';
+import { SocialProof } from './_sections/social-proof';
+import { Trust } from './_sections/trust';
 import {
   OPENPANEL_BASE_URL,
   OPENPANEL_DESCRIPTION,
@@ -58,16 +52,10 @@ export default function HomePage() {
         type="application/ld+json"
       />
       <Hero />
-      <WhyOpenPanel />
-      <Mcp />
-      <AnalyticsInsights />
-      <FeatureSpotlight />
-      <Collaboration />
-      <Testimonials />
-      <Pricing />
-      <DataPrivacy />
-      <MixpanelAlternative />
-      <Sdks />
+      <SocialProof />
+      <Pillars />
+      <MoreFeatures />
+      <Trust />
       <Faq />
       <CtaBanner />
     </>

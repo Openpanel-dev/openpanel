@@ -7,13 +7,17 @@ export function SignUpButton() {
 
   useEffect(() => {
     const check = async () => {
-      const response = await fetch(
-        'https://api.openpanel.dev/trpc/auth.session',
-        { credentials: 'include', mode: 'cors' }
-      );
-      const data = await response.json();
-      const session = data?.result?.data?.json?.session;
-      setIsSignedIn(session !== null);
+      try {
+        const response = await fetch(
+          'https://api.openpanel.dev/trpc/auth.session',
+          { credentials: 'include', mode: 'cors' }
+        );
+        const data = await response.json();
+        const session = data?.result?.data?.json?.session;
+        setIsSignedIn(session !== null);
+      } catch {
+        // Not signed in, or the api is unreachable from this origin
+      }
     };
     check();
   }, []);

@@ -1,47 +1,10 @@
+import Link from 'next/link';
 import { GetStartedButton } from '@/components/get-started-button';
-import { cn } from '@/lib/utils';
-
-function Svg({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('text-foreground', className)}
-      fill="none"
-      height="539"
-      viewBox="0 0 409 539"
-      width="409"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M222.146 483.444C332.361 429.581 378.043 296.569 324.18 186.354C270.317 76.1395 137.306 30.4572 27.0911 84.3201"
-        stroke="url(#paint0_linear_552_3808)"
-        strokeWidth="123.399"
-      />
-      <defs>
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id="paint0_linear_552_3808"
-          x1="324.18"
-          x2="161.365"
-          y1="186.354"
-          y2="265.924"
-        >
-          <stop stopColor="currentColor" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
+import { Button } from '@/components/ui/button';
 
 export function CtaBanner({
-  title = (
-    <>
-      Ready to understand your users better?
-      <br />
-      Start tracking in minutes
-    </>
-  ),
-  description = 'Join thousands of companies using OpenPanel. Free 30-day trial, no credit card required. Self-host for free or use our cloud.',
+  title = 'Start understanding your users today',
+  description = '30-day free trial, no credit card. Cloud from $2.50 a month, or self-host for free.',
   ctaText,
   ctaLink,
 }: {
@@ -51,26 +14,28 @@ export function CtaBanner({
   ctaLink?: string;
 }) {
   return (
-    <div className="container">
-      <section
-        className={cn(
-          'relative overflow-hidden rounded-3xl border px-4 py-16 md:px-16'
-        )}
-      >
-        <div className="absolute bottom-12 left-12 size-px rounded-full shadow-[0_0_250px_80px_var(--color-foreground)]" />
-        <div className="absolute top-12 right-12 size-px rounded-full shadow-[0_0_250px_80px_var(--color-foreground)]" />
-        <Svg className="absolute bottom-0 left-0 -translate-x-1/2 translate-y-1/2 opacity-50 max-md:scale-50" />
-        <Svg className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 rotate-105 scale-75 opacity-50 max-md:scale-50" />
-
-        <div className="absolute inset-0 bg-linear-to-br from-foreground/5 via-transparent to-foreground/5" />
-        <div className="col center-center container relative z-10 max-w-3xl gap-6">
-          <h2 className="text-center font-semibold text-4xl md:text-4xl">
-            {title}
-          </h2>
-          <p className="max-w-md text-center text-muted-foreground">
-            {description}
-          </p>
-          <GetStartedButton className="mt-4" href={ctaLink} text={ctaText} />
+    <div className="container py-16 md:py-24">
+      <section className="col center-center gap-6 rounded-3xl bg-foreground px-6 py-16 text-background md:px-16 md:py-20">
+        <h2 className="max-w-2xl text-balance font-semibold text-3xl tracking-tight md:text-4xl">
+          {title}
+        </h2>
+        <p className="max-w-md text-balance text-background/70">
+          {description}
+        </p>
+        <div className="row mt-2 flex-wrap items-center justify-center gap-3">
+          <GetStartedButton
+            className="bg-background text-foreground hover:bg-background/90"
+            href={ctaLink}
+            text={ctaText}
+          />
+          <Button
+            asChild
+            className="border-background/20 bg-transparent text-background hover:bg-background/10 hover:text-background"
+            size="lg"
+            variant="outline"
+          >
+            <Link href="/pricing">See pricing</Link>
+          </Button>
         </div>
       </section>
     </div>

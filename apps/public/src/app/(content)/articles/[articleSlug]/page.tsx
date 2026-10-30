@@ -1,30 +1,30 @@
-import { ArrowLeftIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { HeroContainer } from '@/app/(home)/_sections/hero';
-import { Testimonials } from '@/app/(home)/_sections/testimonials';
-import { ArticleCard } from '@/components/article-card';
-import { FeatureCardContainer } from '@/components/feature-card';
+import { ArticleCard, formatArticleDate } from '@/components/article-card';
 import { GetStartedButton } from '@/components/get-started-button';
 import { Logo } from '@/components/logo';
-import { SectionHeader } from '@/components/section';
 import { Toc } from '@/components/toc';
+import { resolveArticleCover } from '@/lib/article-cover';
 import { getAuthor, url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { articleSource } from '@/lib/source';
+import { cn } from '@/lib/utils';
 import { getMDXComponents } from '@/mdx-components';
+
+const RELATED_LIMIT = 3;
+// Reading column in the middle, table of contents to the right on large screens.
+const ARTICLE_GRID =
+  'mx-auto grid max-w-3xl grid-cols-1 gap-12 lg:max-w-none lg:grid-cols-[1fr_minmax(0,48rem)_1fr]';
 
 export async function generateStaticParams() {
   const articles = await articleSource.getPages();
-  return articles.map((article) => {
-    // Extract slug from URL (e.g., '/articles/my-article' -> 'my-article')
-    const slug = article.url.replace(/^\/articles\//, '').replace(/\/$/, '');
-    return { articleSlug: slug };
-  });
+  return articles.map((article) => ({
+    articleSlug: article.url.replace(/^\/articles\//, '').replace(/\/$/, ''),
+  }));
 }
 
 export async function generateMetadata({
@@ -34,7 +34,6 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { articleSlug } = await params;
   const article = await articleSource.getPage([articleSlug]);
-  const author = getAuthor(article?.data.team);
 
   if (!article) {
     return {
@@ -58,27 +57,26 @@ export default async function Page({
   const { articleSlug } = await params;
   const article = await articleSource.getPage([articleSlug]);
   const Body = article?.data.body;
-  const author = getAuthor(article?.data.team);
-  const goBackUrl = '/articles';
 
-  const relatedArticles = (await articleSource.getPages())
-    .filter(
-      (item) => item.data.tag === article?.data.tag && item.url !== article?.url
-    )
-    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-
-  if (!Body) {
+  if (!(article && Body)) {
     return notFound();
   }
 
-  // Create the JSON-LD data
+  const author = getAuthor(article.data.team);
+  const relatedArticles = (await articleSource.getPages())
+    .filter(
+      (item) => item.data.tag === article.data.tag && item.url !== article.url
+    )
+    .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+    .slice(0, RELATED_LIMIT);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
-    headline: article?.data.title,
-    datePublished: article?.data.date.toISOString(),
+    headline: article.data.title,
+    datePublished: article.data.date.toISOString(),
     dateModified:
-      article?.data.updated?.toISOString() || article?.data.date.toISOString(),
+      article.data.updated?.toISOString() || article.data.date.toISOString(),
     author: {
       '@type': 'Person',
       name: author.name,
@@ -103,95 +101,108 @@ export default async function Page({
 
   return (
     <div>
-      <HeroContainer>
-        <div className="col">
-          <Link
-            className="mb-4 flex items-center gap-2 text-muted-foreground"
-            href={goBackUrl}
-          >
-            <ArrowLeftIcon className="h-4 w-4" />
-            <span>Back to all articles</span>
-          </Link>
-          <SectionHeader
-            as="h1"
-            description={article?.data.description}
-            title={article?.data.title}
-          />
-          <div className="row mt-8 items-center gap-4">
-            <div className="center-center size-10 rounded-full bg-black">
-              {author.image ? (
-                <Image
-                  alt={author.name}
-                  className="size-10 rounded-full object-cover"
-                  height={48}
-                  src={author.image}
-                  width={48}
-                />
-              ) : (
-                <Logo className="h-6 w-6 fill-white" />
-              )}
-            </div>
-            <div className="col">
-              <p className="font-medium">{author.name}</p>
-              <div className="row gap-2">
-                <p className="text-muted-foreground text-sm">
-                  {article?.data.date.toLocaleDateString()}
-                </p>
-                {article?.data.updated && (
-                  <p className="text-muted-foreground text-sm italic">
-                    Updated on {article?.data.updated.toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </HeroContainer>
       <Script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="article-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <article className="col container max-w-5xl">
-        <div className="grid grid-cols-1 gap-0 md:grid-cols-[1fr_300px]">
-          <div className="min-w-0">
-            <div className="prose [&_img]:h-auto [&_img]:max-w-full [&_table]:w-auto">
-              <Body components={getMDXComponents()} />
+      <article className="container pt-32 md:pt-40">
+        <div className={ARTICLE_GRID}>
+          <div className="hidden lg:block" />
+          <header className="col gap-6">
+            <div className="row items-center gap-2 text-muted-foreground text-sm">
+              <Link className="hover:text-foreground" href="/articles">
+                Articles
+              </Link>
+              {article.data.tag && (
+                <>
+                  <span aria-hidden>/</span>
+                  <span>{article.data.tag}</span>
+                </>
+              )}
             </div>
+            <h1 className="text-balance font-semibold text-4xl leading-[1.1] tracking-tight md:text-5xl">
+              {article.data.title}
+            </h1>
+            <p className="text-lg text-muted-foreground md:text-xl">
+              {article.data.description}
+            </p>
+            <div className="row items-center gap-3 text-sm">
+              <span className="center-center size-10 overflow-hidden rounded-full bg-foreground">
+                {author.image ? (
+                  <Image
+                    alt={author.name}
+                    className="size-10 object-cover"
+                    height={40}
+                    src={author.image}
+                    width={40}
+                  />
+                ) : (
+                  <Logo className="h-5 w-auto text-background" />
+                )}
+              </span>
+              <span className="col">
+                <span className="font-medium">{author.name}</span>
+                <span className="text-muted-foreground">
+                  <time dateTime={article.data.date.toISOString()}>
+                    {formatArticleDate(article.data.date)}
+                  </time>
+                  {article.data.updated && (
+                    <>
+                      {' · '}Updated{' '}
+                      <time dateTime={article.data.updated.toISOString()}>
+                        {formatArticleDate(article.data.updated)}
+                      </time>
+                    </>
+                  )}
+                </span>
+              </span>
+            </div>
+          </header>
+        </div>
+
+        <div className={cn(ARTICLE_GRID, 'mt-12')}>
+          <div className="hidden lg:block" />
+          <div className="prose min-w-0 max-w-none [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-xl [&_table]:w-auto">
+            <Body components={getMDXComponents()} />
           </div>
-          <aside className="col gap-8 pb-12 pl-12">
-            <Toc toc={article?.data.toc} />
-            <FeatureCardContainer className="gap-2">
-              <span className="font-semibold text-lg">Try OpenPanel</span>
-              <p className="mb-4 text-muted-foreground text-sm">
-                Give it a spin for free. No credit card required.
-              </p>
-              <GetStartedButton />
-            </FeatureCardContainer>
+          <aside className="hidden lg:block">
+            <div className="col sticky top-28 gap-8">
+              <Toc toc={article.data.toc} />
+              <div className="col gap-2 rounded-2xl border p-5 text-sm">
+                <span className="font-medium">Try OpenPanel</span>
+                <p className="mb-2 text-muted-foreground">
+                  Open-source analytics for your product, website and AI. Free
+                  for 30 days.
+                </p>
+                <GetStartedButton className="h-9 w-fit px-4" />
+              </div>
+            </div>
           </aside>
         </div>
 
         {relatedArticles.length > 0 && (
-          <div className="my-16">
-            <h3 className="mb-8 font-bold text-2xl">Related articles</h3>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <section className="mx-auto mt-20 max-w-5xl border-t pt-12">
+            <h2 className="mb-8 font-semibold text-2xl tracking-tight">
+              Related articles
+            </h2>
+            <ul className="grid grid-cols-1 gap-8 md:grid-cols-3">
               {relatedArticles.map((item) => (
-                <ArticleCard
-                  cover={item.data.cover}
-                  date={item.data.date}
-                  key={item.url}
-                  tag={item.data.tag}
-                  team={item.data.team}
-                  title={item.data.title}
-                  url={item.url}
-                />
+                <li key={item.url}>
+                  <ArticleCard
+                    cover={resolveArticleCover(item.data.cover)}
+                    date={item.data.date}
+                    tag={item.data.tag}
+                    title={item.data.title}
+                    url={item.url}
+                  />
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
       </article>
-      <Testimonials />
       <CtaBanner />
     </div>
   );

@@ -51,7 +51,7 @@ export default function SupporterPage() {
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <HeroContainer className="-mb-32">
+      <HeroContainer>
         <SectionHeader
           align="center"
           as="h1"

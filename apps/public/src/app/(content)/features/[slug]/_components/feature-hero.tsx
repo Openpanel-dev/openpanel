@@ -13,7 +13,7 @@ interface FeatureHeroProps {
 
 export function FeatureHero({ hero }: FeatureHeroProps) {
   return (
-    <HeroContainer className="-mb-32" divider={false}>
+    <HeroContainer>
       <div className="col gap-6">
         <SectionHeader
           as="h1"
