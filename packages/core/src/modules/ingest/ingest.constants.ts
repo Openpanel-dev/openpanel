@@ -1,11 +1,13 @@
 import { z } from 'zod';
-import { zGroupId, zGroupIds } from '../../shared/group-limits';
 import { type IAiPayload, zAiPayload } from '../ai/ai.constants';
-
-export {
+import {
   MAX_GROUP_ID_LENGTH,
   MAX_GROUPS_PER_EVENT,
-} from '../../shared/group-limits';
+  zEventGroupId,
+  zEventGroupIds,
+} from '../group/group.constants';
+
+export { MAX_GROUP_ID_LENGTH, MAX_GROUPS_PER_EVENT };
 
 /** Event names the ingestion pipeline mints itself; a caller may not send them. */
 export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
@@ -214,14 +216,14 @@ export const zProfileId = z.union([
 ]) satisfies z.ZodType<IProfileId>;
 
 export const zGroupPayload = z.object({
-  id: zGroupId,
+  id: zEventGroupId,
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).optional(),
 }) satisfies z.ZodType<IGroupPayload>;
 
 export const zAssignGroupPayload = z.object({
-  groupIds: zGroupIds,
+  groupIds: zEventGroupIds,
   profileId: zProfileId.optional(),
 }) satisfies z.ZodType<IAssignGroupPayload>;
 
@@ -230,7 +232,7 @@ export const zTrackPayload = z
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: zProfileId.optional(),
-    groups: zGroupIds.nullish(),
+    groups: zEventGroupIds.nullish(),
   })
   .refine(
     (data) => !(RESERVED_EVENT_NAMES as readonly string[]).includes(data.name),
