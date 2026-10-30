@@ -1,3 +1,4 @@
+import { CountUp } from '@/components/count-up';
 import { cn } from '@/lib/utils';
 
 // Building blocks that copy the dashboard's own look: uppercase labels,
@@ -67,8 +68,8 @@ export function StatCard({
         )}
       </div>
       <div className="col">
-        <span className="font-mono font-semibold text-[22px] leading-none tracking-tight">
-          {value}
+        <span className="font-mono font-semibold text-[22px] tabular-nums leading-none tracking-tight">
+          <CountUp value={value} />
           {unit && (
             <span className="ml-0.5 text-[12px] text-neutral-500">{unit}</span>
           )}

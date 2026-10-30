@@ -7,6 +7,7 @@ import {
   RetentionContent,
 } from '@/components/dashboard-mock/product-analytics';
 import { WebOverviewContent } from '@/components/dashboard-mock/web-overview';
+import { Reveal } from '@/components/reveal';
 import { SectionLabel } from '@/components/section';
 import { cn } from '@/lib/utils';
 
@@ -75,7 +76,7 @@ function Pillar({
       className="container grid grid-cols-1 items-center gap-10 py-14 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14 md:py-20"
       id={id}
     >
-      <div className={cn('col gap-6', reverse && 'md:order-2')}>
+      <Reveal className={cn('col gap-6', reverse && 'md:order-2')}>
         <SectionLabel>{label}</SectionLabel>
         <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
           {title}
@@ -96,8 +97,10 @@ function Pillar({
           {link.text}
           <ArrowRightIcon className="size-4" />
         </Link>
-      </div>
-      <div className={cn('min-w-0', reverse && 'md:order-1')}>{visual}</div>
+      </Reveal>
+      <Reveal className={cn('min-w-0', reverse && 'md:order-1')} delay={120}>
+        {visual}
+      </Reveal>
     </section>
   );
 }

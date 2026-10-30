@@ -63,16 +63,20 @@ const Navbar = () => {
   return (
     <nav
       className={cn(
-        'fixed top-0 z-50 w-full border-b transition-colors duration-300',
-        isMobileMenuOpen && 'border-border bg-canvas',
-        !isMobileMenuOpen &&
-          (isScrolled || isFeaturesOpen
-            ? 'border-border bg-canvas/90 backdrop-blur-md'
-            : 'border-transparent bg-transparent')
+        'fixed top-0 z-50 w-full transition-[padding] duration-300',
+        isScrolled && !isMobileMenuOpen && 'md:pt-3'
       )}
       ref={navbarRef}
     >
-      <div className="container flex h-16 items-center justify-between">
+      <div
+        className={cn(
+          'container flex h-16 items-center justify-between transition-all duration-300',
+          isMobileMenuOpen && 'bg-canvas',
+          !isMobileMenuOpen &&
+            isScrolled &&
+            'md:h-14 md:max-w-[1032px] md:rounded-full md:bg-white/80 md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.14)] md:ring-1 md:ring-black/5 md:backdrop-blur-md'
+        )}
+      >
         <Link className="row items-center gap-2 font-medium" href="/">
           <Logo className="h-5 w-auto" />
           <span className="max-[850px]:hidden">{siteName}</span>

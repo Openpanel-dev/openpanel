@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { GetStartedButton } from '@/components/get-started-button';
 import { GrowthLine } from '@/components/growth-line';
+import { Reveal } from '@/components/reveal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +87,9 @@ export function CtaBanner({
             .
           </p>
         </div>
-        <InstallSnippet />
+        <Reveal delay={120}>
+          <InstallSnippet />
+        </Reveal>
       </div>
     </section>
   );

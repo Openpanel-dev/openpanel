@@ -1,3 +1,4 @@
+import { Reveal } from '@/components/reveal';
 import { Section } from '@/components/section';
 import { cn } from '@/lib/utils';
 
@@ -69,9 +70,11 @@ export function Testimonials({
         </h2>
       )}
       <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {QUOTES.map((item) => (
-          <li
+        {QUOTES.map((item, index) => (
+          <Reveal
+            as="li"
             className="col justify-between gap-8 rounded-2xl bg-white p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4"
+            delay={index * 90}
             key={item.author}
           >
             <blockquote className="text-pretty text-[15px] text-neutral-700 leading-relaxed [&_strong]:font-semibold [&_strong]:text-neutral-900">
@@ -96,7 +99,7 @@ export function Testimonials({
                 )}
               </span>
             </figcaption>
-          </li>
+          </Reveal>
         ))}
       </ul>
     </Section>

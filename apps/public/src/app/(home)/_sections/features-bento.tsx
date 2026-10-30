@@ -7,6 +7,7 @@ import {
   MiniRetention,
   MiniRevenue,
 } from '@/components/dashboard-mock/minis';
+import { Reveal } from '@/components/reveal';
 import { SectionHeader } from '@/components/section';
 import { MORE_FEATURES } from '@/lib/nav';
 
@@ -63,17 +64,19 @@ export function FeaturesBento() {
   const remaining = MORE_FEATURES.filter((feature) => !SHOWN.has(feature.href));
   return (
     <section className="col container gap-12 py-16 md:py-24">
-      <SectionHeader
-        align="center"
-        description="Unlimited sites, team members, dashboards and charts. You only pay for events."
-        title="And everything around it"
-        variant="sm"
-      />
+      <Reveal>
+        <SectionHeader
+          align="center"
+          description="Unlimited sites, team members, dashboards and charts. You only pay for events."
+          title="And everything around it"
+          variant="sm"
+        />
+      </Reveal>
       <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {ITEMS.map((item) => (
-          <li key={item.href}>
+        {ITEMS.map((item, index) => (
+          <Reveal as="li" delay={index * 70} key={item.href}>
             <Link
-              className="group col h-full gap-5 rounded-2xl bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4 transition-shadow hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_40px_-16px_rgba(0,0,0,0.18)]"
+              className="group col h-full gap-5 rounded-2xl bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_48px_-16px_rgba(0,0,0,0.2)]"
               href={item.href}
             >
               <div aria-hidden className="h-40 overflow-hidden">
@@ -86,7 +89,7 @@ export function FeaturesBento() {
                 </span>
               </span>
             </Link>
-          </li>
+          </Reveal>
         ))}
       </ul>
       <ul className="row flex-wrap justify-center gap-2">

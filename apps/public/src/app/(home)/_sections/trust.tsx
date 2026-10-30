@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { EuFlag } from '@/components/eu-flag';
+import { Reveal } from '@/components/reveal';
 import { SectionLabel } from '@/components/section';
 
 interface Reason {
@@ -52,7 +53,7 @@ export function Trust() {
   return (
     <section className="bg-stone-200/50 py-20 md:py-28">
       <div className="container grid grid-cols-1 gap-12 md:grid-cols-[5fr_7fr] md:gap-20">
-        <div className="col gap-6">
+        <Reveal className="col gap-6">
           <SectionLabel>Why OpenPanel</SectionLabel>
           <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
             Open source, so you decide where your data lives
@@ -83,10 +84,15 @@ export function Trust() {
             </Link>
             .
           </p>
-        </div>
+        </Reveal>
         <ul className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
-          {REASONS.map((reason) => (
-            <li className="col gap-3" key={reason.title}>
+          {REASONS.map((reason, index) => (
+            <Reveal
+              as="li"
+              className="col gap-3"
+              delay={index * 80}
+              key={reason.title}
+            >
               <span className="center-center size-10 rounded-xl bg-white shadow-sm ring-1 ring-black/5">
                 <reason.icon className="size-4" />
               </span>
@@ -94,7 +100,7 @@ export function Trust() {
               <span className="text-neutral-600 leading-relaxed">
                 {reason.description}
               </span>
-            </li>
+            </Reveal>
           ))}
         </ul>
       </div>

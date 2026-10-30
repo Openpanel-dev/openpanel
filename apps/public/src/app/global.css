@@ -112,6 +112,18 @@ code {
   }
 
   --animate-draw-line: draw-line 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-rise: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
   @keyframes draw-line {
     from {
@@ -136,6 +148,29 @@ code {
       margin-left: calc(-1 * max(1rem, (100vw - 1000px) / 2 + 1rem));
       border-top-left-radius: 0;
       border-bottom-left-radius: 0;
+    }
+  }
+}
+
+/* Scroll reveal: hidden until the Reveal component sees the element. */
+@layer components {
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 }

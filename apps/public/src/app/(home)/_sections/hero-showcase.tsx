@@ -53,11 +53,10 @@ export function HeroShowcase() {
         ))}
       </div>
       <div className="relative">
-        <div
-          className="relative max-h-[680px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)] max-md:overflow-x-auto"
-          key={active.id}
-        >
-          <div className="min-w-[960px]">{active.render()}</div>
+        <div className="relative max-h-[680px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)] max-md:overflow-x-auto">
+          <div className="min-w-[960px] animate-rise" key={active.id}>
+            {active.render()}
+          </div>
         </div>
       </div>
     </div>
