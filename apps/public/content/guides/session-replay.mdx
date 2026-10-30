@@ -4,7 +4,7 @@ description: "Add privacy-first session replay to any site in minutes using Open
 difficulty: beginner
 timeToComplete: 10
 date: 2026-02-27
-updated: 2026-02-27
+updated: 2026-10-23
 cover: /content/cover-default.jpg
 team: OpenPanel Team
 steps:
@@ -22,7 +22,7 @@ steps:
 
 This guide walks you through enabling [session replay](/features/session-replay) with OpenPanel. By the end, you'll be recording real user sessions you can play back in the dashboard to understand exactly what your users did.
 
-Session replay captures clicks, scrolls, and interactions as structured data—not video. Privacy controls are built in, and the replay module loads asynchronously so it never slows down your main analytics.
+Session replay captures clicks, scrolls, and interactions as structured data—not video. Privacy controls are built in. Script-tag installs load the recorder asynchronously; npm installs include it when your application imports the recorder subpath.
 
 ## Prerequisites
 
@@ -55,7 +55,7 @@ See the [Web SDK docs](/docs/sdks/web) or [Script tag docs](/docs/sdks/script) f
 
 ## Enable session replay [#enable]
 
-Session replay is **off by default**. Enable it by adding `sessionReplay: { enabled: true }` to your init config.
+Session replay is **off by default**. For the script tag, add `sessionReplay: { enabled: true }` to your init config. For the npm package, also import `@openpanel/web/replay` and pass `recorder` (see below).
 
 ### Script tag
 
@@ -74,12 +74,13 @@ Session replay is **off by default**. Enable it by adding `sessionReplay: { enab
 <script src="https://openpanel.dev/op1.js" defer async></script>
 ```
 
-The replay script (`op1-replay.js`) is fetched automatically alongside the main script. Because it loads asynchronously, it doesn't affect page load time or the size of your main analytics bundle.
+The replay script (`op1-replay.js`) is fetched automatically when replay starts. It loads separately from `op1.js`, so it does not increase the main tracking script's size. Recording still uses network and browser resources.
 
 ### NPM package
 
 ```ts title="op.ts"
 import { OpenPanel } from '@openpanel/web';
+import { startReplayRecorder } from '@openpanel/web/replay';
 
 const op = new OpenPanel({
   clientId: 'YOUR_CLIENT_ID',
@@ -87,20 +88,24 @@ const op = new OpenPanel({
   trackOutgoingLinks: true,
   sessionReplay: {
     enabled: true,
+    recorder: startReplayRecorder,
   },
 });
 ```
 
-With the npm package, the replay module is a dynamic import resolved by your bundler. It is automatically code-split from your main bundle—if you don't enable replay, the module is never included.
+Import `startReplayRecorder` from `@openpanel/web/replay` and pass it as `recorder`. Apps that never import that subpath do not ship rrweb through OpenPanel.
+
+When upgrading an npm integration that previously used only `enabled: true`, add the recorder import and option above. Without them, the SDK logs a warning and does not record.
 
 ### Next.js
 
-For Next.js, enable replay in your `OpenPanelComponent`:
+`OpenPanelComponent` uses the script-tag integration, so it loads the recorder automatically. Enable replay in the component:
 
 ```tsx title="app/layout.tsx"
 import { OpenPanelComponent } from '@openpanel/nextjs';
+import type { ReactNode } from 'react';
 
-export default function RootLayout({ children }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
@@ -118,9 +123,13 @@ export default function RootLayout({ children }) {
 }
 ```
 
+If you instantiate `OpenPanel` directly in a Next.js client component instead, follow the npm setup above. If you proxy the tracking script, also serve its derived replay URL or set `sessionReplay.scriptUrl` to a reachable recorder URL. The built-in `createRouteHandler` proxies `op1.js`, but does not serve `op1-replay.js`.
+
 ## Configure privacy controls [#privacy]
 
 Session replay captures real user behavior, so it's important to control what gets recorded. OpenPanel gives you several layers of control.
+
+The snippets below show options to add to your existing `sessionReplay` config. For npm installs, keep `recorder: startReplayRecorder` from the setup above.
 
 ### Input masking (enabled by default)
 
@@ -157,9 +166,23 @@ sessionReplay: {
 }
 ```
 
-### Mask specific text
+### Text masking (enabled by default)
 
-To mask text within an element without blocking its layout from the replay, use `data-openpanel-replay-mask`:
+All text is masked by default (`maskAllText: true`). To show non-sensitive text while keeping the rest masked, set `unmaskTextSelector`:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  unmaskTextSelector: '[data-openpanel-unmask]',
+}
+```
+
+```html
+<h1 data-openpanel-unmask>Product Analytics</h1>
+<p>Private account details stay masked</p>
+```
+
+If you set `maskAllText: false`, only text inside elements with `data-openpanel-replay-mask` is masked. Mark every sensitive element before using this mode:
 
 ```html
 <p>
@@ -168,16 +191,7 @@ To mask text within an element without blocking its layout from the replay, use 
 </p>
 ```
 
-The span's text appears as `***` in the replay while the surrounding layout remains visible.
-
-Configure a custom selector to avoid adding attributes to every element:
-
-```ts
-sessionReplay: {
-  enabled: true,
-  maskTextSelector: '.balance, .account-number, [data-pii]',
-}
-```
+Input masking is controlled separately by `maskAllInputs`.
 
 ### Ignore interactions
 
@@ -224,7 +238,7 @@ sessionReplay: {
 
 <Faqs>
 <FaqItem question="Does session replay affect my page load speed?">
-No. The replay module (`op1-replay.js`) loads as a separate async script after the page and the main analytics script. It does not block rendering or inflate your main bundle.
+Script-tag installs fetch the recorder (`op1-replay.js`) as a separate async script when replay starts. Npm bundle size and loading behavior depend on your application's recorder import and bundler configuration. Omit the recorder import when replay is not needed; `enabled: false` alone does not remove it from your bundle.
 </FaqItem>
 
 <FaqItem question="Is session replay enabled for all users?">
@@ -240,6 +254,6 @@ Replays are retained for 30 days. There is no limit on the number of sessions re
 </FaqItem>
 
 <FaqItem question="Can I use session replay with self-hosted OpenPanel?">
-Yes. The replay script is served from your self-hosted instance automatically. You can also use the `scriptUrl` option to load it from a custom CDN.
+Yes. For script-tag installs, serve `op1-replay.js` alongside `op1.js`, or set `sessionReplay.scriptUrl` to a reachable recorder URL. Setting `apiUrl` alone does not change the script URLs. Npm installs use the explicitly imported recorder instead.
 </FaqItem>
 </Faqs>
