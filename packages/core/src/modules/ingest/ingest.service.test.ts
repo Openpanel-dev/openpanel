@@ -52,6 +52,8 @@ mock.module('../../clients/geo', () => ({ getGeoLocation, getAsnInfo }));
 
 let getOverrideDeviceId: typeof import('./ingest.service').getOverrideDeviceId;
 let getTimestamp: typeof import('./ingest.service').getTimestamp;
+let getPropertyTimestamp: typeof import('./ingest.service').getPropertyTimestamp;
+let getUserDefinedTimestamp: typeof import('./ingest.service').getUserDefinedTimestamp;
 let handleReplay: typeof import('./ingest.service').handleReplay;
 let ingestTrack: typeof import('./ingest.service').ingestTrack;
 
@@ -78,8 +80,14 @@ beforeAll(async () => {
     ...realSaltService,
     getSalts,
   }));
-  ({ getOverrideDeviceId, getTimestamp, handleReplay, ingestTrack } =
-    await import('./ingest.service'));
+  ({
+    getOverrideDeviceId,
+    getPropertyTimestamp,
+    getTimestamp,
+    getUserDefinedTimestamp,
+    handleReplay,
+    ingestTrack,
+  } = await import('./ingest.service'));
 });
 
 afterAll(() => {
@@ -98,7 +106,10 @@ const track = (properties?: Record<string, unknown>): ITrackHandlerPayload =>
 describe('getTimestamp', () => {
   const ARRIVED_AT = Date.UTC(2026, 8, 27, 12, 0, 0);
   const withTimestamp = (value: unknown) =>
-    getTimestamp(ARRIVED_AT, track({ __timestamp: value }).payload);
+    getTimestamp(
+      ARRIVED_AT,
+      getUserDefinedTimestamp(track({ __timestamp: value }))
+    );
 
   it('keeps an old but plausible timestamp, so imports still work', () => {
     const result = withTimestamp('2020-01-01T00:00:00.000Z');
@@ -130,6 +141,32 @@ describe('getTimestamp', () => {
     const result = withTimestamp(new Date(recent).toISOString());
     expect(result.timestamp).toBe(recent);
     expect(result.isTimestampFromThePast).toBe(false);
+  });
+
+  it('reads an ai payload back-date from its own field', () => {
+    const at = '2024-01-15T10:30:00.000Z';
+    const body = {
+      type: 'ai',
+      payload: { kind: 'span', traceId: 'trace-1', timestamp: at },
+    } as ITrackHandlerPayload;
+    expect(
+      getTimestamp(ARRIVED_AT, getUserDefinedTimestamp(body)).timestamp
+    ).toBe(Date.parse(at));
+  });
+
+  it('a legacy body that looks like an ai payload still back-dates by properties', () => {
+    const at = '2024-01-15T10:30:00.000Z';
+    const legacyBody = {
+      kind: 'span',
+      traceId: 'trace-1',
+      properties: { __timestamp: at },
+    };
+    expect(
+      getTimestamp(ARRIVED_AT, getPropertyTimestamp(legacyBody)).timestamp
+    ).toBe(Date.parse(at));
+    expect(
+      getTimestamp(ARRIVED_AT, getPropertyTimestamp('garbage')).timestamp
+    ).toBe(ARRIVED_AT);
   });
 });
 

@@ -164,6 +164,7 @@ function makeDeps() {
     projects: {
       getCached: mock(async () => ({ firstEventAt: new Date(), filters: [] })),
       markFirstEvent: mock(async () => undefined),
+      getAiStoreContent: mock(async () => true),
     },
     enqueueSessionEnd,
     metrics: {
@@ -671,11 +672,9 @@ describe('incomingEvent with an ai row', () => {
   test('the project privacy setting blanks the content', async () => {
     const { deps, createEvent, addAiEvent } = ctx;
     createEvent.mockResolvedValueOnce({ document: storedDocument });
-    (deps.projects.getCached as ReturnType<typeof mock>).mockResolvedValue({
-      firstEventAt: new Date(),
-      filters: [],
-      aiStoreContent: false,
-    });
+    (
+      deps.projects.getAiStoreContent as ReturnType<typeof mock>
+    ).mockResolvedValue(false);
 
     await incomingEvent(aiJob(), deps);
 

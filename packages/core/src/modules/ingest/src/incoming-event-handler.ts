@@ -28,7 +28,10 @@ import {
 } from '../../event/event.service';
 import { matchEvent } from '../../notification/notification.service';
 import type { IProjectFilters } from '../../project/project.constants';
-import { getProjectByIdCached } from '../../project/project.service';
+import {
+  getProjectAiStoreContentCached,
+  getProjectByIdCached,
+} from '../../project/project.service';
 import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
@@ -79,7 +82,6 @@ export interface IncomingEventProject {
   firstEventAt?: Date | null;
   filters?: IProjectFilters[] | null;
   /** `false` keeps AI prompts and completions out of `ai_events`. */
-  aiStoreContent?: boolean | null;
 }
 
 /** The session-buffer subset this handler drives. */
@@ -113,6 +115,8 @@ export interface IncomingEventDeps {
     getCached(projectId: string): Promise<IncomingEventProject | null>;
     /** Conditional update + cache clear; idempotent across workers. */
     markFirstEvent(projectId: string): Promise<unknown>;
+    /** Read without an in-process cache, so an opt-out applies at once. */
+    getAiStoreContent(projectId: string): Promise<boolean | null>;
   };
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<unknown>;
   metrics: IncomingEventMetrics;
@@ -157,6 +161,8 @@ export function createIncomingEventDeps(
       bindings.checkNotificationRulesForEvent(ctx, payload),
     projects: {
       getCached: (projectId) => getProjectByIdCached(ctx, projectId),
+      getAiStoreContent: (projectId) =>
+        getProjectAiStoreContentCached(ctx, projectId),
       markFirstEvent: async (projectId) => {
         await ctx.db.project.updateMany({
           where: { id: projectId, firstEventAt: null },
@@ -301,8 +307,8 @@ async function storeAiEvent(
   if (!jobPayload.ai) {
     return;
   }
-  const project = await deps.projects.getCached(jobPayload.projectId);
-  const storeContent = project?.aiStoreContent !== false;
+  const storeContent =
+    (await deps.projects.getAiStoreContent(jobPayload.projectId)) !== false;
   await deps.aiEvents.add(
     buildAiEventRow(jobPayload.ai, document, { storeContent })
   );

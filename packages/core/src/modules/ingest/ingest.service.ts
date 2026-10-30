@@ -168,31 +168,39 @@ export function getOverrideDeviceId(
   return sanitizeOverrideDeviceId(body.payload?.properties?.__deviceId);
 }
 
-function isAiPayload(
-  payload: ITrackHandlerPayload['payload']
-): payload is IAiPayload {
-  return (
-    typeof payload === 'object' &&
-    payload !== null &&
-    'kind' in payload &&
-    'traceId' in payload
-  );
+/**
+ * `properties.__timestamp` off whatever arrived: `/event` has no body schema,
+ * so `payload` can be a string or null, and `'properties' in payload` throws
+ * on a primitive.
+ */
+export function getPropertyTimestamp(payload: unknown): unknown {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
+  }
+  if (!('properties' in payload)) {
+    return undefined;
+  }
+  const { properties } = payload as { properties?: { __timestamp?: unknown } };
+  return properties?.__timestamp;
+}
+
+/** The back-date a validated `/track` body carries, by its declared type. */
+export function getUserDefinedTimestamp(body: ITrackHandlerPayload): unknown {
+  if (body.type === 'ai') {
+    return body.payload.timestamp;
+  }
+  return getPropertyTimestamp(body.payload);
 }
 
 export function getTimestamp(
   timestamp: number | undefined,
-  payload: ITrackHandlerPayload['payload']
+  userDefinedTimestamp: unknown
 ): { timestamp: number; isTimestampFromThePast: boolean } {
   const safeTimestamp = timestamp || Date.now();
-  // `/event` has no body schema, so `payload` can be a string or null;
-  // `'properties' in payload` throws on a primitive.
-  const userDefinedTimestamp = isAiPayload(payload)
-    ? payload.timestamp
-    : typeof payload === 'object' && payload !== null && 'properties' in payload
-      ? (payload?.properties?.__timestamp as string | undefined)
-      : undefined;
-
-  if (!userDefinedTimestamp) {
+  const isUsable =
+    typeof userDefinedTimestamp === 'string' ||
+    typeof userDefinedTimestamp === 'number';
+  if (!(isUsable && userDefinedTimestamp)) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
@@ -258,7 +266,10 @@ async function buildContext(
 ): Promise<TrackContext> {
   const sessionTimeoutMs = resolveSessionTimeoutMs(deps.config);
   const projectId = request.projectId as string;
-  const timestamp = getTimestamp(request.timestamp, request.body.payload);
+  const timestamp = getTimestamp(
+    request.timestamp,
+    getUserDefinedTimestamp(request.body)
+  );
   const ip =
     request.body.type === 'track' && request.body.payload.properties?.__ip
       ? (request.body.payload.properties.__ip as string)
@@ -711,11 +722,9 @@ export async function ingestLegacyEvent(
     return { status: 'ok' };
   }
 
-  // `/event` has no body schema, so `getTimestamp` reads `properties` off
-  // whatever arrived.
   const { timestamp, isTimestampFromThePast } = getTimestamp(
     request.timestamp,
-    request.body as ITrackHandlerPayload['payload']
+    getPropertyTimestamp(request.body)
   );
   const ip = request.clientIp;
   const ua = headerValue(request.headers, 'user-agent') ?? FALLBACK_USER_AGENT;

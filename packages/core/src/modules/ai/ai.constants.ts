@@ -204,6 +204,13 @@ export const zAiPayload = z
     timestamp: z.string().datetime({ offset: true }).optional(),
   })
   .superRefine((payload, context) => {
+    if (payload.spanId !== undefined && payload.parentId === payload.spanId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['parentId'],
+        message: 'parentId must not be the span itself',
+      });
+    }
     if (!MODEL_CALL_KINDS.includes(payload.kind)) {
       return;
     }
