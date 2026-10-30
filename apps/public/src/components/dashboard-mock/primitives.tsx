@@ -52,7 +52,7 @@ export function StatCard({
   return (
     <div className={cn('col gap-2 bg-white p-3.5', className)}>
       <div className="row items-start justify-between gap-2">
-        <span className="font-medium text-[10px] text-neutral-500 uppercase tracking-wider">
+        <span className="whitespace-nowrap font-medium text-[10px] text-neutral-500 uppercase tracking-wider">
           {label}
         </span>
         {change && (

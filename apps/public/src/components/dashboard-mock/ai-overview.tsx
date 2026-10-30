@@ -121,12 +121,12 @@ export function AiOverviewContent({ compact = false }: { compact?: boolean }) {
         </span>
       </div>
       <MockTabs items={['Overview', 'Traces', 'Generations']} />
-      <div className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200">
+      <div className="grid @2xl:grid-cols-4 grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200">
         {STATS.slice(0, compact ? 4 : 8).map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
-      <div className="grid grid-cols-[1.3fr_1fr] gap-3">
+      <div className="grid @2xl:grid-cols-[1.3fr_1fr] grid-cols-1 gap-3">
         <div className="col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
           <span className="font-medium text-[10px] text-neutral-500 uppercase tracking-wider">
             Cost

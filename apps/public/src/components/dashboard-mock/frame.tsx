@@ -232,7 +232,7 @@ export function DashboardShell({
     <BrowserFrame className={className} url={url}>
       <div className="row bg-neutral-50/60 text-left text-neutral-900">
         <Sidebar active={active} project={project} />
-        <div className="col min-w-0 flex-1 gap-3 p-4">
+        <div className="@container col min-w-0 flex-1 gap-3 p-4">
           {toolbar}
           {children}
         </div>

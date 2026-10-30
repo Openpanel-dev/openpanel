@@ -1,6 +1,5 @@
 import { DashboardShell, Toolbar } from './frame';
 import { AreaChart, MockTable, StatCard } from './primitives';
-import { cn } from '@/lib/utils';
 
 const VISITORS = [92, 61, 68, 142, 131, 138, 171, 168];
 const VISITORS_PREVIOUS = [4, 6, 38, 60, 120, 128, 126, 110];
@@ -60,16 +59,11 @@ const STATS = [
   },
 ];
 
-export function WebOverviewContent({ compact = false }: { compact?: boolean }) {
+export function WebOverviewContent() {
   return (
     <>
-      <div
-        className={cn(
-          'grid gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200',
-          compact ? 'grid-cols-2' : 'grid-cols-4'
-        )}
-      >
-        {STATS.slice(0, compact ? 4 : 8).map((stat) => (
+      <div className="grid @2xl:grid-cols-4 grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200">
+        {STATS.map((stat) => (
           <StatCard key={stat.label} {...stat} />
         ))}
       </div>
@@ -83,7 +77,7 @@ export function WebOverviewContent({ compact = false }: { compact?: boolean }) {
           secondary={VISITORS_PREVIOUS}
         />
       </div>
-      <div className="grid grid-cols-[1.4fr_1fr] gap-3">
+      <div className="grid @2xl:grid-cols-[1.4fr_1fr] grid-cols-1 gap-3">
         <MockTable
           columns={['Referrer', 'Views', 'Sess.']}
           rows={[
