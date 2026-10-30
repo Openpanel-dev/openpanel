@@ -153,8 +153,8 @@ export function Pillars() {
         reverse
         title="Ask for the numbers instead of building charts"
         visual={
-          <div className="bleed-left rounded-3xl bg-neutral-100 p-6 md:p-10 md:pl-[max(2.5rem,calc((100vw-1000px)/2+3.5rem))]">
-            <ChatMock />
+          <div className="bleed-left max-h-[600px] overflow-hidden rounded-3xl bg-neutral-100 px-6 pt-6 md:px-10 md:pt-10">
+            <ChatMock className="rounded-b-none border-b-0" />
           </div>
         }
       />
