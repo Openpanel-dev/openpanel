@@ -185,7 +185,6 @@ export function AiOverviewMock({ className }: { className?: string }) {
       className={className}
       project="Acme SaaS"
       toolbar={<Toolbar withAsk={false} />}
-      url="/acme/saas/ai"
     >
       <AiOverviewContent />
     </DashboardShell>

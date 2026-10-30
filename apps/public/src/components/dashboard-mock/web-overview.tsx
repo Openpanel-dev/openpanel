@@ -112,7 +112,6 @@ export function WebOverviewMock({ className }: { className?: string }) {
       className={className}
       project="Acme Web"
       toolbar={<Toolbar />}
-      url="/acme/web"
     >
       <WebOverviewContent />
     </DashboardShell>

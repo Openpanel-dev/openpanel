@@ -56,14 +56,10 @@ const MANAGE_ITEMS: { id: string; label: string; icon: LucideIcon }[] = [
   { id: 'integrations', label: 'Integrations', icon: PlugIcon },
 ];
 
-export function BrowserFrame({
-  url,
-  host = 'dashboard.openpanel.dev',
+export function AppWindow({
   children,
   className,
 }: {
-  url: string;
-  host?: string;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -75,17 +71,6 @@ export function BrowserFrame({
         className
       )}
     >
-      <div className="row relative h-10 items-center border-neutral-200 border-b bg-neutral-50 px-4">
-        <div className="row gap-1.5">
-          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
-          <span className="size-2.5 rounded-full bg-[#febc2e]" />
-          <span className="size-2.5 rounded-full bg-[#28c840]" />
-        </div>
-        <span className="absolute left-1/2 -translate-x-1/2 rounded-md bg-white px-3 py-1 text-[11px] text-neutral-500 shadow-sm ring-1 ring-black/5">
-          {host}
-          {url}
-        </span>
-      </div>
       {children}
     </div>
   );
@@ -216,20 +201,18 @@ export function Toolbar({
 export function DashboardShell({
   project,
   active,
-  url,
   children,
   toolbar,
   className,
 }: {
   project: string;
   active: DashboardPage;
-  url: string;
   children: React.ReactNode;
   toolbar?: React.ReactNode;
   className?: string;
 }) {
   return (
-    <BrowserFrame className={className} url={url}>
+    <AppWindow className={className}>
       <div className="row bg-neutral-50/60 text-left text-neutral-900">
         <Sidebar active={active} project={project} />
         <div className="@container col min-w-0 flex-1 gap-3 p-4">
@@ -237,6 +220,6 @@ export function DashboardShell({
           {children}
         </div>
       </div>
-    </BrowserFrame>
+    </AppWindow>
   );
 }

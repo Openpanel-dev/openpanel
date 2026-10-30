@@ -150,7 +150,6 @@ export function ProductAnalyticsMock({ className }: { className?: string }) {
       className={className}
       project="Acme SaaS"
       toolbar={<Toolbar range="Last 30 days" withAsk={false} />}
-      url="/acme/saas/reports"
     >
       <ProductAnalyticsContent />
     </DashboardShell>
