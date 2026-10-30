@@ -2,9 +2,49 @@ import Link from 'next/link';
 import { GetStartedButton } from '@/components/get-started-button';
 import { Button } from '@/components/ui/button';
 
+const SNIPPET_LINES: { text: string; tone?: 'muted' | 'string' }[] = [
+  { text: '<script>' },
+  { text: "  window.op('init', {" },
+  { text: "    clientId: 'YOUR_CLIENT_ID',", tone: 'string' },
+  { text: '    trackScreenViews: true,' },
+  { text: '    trackOutgoingLinks: true,' },
+  { text: '  });' },
+  { text: '</script>' },
+  { text: '<script src="https://openpanel.dev/op1.js"' },
+  { text: '  defer async></script>' },
+];
+
+function InstallSnippet() {
+  return (
+    <div
+      aria-hidden
+      className="overflow-hidden rounded-2xl bg-neutral-900 text-neutral-200 shadow-[0_30px_60px_-24px_rgba(0,0,0,0.35)]"
+    >
+      <div className="row items-center gap-4 border-white/10 border-b px-5 py-3 text-[12px]">
+        <span className="font-medium text-white">Script</span>
+        <span className="text-neutral-500">React</span>
+        <span className="text-neutral-500">Next.js</span>
+        <span className="text-neutral-500">Vue</span>
+        <span className="text-neutral-500">React Native</span>
+        <span className="text-neutral-500">iOS</span>
+      </div>
+      <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed">
+        {SNIPPET_LINES.map((line) => (
+          <div
+            className={line.tone === 'string' ? 'text-emerald-300' : undefined}
+            key={line.text}
+          >
+            {line.text}
+          </div>
+        ))}
+      </pre>
+    </div>
+  );
+}
+
 export function CtaBanner({
   title = 'Start understanding your users today',
-  description = '30-day free trial, no credit card. Cloud from $2.50 a month, or self-host for free.',
+  description = 'One script on your site, or one SDK call in your app, and the first events show up within a minute. 30-day free trial, no credit card.',
   ctaText,
   ctaLink,
 }: {
@@ -14,19 +54,32 @@ export function CtaBanner({
   ctaLink?: string;
 }) {
   return (
-    <div className="container py-16 md:py-24">
-      <section className="col center-center gap-6 rounded-3xl bg-white px-6 py-16 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_60px_-24px_rgba(0,0,0,0.16)] ring-1 ring-black/4 md:px-16 md:py-20">
-        <h2 className="max-w-2xl text-balance font-semibold text-3xl tracking-[-0.02em] md:text-4xl">
-          {title}
-        </h2>
-        <p className="max-w-md text-balance text-neutral-600">{description}</p>
-        <div className="row mt-2 flex-wrap items-center justify-center gap-3">
-          <GetStartedButton href={ctaLink} text={ctaText} />
-          <Button asChild className="px-6" size="lg" variant="outline">
-            <Link href="/pricing">See pricing</Link>
-          </Button>
+    <section className="bg-stone-200/50 py-20 md:py-28">
+      <div className="container grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
+        <div className="col gap-6">
+          <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+            {title}
+          </h2>
+          <p className="text-lg text-neutral-600">{description}</p>
+          <div className="row flex-wrap items-center gap-3">
+            <GetStartedButton href={ctaLink} text={ctaText} />
+            <Button asChild className="px-6" size="lg" variant="outline">
+              <Link href="/pricing">See pricing</Link>
+            </Button>
+          </div>
+          <p className="text-neutral-500 text-sm">
+            Cloud from $2.50 a month, or{' '}
+            <Link
+              className="font-medium text-neutral-900 underline-offset-4 hover:underline"
+              href="/docs/self-hosting/self-hosting"
+            >
+              self-host for free
+            </Link>
+            .
+          </p>
         </div>
-      </section>
-    </div>
+        <InstallSnippet />
+      </div>
+    </section>
   );
 }

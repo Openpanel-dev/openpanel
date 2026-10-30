@@ -1,6 +1,5 @@
 import { FaqItem, Faqs } from '@/components/faq';
-import { GetStartedButton } from '@/components/get-started-button';
-import { Section, SectionHeader } from '@/components/section';
+import { SectionHeader } from '@/components/section';
 
 const faqData = [
   {
@@ -47,16 +46,13 @@ const faqData = [
 
 export function Faq() {
   return (
-    <Section className="container">
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-[1fr_1.4fr] md:gap-16">
-        <div className="col gap-8">
-          <SectionHeader
-            description="The questions we get most often."
-            title="FAQ"
-            variant="sm"
-          />
-          <GetStartedButton className="w-fit max-md:hidden" />
-        </div>
+    <section className="container py-20 md:py-28">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-[5fr_7fr] md:gap-20">
+        <SectionHeader
+          description="The questions we get most often. Anything else, ask us on Discord or by email."
+          title="Questions, answered"
+          variant="sm"
+        />
         <Faqs>
           {faqData.map((faq) => (
             <FaqItem key={faq.question} question={faq.question}>
@@ -65,6 +61,6 @@ export function Faq() {
           ))}
         </Faqs>
       </div>
-    </Section>
+    </section>
   );
 }

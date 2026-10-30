@@ -19,7 +19,7 @@ export const Faqs = ({
       : {})}
   >
     <Accordion
-      className="w-full max-w-screen-md self-center rounded-3xl border bg-white [&_button]:px-4"
+      className="w-full divide-y divide-neutral-200 border-neutral-200 border-y [&_[role=region]]:pb-2 [&_button]:py-5 [&_button]:text-base"
       collapsible
       type="single"
     >
@@ -36,7 +36,7 @@ export const FaqItem = ({
   children: string | React.ReactNode;
 }) => (
   <AccordionItem
-    className="[&_[role=region]]:px-4"
+    className="border-0"
     itemProp="mainEntity"
     itemScope
     itemType="https://schema.org/Question"
