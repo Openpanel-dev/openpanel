@@ -27,6 +27,7 @@ on:
         required: true
         options:
           - "@openpanel/sdk"
+          - "@openpanel/ai"
           - "@openpanel/web"
           - "@openpanel/nextjs"
           - "@openpanel/astro"
