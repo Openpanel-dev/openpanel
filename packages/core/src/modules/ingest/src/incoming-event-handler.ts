@@ -16,6 +16,11 @@ import {
   parseReferrer,
 } from '../../../shared/parse-referrer';
 import {
+  type AiEventIdentitySource,
+  buildAiEventRow,
+  type IClickhouseAiEvent,
+} from '../../ai/ai.service';
+import {
   createEvent,
   type IServiceCreateEventPayload,
   type IServiceCreateEventPayloadWithId,
@@ -23,7 +28,10 @@ import {
 } from '../../event/event.service';
 import { matchEvent } from '../../notification/notification.service';
 import type { IProjectFilters } from '../../project/project.constants';
-import { getProjectByIdCached } from '../../project/project.service';
+import {
+  getProjectAiStoreContentCached,
+  getProjectByIdCached,
+} from '../../project/project.service';
 import type { IClickhouseSession } from '../../session/session.service';
 import { sessionEndsEnqueued } from '../../session/src/session.metrics';
 import type { EnqueueSessionEndInput } from '../../session/src/session-end';
@@ -73,6 +81,7 @@ export interface IncomingEventDelivery {
 export interface IncomingEventProject {
   firstEventAt?: Date | null;
   filters?: IProjectFilters[] | null;
+  /** `false` keeps AI prompts and completions out of `ai_events`. */
 }
 
 /** The session-buffer subset this handler drives. */
@@ -106,9 +115,14 @@ export interface IncomingEventDeps {
     getCached(projectId: string): Promise<IncomingEventProject | null>;
     /** Conditional update + cache clear; idempotent across workers. */
     markFirstEvent(projectId: string): Promise<unknown>;
+    /** Read without an in-process cache, so an opt-out applies at once. */
+    getAiStoreContent(projectId: string): Promise<boolean | null>;
   };
   enqueueSessionEnd(input: EnqueueSessionEndInput): Promise<unknown>;
   metrics: IncomingEventMetrics;
+  aiEvents: {
+    add(row: IClickhouseAiEvent): Promise<unknown>;
+  };
 }
 
 /**
@@ -147,6 +161,8 @@ export function createIncomingEventDeps(
       bindings.checkNotificationRulesForEvent(ctx, payload),
     projects: {
       getCached: (projectId) => getProjectByIdCached(ctx, projectId),
+      getAiStoreContent: (projectId) =>
+        getProjectAiStoreContentCached(ctx, projectId),
       markFirstEvent: async (projectId) => {
         await ctx.db.project.updateMany({
           where: { id: projectId, firstEventAt: null },
@@ -159,6 +175,9 @@ export function createIncomingEventDeps(
     metrics: {
       sessionStarted: (kind) => sessionsStarted.inc({ kind }),
       sessionEndEnqueued: (source) => sessionEndsEnqueued.inc({ source }),
+    },
+    aiEvents: {
+      add: (row) => ctx.buffers.aiEvent.add(row),
     },
   };
 }
@@ -256,7 +275,43 @@ export async function incomingEvent(
         kafkaOffset: meta.offset,
       })
     : deps.logger;
-  return await ingestIncomingEvent(jobPayload, deps, logger);
+  const result = await ingestIncomingEvent(jobPayload, deps, logger);
+  if (jobPayload.ai && isStoredEvent(result)) {
+    await storeAiEvent(jobPayload, result.document, deps);
+  }
+  return result;
+}
+
+function isStoredEvent(
+  result: unknown
+): result is { document: AiEventIdentitySource } {
+  return (
+    typeof result === 'object' &&
+    result !== null &&
+    'document' in result &&
+    typeof result.document === 'object' &&
+    result.document !== null
+  );
+}
+
+/**
+ * The `ai_events` row follows the `events` row, never precedes it: it copies
+ * the identity and session the event resolved to, and an event the project
+ * filters excluded leaves no ai row behind.
+ */
+async function storeAiEvent(
+  jobPayload: IncomingEventPayload,
+  document: AiEventIdentitySource,
+  deps: IncomingEventDeps
+) {
+  if (!jobPayload.ai) {
+    return;
+  }
+  const storeContent =
+    (await deps.projects.getAiStoreContent(jobPayload.projectId)) !== false;
+  await deps.aiEvents.add(
+    buildAiEventRow(jobPayload.ai, document, { storeContent })
+  );
 }
 
 async function ingestIncomingEvent(

@@ -67,11 +67,13 @@ import { Route as AppOrganizationIdProjectIdNotificationsTabsRouteImport } from 
 import { Route as AppOrganizationIdProjectIdIntegrationsTabsRouteImport } from './routes/_app.$organizationId.$projectId.integrations._tabs'
 import { Route as AppOrganizationIdProjectIdEventsTabsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs'
 import { Route as AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport } from './routes/_app.$organizationId.$projectId.dashboards_.$dashboardId'
+import { Route as AppOrganizationIdProjectIdAiTabsRouteImport } from './routes/_app.$organizationId.$projectId.ai._tabs'
 import { Route as AppOrganizationIdProjectIdSettingsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.index'
 import { Route as AppOrganizationIdProjectIdProfilesTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.index'
 import { Route as AppOrganizationIdProjectIdNotificationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.notifications._tabs.index'
 import { Route as AppOrganizationIdProjectIdIntegrationsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.integrations._tabs.index'
 import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.index'
+import { Route as AppOrganizationIdProjectIdAiTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.ai._tabs.index'
 import { Route as AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.widgets'
 import { Route as AppOrganizationIdProjectIdSettingsTabsTrackingRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.tracking'
 import { Route as AppOrganizationIdProjectIdSettingsTabsMcpRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.mcp'
@@ -80,6 +82,7 @@ import { Route as AppOrganizationIdProjectIdSettingsTabsGscRouteImport } from '.
 import { Route as AppOrganizationIdProjectIdSettingsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.events'
 import { Route as AppOrganizationIdProjectIdSettingsTabsDetailsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.details'
 import { Route as AppOrganizationIdProjectIdSettingsTabsClientsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.clients'
+import { Route as AppOrganizationIdProjectIdSettingsTabsAiRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.ai'
 import { Route as AppOrganizationIdProjectIdProfilesTabsPowerUsersRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.power-users'
 import { Route as AppOrganizationIdProjectIdProfilesTabsIdentifiedRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.identified'
 import { Route as AppOrganizationIdProjectIdProfilesTabsAnonymousRouteImport } from './routes/_app.$organizationId.$projectId.profiles._tabs.anonymous'
@@ -93,6 +96,9 @@ import { Route as AppOrganizationIdProjectIdEventsTabsStatsRouteImport } from '.
 import { Route as AppOrganizationIdProjectIdEventsTabsEventsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.events'
 import { Route as AppOrganizationIdProjectIdEventsTabsConversionsRouteImport } from './routes/_app.$organizationId.$projectId.events._tabs.conversions'
 import { Route as AppOrganizationIdProjectIdCohortsCohortIdTabsRouteImport } from './routes/_app.$organizationId.$projectId.cohorts_.$cohortId._tabs'
+import { Route as AppOrganizationIdProjectIdAiTracesTraceIdRouteImport } from './routes/_app.$organizationId.$projectId.ai_.traces.$traceId'
+import { Route as AppOrganizationIdProjectIdAiTabsTracesRouteImport } from './routes/_app.$organizationId.$projectId.ai._tabs.traces'
+import { Route as AppOrganizationIdProjectIdAiTabsGenerationsRouteImport } from './routes/_app.$organizationId.$projectId.ai._tabs.generations'
 import { Route as AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.profiles.$profileId._tabs.index'
 import { Route as AppOrganizationIdProjectIdGroupsGroupIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.groups_.$groupId._tabs.index'
 import { Route as AppOrganizationIdProjectIdCohortsCohortIdTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.cohorts_.$cohortId._tabs.index'
@@ -123,6 +129,9 @@ const AppOrganizationIdProjectIdIntegrationsRouteImport = createFileRoute(
 )()
 const AppOrganizationIdProjectIdEventsRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId/events',
+)()
+const AppOrganizationIdProjectIdAiRouteImport = createFileRoute(
+  '/_app/$organizationId/$projectId/ai',
 )()
 const AppOrganizationIdProjectIdProfilesProfileIdRouteImport = createFileRoute(
   '/_app/$organizationId/$projectId/profiles/$profileId',
@@ -303,6 +312,12 @@ const AppOrganizationIdProjectIdEventsRoute =
   AppOrganizationIdProjectIdEventsRouteImport.update({
     id: '/events',
     path: '/events',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
+const AppOrganizationIdProjectIdAiRoute =
+  AppOrganizationIdProjectIdAiRouteImport.update({
+    id: '/ai',
+    path: '/ai',
     getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
 const AppOrganizationIdProjectIdIndexRoute =
@@ -496,6 +511,11 @@ const AppOrganizationIdProjectIdDashboardsDashboardIdRoute =
     path: '/dashboards/$dashboardId',
     getParentRoute: () => AppOrganizationIdProjectIdRoute,
   } as any)
+const AppOrganizationIdProjectIdAiTabsRoute =
+  AppOrganizationIdProjectIdAiTabsRouteImport.update({
+    id: '/_tabs',
+    getParentRoute: () => AppOrganizationIdProjectIdAiRoute,
+  } as any)
 const AppOrganizationIdProjectIdSettingsTabsIndexRoute =
   AppOrganizationIdProjectIdSettingsTabsIndexRouteImport.update({
     id: '/',
@@ -525,6 +545,12 @@ const AppOrganizationIdProjectIdEventsTabsIndexRoute =
     id: '/',
     path: '/',
     getParentRoute: () => AppOrganizationIdProjectIdEventsTabsRoute,
+  } as any)
+const AppOrganizationIdProjectIdAiTabsIndexRoute =
+  AppOrganizationIdProjectIdAiTabsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AppOrganizationIdProjectIdAiTabsRoute,
   } as any)
 const AppOrganizationIdProjectIdSettingsTabsWidgetsRoute =
   AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport.update({
@@ -572,6 +598,12 @@ const AppOrganizationIdProjectIdSettingsTabsClientsRoute =
   AppOrganizationIdProjectIdSettingsTabsClientsRouteImport.update({
     id: '/clients',
     path: '/clients',
+    getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
+  } as any)
+const AppOrganizationIdProjectIdSettingsTabsAiRoute =
+  AppOrganizationIdProjectIdSettingsTabsAiRouteImport.update({
+    id: '/ai',
+    path: '/ai',
     getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
   } as any)
 const AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute =
@@ -648,6 +680,24 @@ const AppOrganizationIdProjectIdCohortsCohortIdTabsRoute =
   AppOrganizationIdProjectIdCohortsCohortIdTabsRouteImport.update({
     id: '/_tabs',
     getParentRoute: () => AppOrganizationIdProjectIdCohortsCohortIdRoute,
+  } as any)
+const AppOrganizationIdProjectIdAiTracesTraceIdRoute =
+  AppOrganizationIdProjectIdAiTracesTraceIdRouteImport.update({
+    id: '/ai_/traces/$traceId',
+    path: '/ai/traces/$traceId',
+    getParentRoute: () => AppOrganizationIdProjectIdRoute,
+  } as any)
+const AppOrganizationIdProjectIdAiTabsTracesRoute =
+  AppOrganizationIdProjectIdAiTabsTracesRouteImport.update({
+    id: '/traces',
+    path: '/traces',
+    getParentRoute: () => AppOrganizationIdProjectIdAiTabsRoute,
+  } as any)
+const AppOrganizationIdProjectIdAiTabsGenerationsRoute =
+  AppOrganizationIdProjectIdAiTabsGenerationsRouteImport.update({
+    id: '/generations',
+    path: '/generations',
+    getParentRoute: () => AppOrganizationIdProjectIdAiTabsRoute,
   } as any)
 const AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRoute =
   AppOrganizationIdProjectIdProfilesProfileIdTabsIndexRouteImport.update({
@@ -743,6 +793,7 @@ export interface FileRoutesByFullPath {
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
+  '/$organizationId/$projectId/ai': typeof AppOrganizationIdProjectIdAiTabsRouteWithChildren
   '/$organizationId/$projectId/dashboards/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   '/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsTabsRouteWithChildren
   '/$organizationId/$projectId/integrations': typeof AppOrganizationIdProjectIdIntegrationsTabsRouteWithChildren
@@ -757,6 +808,9 @@ export interface FileRoutesByFullPath {
   '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/$organizationId/account/': typeof AppOrganizationIdAccountTabsIndexRoute
   '/$organizationId/members/': typeof AppOrganizationIdMembersTabsIndexRoute
+  '/$organizationId/$projectId/ai/generations': typeof AppOrganizationIdProjectIdAiTabsGenerationsRoute
+  '/$organizationId/$projectId/ai/traces': typeof AppOrganizationIdProjectIdAiTabsTracesRoute
+  '/$organizationId/$projectId/ai/traces/$traceId': typeof AppOrganizationIdProjectIdAiTracesTraceIdRoute
   '/$organizationId/$projectId/cohorts/$cohortId': typeof AppOrganizationIdProjectIdCohortsCohortIdTabsRouteWithChildren
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/$organizationId/$projectId/events/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
@@ -770,6 +824,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/profiles/anonymous': typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRoute
   '/$organizationId/$projectId/profiles/identified': typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRoute
   '/$organizationId/$projectId/profiles/power-users': typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute
+  '/$organizationId/$projectId/settings/ai': typeof AppOrganizationIdProjectIdSettingsTabsAiRoute
   '/$organizationId/$projectId/settings/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   '/$organizationId/$projectId/settings/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/$organizationId/$projectId/settings/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
@@ -778,6 +833,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/settings/mcp': typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
   '/$organizationId/$projectId/settings/tracking': typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   '/$organizationId/$projectId/settings/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
+  '/$organizationId/$projectId/ai/': typeof AppOrganizationIdProjectIdAiTabsIndexRoute
   '/$organizationId/$projectId/events/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/$organizationId/$projectId/integrations/': typeof AppOrganizationIdProjectIdIntegrationsTabsIndexRoute
   '/$organizationId/$projectId/notifications/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
@@ -830,6 +886,7 @@ export interface FileRoutesByTo {
   '/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/$organizationId/$projectId': typeof AppOrganizationIdProjectIdIndexRoute
+  '/$organizationId/$projectId/ai': typeof AppOrganizationIdProjectIdAiTabsIndexRoute
   '/$organizationId/$projectId/dashboards/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   '/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/$organizationId/$projectId/integrations': typeof AppOrganizationIdProjectIdIntegrationsTabsIndexRoute
@@ -842,6 +899,9 @@ export interface FileRoutesByTo {
   '/$organizationId/account/two-factor': typeof AppOrganizationIdAccountTabsTwoFactorRoute
   '/$organizationId/members/invitations': typeof AppOrganizationIdMembersTabsInvitationsRoute
   '/$organizationId/members/members': typeof AppOrganizationIdMembersTabsMembersRoute
+  '/$organizationId/$projectId/ai/generations': typeof AppOrganizationIdProjectIdAiTabsGenerationsRoute
+  '/$organizationId/$projectId/ai/traces': typeof AppOrganizationIdProjectIdAiTabsTracesRoute
+  '/$organizationId/$projectId/ai/traces/$traceId': typeof AppOrganizationIdProjectIdAiTracesTraceIdRoute
   '/$organizationId/$projectId/cohorts/$cohortId': typeof AppOrganizationIdProjectIdCohortsCohortIdTabsIndexRoute
   '/$organizationId/$projectId/events/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
   '/$organizationId/$projectId/events/events': typeof AppOrganizationIdProjectIdEventsTabsEventsRoute
@@ -855,6 +915,7 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/profiles/anonymous': typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRoute
   '/$organizationId/$projectId/profiles/identified': typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRoute
   '/$organizationId/$projectId/profiles/power-users': typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute
+  '/$organizationId/$projectId/settings/ai': typeof AppOrganizationIdProjectIdSettingsTabsAiRoute
   '/$organizationId/$projectId/settings/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   '/$organizationId/$projectId/settings/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/$organizationId/$projectId/settings/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
@@ -916,6 +977,8 @@ export interface FileRoutesById {
   '/_steps/onboarding/$projectId/connect': typeof StepsOnboardingProjectIdConnectRoute
   '/_steps/onboarding/$projectId/verify': typeof StepsOnboardingProjectIdVerifyRoute
   '/_app/$organizationId/$projectId/': typeof AppOrganizationIdProjectIdIndexRoute
+  '/_app/$organizationId/$projectId/ai': typeof AppOrganizationIdProjectIdAiRouteWithChildren
+  '/_app/$organizationId/$projectId/ai/_tabs': typeof AppOrganizationIdProjectIdAiTabsRouteWithChildren
   '/_app/$organizationId/$projectId/dashboards_/$dashboardId': typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   '/_app/$organizationId/$projectId/events': typeof AppOrganizationIdProjectIdEventsRouteWithChildren
   '/_app/$organizationId/$projectId/events/_tabs': typeof AppOrganizationIdProjectIdEventsTabsRouteWithChildren
@@ -935,6 +998,9 @@ export interface FileRoutesById {
   '/_app/$organizationId/members/_tabs/members': typeof AppOrganizationIdMembersTabsMembersRoute
   '/_app/$organizationId/account/_tabs/': typeof AppOrganizationIdAccountTabsIndexRoute
   '/_app/$organizationId/members/_tabs/': typeof AppOrganizationIdMembersTabsIndexRoute
+  '/_app/$organizationId/$projectId/ai/_tabs/generations': typeof AppOrganizationIdProjectIdAiTabsGenerationsRoute
+  '/_app/$organizationId/$projectId/ai/_tabs/traces': typeof AppOrganizationIdProjectIdAiTabsTracesRoute
+  '/_app/$organizationId/$projectId/ai_/traces/$traceId': typeof AppOrganizationIdProjectIdAiTracesTraceIdRoute
   '/_app/$organizationId/$projectId/cohorts_/$cohortId': typeof AppOrganizationIdProjectIdCohortsCohortIdRouteWithChildren
   '/_app/$organizationId/$projectId/cohorts_/$cohortId/_tabs': typeof AppOrganizationIdProjectIdCohortsCohortIdTabsRouteWithChildren
   '/_app/$organizationId/$projectId/events/_tabs/conversions': typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
@@ -951,6 +1017,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/profiles/_tabs/anonymous': typeof AppOrganizationIdProjectIdProfilesTabsAnonymousRoute
   '/_app/$organizationId/$projectId/profiles/_tabs/identified': typeof AppOrganizationIdProjectIdProfilesTabsIdentifiedRoute
   '/_app/$organizationId/$projectId/profiles/_tabs/power-users': typeof AppOrganizationIdProjectIdProfilesTabsPowerUsersRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/ai': typeof AppOrganizationIdProjectIdSettingsTabsAiRoute
   '/_app/$organizationId/$projectId/settings/_tabs/clients': typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/details': typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/events': typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
@@ -959,6 +1026,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/settings/_tabs/mcp': typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
   '/_app/$organizationId/$projectId/settings/_tabs/tracking': typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   '/_app/$organizationId/$projectId/settings/_tabs/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
+  '/_app/$organizationId/$projectId/ai/_tabs/': typeof AppOrganizationIdProjectIdAiTabsIndexRoute
   '/_app/$organizationId/$projectId/events/_tabs/': typeof AppOrganizationIdProjectIdEventsTabsIndexRoute
   '/_app/$organizationId/$projectId/integrations/_tabs/': typeof AppOrganizationIdProjectIdIntegrationsTabsIndexRoute
   '/_app/$organizationId/$projectId/notifications/_tabs/': typeof AppOrganizationIdProjectIdNotificationsTabsIndexRoute
@@ -1015,6 +1083,7 @@ export interface FileRouteTypes {
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
     | '/$organizationId/$projectId/'
+    | '/$organizationId/$projectId/ai'
     | '/$organizationId/$projectId/dashboards/$dashboardId'
     | '/$organizationId/$projectId/events'
     | '/$organizationId/$projectId/integrations'
@@ -1029,6 +1098,9 @@ export interface FileRouteTypes {
     | '/$organizationId/members/members'
     | '/$organizationId/account/'
     | '/$organizationId/members/'
+    | '/$organizationId/$projectId/ai/generations'
+    | '/$organizationId/$projectId/ai/traces'
+    | '/$organizationId/$projectId/ai/traces/$traceId'
     | '/$organizationId/$projectId/cohorts/$cohortId'
     | '/$organizationId/$projectId/events/conversions'
     | '/$organizationId/$projectId/events/events'
@@ -1042,6 +1114,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/profiles/anonymous'
     | '/$organizationId/$projectId/profiles/identified'
     | '/$organizationId/$projectId/profiles/power-users'
+    | '/$organizationId/$projectId/settings/ai'
     | '/$organizationId/$projectId/settings/clients'
     | '/$organizationId/$projectId/settings/details'
     | '/$organizationId/$projectId/settings/events'
@@ -1050,6 +1123,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/mcp'
     | '/$organizationId/$projectId/settings/tracking'
     | '/$organizationId/$projectId/settings/widgets'
+    | '/$organizationId/$projectId/ai/'
     | '/$organizationId/$projectId/events/'
     | '/$organizationId/$projectId/integrations/'
     | '/$organizationId/$projectId/notifications/'
@@ -1102,6 +1176,7 @@ export interface FileRouteTypes {
     | '/onboarding/$projectId/connect'
     | '/onboarding/$projectId/verify'
     | '/$organizationId/$projectId'
+    | '/$organizationId/$projectId/ai'
     | '/$organizationId/$projectId/dashboards/$dashboardId'
     | '/$organizationId/$projectId/events'
     | '/$organizationId/$projectId/integrations'
@@ -1114,6 +1189,9 @@ export interface FileRouteTypes {
     | '/$organizationId/account/two-factor'
     | '/$organizationId/members/invitations'
     | '/$organizationId/members/members'
+    | '/$organizationId/$projectId/ai/generations'
+    | '/$organizationId/$projectId/ai/traces'
+    | '/$organizationId/$projectId/ai/traces/$traceId'
     | '/$organizationId/$projectId/cohorts/$cohortId'
     | '/$organizationId/$projectId/events/conversions'
     | '/$organizationId/$projectId/events/events'
@@ -1127,6 +1205,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/profiles/anonymous'
     | '/$organizationId/$projectId/profiles/identified'
     | '/$organizationId/$projectId/profiles/power-users'
+    | '/$organizationId/$projectId/settings/ai'
     | '/$organizationId/$projectId/settings/clients'
     | '/$organizationId/$projectId/settings/details'
     | '/$organizationId/$projectId/settings/events'
@@ -1187,6 +1266,8 @@ export interface FileRouteTypes {
     | '/_steps/onboarding/$projectId/connect'
     | '/_steps/onboarding/$projectId/verify'
     | '/_app/$organizationId/$projectId/'
+    | '/_app/$organizationId/$projectId/ai'
+    | '/_app/$organizationId/$projectId/ai/_tabs'
     | '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
     | '/_app/$organizationId/$projectId/events'
     | '/_app/$organizationId/$projectId/events/_tabs'
@@ -1206,6 +1287,9 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/members/_tabs/members'
     | '/_app/$organizationId/account/_tabs/'
     | '/_app/$organizationId/members/_tabs/'
+    | '/_app/$organizationId/$projectId/ai/_tabs/generations'
+    | '/_app/$organizationId/$projectId/ai/_tabs/traces'
+    | '/_app/$organizationId/$projectId/ai_/traces/$traceId'
     | '/_app/$organizationId/$projectId/cohorts_/$cohortId'
     | '/_app/$organizationId/$projectId/cohorts_/$cohortId/_tabs'
     | '/_app/$organizationId/$projectId/events/_tabs/conversions'
@@ -1222,6 +1306,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/profiles/_tabs/anonymous'
     | '/_app/$organizationId/$projectId/profiles/_tabs/identified'
     | '/_app/$organizationId/$projectId/profiles/_tabs/power-users'
+    | '/_app/$organizationId/$projectId/settings/_tabs/ai'
     | '/_app/$organizationId/$projectId/settings/_tabs/clients'
     | '/_app/$organizationId/$projectId/settings/_tabs/details'
     | '/_app/$organizationId/$projectId/settings/_tabs/events'
@@ -1230,6 +1315,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/settings/_tabs/mcp'
     | '/_app/$organizationId/$projectId/settings/_tabs/tracking'
     | '/_app/$organizationId/$projectId/settings/_tabs/widgets'
+    | '/_app/$organizationId/$projectId/ai/_tabs/'
     | '/_app/$organizationId/$projectId/events/_tabs/'
     | '/_app/$organizationId/$projectId/integrations/_tabs/'
     | '/_app/$organizationId/$projectId/notifications/_tabs/'
@@ -1496,6 +1582,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
+    '/_app/$organizationId/$projectId/ai': {
+      id: '/_app/$organizationId/$projectId/ai'
+      path: '/ai'
+      fullPath: '/$organizationId/$projectId/ai'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
     '/_app/$organizationId/$projectId/': {
       id: '/_app/$organizationId/$projectId/'
       path: '/'
@@ -1727,6 +1820,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdDashboardsDashboardIdRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdRoute
     }
+    '/_app/$organizationId/$projectId/ai/_tabs': {
+      id: '/_app/$organizationId/$projectId/ai/_tabs'
+      path: '/ai'
+      fullPath: '/$organizationId/$projectId/ai'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiTabsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdAiRoute
+    }
     '/_app/$organizationId/$projectId/settings/_tabs/': {
       id: '/_app/$organizationId/$projectId/settings/_tabs/'
       path: '/'
@@ -1761,6 +1861,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/$organizationId/$projectId/events/'
       preLoaderRoute: typeof AppOrganizationIdProjectIdEventsTabsIndexRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdEventsTabsRoute
+    }
+    '/_app/$organizationId/$projectId/ai/_tabs/': {
+      id: '/_app/$organizationId/$projectId/ai/_tabs/'
+      path: '/'
+      fullPath: '/$organizationId/$projectId/ai/'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiTabsIndexRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdAiTabsRoute
     }
     '/_app/$organizationId/$projectId/settings/_tabs/widgets': {
       id: '/_app/$organizationId/$projectId/settings/_tabs/widgets'
@@ -1816,6 +1923,13 @@ declare module '@tanstack/react-router' {
       path: '/clients'
       fullPath: '/$organizationId/$projectId/settings/clients'
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsClientsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
+    }
+    '/_app/$organizationId/$projectId/settings/_tabs/ai': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/ai'
+      path: '/ai'
+      fullPath: '/$organizationId/$projectId/settings/ai'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsAiRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
     '/_app/$organizationId/$projectId/profiles/_tabs/power-users': {
@@ -1909,6 +2023,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdCohortsCohortIdTabsRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdCohortsCohortIdRoute
     }
+    '/_app/$organizationId/$projectId/ai_/traces/$traceId': {
+      id: '/_app/$organizationId/$projectId/ai_/traces/$traceId'
+      path: '/ai/traces/$traceId'
+      fullPath: '/$organizationId/$projectId/ai/traces/$traceId'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiTracesTraceIdRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdRoute
+    }
+    '/_app/$organizationId/$projectId/ai/_tabs/traces': {
+      id: '/_app/$organizationId/$projectId/ai/_tabs/traces'
+      path: '/traces'
+      fullPath: '/$organizationId/$projectId/ai/traces'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiTabsTracesRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdAiTabsRoute
+    }
+    '/_app/$organizationId/$projectId/ai/_tabs/generations': {
+      id: '/_app/$organizationId/$projectId/ai/_tabs/generations'
+      path: '/generations'
+      fullPath: '/$organizationId/$projectId/ai/generations'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdAiTabsGenerationsRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdAiTabsRoute
+    }
     '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/': {
       id: '/_app/$organizationId/$projectId/profiles/$profileId/_tabs/'
       path: '/'
@@ -1974,6 +2109,42 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AppOrganizationIdProjectIdAiTabsRouteChildren {
+  AppOrganizationIdProjectIdAiTabsGenerationsRoute: typeof AppOrganizationIdProjectIdAiTabsGenerationsRoute
+  AppOrganizationIdProjectIdAiTabsTracesRoute: typeof AppOrganizationIdProjectIdAiTabsTracesRoute
+  AppOrganizationIdProjectIdAiTabsIndexRoute: typeof AppOrganizationIdProjectIdAiTabsIndexRoute
+}
+
+const AppOrganizationIdProjectIdAiTabsRouteChildren: AppOrganizationIdProjectIdAiTabsRouteChildren =
+  {
+    AppOrganizationIdProjectIdAiTabsGenerationsRoute:
+      AppOrganizationIdProjectIdAiTabsGenerationsRoute,
+    AppOrganizationIdProjectIdAiTabsTracesRoute:
+      AppOrganizationIdProjectIdAiTabsTracesRoute,
+    AppOrganizationIdProjectIdAiTabsIndexRoute:
+      AppOrganizationIdProjectIdAiTabsIndexRoute,
+  }
+
+const AppOrganizationIdProjectIdAiTabsRouteWithChildren =
+  AppOrganizationIdProjectIdAiTabsRoute._addFileChildren(
+    AppOrganizationIdProjectIdAiTabsRouteChildren,
+  )
+
+interface AppOrganizationIdProjectIdAiRouteChildren {
+  AppOrganizationIdProjectIdAiTabsRoute: typeof AppOrganizationIdProjectIdAiTabsRouteWithChildren
+}
+
+const AppOrganizationIdProjectIdAiRouteChildren: AppOrganizationIdProjectIdAiRouteChildren =
+  {
+    AppOrganizationIdProjectIdAiTabsRoute:
+      AppOrganizationIdProjectIdAiTabsRouteWithChildren,
+  }
+
+const AppOrganizationIdProjectIdAiRouteWithChildren =
+  AppOrganizationIdProjectIdAiRoute._addFileChildren(
+    AppOrganizationIdProjectIdAiRouteChildren,
+  )
 
 interface AppOrganizationIdProjectIdEventsTabsRouteChildren {
   AppOrganizationIdProjectIdEventsTabsConversionsRoute: typeof AppOrganizationIdProjectIdEventsTabsConversionsRoute
@@ -2165,6 +2336,7 @@ const AppOrganizationIdProjectIdProfilesRouteWithChildren =
   )
 
 interface AppOrganizationIdProjectIdSettingsTabsRouteChildren {
+  AppOrganizationIdProjectIdSettingsTabsAiRoute: typeof AppOrganizationIdProjectIdSettingsTabsAiRoute
   AppOrganizationIdProjectIdSettingsTabsClientsRoute: typeof AppOrganizationIdProjectIdSettingsTabsClientsRoute
   AppOrganizationIdProjectIdSettingsTabsDetailsRoute: typeof AppOrganizationIdProjectIdSettingsTabsDetailsRoute
   AppOrganizationIdProjectIdSettingsTabsEventsRoute: typeof AppOrganizationIdProjectIdSettingsTabsEventsRoute
@@ -2178,6 +2350,8 @@ interface AppOrganizationIdProjectIdSettingsTabsRouteChildren {
 
 const AppOrganizationIdProjectIdSettingsTabsRouteChildren: AppOrganizationIdProjectIdSettingsTabsRouteChildren =
   {
+    AppOrganizationIdProjectIdSettingsTabsAiRoute:
+      AppOrganizationIdProjectIdSettingsTabsAiRoute,
     AppOrganizationIdProjectIdSettingsTabsClientsRoute:
       AppOrganizationIdProjectIdSettingsTabsClientsRoute,
     AppOrganizationIdProjectIdSettingsTabsDetailsRoute:
@@ -2303,6 +2477,7 @@ interface AppOrganizationIdProjectIdRouteChildren {
   AppOrganizationIdProjectIdSeoRoute: typeof AppOrganizationIdProjectIdSeoRoute
   AppOrganizationIdProjectIdSessionsRoute: typeof AppOrganizationIdProjectIdSessionsRoute
   AppOrganizationIdProjectIdIndexRoute: typeof AppOrganizationIdProjectIdIndexRoute
+  AppOrganizationIdProjectIdAiRoute: typeof AppOrganizationIdProjectIdAiRouteWithChildren
   AppOrganizationIdProjectIdDashboardsDashboardIdRoute: typeof AppOrganizationIdProjectIdDashboardsDashboardIdRoute
   AppOrganizationIdProjectIdEventsRoute: typeof AppOrganizationIdProjectIdEventsRouteWithChildren
   AppOrganizationIdProjectIdIntegrationsRoute: typeof AppOrganizationIdProjectIdIntegrationsRouteWithChildren
@@ -2311,6 +2486,7 @@ interface AppOrganizationIdProjectIdRouteChildren {
   AppOrganizationIdProjectIdReportsReportIdRoute: typeof AppOrganizationIdProjectIdReportsReportIdRoute
   AppOrganizationIdProjectIdSessionsSessionIdRoute: typeof AppOrganizationIdProjectIdSessionsSessionIdRoute
   AppOrganizationIdProjectIdSettingsRoute: typeof AppOrganizationIdProjectIdSettingsRouteWithChildren
+  AppOrganizationIdProjectIdAiTracesTraceIdRoute: typeof AppOrganizationIdProjectIdAiTracesTraceIdRoute
   AppOrganizationIdProjectIdCohortsCohortIdRoute: typeof AppOrganizationIdProjectIdCohortsCohortIdRouteWithChildren
   AppOrganizationIdProjectIdGroupsGroupIdRoute: typeof AppOrganizationIdProjectIdGroupsGroupIdRouteWithChildren
 }
@@ -2337,6 +2513,8 @@ const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteCh
     AppOrganizationIdProjectIdSessionsRoute:
       AppOrganizationIdProjectIdSessionsRoute,
     AppOrganizationIdProjectIdIndexRoute: AppOrganizationIdProjectIdIndexRoute,
+    AppOrganizationIdProjectIdAiRoute:
+      AppOrganizationIdProjectIdAiRouteWithChildren,
     AppOrganizationIdProjectIdDashboardsDashboardIdRoute:
       AppOrganizationIdProjectIdDashboardsDashboardIdRoute,
     AppOrganizationIdProjectIdEventsRoute:
@@ -2353,6 +2531,8 @@ const AppOrganizationIdProjectIdRouteChildren: AppOrganizationIdProjectIdRouteCh
       AppOrganizationIdProjectIdSessionsSessionIdRoute,
     AppOrganizationIdProjectIdSettingsRoute:
       AppOrganizationIdProjectIdSettingsRouteWithChildren,
+    AppOrganizationIdProjectIdAiTracesTraceIdRoute:
+      AppOrganizationIdProjectIdAiTracesTraceIdRoute,
     AppOrganizationIdProjectIdCohortsCohortIdRoute:
       AppOrganizationIdProjectIdCohortsCohortIdRouteWithChildren,
     AppOrganizationIdProjectIdGroupsGroupIdRoute:

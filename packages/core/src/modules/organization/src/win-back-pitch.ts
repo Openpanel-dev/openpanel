@@ -5,6 +5,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
+import { withAiContext } from '../../ai/ai.service';
 import { resolveOpenAITaskModel } from '../../assistant/src/providers';
 
 const WIN_BACK_PROVIDER = 'openai';
@@ -41,14 +42,16 @@ export async function generateWinBackPitch(
   config: CoreConfig,
   input: WinBackPitchInput
 ): Promise<string> {
-  const result = await callProvider(WIN_BACK_PROVIDER, () =>
-    generateText({
-      model: resolveOpenAITaskModel(config, 'small'),
-      instructions: INSTRUCTION,
-      prompt: JSON.stringify(input),
-      reasoning: 'low',
-      output: Output.object({ schema: winBackOutputSchema }),
-    })
+  const result = await withAiContext({ name: 'win-back-pitch' }, () =>
+    callProvider(WIN_BACK_PROVIDER, () =>
+      generateText({
+        model: resolveOpenAITaskModel(config, 'small'),
+        instructions: INSTRUCTION,
+        prompt: JSON.stringify(input),
+        reasoning: 'low',
+        output: Output.object({ schema: winBackOutputSchema }),
+      })
+    )
   );
 
   // The instruction bans em dashes, but the model slips one in often enough

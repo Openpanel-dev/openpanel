@@ -224,6 +224,9 @@ export const chartSegments = {
   property_average: 'Average of property',
   property_max: 'Max of property',
   property_min: 'Min of property',
+  property_p50: 'Median of property',
+  property_p95: '95th percentile of property',
+  property_p99: '99th percentile of property',
 };
 
 export const lineTypes = {

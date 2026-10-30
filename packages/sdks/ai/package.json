@@ -1,0 +1,33 @@
+{
+  "name": "@openpanel/ai",
+  "version": "0.1.0-local",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "directory": "packages/sdks/ai"
+  },
+  "module": "index.ts",
+  "config": {
+    "docPath": "apps/public/content/docs/(tracking)/sdks/ai.mdx",
+    "subpaths": [
+      "vercel"
+    ]
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/provider": "4.0.30",
+    "@openpanel/sdk": "workspace:1.3.2-local"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/node": "catalog:",
+    "bun-types": "1.4.0",
+    "tsup": "7.3.0",
+    "typescript": "catalog:"
+  }
+}

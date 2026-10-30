@@ -11,6 +11,7 @@ import {
   type SchedulerDefinition,
   schedulersFromRegistry,
 } from './jobs/schedulers';
+import { aiCronJobs } from './modules/ai/ai.jobs';
 import { cohortCronJobs, cohortQueueJobs } from './modules/cohort/cohort.jobs';
 import { eventCronJobs } from './modules/event/event.jobs';
 import { groupCronJobs } from './modules/group/group.jobs';
@@ -78,6 +79,7 @@ const cron = defineQueue('cron', {
     ...eventCronJobs,
     ...profileCronJobs,
     ...groupCronJobs,
+    ...aiCronJobs,
     ...insightCronJobs,
     ...gscCronJobs,
     ...cohortCronJobs,

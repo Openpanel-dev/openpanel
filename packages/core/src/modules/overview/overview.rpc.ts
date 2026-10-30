@@ -431,6 +431,7 @@ export const overviewRouter = createTRPCRouter({
         projectId: input.projectId,
         pageContext: input.pageContext,
         timezone: timezone || 'UTC',
+        userId: ctx.session.userId,
       });
     }),
 

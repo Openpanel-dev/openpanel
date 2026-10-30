@@ -60,6 +60,9 @@ const MATH_FUNCTION_BY_SEGMENT: Record<string, string> = {
   property_average: 'avg',
   property_max: 'max',
   property_min: 'min',
+  property_p50: 'quantile(0.5)',
+  property_p95: 'quantile(0.95)',
+  property_p99: 'quantile(0.99)',
 };
 
 export const PROPERTY_VALUES_LIMIT = 100_000;

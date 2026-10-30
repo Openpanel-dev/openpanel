@@ -15,6 +15,7 @@
     "gen:asns": "bun scripts/get-datacenter-asns.ts",
     "gen:bots": "bun scripts/get-bots.ts && biome format --write ./src/modules/ingest/src/bots/bots.ts",
     "gen:referrers": "bun scripts/get-referrers.ts && biome format --write ./src/shared/referrers/index.ts",
+    "gen:llm-prices": "bun scripts/get-llm-prices.ts",
     "with-env": "dotenv -e ../../.env -c --"
   },
   "dependencies": {
@@ -32,10 +33,12 @@
     "@maxmind/geoip2-node": "6.1.0",
     "@modelcontextprotocol/sdk": "1.27.1",
     "@node-rs/argon2": "2.0.2",
+    "@openpanel/ai": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/email": "workspace:*",
     "@openpanel/payments": "workspace:*",
     "@openpanel/redis": "workspace:*",
+    "@openpanel/sdk": "workspace:*",
     "@openpanel/shared": "workspace:*",
     "@oslojs/crypto": "1.0.1",
     "@oslojs/encoding": "1.1.0",

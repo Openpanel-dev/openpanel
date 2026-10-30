@@ -1,7 +1,8 @@
 name: SDKs
 
-# The SDKs ship to npm, not in the Docker images, so docker-build.yml ignores
-# packages/sdks entirely. This workflow is their pipeline:
+# The SDKs ship to npm. docker-build.yml ignores the ones the images do not
+# carry (the api image runs @openpanel/ai and @openpanel/sdk from source,
+# because core imports them). This workflow is their pipeline:
 #   verify   every push that touches an SDK typechecks, tests and builds all
 #            of them through the real release script (dry run, nothing
 #            published), so a broken build is caught before release day.

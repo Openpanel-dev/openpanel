@@ -3,6 +3,7 @@
 import { generateText, isStepCount, tool } from 'ai';
 import { z } from 'zod';
 import type { ServiceDeps } from '../../../services';
+import { withAiContext } from '../../ai/ai.service';
 import {
   type IChartRange,
   type IReportInput,
@@ -59,6 +60,8 @@ export interface ReportDraftInput {
   prompt: string;
   projectId: string;
   timezone: string;
+  /** Who asked, for the deployment's own AI tracking. */
+  userId?: string;
 }
 
 /** `report` is null when the request could not be mapped; `summary` then says why. */
@@ -250,14 +253,22 @@ export async function runReportDraft(
       },
     }),
   };
-  const result = await generateText({
-    model: resolved.model,
-    instructions: instructions(input),
-    prompt: input.prompt,
-    tools,
-    stopWhen: [isStepCount(MAX_STEPS), () => accepted !== null],
-    reasoning: resolved.entry.reasoning,
-  });
+  const result = await withAiContext(
+    {
+      profileId: input.userId,
+      name: 'report-draft',
+      properties: { projectId: input.projectId, modelId: resolved.entry.id },
+    },
+    () =>
+      generateText({
+        model: resolved.model,
+        instructions: instructions(input),
+        prompt: input.prompt,
+        tools,
+        stopWhen: [isStepCount(MAX_STEPS), () => accepted !== null],
+        reasoning: resolved.entry.reasoning,
+      })
+  );
   deps.logger.info(
     {
       projectId: input.projectId,

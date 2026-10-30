@@ -2,6 +2,7 @@ import type { IServiceDashboards } from '@openpanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import {
   BellIcon,
+  BotIcon,
   Building2Icon,
   ChartLineIcon,
   CogIcon,
@@ -55,6 +56,7 @@ export default function SidebarProjectMenu({
         icon={TrendingUpDownIcon}
         label="Insights"
       />
+      <SidebarLink exact={false} href={'/ai'} icon={BotIcon} label="AI" />
       <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
       <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
       <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />

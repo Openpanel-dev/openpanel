@@ -66,6 +66,7 @@ export const chatRouter = createTRPCRouter({
         prompt: input.prompt,
         projectId: input.projectId,
         timezone: settings.timezone || 'UTC',
+        userId,
       });
     }),
 });

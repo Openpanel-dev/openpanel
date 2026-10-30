@@ -55,6 +55,18 @@ export function useColumns() {
             return `${name} (${number.currency(revenue / 100)})`;
           }
 
+          if (name.startsWith('ai_')) {
+            const model = row.original.properties?.ai_model;
+            return (
+              <>
+                {name.replace(/_/g, ' ')}
+                {typeof model === 'string' && model && (
+                  <span className="ml-2 text-muted-foreground">{model}</span>
+                )}
+              </>
+            );
+          }
+
           return name.replace(/_/g, ' ');
         };
 

@@ -72,6 +72,10 @@ export const PAGE_TITLES = {
   REALTIME: 'Realtime',
   REFERENCES: 'References',
   INSIGHTS: 'Insights',
+  AI: 'AI',
+  AI_TRACES: 'AI traces',
+  AI_GENERATIONS: 'AI generations',
+  AI_TRACE: 'AI trace',
   // Profiles
   PROFILES: 'Profiles',
   PROFILE_EVENTS: 'Profile events',

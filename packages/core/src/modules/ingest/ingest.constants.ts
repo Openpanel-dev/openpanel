@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import { type IAiPayload, zAiPayload } from '../ai/ai.constants';
+import {
+  MAX_GROUP_ID_LENGTH,
+  MAX_GROUPS_PER_EVENT,
+  zEventGroupId,
+  zEventGroupIds,
+} from '../group/group.constants';
+
+export { MAX_GROUP_ID_LENGTH, MAX_GROUPS_PER_EVENT };
 
 /** Event names the ingestion pipeline mints itself; a caller may not send them. */
 export const RESERVED_EVENT_NAMES = ['session_start', 'session_end'] as const;
@@ -198,29 +207,23 @@ export type ITrackHandlerPayload =
   | { type: 'alias'; payload: IAliasPayload }
   | { type: 'replay'; payload: IReplayPayload }
   | { type: 'group'; payload: IGroupPayload }
-  | { type: 'assign_group'; payload: IAssignGroupPayload };
+  | { type: 'assign_group'; payload: IAssignGroupPayload }
+  | { type: 'ai'; payload: IAiPayload };
 
 export const zProfileId = z.union([
   z.string().min(1),
   z.number(),
 ]) satisfies z.ZodType<IProfileId>;
 
-/** Group membership is copied onto every session write, so both are bounded. */
-export const MAX_GROUPS_PER_EVENT = 100;
-export const MAX_GROUP_ID_LENGTH = 256;
-
-const zGroupId = z.string().min(1).max(MAX_GROUP_ID_LENGTH);
-const zGroupIds = z.array(zGroupId).max(MAX_GROUPS_PER_EVENT);
-
 export const zGroupPayload = z.object({
-  id: zGroupId,
+  id: zEventGroupId,
   type: z.string().min(1),
   name: z.string().min(1),
   properties: z.record(z.string(), z.unknown()).optional(),
 }) satisfies z.ZodType<IGroupPayload>;
 
 export const zAssignGroupPayload = z.object({
-  groupIds: zGroupIds,
+  groupIds: zEventGroupIds,
   profileId: zProfileId.optional(),
 }) satisfies z.ZodType<IAssignGroupPayload>;
 
@@ -229,7 +232,7 @@ export const zTrackPayload = z
     name: z.string().min(1),
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: zProfileId.optional(),
-    groups: zGroupIds.nullish(),
+    groups: zEventGroupIds.nullish(),
   })
   .refine(
     (data) => !(RESERVED_EVENT_NAMES as readonly string[]).includes(data.name),
@@ -371,6 +374,12 @@ export const zTrackHandlerPayload = z.discriminatedUnion('type', [
       payload: zAssignGroupPayload,
     })
     .meta({ title: 'Assign Group' }),
+  z
+    .object({
+      type: z.enum(['ai']),
+      payload: zAiPayload,
+    })
+    .meta({ title: 'AI' }),
 ]) satisfies z.ZodType<ITrackHandlerPayload>;
 
 // Deprecated types for beta version of the SDKs

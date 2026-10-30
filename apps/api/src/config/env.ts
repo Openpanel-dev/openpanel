@@ -459,6 +459,10 @@ const rawSchema = z.object({
   ANTHROPIC_BASE_URL: optionalString,
   ANTHROPIC_TOKEN: optionalString,
   ANTHROPIC_VERSION: optionalString,
+  // OpenPanel tracking its own model calls into an OpenPanel project.
+  OP_CLIENT_ID: optionalString,
+  OP_CLIENT_SECRET: optionalString,
+  OP_API_URL: optionalString,
   SLACK_CLIENT_ID: optionalString,
   SLACK_CLIENT_SECRET: optionalString,
   SLACK_OAUTH_REDIRECT_URL: optionalString,
@@ -546,6 +550,8 @@ const rawSchema = z.object({
   GROUP_BUFFER_BATCH_SIZE: optionalPositiveInt,
   GROUP_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   GROUP_BUFFER_TTL_IN_SECONDS: optionalPositiveInt,
+  AI_EVENT_BUFFER_BATCH_SIZE: optionalPositiveInt,
+  AI_EVENT_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_BATCH_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_CHUNK_SIZE: optionalPositiveInt,
   PROFILE_BUFFER_TTL_IN_SECONDS: optionalPositiveInt,
@@ -894,6 +900,11 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         version: raw.ANTHROPIC_VERSION,
       },
     },
+    selfTracking: {
+      clientId: raw.OP_CLIENT_ID,
+      clientSecret: raw.OP_CLIENT_SECRET,
+      apiUrl: raw.OP_API_URL,
+    },
     slack: {
       clientId: raw.SLACK_CLIENT_ID,
       clientSecret: raw.SLACK_CLIENT_SECRET,
@@ -919,6 +930,10 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         batchSize: raw.GROUP_BUFFER_BATCH_SIZE,
         chunkSize: raw.GROUP_BUFFER_CHUNK_SIZE,
         ttlSeconds: raw.GROUP_BUFFER_TTL_IN_SECONDS,
+      },
+      aiEvent: {
+        batchSize: raw.AI_EVENT_BUFFER_BATCH_SIZE,
+        chunkSize: raw.AI_EVENT_BUFFER_CHUNK_SIZE,
       },
       profile: {
         batchSize: raw.PROFILE_BUFFER_BATCH_SIZE,

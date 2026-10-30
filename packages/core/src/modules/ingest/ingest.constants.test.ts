@@ -1,10 +1,36 @@
 import { describe, expect, test } from 'bun:test';
 import {
+  MAX_GROUPS_PER_EVENT,
   MAX_PROFILE_AVATAR_LENGTH,
   MAX_PROFILE_EMAIL_LENGTH,
   MAX_PROFILE_NAME_LENGTH,
   zIdentifyPayload,
+  zTrackHandlerPayload,
 } from './ingest.constants';
+
+describe('zTrackHandlerPayload', () => {
+  test('an ai payload has the same group bound as a track payload', () => {
+    const groups = Array.from(
+      { length: MAX_GROUPS_PER_EVENT + 1 },
+      (_, index) => `group-${index}`
+    );
+    const aiPayload = (count: number) => ({
+      type: 'ai',
+      payload: {
+        kind: 'span',
+        traceId: 'trace-1',
+        groups: groups.slice(0, count),
+      },
+    });
+    expect(
+      zTrackHandlerPayload.safeParse(aiPayload(MAX_GROUPS_PER_EVENT)).success
+    ).toBe(true);
+    expect(
+      zTrackHandlerPayload.safeParse(aiPayload(MAX_GROUPS_PER_EVENT + 1))
+        .success
+    ).toBe(false);
+  });
+});
 
 describe('zIdentifyPayload', () => {
   test('accepts a well-formed identify', () => {

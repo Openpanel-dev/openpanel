@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { AiUsageWidget } from '@/components/ai/ai-usage-widget';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { GroupMemberGrowth } from '@/components/groups/group-member-growth';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
@@ -111,6 +112,13 @@ function Component() {
           </div>
         </div>
       )}
+      <div className="col-span-1 md:col-span-2">
+        <AiUsageWidget
+          className="w-full"
+          entity={{ kind: 'group', groupId }}
+          projectId={projectId}
+        />
+      </div>
 
       <div className="col-span-1 md:col-span-2">
         <Widget className="w-full">

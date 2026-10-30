@@ -201,6 +201,7 @@ export async function generate(
           anonymousEvents: rows.anonymousEvents,
         });
         sink.addEvents(rows.events);
+        sink.addAiEvents(rows.aiEvents);
         sink.addSession(rows.session);
 
         projectStats.sessions += 1;

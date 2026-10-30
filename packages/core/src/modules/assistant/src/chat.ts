@@ -10,6 +10,7 @@ import {
 } from 'ai';
 import type { HttpCtx } from '../../../context';
 import type { ServiceDeps } from '../../../services';
+import { withAiContext } from '../../ai/ai.service';
 import {
   CHAT_MODELS,
   type ChatRequest,
@@ -160,79 +161,95 @@ export async function runChat(
       prefix: MESSAGE_ID_PREFIX,
       size: MESSAGE_ID_SIZE,
     }),
-    execute: async ({ writer }) => {
-      const titlePromise = isFirstTurn
-        ? generateConversationTitle(config, firstUserText(incoming)).then(
-            (generated) => {
-              if (generated) {
-                title = generated;
-                writer.write({
-                  type: 'data-title',
-                  data: { title: generated },
-                  transient: true,
-                });
-              }
-            }
-          )
-        : Promise.resolve();
-
-      const result = streamText({
-        model: resolveChatModel(config, entry),
-        instructions: buildSystemPrompt({
-          projectName: input.projectName,
-          timezone: input.timezone,
-          selfHosted: config.selfHosted,
-          hint: request.hint,
-        }),
-        messages: modelMessages,
-        tools,
-        toolApproval: createChatToolApproval(toolContext),
-        stopWhen: isStepCount(MAX_STEPS),
-        reasoning: entry.reasoning,
-        providerOptions: reasoningProviderOptions(entry),
-        abortSignal: input.abortSignal,
-      });
-
-      writer.merge(
-        toUIMessageStream({
-          stream: result.stream,
-          sendReasoning: true,
-          onError: describeError,
-          messageMetadata: ({ part }) => {
-            if (part.type === 'start') {
-              return { modelId: entry.id, createdAt: startedAt };
-            }
-            if (part.type === 'finish') {
-              const durationMs = Date.now() - startedAt;
-              deps.logger.info(
-                {
-                  conversationId: request.id,
-                  organizationId: request.organizationId,
-                  projectId: request.projectId,
-                  userId: input.userId,
-                  modelId: entry.id,
-                  // Keys avoid "token": the log redaction masks any key containing it.
-                  usage: {
-                    input: part.totalUsage.inputTokens,
-                    output: part.totalUsage.outputTokens,
-                    total: part.totalUsage.totalTokens,
-                  },
-                  durationMs,
-                },
-                'chat turn finished'
-              );
-              return {
-                totalTokens: part.totalUsage.totalTokens,
-                durationMs,
-              };
-            }
-            return undefined;
+    // One trace per turn: the title call, every step of the model loop and
+    // its tool calls report under the user, organization and conversation.
+    execute: ({ writer }) =>
+      withAiContext(
+        {
+          profileId: input.userId,
+          groups: [request.organizationId],
+          conversationId: request.id,
+          name: 'assistant-chat',
+          properties: {
+            projectId: request.projectId,
+            organizationId: request.organizationId,
+            modelId: entry.id,
           },
-        })
-      );
+        },
+        async () => {
+          const titlePromise = isFirstTurn
+            ? generateConversationTitle(config, firstUserText(incoming)).then(
+                (generated) => {
+                  if (generated) {
+                    title = generated;
+                    writer.write({
+                      type: 'data-title',
+                      data: { title: generated },
+                      transient: true,
+                    });
+                  }
+                }
+              )
+            : Promise.resolve();
 
-      await titlePromise;
-    },
+          const result = streamText({
+            model: resolveChatModel(config, entry),
+            instructions: buildSystemPrompt({
+              projectName: input.projectName,
+              timezone: input.timezone,
+              selfHosted: config.selfHosted,
+              hint: request.hint,
+            }),
+            messages: modelMessages,
+            tools,
+            toolApproval: createChatToolApproval(toolContext),
+            stopWhen: isStepCount(MAX_STEPS),
+            reasoning: entry.reasoning,
+            providerOptions: reasoningProviderOptions(entry),
+            abortSignal: input.abortSignal,
+          });
+
+          writer.merge(
+            toUIMessageStream({
+              stream: result.stream,
+              sendReasoning: true,
+              onError: describeError,
+              messageMetadata: ({ part }) => {
+                if (part.type === 'start') {
+                  return { modelId: entry.id, createdAt: startedAt };
+                }
+                if (part.type === 'finish') {
+                  const durationMs = Date.now() - startedAt;
+                  deps.logger.info(
+                    {
+                      conversationId: request.id,
+                      organizationId: request.organizationId,
+                      projectId: request.projectId,
+                      userId: input.userId,
+                      modelId: entry.id,
+                      // Keys avoid "token": the log redaction masks any key containing it.
+                      usage: {
+                        input: part.totalUsage.inputTokens,
+                        output: part.totalUsage.outputTokens,
+                        total: part.totalUsage.totalTokens,
+                      },
+                      durationMs,
+                    },
+                    'chat turn finished'
+                  );
+                  return {
+                    totalTokens: part.totalUsage.totalTokens,
+                    durationMs,
+                  };
+                }
+                return undefined;
+              },
+            })
+          );
+
+          await titlePromise;
+        }
+      ),
     onError: describeError,
     onEnd: async ({ responseMessage }) => {
       const toSave: AssistantUIMessage[] = [...repaired.values()];

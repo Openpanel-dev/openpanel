@@ -335,6 +335,9 @@ model Project {
   cors                       String[]      @default([])
   crossDomain                Boolean       @default(false)
   allowUnsafeRevenueTracking Boolean       @default(false)
+  // AI observability: false keeps prompts, completions and tool definitions
+  // out of ai_events; tokens, cost and latency are stored either way.
+  aiStoreContent             Boolean       @default(true)
   /// [IPrismaProjectFilters]
   filters                    Json          @default("[]")
   // Set once when the project's first event arrives (activation checklist,

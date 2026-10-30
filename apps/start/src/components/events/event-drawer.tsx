@@ -1,9 +1,10 @@
 import type { IClickhouseEvent, IServiceEvent } from '@openpanel/core';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { FilterIcon, XIcon } from 'lucide-react';
 import { omit } from 'ramda';
 import { Suspense, useEffect, useState } from 'react';
 import { useEventDrawer } from './use-event-drawer';
+import { AiEventDetail } from '@/components/ai/ai-event-detail';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { ProjectLink } from '@/components/links';
 import {
@@ -281,6 +282,13 @@ function EventDetailsContent({
       </WidgetHead>
       <WidgetBody className="col flex-1 gap-4 overflow-y-auto bg-def-100">
         {tab.id === TABS.raw.id && <Syntax code={eventJson} language="json" />}
+        {tab.id === TABS.pretty.id && event.name.startsWith('ai_') && (
+          <AiEventSection
+            createdAt={event.createdAt}
+            id={event.id}
+            projectId={projectId}
+          />
+        )}
         {tab.id === TABS.pretty.id && profile && (
           <ProjectLink
             className="card col gap-2 p-4 py-2 hover:bg-def-100"
@@ -526,5 +534,34 @@ function EventDetailsSkeleton({ onClose }: { onClose: () => void }) {
         ))}
       </WidgetBody>
     </>
+  );
+}
+
+/** An AI event's conversation and metrics, from `ai_events`, above the event's own properties. */
+function AiEventSection({
+  id,
+  createdAt,
+  projectId,
+}: {
+  id: string;
+  createdAt: Date;
+  projectId: string;
+}) {
+  const trpc = useTRPC();
+  // Not every `ai_*` event has an `ai_events` row (custom names, a row not
+  // flushed yet), and a miss must not replace the rest of the drawer.
+  const query = useQuery(
+    trpc.ai.event.queryOptions(
+      { id, projectId, around: createdAt.toISOString() },
+      { retry: false }
+    )
+  );
+  if (!query.data) {
+    return null;
+  }
+  return (
+    <div className="card p-4">
+      <AiEventDetail event={query.data} />
+    </div>
   );
 }

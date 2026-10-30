@@ -1,5 +1,6 @@
 import { generateText } from 'ai';
 import type { CoreConfig } from '../../../config';
+import { withAiContext } from '../../ai/ai.service';
 import { resolveUtilityModel } from './providers';
 
 const MAX_INPUT_CHARS = 400;
@@ -18,14 +19,16 @@ export async function generateConversationTitle(
     return null;
   }
   try {
-    const result = await generateText({
-      model,
-      instructions:
-        'Write a 3 to 6 word title for a chat that starts with the user message below. Reply with the title only: no quotes, no trailing period.',
-      prompt: text,
-      reasoning: 'low',
-      maxOutputTokens: MAX_OUTPUT_TOKENS,
-    });
+    const result = await withAiContext({ name: 'conversation-title' }, () =>
+      generateText({
+        model,
+        instructions:
+          'Write a 3 to 6 word title for a chat that starts with the user message below. Reply with the title only: no quotes, no trailing period.',
+        prompt: text,
+        reasoning: 'low',
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+      })
+    );
     const title = result.text
       .trim()
       .replace(QUOTES, '')

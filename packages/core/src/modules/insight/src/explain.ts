@@ -7,6 +7,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
+import { withAiContext } from '../../ai/ai.service';
 import { resolveOpenAITaskModel } from '../../assistant/src/providers';
 
 // Preferred model and fallback are both OpenAI — see enrich.ts.
@@ -85,14 +86,16 @@ export async function generateInsightExplanation(
   config: CoreConfig,
   input: ExplainInsightInput
 ): Promise<InsightExplanation | null> {
-  const result = await callProvider(EXPLAIN_PROVIDER, () =>
-    generateText({
-      model: resolveOpenAITaskModel(config, 'standard'),
-      instructions: INSTRUCTION,
-      prompt: JSON.stringify(input),
-      reasoning: 'low',
-      output: Output.object({ schema: explanationSchema }),
-    })
+  const result = await withAiContext({ name: 'insight-explain' }, () =>
+    callProvider(EXPLAIN_PROVIDER, () =>
+      generateText({
+        model: resolveOpenAITaskModel(config, 'standard'),
+        instructions: INSTRUCTION,
+        prompt: JSON.stringify(input),
+        reasoning: 'low',
+        output: Output.object({ schema: explanationSchema }),
+      })
+    )
   );
 
   return result.output ?? null;

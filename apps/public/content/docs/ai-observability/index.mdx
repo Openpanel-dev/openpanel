@@ -1,0 +1,40 @@
+---
+title: AI observability (beta)
+description: Track every LLM call your product makes, with cost, tokens, latency and errors tied to the profiles, sessions and groups you already have in OpenPanel.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta. We are building it together with the people who use it, so the event payload and the dashboard pages may change before they are final. Events you have already sent stay readable. Tell us what you are trying to learn about your AI features, and what is missing, on [Discord](https://go.openpanel.dev/discord) or in a [GitHub issue](https://github.com/Openpanel-dev/openpanel/issues).
+</Callout>
+
+## What it is
+
+Every call your product makes to a language model becomes an event in OpenPanel: which model, how many tokens, what it cost, how long it took, whether it failed, and, if you want, the messages in and out. Calls are grouped into **traces** (one request) and optionally **conversations** (one thread).
+
+What sets it apart from a standalone LLM tool is that the event lands next to everything else you track. An AI call belongs to a **profile**, happens inside a **session** and can carry **groups**, so you can answer questions like:
+
+- What does our AI feature cost per user, per plan or per customer account?
+- Which model or feature burns the most tokens, and where does latency spike?
+- Do users who hit the assistant convert more often? That is a funnel with an `ai_generation` step.
+- What did this user see on the page right before and after the model call? Open the session.
+
+## What you get
+
+- **AI section** in the dashboard with an overview (cost, generations, users, cost per user, tokens, p95 latency, error rate, all with previous-period comparison), cost by model, feature, provider, user and group, a **traces** list with a timeline per trace, and a **generations** list with the conversation of each call.
+- **Reports**: AI events are ordinary events named `ai_generation`, `ai_embedding`, `ai_span` and `ai_trace` with flat `ai_*` properties, so the report builder, funnels, retention, cohorts and dashboards work on them. Sum `ai_cost` by `ai_model`, or take the p95 of `ai_latency_ms` by `ai_name`.
+- **Profiles, sessions and groups** show an AI usage widget with lifetime cost, tokens, latency and errors.
+- **Cost** is computed for you from a built-in price catalog covering the major providers. Send your own `cost` when a gateway already knows it.
+
+## How to send events
+
+| Your stack | Use |
+|---|---|
+| Vercel AI SDK (any provider) | [`@openpanel/ai/vercel` middleware](/docs/ai-observability/vercel-ai-sdk), one line per model |
+| Node with our SDK | [`op.ai(payload)`](/docs/ai-observability/manual-capture) |
+| Anything else (Python, Go, curl) | [the raw payload](/docs/ai-observability/manual-capture#raw-payload) on `POST /track` |
+
+## Privacy
+
+Prompts, completions and tool definitions are stored for 30 days, then dropped; tokens, cost and latency are kept with your other events. Set `privacyMode: true` on a call to never store its content, or turn content storage off for the whole project under **Settings → AI**.
