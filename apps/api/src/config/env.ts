@@ -287,6 +287,22 @@ const tokenList = z.preprocess(
 );
 
 /**
+ * An allowlist where an empty list means "everyone": a value that is set but
+ * yields no tokens (`",,"`) would silently allow all, so it fails boot.
+ */
+const nonEmptyTokenList = z.preprocess(
+  blankToUndefined,
+  z
+    .string()
+    .optional()
+    .refine((value) => value === undefined || splitTokens(value).length > 0, {
+      message:
+        'is set but contains no ids — an empty allowlist allows every project',
+    })
+    .transform((value) => splitTokens(value))
+);
+
+/**
  * Same doctrine as `ENABLED_QUEUES` below: a stale or mistyped value fails
  * boot loudly, naming both the offending value and the accepted set.
  */
@@ -564,14 +580,8 @@ const rawSchema = z.object({
   SESSION_VACUUM: onUnlessZeroSchema,
   SESSION_VACUUM_BATCH_SIZE: optionalPositiveInt,
   SESSION_VACUUM_STALE_THRESHOLD_MS: optionalPositiveInt,
-  EXPERIMENTAL_PROFILE_BACKFILL: z.preprocess(
-    blankToUndefined,
-    z
-      .string()
-      .optional()
-      .transform((value) => value === ONE_STRING)
-  ),
-  EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS: tokenList,
+  PROFILE_BACKFILL: onUnlessDisabledSchema,
+  PROFILE_BACKFILL_PROJECTS: nonEmptyTokenList,
 
   EVENT_PROPERTY_VALUE_AUTOCOMPLETE_LIMIT: optionalPositiveInt,
   COHORT_MATERIALIZE_LIMIT: optionalPositiveInt,
@@ -739,16 +749,13 @@ function checkProfileBackfillProjectsHaveAFlag(
   raw: RawEnv,
   ctx: z.RefinementCtx
 ): void {
-  if (
-    raw.EXPERIMENTAL_PROFILE_BACKFILL ||
-    raw.EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS.length === 0
-  ) {
+  if (raw.PROFILE_BACKFILL || raw.PROFILE_BACKFILL_PROJECTS.length === 0) {
     return;
   }
   ctx.addIssue({
     code: z.ZodIssueCode.custom,
     message:
-      'EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS is set while EXPERIMENTAL_PROFILE_BACKFILL is not 1 — the allowlist has no effect.',
+      'PROFILE_BACKFILL_PROJECTS is set while PROFILE_BACKFILL is off — the allowlist has no effect.',
   });
 }
 
@@ -945,8 +952,8 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       vacuumEnabled: raw.SESSION_VACUUM,
       vacuumBatchSize: raw.SESSION_VACUUM_BATCH_SIZE,
       vacuumStaleThresholdMs: raw.SESSION_VACUUM_STALE_THRESHOLD_MS,
-      profileBackfillEnabled: raw.EXPERIMENTAL_PROFILE_BACKFILL,
-      profileBackfillProjectIds: raw.EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS,
+      profileBackfillEnabled: raw.PROFILE_BACKFILL,
+      profileBackfillProjectIds: raw.PROFILE_BACKFILL_PROJECTS,
     },
     query: {
       eventPropertyValueAutocompleteLimit:
