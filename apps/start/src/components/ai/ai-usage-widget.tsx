@@ -5,6 +5,7 @@ import { formatCost, formatLatency, formatTokens } from './ai-format';
 import { ProjectLink } from '@/components/links';
 import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
 import { Skeleton } from '@/components/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { Widget, WidgetBody } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 import { timeAgo } from '@/utils/date';
@@ -141,27 +142,24 @@ function UsageBody({
         {query.isLoading && <Skeleton className="h-16 w-full" />}
         {data && (
           <>
-            <div className="grid grid-cols-3 gap-3">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
               {stats.map((stat) => (
-                <div className="col" key={stat.label}>
-                  <span className="text-muted-foreground text-xs">
+                <div className="col gap-0.5" key={stat.label}>
+                  <dt className="text-muted-foreground text-xs">
                     {stat.label}
-                  </span>
-                  <span className="font-medium font-mono tabular-nums">
+                  </dt>
+                  <dd className="font-medium font-mono tabular-nums">
                     {stat.value}
-                  </span>
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
             {data.topModels.length > 0 && (
               <div className="row flex-wrap gap-1">
                 {data.topModels.map((model) => (
-                  <span
-                    className="rounded border px-1.5 py-0.5 font-mono text-xs"
-                    key={model}
-                  >
+                  <Badge key={model} variant="secondary">
                     {model}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}
