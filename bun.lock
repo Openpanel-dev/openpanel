@@ -478,10 +478,10 @@
     },
     "packages/sdks/ai": {
       "name": "@openpanel/ai",
-      "version": "0.1.1-local",
+      "version": "0.1.2-local",
       "dependencies": {
         "@ai-sdk/provider": "4.0.30",
-        "@openpanel/sdk": "workspace:1.3.2-local",
+        "@openpanel/sdk": "workspace:1.3.3-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -493,9 +493,9 @@
     },
     "packages/sdks/astro": {
       "name": "@openpanel/astro",
-      "version": "1.4.2-local",
+      "version": "1.4.3-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.2-local",
+        "@openpanel/web": "workspace:1.4.3-local",
       },
       "devDependencies": {
         "astro": "6.4.2",
@@ -506,9 +506,9 @@
     },
     "packages/sdks/express": {
       "name": "@openpanel/express",
-      "version": "1.3.2-local",
+      "version": "1.3.3-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.2-local",
+        "@openpanel/sdk": "workspace:1.3.3-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -523,9 +523,9 @@
     },
     "packages/sdks/nextjs": {
       "name": "@openpanel/nextjs",
-      "version": "1.5.2-local",
+      "version": "1.5.3-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.2-local",
+        "@openpanel/web": "workspace:1.4.3-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -544,9 +544,9 @@
     },
     "packages/sdks/nuxt": {
       "name": "@openpanel/nuxt",
-      "version": "0.4.2-local",
+      "version": "0.4.3-local",
       "dependencies": {
-        "@openpanel/web": "workspace:1.4.2-local",
+        "@openpanel/web": "workspace:1.4.3-local",
       },
       "devDependencies": {
         "@nuxt/kit": "3.20.2",
@@ -565,9 +565,9 @@
     },
     "packages/sdks/react-native": {
       "name": "@openpanel/react-native",
-      "version": "1.4.2-local",
+      "version": "1.4.3-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.2-local",
+        "@openpanel/sdk": "workspace:1.3.3-local",
       },
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
@@ -583,7 +583,7 @@
     },
     "packages/sdks/sdk": {
       "name": "@openpanel/sdk",
-      "version": "1.3.2-local",
+      "version": "1.3.3-local",
       "devDependencies": {
         "@openpanel/tsconfig": "workspace:*",
         "@types/node": "catalog:",
@@ -593,9 +593,9 @@
     },
     "packages/sdks/web": {
       "name": "@openpanel/web",
-      "version": "1.4.2-local",
+      "version": "1.4.3-local",
       "dependencies": {
-        "@openpanel/sdk": "workspace:1.3.2-local",
+        "@openpanel/sdk": "workspace:1.3.3-local",
         "@rrweb/types": "2.0.0-alpha.20",
         "rrweb": "2.0.0-alpha.20",
       },
