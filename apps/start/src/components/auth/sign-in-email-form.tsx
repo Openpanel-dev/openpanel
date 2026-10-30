@@ -16,6 +16,7 @@ import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { pushModal } from '@/modals';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
@@ -47,12 +48,12 @@ export function SignInEmailForm({
       toast.success('Successfully signed in');
       window.location.href = '/';
     },
-    onError(error) {
+    onError(error, variables) {
       trackFunnel('auth_signin_failed', {
         provider: 'email',
         reason: failureReason(error),
       });
-      toast.error(error.message);
+      toastAuthError(error, variables.email);
     },
   });
   const form = useForm<IForm>({

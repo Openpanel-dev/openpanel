@@ -6,7 +6,7 @@ import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import { testServiceDeps } from '../../../../test/service-deps';
 import type { ServiceDeps } from '../../../services';
-import { INVITE_HEADER } from '../auth.constants';
+import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
 
 const sentEmails: { template: string; to: string; url: string }[] = [];
 const sendEmail = mock(
@@ -31,6 +31,9 @@ const EXISTING_EMAIL = `${PREFIX}-existing@openpanel.test`;
 const EXISTING_ID = `${PREFIX}-existing`;
 const TWO_FACTOR_EMAIL = `${PREFIX}-2fa@openpanel.test`;
 const TWO_FACTOR_ID = `${PREFIX}-2fa`;
+/** `PASSWORD` as Clerk exported it: bcrypt `$2a$`. */
+const CLERK_BCRYPT_HASH =
+  '$2a$04$GTCSUMj3dKSUbyUzA8PLBuNObwhyLwsAqCh1m32rIKhhfbKJd3Hxa';
 
 let deps: ServiceDeps;
 let ipCounter = 0;
@@ -253,6 +256,66 @@ test('a password with edge whitespace signs in exactly as it was set', async () 
 
   expect(trimmed.status).toBe(401);
   expect(exact.status).toBe(200);
+});
+
+test('a Clerk password is refused with a reset prompt until the user resets it', async () => {
+  const email = `${PREFIX}-clerk@openpanel.test`;
+  const auth = authWith();
+  const signUp = await call(auth, '/sign-up/email', {
+    email,
+    password: PASSWORD,
+    name: 'Clerk',
+  });
+  const sessionCookie = signUp.headers
+    .getSetCookie()
+    .map((cookie) => cookie.slice(0, cookie.indexOf(';')))
+    .join('; ');
+  await deps.db.account.updateMany({
+    where: { user: { email }, provider: 'credential' },
+    data: { password: CLERK_BCRYPT_HASH },
+  });
+  // Recovery codes are only offered once two-factor is on.
+  await deps.db.user.update({
+    where: { email },
+    data: { twoFactorEnabled: true },
+  });
+
+  const signIn = await call(auth, '/sign-in/email', {
+    email,
+    password: PASSWORD,
+  });
+  expect(signIn.status).toBe(400);
+  expect(await signIn.json()).toMatchObject({ code: PASSWORD_RESET_REQUIRED });
+  for (const path of [
+    '/two-factor/enable',
+    '/two-factor/disable',
+    '/two-factor/generate-backup-codes',
+  ]) {
+    const response = await call(
+      auth,
+      path,
+      { password: PASSWORD },
+      { cookie: sessionCookie }
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      code: PASSWORD_RESET_REQUIRED,
+    });
+  }
+
+  sentEmails.length = 0;
+  await call(auth, '/request-password-reset', {
+    email,
+    redirectTo: `${DASHBOARD_URL}/reset-password`,
+  });
+  const token = new URL(sentEmails[0]?.url ?? '').searchParams.get('token');
+  await call(auth, '/reset-password', { token, newPassword: PASSWORD });
+  const afterReset = await call(auth, '/sign-in/email', {
+    email,
+    password: PASSWORD,
+  });
+
+  expect(afterReset.status).toBe(200);
 });
 
 test('a two-factor sign-in has no session yet and keeps the invite for the second step', async () => {

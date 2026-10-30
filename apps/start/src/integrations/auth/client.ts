@@ -36,11 +36,23 @@ interface AuthResult<T> {
   error: { message?: string; code?: string } | null;
 }
 
+export class AuthError extends Error {
+  readonly code: string | undefined;
+
+  constructor(message: string, code: string | undefined) {
+    super(message);
+    this.code = code;
+  }
+}
+
 /** better-auth answers `{ data, error }`; react-query wants a throw. */
 export async function unwrap<T>(request: Promise<AuthResult<T>>): Promise<T> {
   const { data, error } = await request;
   if (error) {
-    throw new Error(error.message || error.code || 'Something went wrong');
+    throw new AuthError(
+      error.message || error.code || 'Something went wrong',
+      error.code
+    );
   }
   if (data === null) {
     throw new Error('Something went wrong');
