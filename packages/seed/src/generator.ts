@@ -6,7 +6,7 @@ import type { Archetype } from './archetypes/archetype';
 import { Journey } from './archetypes/archetype';
 import { CAMPAIGNS, type Campaign } from './data/referrers';
 import { Rng } from './rng';
-import { buildSessionRows } from './rows';
+import { buildBackgroundRows, buildSessionRows } from './rows';
 import type { RowSink } from './sink';
 import { TrafficModel } from './traffic';
 import { World } from './world';
@@ -218,6 +218,16 @@ export async function generate(
           });
         }
         await sink.flushFull();
+      }
+
+      for (const background of archetype.background?.(rng, date) ?? []) {
+        const rows = buildBackgroundRows(rng, {
+          projectId,
+          events: background.events.filter((event) => event.at <= config.now),
+        });
+        sink.addEvents(rows.events);
+        sink.addAiEvents(rows.aiEvents);
+        projectStats.events += rows.events.length;
       }
     }
 

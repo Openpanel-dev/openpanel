@@ -130,3 +130,36 @@ describe('seed rows match the ClickHouse schema', () => {
     });
   }
 });
+
+describe('AI traces are trees the trace view can draw', () => {
+  test('one root per trace, and every other span hangs off a span in its trace', async () => {
+    const sink = await sampleRows(AI_SAMPLE);
+    const traces = Map.groupBy(sink.aiEvents, (row) => row.trace_id);
+    expect(traces.size).toBeGreaterThan(0);
+    for (const rows of traces.values()) {
+      const roots = rows.filter((row) => row.type === 'trace');
+      expect(roots).toHaveLength(1);
+      expect(roots[0]?.parent_id).toBe('');
+      const spanIds = new Set(rows.map((row) => row.span_id));
+      for (const row of rows) {
+        if (row.type !== 'trace') {
+          expect(spanIds.has(row.parent_id)).toBe(true);
+        }
+      }
+    }
+  });
+
+  test('the root spans its children and carries no cost of its own', async () => {
+    const sink = await sampleRows(AI_SAMPLE);
+    const roots = sink.aiEvents.filter((row) => row.type === 'trace');
+    for (const root of roots) {
+      expect(root.total_cost).toBe(0);
+      const children = sink.aiEvents.filter(
+        (row) =>
+          row.trace_id === root.trace_id && row.parent_id === root.span_id
+      );
+      const childMs = children.reduce((sum, row) => sum + row.latency_ms, 0);
+      expect(root.latency_ms).toBe(childMs);
+    }
+  });
+});
