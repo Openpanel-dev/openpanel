@@ -29,8 +29,7 @@ export const FeatureCardBackground = ({
 }) => (
   <div
     className={cn(
-      'pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100',
-      'from-blue-800/20 via-transparent to-emerald-900/10',
+      'pointer-events-none absolute inset-0 bg-neutral-900/[0.025] opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       interactive === false && 'opacity-100'
     )}
   />
