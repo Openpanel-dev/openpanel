@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export default function DisableTwoFactor() {
@@ -23,7 +24,7 @@ export default function DisableTwoFactor() {
       popModal();
     },
     onError: (error) => {
-      toast.error(error.message);
+      toastAuthError(error);
       setPassword('');
     },
   });

@@ -16,6 +16,7 @@ import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { pushModal } from '@/modals';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
@@ -52,7 +53,7 @@ export function SignInEmailForm({
         provider: 'email',
         reason: failureReason(error),
       });
-      toast.error(error.message);
+      toastAuthError(error, form.getValues('email'));
     },
   });
   const form = useForm<IForm>({

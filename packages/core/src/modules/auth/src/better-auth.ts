@@ -20,7 +20,7 @@ import type { Db, RedisClient } from '../../../context';
 import type { Logger } from '../../../logger';
 import type { ISetCookie } from '../../../shared/cookie';
 import { connectUserToOrganization } from '../../organization/organization.service';
-import { INVITE_HEADER } from '../auth.constants';
+import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
 import { cookieOptions } from './constants';
 import { isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
@@ -49,6 +49,8 @@ const RATE_LIMIT_MAX = 100;
 const MIN_PASSWORD_LENGTH = 8;
 const KEY_MISSING = -2;
 const MAX_PASSWORD_LENGTH = 128;
+/** Accounts imported from Clerk still hold its bcrypt digest. */
+const ARGON2_PREFIX = '$argon2';
 
 /** What the dashboard calls. Everything else better-auth mounts answers 404. */
 const EXPOSED_PATHS = new Set([
@@ -258,7 +260,9 @@ function buildAuth(deps: AuthDeps, secret: string) {
     logger: {
       log: (level, message, ...args) => {
         const log = level === 'error' || level === 'warn' ? level : 'info';
-        logger[log]({ args }, `better-auth: ${message}`);
+        // The logger serializes an error only under `err`; inside `args` it is `{}`.
+        const err = args.find((arg) => arg instanceof Error);
+        logger[log]({ err, args }, `better-auth: ${message}`);
       },
     },
     onAPIError: { errorURL: `${config.dashboardUrl}/login` },
@@ -290,7 +294,16 @@ function buildAuth(deps: AuthDeps, secret: string) {
       resetPasswordTokenExpiresIn: RESET_PASSWORD_TOKEN_SECONDS,
       password: {
         hash: hashPassword,
-        verify: ({ hash, password }) => verifyPasswordHash(hash, password),
+        verify: ({ hash, password }) => {
+          if (!hash.startsWith(ARGON2_PREFIX)) {
+            throw new APIError('BAD_REQUEST', {
+              code: PASSWORD_RESET_REQUIRED,
+              message:
+                'Your password was set in an older version of OpenPanel and has expired. Reset your password to continue.',
+            });
+          }
+          return verifyPasswordHash(hash, password);
+        },
       },
       sendResetPassword: async ({ user, token }) => {
         const url = new URL('/reset-password', config.dashboardUrl);

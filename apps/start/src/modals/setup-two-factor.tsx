@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const QR_SIZE = 240;
@@ -61,7 +62,7 @@ export default function SetupTwoFactor() {
       setStep('scan');
     },
     onError: (error) => {
-      toast.error(error.message);
+      toastAuthError(error);
       setPassword('');
     },
   });

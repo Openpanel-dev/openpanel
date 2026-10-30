@@ -9,6 +9,9 @@ import {
 
 export const zProvider = z.enum(['email', 'google', 'github']);
 
+/** A password hash we no longer verify (Clerk's bcrypt); only a reset fixes it. */
+export const PASSWORD_RESET_REQUIRED = 'PASSWORD_RESET_REQUIRED';
+
 /** Carries an invite through an email sign-in or sign-up to `/api/auth`. */
 export const INVITE_HEADER = 'x-openpanel-invite';
 
