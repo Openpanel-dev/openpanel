@@ -11,31 +11,16 @@ const VIEWS = [
     id: 'web',
     label: 'Web analytics',
     render: () => <WebOverviewMock />,
-    captions: [
-      'Visitors, sessions and pageviews, with the previous period behind them.',
-      'Every referrer, campaign and page, with the sessions it brought.',
-      'Who is on the site right now, and what they are looking at.',
-    ],
   },
   {
     id: 'product',
     label: 'Product analytics',
     render: () => <ProductAnalyticsMock />,
-    captions: [
-      'A funnel from any events, broken down by any property.',
-      'Retention by sign-up week, so you see who actually comes back.',
-      'Save it as a report, put it on a dashboard, share it with the team.',
-    ],
   },
   {
     id: 'ai',
     label: 'AI observability',
     render: () => <AiOverviewMock />,
-    captions: [
-      'Cost, tokens, latency and error rate for every model your product calls.',
-      'Each generation tied to the user and session that triggered it.',
-      'Traces for multi-step agents, so a slow or expensive chain is easy to find.',
-    ],
   },
 ] as const;
 
@@ -75,16 +60,6 @@ export function HeroShowcase() {
           <div className="min-w-[960px]">{active.render()}</div>
         </div>
       </div>
-      <ol className="grid grid-cols-1 gap-6 text-sm md:grid-cols-3">
-        {active.captions.map((caption, index) => (
-          <li className="row items-start gap-3" key={caption}>
-            <span className="center-center size-5 shrink-0 rounded-full bg-neutral-900 font-mono text-[10px] text-white">
-              {index + 1}
-            </span>
-            <span className="text-neutral-600">{caption}</span>
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }

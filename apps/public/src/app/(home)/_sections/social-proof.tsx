@@ -64,10 +64,9 @@ export function SocialProof() {
   const track = [...CUSTOMERS, ...CUSTOMERS];
   return (
     <>
-      <section className="col items-center gap-8 py-20 md:py-24">
-        <p className="container text-center text-neutral-500 text-sm">
-          Trusted by teams tracking billions of events, self-hosted and in the
-          cloud
+      <section className="col items-center gap-6 pt-16 pb-6 md:pt-20">
+        <p className="container text-center font-medium text-neutral-400 text-xs uppercase tracking-wider">
+          Trusted by teams tracking billions of events
         </p>
         <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
           <div className="row w-max animate-scroll gap-14 [--animation-duration:70s] hover:[animation-play-state:paused]">
@@ -80,7 +79,7 @@ export function SocialProof() {
           </div>
         </div>
       </section>
-      <Testimonials className="my-0 pb-8" />
+      <Testimonials className="my-0 pt-16 pb-8" />
     </>
   );
 }

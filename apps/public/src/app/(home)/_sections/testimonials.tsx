@@ -1,4 +1,4 @@
-import { Section, SectionHeader } from '@/components/section';
+import { Section } from '@/components/section';
 import { cn } from '@/lib/utils';
 
 interface CustomerQuote {
@@ -62,13 +62,11 @@ export function Testimonials({
   className?: string;
 }) {
   return (
-    <Section className={cn('container gap-12', className)}>
+    <Section className={cn('container gap-8', className)}>
       {withHeader && (
-        <SectionHeader
-          align="center"
-          title="What our customers say"
-          variant="sm"
-        />
+        <h2 className="text-center font-semibold text-2xl tracking-tight">
+          What our customers say
+        </h2>
       )}
       <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {QUOTES.map((item) => (
