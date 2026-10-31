@@ -1,12 +1,22 @@
 import Link from 'next/link';
 import { Band } from '@/components/band';
+import { type CodeLine, CodeSnippet } from '@/components/blocks/code-snippet';
 import { GetStartedButton } from '@/components/get-started-button';
 import { GrowthLine } from '@/components/growth-line';
 import { Reveal } from '@/components/reveal';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
-const SNIPPET_LINES: { text: string; tone?: 'muted' | 'string' }[] = [
+const SDK_TABS = [
+  'Web',
+  'Script tag',
+  'React',
+  'Next.js',
+  'Vue',
+  'React Native',
+  'iOS',
+];
+
+const SNIPPET_LINES: CodeLine[] = [
   { text: 'npm install @openpanel/web', tone: 'muted' },
   { text: '' },
   { text: "import { OpenPanel } from '@openpanel/web';" },
@@ -18,49 +28,20 @@ const SNIPPET_LINES: { text: string; tone?: 'muted' | 'string' }[] = [
   { text: '});' },
 ];
 
-function InstallSnippet() {
-  return (
-    <div
-      aria-hidden
-      className="overflow-hidden rounded-2xl bg-neutral-900 text-neutral-200 shadow-[0_30px_60px_-24px_rgba(0,0,0,0.35)]"
-    >
-      <div className="row items-center gap-4 border-white/10 border-b px-5 py-3 text-[12px]">
-        <span className="font-medium text-white">Web</span>
-        <span className="text-neutral-500">Script tag</span>
-        <span className="text-neutral-500">React</span>
-        <span className="text-neutral-500">Next.js</span>
-        <span className="text-neutral-500">Vue</span>
-        <span className="text-neutral-500">React Native</span>
-        <span className="text-neutral-500">iOS</span>
-      </div>
-      <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed">
-        {SNIPPET_LINES.map((line, index) => (
-          <div
-            className={cn(
-              line.tone === 'string' && 'text-emerald-300',
-              line.tone === 'muted' && 'text-neutral-500'
-            )}
-            // biome-ignore lint/suspicious/noArrayIndexKey: static lines, some of them blank
-            key={index}
-          >
-            {line.text || ' '}
-          </div>
-        ))}
-      </pre>
-    </div>
-  );
-}
-
 export function CtaBanner({
   title = 'Start understanding your users today',
   description = 'One script on your site, or one SDK call in your app, and the first events show up within a minute. 30-day free trial, no credit card.',
   ctaText,
   ctaLink,
+  secondary = { href: '/pricing', text: 'See pricing' },
+  footnote = true,
 }: {
   title?: string | React.ReactNode;
   description?: string;
   ctaText?: string;
   ctaLink?: string;
+  secondary?: { href: string; text: string };
+  footnote?: boolean;
 }) {
   return (
     <Band
@@ -79,22 +60,24 @@ export function CtaBanner({
         <div className="row flex-wrap items-center gap-3">
           <GetStartedButton href={ctaLink} text={ctaText} />
           <Button asChild className="px-6" size="lg" variant="outline">
-            <Link href="/pricing">See pricing</Link>
+            <Link href={secondary.href}>{secondary.text}</Link>
           </Button>
         </div>
-        <p className="text-neutral-500 text-sm">
-          Cloud from $2.50 a month, or{' '}
-          <Link
-            className="font-medium text-neutral-900 underline-offset-4 hover:underline"
-            href="/docs/self-hosting/self-hosting"
-          >
-            self-host for free
-          </Link>
-          .
-        </p>
+        {footnote && (
+          <p className="text-neutral-500 text-sm">
+            Cloud from $2.50 a month, or{' '}
+            <Link
+              className="font-medium text-neutral-900 underline-offset-4 hover:underline"
+              href="/docs/self-hosting/self-hosting"
+            >
+              self-host for free
+            </Link>
+            .
+          </p>
+        )}
       </div>
       <Reveal delay={120}>
-        <InstallSnippet />
+        <CodeSnippet lines={SNIPPET_LINES} tabs={SDK_TABS} />
       </Reveal>
     </Band>
   );

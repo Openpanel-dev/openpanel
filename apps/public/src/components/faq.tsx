@@ -1,4 +1,5 @@
 import Markdown from 'react-markdown';
+import { SectionHeader } from './section';
 import {
   Accordion,
   AccordionContent,
@@ -61,3 +62,34 @@ export const FaqItem = ({
     </AccordionContent>
   </AccordionItem>
 );
+
+export interface FaqEntry {
+  question: string;
+  answer: string;
+}
+
+// The two-column FAQ every marketing page closes with: header left, list right.
+export function FaqSection({
+  items,
+  title = 'Questions, answered',
+  description = 'The questions we get most often. Anything else, ask us on Discord or by email.',
+}: {
+  items: FaqEntry[];
+  title?: string;
+  description?: string;
+}) {
+  return (
+    <section className="container py-20 md:py-28">
+      <div className="grid grid-cols-1 gap-10 md:grid-cols-[5fr_7fr] md:gap-20">
+        <SectionHeader description={description} title={title} variant="sm" />
+        <Faqs schema>
+          {items.map((item) => (
+            <FaqItem key={item.question} question={item.question}>
+              {item.answer}
+            </FaqItem>
+          ))}
+        </Faqs>
+      </div>
+    </section>
+  );
+}

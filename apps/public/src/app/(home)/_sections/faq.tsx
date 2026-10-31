@@ -1,7 +1,6 @@
-import { FaqItem, Faqs } from '@/components/faq';
-import { SectionHeader } from '@/components/section';
+import { type FaqEntry, FaqSection } from '@/components/faq';
 
-const faqData = [
+const faqData: FaqEntry[] = [
   {
     question: 'Does OpenPanel have a free tier?',
     answer:
@@ -45,22 +44,5 @@ const faqData = [
 ];
 
 export function Faq() {
-  return (
-    <section className="container py-20 md:py-28">
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-[5fr_7fr] md:gap-20">
-        <SectionHeader
-          description="The questions we get most often. Anything else, ask us on Discord or by email."
-          title="Questions, answered"
-          variant="sm"
-        />
-        <Faqs>
-          {faqData.map((faq) => (
-            <FaqItem key={faq.question} question={faq.question}>
-              {faq.answer}
-            </FaqItem>
-          ))}
-        </Faqs>
-      </div>
-    </section>
-  );
+  return <FaqSection items={faqData} />;
 }

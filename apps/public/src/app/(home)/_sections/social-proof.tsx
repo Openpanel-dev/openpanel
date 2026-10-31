@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Testimonials } from './testimonials';
+import { cn } from '@/lib/utils';
 
 interface Customer {
   name: string;
@@ -60,25 +61,33 @@ function CustomerMark({ customer }: { customer: Customer }) {
   );
 }
 
-export function SocialProof() {
+export function CustomerLogos({ className }: { className?: string }) {
   const track = [...CUSTOMERS, ...CUSTOMERS];
   return (
-    <>
-      <section className="col items-center gap-6 pt-16 pb-6 md:pt-20">
-        <p className="container text-center font-medium text-neutral-400 text-xs uppercase tracking-wider">
-          Trusted by teams tracking billions of events
-        </p>
-        <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-          <div className="row w-max animate-scroll gap-14 [--animation-duration:70s] hover:[animation-play-state:paused]">
-            {track.map((customer, index) => (
-              <CustomerMark
-                customer={customer}
-                key={`${customer.name}-${index}`}
-              />
-            ))}
-          </div>
+    <section
+      className={cn('col items-center gap-6 pt-16 pb-6 md:pt-20', className)}
+    >
+      <p className="container text-center font-medium text-neutral-400 text-xs uppercase tracking-wider">
+        Trusted by teams tracking billions of events
+      </p>
+      <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+        <div className="row w-max animate-scroll gap-14 [--animation-duration:70s] hover:[animation-play-state:paused]">
+          {track.map((customer, index) => (
+            <CustomerMark
+              customer={customer}
+              key={`${customer.name}-${index}`}
+            />
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
+
+export function SocialProof() {
+  return (
+    <>
+      <CustomerLogos />
       <Testimonials className="my-0 pt-16 pb-8" />
     </>
   );
