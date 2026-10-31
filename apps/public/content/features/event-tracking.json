@@ -36,6 +36,18 @@
       {
         "question": "Can I track custom events?",
         "answer": "Yes. You can send any event name and attach optional properties (e.g. plan, value, feature_name). Custom events work in funnels, retention, and user profiles the same way as built-in events."
+      },
+      {
+        "question": "Does OpenPanel autocapture clicks?",
+        "answer": "No. Three things are automatic when you turn them on: screen views (trackScreenViews), outgoing links (trackOutgoingLinks) and elements with a data-track attribute. Everything else is a track call you write, which keeps the event list meaningful instead of a dump of every click."
+      },
+      {
+        "question": "What is a custom event?",
+        "answer": "A named group of event names with optional filters, defined once in Settings. For example Activation = project_created or invite_sent. A custom event can be picked in any report, funnel or retention grid like a normal event."
+      },
+      {
+        "question": "Can I exclude my own traffic?",
+        "answer": "Yes. In Settings you can exclude IP addresses, profile ids and event rules (for example path contains /preview). Excluded events are dropped at ingest and never count."
       }
     ]
   },

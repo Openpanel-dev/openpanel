@@ -38,7 +38,7 @@
     "items": [
       {
         "question": "Does OpenPanel have session replay?",
-        "answer": "Yes. Session replay is available as an opt-in feature. Enable it by setting `sessionReplay: { enabled: true }` in your init config. When disabled, the replay script is never loaded. See the [session replay docs](/docs/session-replay) for setup and privacy options."
+        "answer": "Yes, as an option in the web SDK. Turn on sessionReplay in the config and sessions get a recording next to their events, masked by default and kept 30 days. See the session replay page for the details."
       },
       {
         "question": "Do I need to set up session tracking separately?",
@@ -46,15 +46,15 @@
       },
       {
         "question": "How does OpenPanel define a session?",
-        "answer": "A session starts when a user triggers their first event and ends after 30 minutes of inactivity. If the user returns after the timeout, a new session begins. This is consistent with how most analytics tools define sessions."
+        "answer": "Events from the same device within 30 minutes of each other belong to one session. After 30 minutes without an event the session ends, and the server writes session_start and session_end itself. The device id is a hash of user agent, IP and site with a salt that rotates every day, so an anonymous visitor is a new device the next day; sessions are not stitched across days or devices unless the user is identified."
       },
       {
         "question": "Can I see individual user sessions?",
-        "answer": "Yes. You can view a user's session history, including the pages they visited and events they triggered in each session. This is available in the user profile view. If session replay is enabled, you can also play back the session."
+        "answer": "Yes. The Sessions page lists every session with entry and exit page, duration, bounce, referrer, location, events and revenue. Open one to see the events in order, the visited pages, the profile when there is one, and the replay when it was recorded."
       },
       {
         "question": "Does session tracking require cookies?",
-        "answer": "No. OpenPanel can run without cookies. Sessions can be tracked using a lightweight session identifier that doesn't require cookie consent. If you enable first-party cookies, session continuity improves but it's not required."
+        "answer": "No. Nothing is stored in a cookie or in localStorage. The device id is computed on the server from the request, with a salt that changes daily, which is why there is no consent banner to show."
       }
     ]
   },

@@ -39,7 +39,7 @@
     "items": [
       {
         "question": "What happens before a user is identified?",
-        "answer": "Events are stored under an anonymous profile. When you call identify(), the anonymous history is merged with the identified profile, so you get the complete journey from first visit to current session."
+        "answer": "The visitor is an anonymous device id, computed from user agent, IP and site with a salt that rotates every day. When you call identify, the events from that same session (up to six hours back) are rewritten to the profile, so the sign-up flow becomes part of the person's history. Earlier sessions stay anonymous."
       },
       {
         "question": "Is this GDPR-compliant?",
@@ -55,7 +55,11 @@
       },
       {
         "question": "Do I need to identify every user?",
-        "answer": "No. Identification is optional. Anonymous users still generate events and sessions. You identify users when you want to link their activity to a known person-typically after login or signup."
+        "answer": "No. Identify when someone logs in or signs up. Visitors you never identify stay in the Anonymous tab and still count in funnels, retention and the overview."
+      },
+      {
+        "question": "Can I merge two identities?",
+        "answer": "Not yet. There is no alias call, so two profile ids stay two profiles and nothing is merged across devices. Use a stable id from your own system, such as the user id from your database, and call identify with it on every device the person logs in on."
       }
     ]
   },

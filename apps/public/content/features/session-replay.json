@@ -3,7 +3,7 @@
   "short_name": "Session replay",
   "seo": {
     "title": "Session Replay - Watch Real User Sessions | OpenPanel",
-    "description": "Replay real user sessions to understand exactly what happened. Privacy-first session replay with masking controls, unlimited recordings, and 30-day retention.",
+    "description": "Session replay in OpenPanel: watch any user session next to its events, with text and inputs masked by default. Open source, 30-day retention, no replay quota.",
     "keywords": [
       "session replay",
       "session recording",
@@ -39,31 +39,31 @@
     "items": [
       {
         "question": "Is session replay enabled by default?",
-        "answer": "No. Session replay is opt-in. You enable it by setting `sessionReplay: { enabled: true }` in your init config. When disabled, the replay script is never fetched and adds zero overhead to your page."
+        "answer": "No. Set sessionReplay: { enabled: true } in the web SDK config. Nothing is recorded until you do, and only the web SDK records; there is no replay for React Native."
       },
       {
         "question": "Does enabling session replay slow down my site?",
-        "answer": "No. The replay module loads as a separate async script (`op1-replay.js`), independent of the main tracking bundle (`op1.js`). It's fetched after the page loads and does not block rendering or the main analytics script."
+        "answer": "No. The recorder is not part of the main SDK bundle. It loads after your page is interactive, records in the background and sends chunks every 10 seconds, at most 200 events or 1 MB per chunk, and flushes when the tab is hidden. Use sampleRate to record a share of visits instead of all of them."
       },
       {
         "question": "How is this different from Hotjar or FullStory?",
-        "answer": "Hotjar and FullStory record video-like streams. OpenPanel captures structured DOM events using rrweb. The result looks similar in the viewer, but structured data gives you finer-grained privacy controls (CSS-selector masking, element blocking) and is more storage-efficient. OpenPanel is also open-source and can be self-hosted."
+        "answer": "Three things. Recording is masked by default, so text and inputs never leave the browser unless you unmask a selector. The replay sits on the session page next to the events you already track, so you can jump from a funnel drop-off to the recording. And OpenPanel is open source: self-host it and the recordings stay in your own ClickHouse. OpenPanel does not have heatmaps, rage-click detection or console logs; if you need those, Hotjar or FullStory still make sense."
       },
       {
         "question": "Are form inputs recorded?",
-        "answer": "No. All input field values are masked by default (`maskAllInputs: true`). You see that a user interacted with a field, but not what they typed. You can disable this on a per-field basis if needed."
+        "answer": "No. All inputs are masked by default (maskAllInputs), and so is all text (maskAllText). Hidden inputs such as CSRF tokens are always blocked. You can unmask specific text with unmaskTextSelector, and block whole elements with the data-openpanel-replay-block attribute."
       },
       {
         "question": "How long are replays stored?",
-        "answer": "Replays are retained for 30 days. There is no limit on the number of sessions recorded."
+        "answer": "30 days from the start of the session, on Cloud and on self-hosted installs. The storage table has a 30-day TTL; there is no setting to keep them longer."
       },
       {
         "question": "Can I block specific parts of my UI from being recorded?",
-        "answer": "Yes. Add `data-openpanel-replay-block` to any element to replace it with a placeholder in the replay. Use `data-openpanel-replay-mask` to mask specific text. Both the attribute names and the CSS selectors they target are configurable."
+        "answer": "Yes. Add data-openpanel-replay-block to any element and it becomes a grey box in the recording. You can also pass your own blockSelector or blockClass in the config."
       },
       {
         "question": "Does session replay work with self-hosted OpenPanel?",
-        "answer": "Yes. When self-hosting, the replay script is served from your instance automatically. You can also override the script URL with the `scriptUrl` option if you host it on a CDN."
+        "answer": "Yes. Recordings go through the same ingest and land in your own ClickHouse, compressed, with the same 30-day TTL. The web SDK loads the replay script from your own instance."
       }
     ]
   },
