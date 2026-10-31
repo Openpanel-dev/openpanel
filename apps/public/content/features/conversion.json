@@ -48,11 +48,11 @@
       },
       {
         "question": "Can I use conversions for A/B testing?",
-        "answer": "Yes. Add a breakdown by your experiment variant property, and you'll see each variant's conversion rate plotted over time with per-period detail. You can tell whether one variant's advantage holds consistently or fluctuates, which a single aggregate number can't show."
+        "answer": "You can break the report down by your experiment variant property and compare the lines, period by period, with the totals and per-period counts in the table. There is no statistical significance test; OpenPanel shows the rates and the counts, and you decide."
       },
       {
         "question": "What events can I use?",
-        "answer": "Any events you already track. A conversion is defined by two events: a start event and a goal event. Common examples include session_start → signup, signup → purchase, or page_view → add_to_cart."
+        "answer": "Any two events you already track. A conversion report is exactly two events, a start and a goal, each with optional filters. Common pairs are session_start → sign_up, sign_up → purchase, or screen_view (path is /pricing) → started_trial."
       },
       {
         "question": "Is the data sampled?",
@@ -61,6 +61,10 @@
       {
         "question": "Can I see absolute numbers alongside rates?",
         "answer": "Yes. Every conversion report shows both the conversion rate and the total number of conversions. The detail table below the chart includes totals and per-period counts for each segment."
+      },
+      {
+        "question": "What are the settings?",
+        "answer": "\"Funnel Group\" (session or profile), \"Funnel Window\" in hours (default 24), \"Y axis\" fixed at 0–100% or auto, and \"Compare to previous period\". The interval can be minute, hour, day, week or month."
       }
     ]
   },

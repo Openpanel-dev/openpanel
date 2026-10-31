@@ -36,7 +36,19 @@
       },
       {
         "question": "How do I know if my retention is good?",
-        "answer": "There's no universal benchmark; it depends on your product and cohort. What matters is trend and segment comparison: improving over time and understanding which cohorts retain better. Retention gives you the numbers; you decide what \"good\" is for your product."
+        "answer": "There is no universal benchmark; it depends on your product and how often people should come back. What matters is the trend across cohorts and where the curve flattens. Retention gives you the numbers; you decide what \"good\" is."
+      },
+      {
+        "question": "What does \"On or After\" mean?",
+        "answer": "It is the default criteria. A user counts as retained in week 3 if they did the return event in week 3 or any later week. The other option, \"On\", counts only week 3 itself. \"On or After\" gives a smooth curve of stickiness; \"On\" shows the actual weekly habit."
+      },
+      {
+        "question": "Can I break retention down by a property?",
+        "answer": "No. Retention has no breakdown. Use filters (plan is Pro) or a cohort (in cohort: Product Hunt sign-ups) to narrow the audience, and save two reports on one dashboard to compare groups."
+      },
+      {
+        "question": "What is the weighted average?",
+        "answer": "The first row of the grid. It pools all cohorts per period but leaves out cells whose period has not happened yet, so a cohort from last week does not pull the week-4 average down to zero."
       }
     ]
   },

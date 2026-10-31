@@ -31,11 +31,23 @@
       },
       {
         "question": "Can I filter funnels by user property or segment?",
-        "answer": "Yes. You can add filters to funnel steps (e.g. only users from a specific campaign or on a specific plan). This lets you compare conversion across segments."
+        "answer": "Yes. Each step can have its own filters (for example only users on a specific plan or from a specific campaign), and you can add a breakdown by any event, profile, group or cohort property to see every segment side by side."
       },
       {
         "question": "How is funnel data calculated?",
-        "answer": "We count unique users who completed each step in order within your selected time window. There's no sampling-every event is included. Results update as new events arrive."
+        "answer": "We count unique sessions (or unique profiles, if you pick that as the funnel group) that did the steps in order within the funnel window. Other events may happen in between. There is no sampling, every event is included, and results update as new events arrive."
+      },
+      {
+        "question": "Do the steps have to happen in order?",
+        "answer": "Yes. A session or profile counts for step C only if A, B and C happened in that sequence inside the funnel window. Other events in between are fine; there is no strict mode that would disqualify them."
+      },
+      {
+        "question": "What is the funnel window?",
+        "answer": "The time a journey may take from the first step to the last, in hours. The default is 24 hours. A long onboarding funnel might use 168 (a week); a checkout funnel might use 1."
+      },
+      {
+        "question": "Session or profile, which should I use?",
+        "answer": "Session (the default) counts journeys completed inside one visit, which suits checkout and sign-up flows. Profile counts a user who starts today and finishes next week, which suits onboarding and activation. The setting is called \"Funnel Group\"."
       }
     ]
   },

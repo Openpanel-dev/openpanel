@@ -37,23 +37,27 @@
     "items": [
       {
         "question": "How do I send a revenue event?",
-        "answer": "Send a regular event (e.g. 'purchase_completed') with a numeric property for the amount. You can include additional properties like currency, plan, or item name. The same SDK or API you use for any other event works for revenue."
+        "answer": "Call `op.revenue(amount, properties)` with the amount as an integer in cents, for example `op.revenue(2900, { plan: 'pro' })` for $29.00. It is sent as a `revenue` event and lands on the session and the profile. From the browser, revenue is only accepted when you enable \"Allow unsafe revenue tracking\" for the project; from your backend, the client secret is enough."
       },
       {
         "question": "Can I track recurring subscription revenue?",
-        "answer": "Yes. Fire a revenue event on each renewal or billing cycle. Over time you can chart MRR trends, retention by cohort, and expansion revenue-all from events."
+        "answer": "Yes, by sending one revenue event per charge from your billing webhook handler. You can then chart revenue over time and by plan or cohort. OpenPanel does not calculate MRR, churned or expansion revenue for you."
       },
       {
         "question": "Do I need to integrate my payment provider?",
-        "answer": "No direct integration is needed. You send revenue events from your backend whenever a payment is confirmed (e.g. in a Stripe webhook handler). OpenPanel doesn't talk to Stripe-it just receives the event you send."
+        "answer": "There is no payment-provider integration to set up. Call `revenue` from the webhook you already receive from Stripe, Paddle, Polar or whichever provider you use. OpenPanel never talks to the provider."
       },
       {
         "question": "Can I track refunds?",
-        "answer": "Yes. Send a refund event with a negative amount or a separate event name (e.g. 'refund_issued'). You can then subtract refunds from gross revenue in your dashboards."
+        "answer": "Amounts must be non-negative, so a refund cannot be sent as negative revenue. Track a `refund` event with the amount as your own property and report on it separately; it will not be subtracted from revenue."
       },
       {
         "question": "Is revenue data shared with third parties?",
         "answer": "No. OpenPanel is privacy-first. Self-host to keep revenue data entirely in your infrastructure, or use our cloud where data is never shared with third parties."
+      },
+      {
+        "question": "Which currency is used?",
+        "answer": "One. Amounts are stored as integers in cents and shown as USD. There is no per-event currency field and no conversion, so send every amount in the same currency."
       }
     ]
   },
