@@ -29,7 +29,7 @@ export function ChatMock({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        'row overflow-hidden rounded-xl border border-black/8 bg-white text-left text-neutral-900 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.18),0_8px_24px_-12px_rgba(0,0,0,0.12)]',
+        'window-shadow row overflow-hidden rounded-xl border border-black/8 bg-white text-left text-neutral-900',
         className
       )}
     >

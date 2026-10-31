@@ -76,7 +76,7 @@ export function FeaturesBento() {
         {ITEMS.map((item, index) => (
           <Reveal as="li" delay={index * 70} key={item.href}>
             <Link
-              className="group col h-full gap-5 rounded-2xl bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4 transition-[transform,box-shadow] duration-300 hover:-translate-y-1 hover:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_48px_-16px_rgba(0,0,0,0.2)]"
+              className="group surface surface-hover col h-full gap-5 p-6"
               href={item.href}
             >
               <div aria-hidden className="h-40 overflow-hidden">

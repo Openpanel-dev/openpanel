@@ -53,7 +53,7 @@ function Quote({ item, index }: { item: Testimonial; index: number }) {
       className="mb-4 break-inside-avoid"
       delay={index * STAGGER_MS}
     >
-      <figure className="col gap-6 rounded-2xl bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4">
+      <figure className="surface col gap-6 p-6">
         <blockquote
           className={cn(
             'text-pretty text-neutral-700 leading-relaxed [&_strong]:font-semibold [&_strong]:text-neutral-900',

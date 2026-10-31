@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Band } from '@/components/band';
 import { GetStartedButton } from '@/components/get-started-button';
 import { GrowthLine } from '@/components/growth-line';
 import { Reveal } from '@/components/reveal';
@@ -62,35 +63,37 @@ export function CtaBanner({
   ctaLink?: string;
 }) {
   return (
-    <section className="relative overflow-hidden bg-linear-to-b from-canvas to-stone-200/70 py-20 md:py-28">
-      <GrowthLine className="absolute inset-x-0 bottom-0 h-[62%] w-full" />
-      <div className="container pointer-events-none relative grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16">
-        <div className="col pointer-events-auto gap-6">
-          <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
-            {title}
-          </h2>
-          <p className="text-lg text-neutral-600">{description}</p>
-          <div className="row flex-wrap items-center gap-3">
-            <GetStartedButton href={ctaLink} text={ctaText} />
-            <Button asChild className="px-6" size="lg" variant="outline">
-              <Link href="/pricing">See pricing</Link>
-            </Button>
-          </div>
-          <p className="text-neutral-500 text-sm">
-            Cloud from $2.50 a month, or{' '}
-            <Link
-              className="font-medium text-neutral-900 underline-offset-4 hover:underline"
-              href="/docs/self-hosting/self-hosting"
-            >
-              self-host for free
-            </Link>
-            .
-          </p>
+    <Band
+      className="overflow-hidden"
+      innerClassName="pointer-events-none grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16"
+      tone="fade"
+    >
+      <GrowthLine className="pointer-events-auto absolute inset-x-0 bottom-0 h-[62%] w-full" />
+      <div className="col pointer-events-auto gap-6">
+        <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+          {title}
+        </h2>
+        <p className="text-lg text-neutral-600">{description}</p>
+        <div className="row flex-wrap items-center gap-3">
+          <GetStartedButton href={ctaLink} text={ctaText} />
+          <Button asChild className="px-6" size="lg" variant="outline">
+            <Link href="/pricing">See pricing</Link>
+          </Button>
         </div>
-        <Reveal delay={120}>
-          <InstallSnippet />
-        </Reveal>
+        <p className="text-neutral-500 text-sm">
+          Cloud from $2.50 a month, or{' '}
+          <Link
+            className="font-medium text-neutral-900 underline-offset-4 hover:underline"
+            href="/docs/self-hosting/self-hosting"
+          >
+            self-host for free
+          </Link>
+          .
+        </p>
       </div>
-    </section>
+      <Reveal delay={120}>
+        <InstallSnippet />
+      </Reveal>
+    </Band>
   );
 }

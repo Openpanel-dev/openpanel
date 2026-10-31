@@ -152,6 +152,30 @@ code {
   }
 }
 
+/* Surfaces: the one card recipe every marketing page uses. */
+@utility surface {
+  @apply rounded-2xl bg-white ring-1 ring-black/4;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 32px -16px rgba(0, 0, 0, 0.12);
+}
+
+@utility surface-hover {
+  @apply transition-[transform,box-shadow] duration-300;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 24px 48px -16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@utility window-shadow {
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.18),
+    0 8px 24px -12px rgba(0, 0, 0, 0.12);
+}
+
 /* Scroll reveal: hidden until the Reveal component sees the element. */
 @layer components {
   .reveal {
