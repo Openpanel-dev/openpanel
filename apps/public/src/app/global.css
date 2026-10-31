@@ -53,6 +53,31 @@ code {
   --canvas: oklch(0.985 0.002 95);
 }
 
+/* Fumadocs on the site palette: warm canvas, white cards, black primary. */
+:root {
+  --color-fd-background: var(--canvas);
+  --color-fd-foreground: oklch(0.145 0 0);
+  --color-fd-card: oklch(1 0 0);
+  --color-fd-card-foreground: oklch(0.145 0 0);
+  --color-fd-popover: oklch(1 0 0);
+  --color-fd-popover-foreground: oklch(0.145 0 0);
+  --color-fd-muted: oklch(0.96 0.003 95);
+  --color-fd-muted-foreground: oklch(0.5 0.004 95);
+  --color-fd-secondary: oklch(0.975 0.002 95);
+  --color-fd-secondary-foreground: oklch(0.205 0 0);
+  --color-fd-accent: oklch(0.94 0.004 95);
+  --color-fd-accent-foreground: oklch(0.145 0 0);
+  --color-fd-border: oklch(0.145 0 0 / 0.08);
+  --color-fd-primary: oklch(0.205 0 0);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+  --color-fd-ring: oklch(0.708 0 0);
+}
+
+#nd-docs-layout,
+#nd-sidebar {
+  background-color: var(--canvas);
+}
+
 @utility container {
   @apply mx-auto px-4;
   @media (width >= 40rem) {
