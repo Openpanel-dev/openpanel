@@ -140,6 +140,7 @@ describe('AI traces are trees the trace view can draw', () => {
       const roots = rows.filter((row) => row.type === 'trace');
       expect(roots).toHaveLength(1);
       expect(roots[0]?.parent_id).toBe('');
+      expect(new Set(rows.map((row) => row.span_id)).size).toBe(rows.length);
       const parentOf = new Map(rows.map((row) => [row.span_id, row.parent_id]));
       const rootId = roots[0]?.span_id;
       for (const row of rows) {
