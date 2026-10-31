@@ -1,4 +1,3 @@
-import { DashboardShell, Toolbar } from './frame';
 import { MockTabs, Pill } from './primitives';
 import { cn } from '@/lib/utils';
 
@@ -140,18 +139,5 @@ export function ProductAnalyticsContent() {
       <FunnelContent />
       <RetentionContent />
     </>
-  );
-}
-
-export function ProductAnalyticsMock({ className }: { className?: string }) {
-  return (
-    <DashboardShell
-      active="reports"
-      className={className}
-      project="Acme SaaS"
-      toolbar={<Toolbar range="Last 30 days" withAsk={false} />}
-    >
-      <ProductAnalyticsContent />
-    </DashboardShell>
   );
 }

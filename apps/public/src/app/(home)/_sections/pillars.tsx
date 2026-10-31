@@ -1,14 +1,9 @@
 import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
-import { AiOverviewContent } from '@/components/dashboard-mock/ai-overview';
 import { ChatMock } from '@/components/dashboard-mock/chat';
-import {
-  FunnelContent,
-  RetentionContent,
-} from '@/components/dashboard-mock/product-analytics';
-import { WebOverviewContent } from '@/components/dashboard-mock/web-overview';
 import { Reveal } from '@/components/reveal';
 import { SectionLabel } from '@/components/section';
+import { VisualMock } from '@/components/visual-mock';
 import { cn } from '@/lib/utils';
 
 interface PillarProps {
@@ -20,45 +15,6 @@ interface PillarProps {
   link: { href: string; text: string };
   visual: React.ReactNode;
   reverse?: boolean;
-}
-
-// A piece of the dashboard, cut off at the panel edge like a window into the
-// product. The panel runs off the viewport on the side away from the text.
-function Inset({
-  children,
-  className,
-  width = 760,
-  side = 'right',
-  bleed = 'right',
-}: {
-  children: React.ReactNode;
-  className?: string;
-  width?: number;
-  side?: 'right' | 'bottom';
-  bleed?: 'left' | 'right';
-}) {
-  const cutBottom = side === 'bottom';
-  return (
-    <div
-      aria-hidden
-      className={cn(
-        'relative overflow-hidden rounded-3xl bg-neutral-100 pt-8 md:pt-12',
-        bleed === 'right' ? 'bleed-right' : 'bleed-left',
-        cutBottom ? 'px-6 md:px-10' : 'pl-8 md:pl-12',
-        className
-      )}
-    >
-      <div
-        className={cn(
-          '@container col shrink-0 gap-3 border-neutral-200 border-t bg-neutral-50/60 p-4 text-left text-neutral-900 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.2)]',
-          cutBottom ? 'rounded-t-xl border-x' : 'rounded-tl-xl border-l'
-        )}
-        style={cutBottom ? undefined : { width }}
-      >
-        {children}
-      </div>
-    </div>
-  );
 }
 
 function Pillar({
@@ -128,11 +84,7 @@ export function Pillars() {
           },
         ]}
         title="Every AI call, with a price tag"
-        visual={
-          <Inset className="max-h-[520px]" width={900}>
-            <AiOverviewContent />
-          </Inset>
-        }
+        visual={<VisualMock bleed="right" frame="inset" name="ai" />}
       />
       <Pillar
         description="Connect Claude, Cursor or your own agent to OpenPanel and ask in plain English. Which campaign brought paying users? Who churned after the pricing change? The answer comes back with the data behind it. You never have to open a dashboard if you don't want to."
@@ -181,12 +133,7 @@ export function Pillars() {
           },
         ]}
         title="Know what people do after they sign up"
-        visual={
-          <Inset className="max-h-[520px]" width={900}>
-            <FunnelContent />
-            <RetentionContent />
-          </Inset>
-        }
+        visual={<VisualMock bleed="right" frame="inset" name="product" />}
       />
       <Pillar
         description="Visitors, referrers, pages, countries and devices, live. Cookie-less by default, so you do not need a consent banner, and light enough that nobody notices it."
@@ -210,9 +157,12 @@ export function Pillars() {
         reverse
         title="One script. The whole picture of your traffic."
         visual={
-          <Inset bleed="left" className="max-h-[520px]" side="bottom">
-            <WebOverviewContent />
-          </Inset>
+          <VisualMock
+            bleed="left"
+            frame="inset"
+            name="web-overview"
+            side="bottom"
+          />
         }
       />
     </div>

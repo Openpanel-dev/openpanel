@@ -31,6 +31,8 @@ export interface FeatureCapabilitiesSection {
 }
 
 export interface FeatureScreenshot {
+  // Name of a VisualMock (src/components/visual-mock.tsx); preferred over images.
+  mock?: string;
   src?: string;
   srcDark?: string;
   srcLight?: string;

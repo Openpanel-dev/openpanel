@@ -60,6 +60,7 @@ All in `src/components` unless noted.
 | `Reveal` | Wrap anything that should fade and lift in on scroll. `delay` for stagger, `as="li"` inside lists. |
 | `CountUp` | Any formatted number that should count up when seen (`"8,634"`, `"$412.30"`, `"19.9M"`). |
 | `GrowthLine` | The interactive growth chart used in the closing band. |
+| `VisualMock` (`visual-mock.tsx`) | **The way to show the product.** `<VisualMock name="product" />` renders a named replica; `frame="window"` (default, whole dashboard), `"inset"` (cut off at a panel edge, for focusing on one part; `side="right"` or `"bottom"`, `bleed="left"` or `"right"` to run off the viewport), `"bare"` (the view alone). Works in TSX, in MDX, and from content JSON through `WindowImage` with `"mock": "<name>"`. Every name is shown at `/visuals`. Add a view by writing its content in `dashboard-mock/` and one entry in the registry. |
 | `dashboard-mock/*` | HTML replicas of the real product: `DashboardShell` (sidebar + toolbar), `WebOverviewContent`, `AiOverviewContent`, `FunnelContent`, `RetentionContent`, `ChatMock`, plus `primitives.tsx` (`StatCard`, `AreaChart`, `MockTable`, `Pill`) and `minis.tsx` (small pieces for feature cards). Build new replicas from these, never from screenshots. |
 | `Testimonials` + `src/lib/testimonials.ts` | Quote grid. Add quotes to the list, not to the component. |
 | `CtaBanner` | The closing band with the install snippet and the chart. Reuse on every page as the last section before the footer. |
@@ -125,6 +126,7 @@ thing on screen.
 ## Things that were tried and rejected
 
 - Illustrations (too abstract, "stock"). Use product replicas.
+- Screenshot images on feature and compare pages. Use `VisualMock`.
 - Tweet cards as testimonials. Use real customer quotes.
 - Dark CTA box at the bottom. Use the fading band with the install snippet.
 - Bordered cards and bordered FAQ. Use `surface` and divider lines.

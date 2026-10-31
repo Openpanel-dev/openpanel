@@ -1,8 +1,11 @@
 import Image from 'next/image';
 import { FeatureCardContainer } from './feature-card';
+import { isVisualMockName, VisualMock } from './visual-mock';
 import { cn } from '@/lib/utils';
 
 interface WindowImageProps {
+  // Name of a VisualMock; when set, no image is rendered.
+  mock?: string;
   src?: string;
   // Content files still carry a dark variant; the site only renders the light one.
   srcDark?: string;
@@ -13,12 +16,26 @@ interface WindowImageProps {
 }
 
 export function WindowImage({
+  mock,
   src,
   srcLight,
   alt,
   caption,
   className,
 }: WindowImageProps) {
+  if (mock && isVisualMockName(mock)) {
+    return (
+      <figure className={cn('col gap-4', className)}>
+        <VisualMock name={mock} />
+        {caption && (
+          <figcaption className="mx-auto max-w-lg text-center text-muted-foreground text-sm">
+            {caption}
+          </figcaption>
+        )}
+      </figure>
+    );
+  }
+
   const imageSrc = srcLight || src;
 
   if (!imageSrc) {

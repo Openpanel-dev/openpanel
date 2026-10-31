@@ -1,4 +1,3 @@
-import { DashboardShell, Toolbar } from './frame';
 import { AreaChart, MockTable, StatCard } from './primitives';
 
 const VISITORS = [92, 61, 68, 142, 131, 138, 171, 168];
@@ -102,18 +101,5 @@ export function WebOverviewContent() {
         />
       </div>
     </>
-  );
-}
-
-export function WebOverviewMock({ className }: { className?: string }) {
-  return (
-    <DashboardShell
-      active="overview"
-      className={className}
-      project="Acme Web"
-      toolbar={<Toolbar />}
-    >
-      <WebOverviewContent />
-    </DashboardShell>
   );
 }

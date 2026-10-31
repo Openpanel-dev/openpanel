@@ -1,9 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AiOverviewMock } from '@/components/dashboard-mock/ai-overview';
-import { ProductAnalyticsMock } from '@/components/dashboard-mock/product-analytics';
-import { WebOverviewMock } from '@/components/dashboard-mock/web-overview';
+import { VisualMock } from '@/components/visual-mock';
 import { cn } from '@/lib/utils';
 
 const VIEWS = [
@@ -11,19 +9,19 @@ const VIEWS = [
     id: 'web',
     label: 'Web analytics',
     dot: 'bg-blue-600',
-    render: () => <WebOverviewMock />,
+    render: () => <VisualMock name="web-overview" />,
   },
   {
     id: 'product',
     label: 'Product analytics',
     dot: 'bg-emerald-600',
-    render: () => <ProductAnalyticsMock />,
+    render: () => <VisualMock name="product" />,
   },
   {
     id: 'ai',
     label: 'AI observability',
     dot: 'bg-violet-600',
-    render: () => <AiOverviewMock />,
+    render: () => <VisualMock name="ai" />,
   },
 ] as const;
 

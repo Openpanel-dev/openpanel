@@ -1,5 +1,4 @@
 import { AlertTriangleIcon, CheckIcon } from 'lucide-react';
-import { DashboardShell, Toolbar } from './frame';
 import { AreaChart, Avatar, MockTabs, StatCard } from './primitives';
 import { cn } from '@/lib/utils';
 
@@ -175,18 +174,5 @@ export function AiOverviewContent({ compact = false }: { compact?: boolean }) {
         </div>
       </div>
     </>
-  );
-}
-
-export function AiOverviewMock({ className }: { className?: string }) {
-  return (
-    <DashboardShell
-      active="ai"
-      className={className}
-      project="Acme SaaS"
-      toolbar={<Toolbar withAsk={false} />}
-    >
-      <AiOverviewContent />
-    </DashboardShell>
   );
 }
