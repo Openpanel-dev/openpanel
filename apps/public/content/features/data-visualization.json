@@ -24,13 +24,19 @@
   "related_features": [
     {
       "slug": "event-tracking",
-      "title": "Event tracking",
-      "description": "Events are the data behind every chart. Track user actions to power your dashboards."
+      "title": "Event tracking"
     },
     {
       "slug": "funnels",
-      "title": "Funnels",
-      "description": "Dive deeper into conversion analysis with step-by-step funnel reports."
+      "title": "Funnels"
+    },
+    {
+      "slug": "retention",
+      "title": "Retention"
+    },
+    {
+      "slug": "share-and-collaborate",
+      "title": "Sharing"
     }
   ],
   "faqs": {
@@ -39,19 +45,19 @@
     "items": [
       {
         "question": "What chart types does OpenPanel support?",
-        "answer": "OpenPanel supports funnels, retention curves, conversion charts, Sankey diagrams, geographic maps, time series, and histograms. All chart types are available on every plan."
+        "answer": "Eleven: Linear, Bar, Histogram, Pie, Metric, Area, Map, Funnel, Retention, Conversion and Sankey. They all come out of the same report builder, so you can switch the type and keep the events, filters and breakdowns."
       },
       {
         "question": "Do I need to write SQL to build charts?",
-        "answer": "No. You build reports by selecting events, filters, and chart type from the UI. No SQL, no data pipelines-just pick your events and see results."
+        "answer": "No. Pick the events, a metric, a breakdown and a chart type. Formulas (B / A) cover rates and ratios. There is no SQL editor; if you want to ask a question in words, use the built-in chat or connect your own AI through MCP."
       },
       {
         "question": "Can I share dashboards with my team?",
-        "answer": "Yes. Dashboards are accessible to your team members. Pin charts, arrange them however you like, and everyone sees the same real-time data."
+        "answer": "Yes. Invite as many members as you like, or share a dashboard or a single report as a public link, with an optional password."
       },
       {
         "question": "How often do charts update?",
-        "answer": "Charts update in real time as new events arrive. There's no overnight processing or batch delay-data appears within seconds of being tracked."
+        "answer": "As events arrive. There is no sampling and no nightly batch; a report shows every event up to the moment you open it."
       },
       {
         "question": "What is a Sankey diagram?",

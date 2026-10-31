@@ -71,7 +71,15 @@
       },
       {
         "question": "What geographic data is available?",
-        "answer": "You get country-level breakdown with flags, an interactive world map, and the ability to drill into regions and cities. All geo data is derived from the visitor's IP at ingestion time - nothing is stored or sent to third parties."
+        "answer": "Countries, regions and cities, as tables and on a map. Click a country to see the cities inside it, and the whole overview filters to that place."
+      },
+      {
+        "question": "Does it show traffic from AI assistants?",
+        "answer": "Yes. The SEO page lists sessions referred by ChatGPT, Claude, Perplexity, Gemini, Copilot, Grok, Mistral and Kagi next to the search engines, so you can see how much of your traffic comes from AI answers."
+      },
+      {
+        "question": "How far back does the Search Console data go?",
+        "answer": "When you connect Google Search Console, OpenPanel backfills six months of clicks, impressions, CTR and position per page and query, then syncs every day."
       }
     ]
   },
