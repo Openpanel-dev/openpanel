@@ -140,6 +140,7 @@ export function IdentifyUsersPage({ data }: FeaturePageProps) {
           {
             title: 'Track as usual',
             text: 'Visitors are anonymous device ids until you say otherwise.',
+            visual: <VisualMock frame="bare" name="mini-profile-sessions" />,
           },
           {
             title: 'Identify on login or sign-up',

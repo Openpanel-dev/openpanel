@@ -143,20 +143,12 @@ export function DataVisualizationPage({ data }: FeaturePageProps) {
           {
             title: 'Build the report',
             text: 'Pick a chart type, the events, a breakdown. Add a formula if you need a rate.',
-            visual: (
-              <div className="surface p-4">
-                <VisualMock frame="bare" name="mini-formula" />
-              </div>
-            ),
+            visual: <VisualMock frame="bare" name="mini-formula" />,
           },
           {
             title: 'Pin and share',
             text: 'Save it to a dashboard, share the link, or embed a counter on your site.',
-            visual: (
-              <div className="surface p-4">
-                <VisualMock frame="bare" name="mini-widget" />
-              </div>
-            ),
+            visual: <VisualMock frame="bare" name="mini-widget" />,
           },
         ]}
         title="From events to a dashboard"

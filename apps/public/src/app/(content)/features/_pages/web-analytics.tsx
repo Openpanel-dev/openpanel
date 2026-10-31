@@ -147,20 +147,12 @@ export function WebAnalyticsPage({ data }: FeaturePageProps) {
           {
             title: 'The overview fills in',
             text: 'The first visitors show up within a minute, live counter included.',
-            visual: (
-              <div className="surface p-4">
-                <VisualMock frame="bare" name="mini-realtime" />
-              </div>
-            ),
+            visual: <VisualMock frame="bare" name="mini-realtime" />,
           },
           {
             title: 'Share it',
             text: 'A public link to the overview, with a password if you want one.',
-            visual: (
-              <div className="surface p-4">
-                <VisualMock frame="bare" name="mini-share-toggle" />
-              </div>
-            ),
+            visual: <VisualMock frame="bare" name="mini-share-toggle" />,
           },
         ]}
         title="Two minutes from script to dashboard"

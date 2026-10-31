@@ -150,20 +150,12 @@ export function FunnelsPage({ data }: FeaturePageProps) {
           {
             title: 'Pick them in the report builder',
             text: 'Add events as steps A, B, C. Drag to reorder, add filters per step.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniStepPicker />
-              </div>
-            ),
+            visual: <MiniStepPicker />,
           },
           {
             title: 'Read the drop-off, open the users',
             text: 'Conversion per step, the biggest leak in red, and the people behind every number.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniCompare />
-              </div>
-            ),
+            visual: <MiniCompare />,
           },
         ]}
         title="How a funnel is built"

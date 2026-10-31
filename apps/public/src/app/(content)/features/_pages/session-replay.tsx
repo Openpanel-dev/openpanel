@@ -15,7 +15,9 @@ import { VisualMock } from '@/components/visual-mock';
 const ENABLE_LINES = [
   { text: 'new OpenPanel({' },
   { text: "  clientId: 'YOUR_CLIENT_ID',", tone: 'string' as const },
-  { text: '  sessionReplay: { enabled: true },' },
+  { text: '  sessionReplay: {' },
+  { text: '    enabled: true,' },
+  { text: '  },' },
   { text: '});' },
 ];
 
@@ -184,14 +186,17 @@ export function SessionReplayPage({ data }: FeaturePageProps) {
           {
             title: 'The recorder loads later',
             text: 'After your page is interactive, the replay script is fetched and starts recording.',
+            visual: <VisualMock frame="bare" name="mini-sample-rate" />,
           },
           {
             title: 'Chunks are sent',
             text: 'Every 10 seconds, and when the tab is hidden or closed.',
+            visual: <VisualMock frame="bare" name="mini-replay-storage" />,
           },
           {
             title: 'Open any session',
             text: 'Click the video icon on a session and watch it next to its events.',
+            visual: <VisualMock frame="bare" name="mini-replay-row" />,
           },
         ]}
         title="Four steps, one of them yours"

@@ -344,10 +344,12 @@ export function MiniReplayRow() {
         >
           <span className="font-mono text-neutral-600">{id}</span>
           <VideoIcon className="size-3 text-blue-600" />
-          <span className="ml-auto text-neutral-500">
+          <span className="ml-auto whitespace-nowrap text-neutral-500">
             {['6m 12s', '1m 04s', '0m 48s'][index]}
           </span>
-          <Pill className="px-1.5 py-0.5 text-[10px]">View replay</Pill>
+          <Pill className="whitespace-nowrap px-1.5 py-0.5 text-[10px]">
+            View replay
+          </Pill>
         </div>
       ))}
     </div>

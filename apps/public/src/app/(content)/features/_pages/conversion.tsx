@@ -178,20 +178,12 @@ export function ConversionPage({ data }: FeaturePageProps) {
           {
             title: 'Choose interval and breakdown',
             text: 'Day for the week view, week for the quarter. Break down by the variant property.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniInterval />
-              </div>
-            ),
+            visual: <MiniInterval />,
           },
           {
             title: 'Read the trend',
             text: 'The line, the average, the best and worst period, the previous period behind.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniCompare />
-              </div>
-            ),
+            visual: <MiniCompare />,
           },
         ]}
         title="How a conversion report is built"

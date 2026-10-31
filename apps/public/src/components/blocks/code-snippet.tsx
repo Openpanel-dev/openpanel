@@ -44,7 +44,7 @@ export function CodeSnippet({
       <pre
         className={cn(
           'overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed',
-          compact && 'p-4 text-[12px]'
+          compact && 'p-4 text-[11.5px] leading-[1.55]'
         )}
       >
         {lines.map((line, index) => (

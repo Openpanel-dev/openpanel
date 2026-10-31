@@ -1,3 +1,5 @@
+import { isValidElement } from 'react';
+import { CodeSnippet } from './code-snippet';
 import { Band } from '@/components/band';
 import { Reveal } from '@/components/reveal';
 import { SectionHeader } from '@/components/section';
@@ -12,7 +14,15 @@ export interface Step {
 
 const STAGGER_MS = 90;
 
-// "How it works" as one row of numbered steps on a grey band.
+// Code blocks are dark panels of their own; everything else gets the white
+// card frame so a small mini does not float in empty space.
+function isCodeSnippet(visual: React.ReactNode) {
+  return isValidElement(visual) && visual.type === CodeSnippet;
+}
+
+// "How it works" as one row of numbered steps on a grey band. The columns
+// share rows, so every visual starts at the same height whatever the text
+// above it did.
 export function StepsBand({
   label = 'How it works',
   title,
@@ -28,6 +38,7 @@ export function StepsBand({
   tone?: 'grey' | 'fade' | 'canvas';
   id?: string;
 }) {
+  const hasVisuals = steps.some((step) => step.visual);
   return (
     <Band id={id} innerClassName="col gap-12" tone={tone}>
       <Reveal>
@@ -41,14 +52,17 @@ export function StepsBand({
       </Reveal>
       <ol
         className={cn(
-          'grid grid-cols-1 gap-6 md:gap-8',
-          steps.length === 4 ? 'md:grid-cols-4' : 'md:grid-cols-3'
+          'grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2',
+          steps.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )}
       >
         {steps.map((step, index) => (
           <Reveal
             as="li"
-            className="col gap-4"
+            className={cn(
+              'grid gap-5',
+              hasVisuals && 'row-span-2 grid-rows-subgrid'
+            )}
             delay={index * STAGGER_MS}
             key={step.title}
           >
@@ -59,7 +73,17 @@ export function StepsBand({
               <h3 className="font-medium">{step.title}</h3>
               <p className="text-neutral-600 text-sm">{step.text}</p>
             </div>
-            {step.visual && <div className="mt-auto">{step.visual}</div>}
+            {hasVisuals && (
+              <div
+                aria-hidden
+                className={cn(
+                  'h-48 overflow-hidden rounded-xl',
+                  step.visual && !isCodeSnippet(step.visual) && 'surface p-4'
+                )}
+              >
+                {step.visual}
+              </div>
+            )}
           </Reveal>
         ))}
       </ol>

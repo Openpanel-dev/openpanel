@@ -10,10 +10,9 @@ const INSTALL_LINES = [
   { text: 'npm install @openpanel/web', tone: 'muted' as const },
   { text: '' },
   { text: "import { OpenPanel } from '@openpanel/web';" },
-  {
-    text: "const op = new OpenPanel({ clientId: '…' });",
-    tone: 'string' as const,
-  },
+  { text: 'const op = new OpenPanel({' },
+  { text: "  clientId: 'YOUR_CLIENT_ID',", tone: 'string' as const },
+  { text: '});' },
 ];
 
 const TRACK_LINES = [
@@ -151,6 +150,7 @@ export function EventTrackingPage({ data }: FeaturePageProps) {
           {
             title: 'See it, then use it',
             text: 'The event is in the live table within a second, and available to funnels, retention, charts and cohorts.',
+            visual: <VisualMock frame="bare" name="mini-screen-views" />,
           },
         ]}
         title="Three steps"

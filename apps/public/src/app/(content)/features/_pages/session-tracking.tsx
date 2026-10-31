@@ -142,10 +142,12 @@ export function SessionTrackingPage({ data }: FeaturePageProps) {
           {
             title: 'The server groups events',
             text: 'Events from one device within 30 minutes of each other are one session. After 30 quiet minutes it ends.',
+            visual: <VisualMock frame="bare" name="mini-page-bars" />,
           },
           {
             title: 'Browse, filter, open',
             text: 'The sessions list is live. Filter it, open a session, read the events, watch the replay.',
+            visual: <VisualMock frame="bare" name="mini-session-search" />,
           },
         ]}
         title="How a session is made"

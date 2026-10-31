@@ -159,11 +159,7 @@ export function RevenueTrackingPage({ data }: FeaturePageProps) {
           {
             title: 'Read it everywhere',
             text: 'Overview, sessions, profiles, reports and exports. One currency, shown as USD.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniRevenue />
-              </div>
-            ),
+            visual: <MiniRevenue />,
           },
         ]}
         title="How revenue gets in"

@@ -191,20 +191,12 @@ export function RetentionPage({ data }: FeaturePageProps) {
           {
             title: 'Pick them in the report',
             text: 'Start event, return event, the period. Add filters if you want a slice.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniTwoEvents />
-              </div>
-            ),
+            visual: <MiniTwoEvents />,
           },
           {
             title: 'Read the curve and the grid',
             text: 'Where the curve flattens is your floor. The grid tells you which cohorts sit above it.',
-            visual: (
-              <div className="rounded-xl bg-white p-3 ring-1 ring-black/6">
-                <MiniWeightedAverage />
-              </div>
-            ),
+            visual: <MiniWeightedAverage />,
           },
         ]}
         title="How retention is built"
