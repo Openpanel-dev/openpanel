@@ -27,9 +27,9 @@ const zArticle = z.object({
   description: z.string(),
   tag: z.string().optional(),
   team: z.string().optional(),
-  date: z.date(),
+  date: z.coerce.date(),
   cover: z.string().default('/content/cover-default.jpg'),
-  updated: z.date().optional(),
+  updated: z.coerce.date().optional(),
 });
 const zPage = z.object({
   title: z.string().min(1),
@@ -41,8 +41,8 @@ const zGuide = z.object({
   description: z.string(),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   timeToComplete: z.number(), // minutes
-  date: z.date(),
-  updated: z.date().optional(),
+  date: z.coerce.date(),
+  updated: z.coerce.date().optional(),
   cover: z.string().default('/content/cover-default.jpg'),
   team: z.string().optional(),
   steps: z.array(

@@ -1,16 +1,15 @@
-import { createAPIPage } from 'fumadocs-openapi/ui';
+import type { OpenAPIPageData } from 'fumadocs-openapi/server';
 import {
   DocsBody,
   DocsDescription,
   DocsPage,
   DocsTitle,
-} from 'fumadocs-ui/page';
+} from 'fumadocs-ui/layouts/docs/page';
 import { notFound, redirect } from 'next/navigation';
 import type React from 'react';
-import { getApiReferenceSource, openapi } from '@/lib/openapi';
+import { OpenAPIPage } from '@/components/docs/openapi-page';
+import { getApiReferenceSource } from '@/lib/openapi';
 import { getMDXComponents } from '@/mdx-components';
-
-const APIPage = createAPIPage(openapi);
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
@@ -41,9 +40,13 @@ export default async function Page(props: PageProps) {
     const toc = data.toc as React.ComponentProps<typeof DocsPage>['toc'];
     return (
       <DocsPage toc={toc}>
-        <DocsTitle>{page.data.title}</DocsTitle>
+        <DocsTitle className="font-semibold text-3xl tracking-[-0.03em] md:text-4xl">
+          {page.data.title}
+        </DocsTitle>
         {page.data.description && (
-          <DocsDescription>{page.data.description}</DocsDescription>
+          <DocsDescription className="text-lg text-neutral-600">
+            {page.data.description}
+          </DocsDescription>
         )}
         <DocsBody>
           <MDX components={getMDXComponents()} />
@@ -53,17 +56,19 @@ export default async function Page(props: PageProps) {
   }
 
   // OpenAPI generated page
-  const { getAPIPageProps } = data as {
-    getAPIPageProps: () => React.ComponentProps<typeof APIPage>;
-  };
+  const { getOpenAPIPageProps } = data as unknown as OpenAPIPageData;
   return (
     <DocsPage>
-      <DocsTitle>{page.data.title}</DocsTitle>
+      <DocsTitle className="font-semibold text-3xl tracking-[-0.03em] md:text-4xl">
+        {page.data.title}
+      </DocsTitle>
       {page.data.description && (
-        <DocsDescription>{page.data.description}</DocsDescription>
+        <DocsDescription className="text-lg text-neutral-600">
+          {page.data.description}
+        </DocsDescription>
       )}
       <DocsBody>
-        <APIPage {...getAPIPageProps()} />
+        <OpenAPIPage {...getOpenAPIPageProps()} />
       </DocsBody>
     </DocsPage>
   );
