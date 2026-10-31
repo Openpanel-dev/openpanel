@@ -406,7 +406,7 @@
         "description": "\"Of the people who signed up in March, how many still use it?\" needs a stable user ID. Plausible doesn't keep one; OpenPanel builds the cohort table from your signup and return events.",
         "icon": "users",
         "screenshot": {
-          "src": "/features/feature-retention.webp",
+          "mock": "retention",
           "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
         }
       },
@@ -415,7 +415,7 @@
         "description": "At 100k pageviews, Plausible Business costs $39 a month for funnels and custom properties. OpenPanel's 100k tier costs $20 with funnels, retention and user flows included.",
         "icon": "trending-up",
         "screenshot": {
-          "src": "/features/feature-funnel-report.webp",
+          "mock": "funnel",
           "alt": "OpenPanel funnel report showing conversion between steps"
         }
       },
@@ -424,7 +424,7 @@
         "description": "OpenPanel user profiles list every event and session for one person, so you can answer a support ticket without guessing.",
         "icon": "user-check",
         "screenshot": {
-          "src": "/features/feature-profiles-details.webp",
+          "mock": "profile",
           "alt": "OpenPanel user profile with the person's properties and event history"
         }
       },

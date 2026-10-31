@@ -411,7 +411,7 @@
         "description": "If your PostHog usage is events, funnels, retention and replay, OpenPanel covers it with one price and one script.",
         "icon": "target",
         "screenshot": {
-          "src": "/features/feature-retention.webp",
+          "mock": "retention",
           "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
         }
       },
@@ -425,7 +425,7 @@
         "description": "OpenPanel stores nothing in the browser by default. PostHog needs a persistence change, and turning persistence off makes every page load a new anonymous user.",
         "icon": "shield",
         "screenshot": {
-          "src": "/features/feature-overview-main.webp",
+          "mock": "web-overview",
           "alt": "OpenPanel web analytics overview with visitors, sessions, pageviews and bounce rate"
         }
       },

@@ -119,7 +119,9 @@ export interface CompareTrustCompliance {
 }
 
 export interface CompareScreenshot {
-  src: string;
+  // Name of a VisualMock (src/components/visual-mock.tsx); preferred over images.
+  mock?: string;
+  src?: string;
   alt: string;
 }
 

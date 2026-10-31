@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { Section, SectionHeader } from '@/components/section';
+import { isVisualMockName, VisualMock } from '@/components/visual-mock';
 import type {
   CompareScreenshot,
   CompareUseCase,
@@ -14,6 +15,26 @@ type UseCaseWithScreenshot = CompareUseCase & { screenshot: CompareScreenshot };
 
 function hasScreenshot(item: CompareUseCase): item is UseCaseWithScreenshot {
   return Boolean(item.screenshot);
+}
+
+function UseCaseVisual({ screenshot }: { screenshot: CompareScreenshot }) {
+  if (screenshot.mock && isVisualMockName(screenshot.mock)) {
+    return <VisualMock name={screenshot.mock} />;
+  }
+  if (!screenshot.src) {
+    return null;
+  }
+  return (
+    <figure className="overflow-hidden rounded-xl border bg-muted/20 p-2">
+      <Image
+        alt={screenshot.alt}
+        className="h-auto w-full rounded-lg"
+        height={SCREENSHOT_HEIGHT}
+        src={screenshot.src}
+        width={SCREENSHOT_WIDTH}
+      />
+    </figure>
+  );
 }
 
 function UseCaseRow({
@@ -36,15 +57,7 @@ function UseCaseRow({
           {useCase.description}
         </p>
       </div>
-      <figure className="overflow-hidden rounded-xl border bg-muted/20 p-2">
-        <Image
-          alt={useCase.screenshot.alt}
-          className="h-auto w-full rounded-lg"
-          height={SCREENSHOT_HEIGHT}
-          src={useCase.screenshot.src}
-          width={SCREENSHOT_WIDTH}
-        />
-      </figure>
+      <UseCaseVisual screenshot={useCase.screenshot} />
     </div>
   );
 }
