@@ -1,4 +1,5 @@
 import { MockTabs, Pill } from './primitives';
+import type { MockDefinition } from './types';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STEPS = [
@@ -141,3 +142,26 @@ export function ProductAnalyticsContent() {
     </>
   );
 }
+
+export const PRODUCT_MOCKS = {
+  product: {
+    content: () => (
+      <>
+        <FunnelContent />
+        <RetentionContent />
+      </>
+    ),
+    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
+    insetWidth: 900,
+  },
+  funnel: {
+    content: () => <FunnelContent />,
+    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
+    insetWidth: 820,
+  },
+  retention: {
+    content: () => <RetentionContent />,
+    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
+    insetWidth: 820,
+  },
+} satisfies Record<string, MockDefinition>;

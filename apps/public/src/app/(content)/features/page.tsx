@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import type { Metadata } from 'next';
 import { FeatureCardLink } from './_components/feature-card';
-import { FeatureHero } from '@/app/(content)/features/[slug]/_components/feature-hero';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
+import { PageHero } from '@/components/page-hero';
 import { Section, SectionHeader } from '@/components/section';
 import { WindowImage } from '@/components/window-image';
 import { url } from '@/lib/layout.shared';
@@ -58,7 +58,7 @@ export default async function FeaturesIndexPage() {
 
   return (
     <div>
-      <FeatureHero hero={heroData} />
+      <PageHero description={heroData.subheading} title={heroData.heading} />
 
       <div className="container my-16">
         <WindowImage

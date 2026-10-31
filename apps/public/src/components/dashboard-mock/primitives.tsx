@@ -306,3 +306,296 @@ export function Avatar({ initials }: { initials: string }) {
     </span>
   );
 }
+
+// Vertical bars with labels, one or two series, like the Bar chart type.
+export function BarChart({
+  values,
+  secondary,
+  labels,
+  height = 120,
+  className,
+}: {
+  values: number[];
+  secondary?: number[];
+  labels?: string[];
+  height?: number;
+  className?: string;
+}) {
+  const max = Math.max(...values, ...(secondary ?? [])) * 1.1;
+  return (
+    <div className={cn('col gap-2', className)}>
+      <div className="row items-end gap-1.5" style={{ height }}>
+        {values.map((value, index) => (
+          <div
+            className="row flex-1 items-end gap-0.5"
+            // biome-ignore lint/suspicious/noArrayIndexKey: static decorative bars
+            key={index}
+          >
+            <div
+              className="flex-1 rounded-t-[3px] bg-blue-600"
+              style={{ height: `${Math.max((value / max) * 100, 4)}%` }}
+            />
+            {secondary && (
+              <div
+                className="flex-1 rounded-t-[3px] bg-blue-600/30"
+                style={{
+                  height: `${Math.max(((secondary[index] ?? 0) / max) * 100, 4)}%`,
+                }}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      {labels && (
+        <div className="row justify-between text-[11px] text-neutral-500">
+          {labels.map((label) => (
+            <span key={label}>{label}</span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Cohort-style grid: rows with a label, a size and heat-coloured cells.
+export function HeatGrid({
+  columns,
+  rows,
+  rowLabel = 'Cohort',
+  sizeLabel = 'Users',
+  unit = '%',
+  className,
+}: {
+  columns: string[];
+  rows: {
+    label: string;
+    size?: string;
+    values: (number | undefined)[];
+    emphasis?: boolean;
+  }[];
+  rowLabel?: string;
+  sizeLabel?: string;
+  unit?: string;
+  className?: string;
+}) {
+  const withSize = rows.some((row) => row.size !== undefined);
+  return (
+    <div
+      className={cn('grid gap-1 text-[11px]', className)}
+      style={{
+        gridTemplateColumns: `minmax(72px,auto) ${withSize ? '48px' : ''} repeat(${columns.length}, minmax(0, 1fr))`,
+      }}
+    >
+      <span className="text-neutral-500">{rowLabel}</span>
+      {withSize && <span className="text-neutral-500">{sizeLabel}</span>}
+      {columns.map((column) => (
+        <span className="truncate text-center text-neutral-500" key={column}>
+          {column}
+        </span>
+      ))}
+      {rows.map((row) => (
+        <HeatRow
+          columns={columns}
+          key={row.label}
+          row={row}
+          unit={unit}
+          withSize={withSize}
+        />
+      ))}
+    </div>
+  );
+}
+
+function HeatRow({
+  row,
+  columns,
+  withSize,
+  unit,
+}: {
+  row: {
+    label: string;
+    size?: string;
+    values: (number | undefined)[];
+    emphasis?: boolean;
+  };
+  columns: string[];
+  withSize: boolean;
+  unit: string;
+}) {
+  return (
+    <>
+      <span
+        className={cn(
+          'truncate py-1',
+          row.emphasis ? 'font-semibold' : 'font-medium'
+        )}
+      >
+        {row.label}
+      </span>
+      {withSize && (
+        <span className="py-1 font-mono text-neutral-600">
+          {row.size ?? ''}
+        </span>
+      )}
+      {columns.map((column, index) => {
+        const value = row.values[index];
+        return (
+          <span
+            className={cn(
+              'center-center rounded py-1 font-mono',
+              value === undefined ? 'bg-transparent' : 'text-blue-950',
+              row.emphasis && 'font-semibold'
+            )}
+            key={`${row.label}-${column}`}
+            style={
+              value === undefined
+                ? undefined
+                : {
+                    backgroundColor: `rgba(37, 99, 235, ${0.08 + (value / 100) * 0.55})`,
+                  }
+            }
+          >
+            {value === undefined ? '' : `${value}${unit}`}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+
+// Two-column key/value grid, like the "Session info" and "Profile
+// Information" cards.
+export function KeyValue({
+  items,
+  className,
+}: {
+  items: { key: string; value: React.ReactNode }[];
+  className?: string;
+}) {
+  return (
+    <dl
+      className={cn(
+        'grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[12px]',
+        className
+      )}
+    >
+      {items.map((item) => (
+        <div className="contents" key={item.key}>
+          <dt className="text-neutral-500">{item.key}</dt>
+          <dd className="truncate font-mono text-neutral-800">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+export function Toggle({ on = true, label }: { on?: boolean; label?: string }) {
+  return (
+    <span className="row items-center gap-2 text-[12px]">
+      <span
+        className={cn(
+          'relative inline-flex h-4 w-7 shrink-0 rounded-full transition-colors',
+          on ? 'bg-neutral-900' : 'bg-neutral-300'
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 size-3 rounded-full bg-white shadow',
+            on ? 'left-3.5' : 'left-0.5'
+          )}
+        />
+      </span>
+      {label && <span className="text-neutral-700">{label}</span>}
+    </span>
+  );
+}
+
+const TONE_CLASSES = {
+  neutral: 'bg-neutral-100 text-neutral-700',
+  blue: 'bg-blue-50 text-blue-700',
+  emerald: 'bg-emerald-50 text-emerald-700',
+  red: 'bg-red-50 text-red-700',
+  amber: 'bg-amber-50 text-amber-700',
+} as const;
+
+export function MockBadge({
+  children,
+  tone = 'neutral',
+  className,
+}: {
+  children: React.ReactNode;
+  tone?: keyof typeof TONE_CLASSES;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-[10.5px]',
+        TONE_CLASSES[tone],
+        className
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+// An active filter, as the toolbar shows it: "Country is Sweden ×".
+export function FilterChip({
+  field,
+  operator = 'is',
+  value,
+}: {
+  field: string;
+  operator?: string;
+  value: string;
+}) {
+  return (
+    <span className="row items-center gap-1 rounded-md border border-neutral-200 bg-white px-2 py-1 text-[11.5px]">
+      <span className="text-neutral-500">{field}</span>
+      <span className="text-neutral-400">{operator}</span>
+      <span className="font-medium">{value}</span>
+      <span className="ml-0.5 text-neutral-400">×</span>
+    </span>
+  );
+}
+
+// A white panel with a small heading, the card every dashboard page is made of.
+export function Panel({
+  title,
+  action,
+  children,
+  className,
+  padded = true,
+}: {
+  title?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+  padded?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        'col overflow-hidden rounded-lg border border-neutral-200 bg-white',
+        padded && 'gap-3 p-4',
+        className
+      )}
+    >
+      {title && (
+        <div
+          className={cn(
+            'row items-center justify-between',
+            !padded && 'px-3 pt-3'
+          )}
+        >
+          <span className="font-medium text-[10px] text-neutral-500 uppercase tracking-wider">
+            {title}
+          </span>
+          {action}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}

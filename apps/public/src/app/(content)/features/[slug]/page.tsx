@@ -1,15 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Script from 'next/script';
-import { Capabilities } from './_components/capabilities';
-import { FeatureFaq } from './_components/feature-faq';
-import { FeatureHero } from './_components/feature-hero';
-import { FeatureUseCasesSection } from './_components/feature-use-cases';
-import { HowItWorks } from './_components/how-it-works';
-import { RelatedFeatures } from './_components/related-features';
-import { WhatItIs } from './_components/what-it-is';
-import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { WindowImage } from '@/components/window-image';
+import { FEATURE_PAGES, isFeatureSlug } from '../_pages';
 import { getAllFeatureSlugs, getFeatureData } from '@/lib/features';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
@@ -49,15 +41,12 @@ export default async function FeaturePage({
   const { slug } = await params;
   const data = await getFeatureData(slug);
 
-  if (!data) {
+  if (!(data && isFeatureSlug(slug))) {
     return notFound();
   }
 
+  const Page = FEATURE_PAGES[slug];
   const pageUrl = url(`/features/${slug}`);
-  const capabilitiesSection = data.capabilities_section ?? {
-    title: 'What you can do',
-    intro: undefined,
-  };
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -83,56 +72,7 @@ export default async function FeaturePage({
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <FeatureHero hero={data.hero} />
-
-      {data.screenshots[0] && (
-        <div className="container my-16">
-          <WindowImage {...data.screenshots[0]} />
-        </div>
-      )}
-
-      <WhatItIs definition={data.definition} />
-
-      <Capabilities
-        capabilities={data.capabilities}
-        intro={capabilitiesSection.intro}
-        title={capabilitiesSection.title}
-      />
-
-      {data.screenshots[1] && (
-        <div className="container my-16">
-          <WindowImage {...data.screenshots[1]} />
-        </div>
-      )}
-
-      {data.how_it_works && (
-        <div id="how-it-works">
-          <HowItWorks data={data.how_it_works} />
-        </div>
-      )}
-
-      {data.screenshots[2] && (
-        <div className="container my-16">
-          <WindowImage {...data.screenshots[2]} />
-        </div>
-      )}
-
-      <div id="use-cases">
-        <FeatureUseCasesSection useCases={data.use_cases} />
-      </div>
-
-      <RelatedFeatures related={data.related_features} />
-
-      <div id="faq">
-        <FeatureFaq faqs={data.faqs} />
-      </div>
-
-      <CtaBanner
-        ctaLink={data.cta.href}
-        ctaText={data.cta.label}
-        description="Track events in minutes. Free 30-day trial, no credit card required."
-        title="Ready to get started?"
-      />
+      <Page data={data} />
     </div>
   );
 }

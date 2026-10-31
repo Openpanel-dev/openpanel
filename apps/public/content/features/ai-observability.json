@@ -1,0 +1,48 @@
+{
+  "slug": "ai-observability",
+  "short_name": "AI observability",
+  "seo": {
+    "title": "AI Observability - Cost, Tokens and Latency for Every Model Call",
+    "description": "See what every AI call costs, how long it takes and which user it belongs to. Traces for agents, a Vercel AI SDK middleware, and prompts stored only if you want them.",
+    "keywords": ["ai observability", "llm cost tracking", "llm analytics"]
+  },
+  "hero": {
+    "heading": "AI observability: cost, tokens and latency for every model call",
+    "subheading": "Wrap the Vercel AI SDK once, or send the events yourself, and every generation shows up with its cost, tied to the user and the session behind it."
+  },
+  "related_features": [
+    { "slug": "mcp", "title": "MCP" },
+    { "slug": "identify-users", "title": "Identify users" },
+    { "slug": "session-tracking", "title": "Session tracking" }
+  ],
+  "faqs": {
+    "title": "Frequently asked questions",
+    "intro": "Common questions about AI observability in OpenPanel.",
+    "items": [
+      {
+        "question": "Which SDKs can send AI events?",
+        "answer": "The Vercel AI SDK through the `openpanelAiMiddleware` in `@openpanel/ai`, and any backend through the manual `ai()` call in `@openpanel/sdk`. See the docs for the payload shape."
+      },
+      {
+        "question": "What is stored for each call?",
+        "answer": "Model, provider, input and output tokens, cost, latency, errors and the kind of call (generation, embedding, span or trace), linked to the profile and session. Prompts and completions are stored only when you turn on content storage in the project's AI settings, and they expire after 30 days."
+      },
+      {
+        "question": "How is cost calculated?",
+        "answer": "From a built-in price catalog per model, or from the `cost` value you send with the event. Models that are not in the catalog are stored with a cost of zero until you send one."
+      },
+      {
+        "question": "Can I see what a single user costs me?",
+        "answer": "Yes. AI usage shows on the profile page and the session page, and cost per user, feature and model is on the AI overview."
+      },
+      {
+        "question": "Does it work self-hosted?",
+        "answer": "Yes. AI events go through the same ingest as every other event and land in your own ClickHouse."
+      }
+    ]
+  },
+  "cta": {
+    "label": "Start tracking your AI calls",
+    "href": "https://dashboard.openpanel.dev/onboarding"
+  }
+}

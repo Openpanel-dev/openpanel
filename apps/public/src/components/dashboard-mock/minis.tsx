@@ -1,5 +1,6 @@
 import { BellIcon, MousePointer2Icon, PauseIcon, PlayIcon } from 'lucide-react';
 import { AreaChart, Avatar, BarSpark } from './primitives';
+import type { MockDefinition } from './types';
 
 // Small, self-contained pieces of the dashboard for the feature grid.
 
@@ -146,3 +147,12 @@ export function MiniRealtime() {
     </div>
   );
 }
+
+export const MINI_MOCKS = {
+  'mini-funnel': { content: () => <MiniFunnel /> },
+  'mini-retention': { content: () => <MiniRetention /> },
+  'mini-replay': { content: () => <MiniReplay /> },
+  'mini-notifications': { content: () => <MiniNotification /> },
+  'mini-revenue': { content: () => <MiniRevenue /> },
+  'mini-realtime': { content: () => <MiniRealtime /> },
+} satisfies Record<string, MockDefinition>;

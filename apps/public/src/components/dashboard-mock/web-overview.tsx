@@ -1,4 +1,5 @@
-import { AreaChart, MockTable, StatCard } from './primitives';
+import { AreaChart, MockTable, MockTabs, StatCard } from './primitives';
+import type { MockDefinition } from './types';
 
 const VISITORS = [92, 61, 68, 142, 131, 138, 171, 168];
 const VISITORS_PREVIOUS = [4, 6, 38, 60, 120, 128, 126, 110];
@@ -103,3 +104,79 @@ export function WebOverviewContent() {
     </>
   );
 }
+
+// Search Console data on the Pages screen.
+const CLICKS = [120, 132, 128, 150, 162, 158, 181, 190];
+const IMPRESSIONS = [2200, 2400, 2350, 2600, 2900, 2800, 3100, 3300];
+
+export function SeoContent() {
+  return (
+    <>
+      <MockTabs active={1} items={['Pages', 'Search Console', 'Entries']} />
+      <div className="grid @2xl:grid-cols-4 grid-cols-2 gap-px overflow-hidden rounded-lg border border-neutral-200 bg-neutral-200">
+        <StatCard
+          bars={[4, 4, 5, 6, 6, 7, 8, 9]}
+          change="18.2%"
+          label="Clicks"
+          value="1,221"
+        />
+        <StatCard
+          bars={[5, 5, 5, 6, 7, 7, 8, 9]}
+          change="22.4%"
+          label="Impressions"
+          value="19.6K"
+        />
+        <StatCard
+          bars={[6, 6, 6, 6, 6, 6, 6, 6]}
+          change="1.1%"
+          label="CTR"
+          unit="%"
+          value="6.2"
+        />
+        <StatCard
+          bars={[7, 7, 6, 6, 6, 5, 5, 5]}
+          change="0.8"
+          label="Avg. position"
+          value="8.4"
+        />
+      </div>
+      <div className="grid @2xl:grid-cols-[1.3fr_1fr] grid-cols-1 gap-3">
+        <div className="col gap-3 rounded-lg border border-neutral-200 bg-white p-4">
+          <span className="font-medium text-[10px] text-neutral-500 uppercase tracking-wider">
+            Clicks and impressions
+          </span>
+          <AreaChart
+            height={120}
+            labels={['Oct 23', 'Oct 25', 'Oct 27', 'Oct 30']}
+            primary={CLICKS}
+            secondary={IMPRESSIONS.map((value) => value / 18)}
+          />
+        </div>
+        <MockTable
+          columns={['Query', 'Clicks', 'Pos.']}
+          rows={[
+            { cells: ['mixpanel alternative', '312', '1.0'], share: 100 },
+            { cells: ['open source analytics', '198', '3.2'], share: 63 },
+            { cells: ['cookieless analytics', '84', '4.1'], share: 27 },
+            { cells: ['self hosted analytics', '71', '5.6'], share: 23 },
+            { cells: ['posthog alternative', '56', '7.0'], share: 18 },
+          ]}
+          title="Top queries"
+        />
+      </div>
+    </>
+  );
+}
+
+export const WEB_MOCKS = {
+  'web-overview': {
+    content: () => <WebOverviewContent />,
+    shell: { page: 'overview', project: 'Acme Web' },
+    insetWidth: 900,
+  },
+  seo: {
+    content: () => <SeoContent />,
+    shell: { page: 'pages', project: 'Acme Web' },
+    insetWidth: 900,
+  },
+} satisfies Record<string, MockDefinition>;

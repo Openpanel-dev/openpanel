@@ -1,5 +1,7 @@
 import { AlertTriangleIcon, CheckIcon } from 'lucide-react';
+import { ChatMock } from './chat';
 import { AreaChart, Avatar, MockTabs, StatCard } from './primitives';
+import type { MockDefinition } from './types';
 import { cn } from '@/lib/utils';
 
 const COST = [21, 18, 24, 31, 44, 52, 48, 61];
@@ -176,3 +178,14 @@ export function AiOverviewContent({ compact = false }: { compact?: boolean }) {
     </>
   );
 }
+
+export const AI_MOCKS = {
+  ai: {
+    content: () => <AiOverviewContent />,
+    shell: { page: 'ai', project: 'Acme SaaS' },
+    insetWidth: 900,
+  },
+  chat: {
+    content: () => <ChatMock />,
+  },
+} satisfies Record<string, MockDefinition>;

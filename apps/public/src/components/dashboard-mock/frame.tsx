@@ -27,14 +27,24 @@ import { cn } from '@/lib/utils';
 
 export type DashboardPage =
   | 'overview'
-  | 'reports'
+  | 'dashboards'
+  | 'insights'
   | 'ai'
-  | 'chat'
+  | 'pages'
   | 'realtime'
-  | 'sessions';
+  | 'events'
+  | 'sessions'
+  | 'profiles'
+  | 'cohorts'
+  | 'reports'
+  | 'chat'
+  | 'settings'
+  | 'notifications'
+  | 'integrations'
+  | 'members';
 
 const ANALYTICS_ITEMS: {
-  id: DashboardPage | string;
+  id: DashboardPage;
   label: string;
   icon: LucideIcon;
 }[] = [
@@ -50,7 +60,7 @@ const ANALYTICS_ITEMS: {
   { id: 'cohorts', label: 'Cohorts', icon: UsersIcon },
 ];
 
-const MANAGE_ITEMS: { id: string; label: string; icon: LucideIcon }[] = [
+const MANAGE_ITEMS: { id: DashboardPage; label: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
   { id: 'notifications', label: 'Notifications', icon: BellIcon },
   { id: 'integrations', label: 'Integrations', icon: PlugIcon },
@@ -155,20 +165,43 @@ export function Sidebar({
       <div className="col gap-0.5">
         <span className="px-2.5 pb-1 text-[11px] text-neutral-400">Manage</span>
         {MANAGE_ITEMS.map((item) => (
-          <SidebarItem icon={item.icon} key={item.id} label={item.label} />
+          <SidebarItem
+            active={item.id === active}
+            icon={item.icon}
+            key={item.id}
+            label={item.label}
+          />
         ))}
       </div>
     </aside>
   );
 }
 
+// `children` go after the standard pills: page-specific controls such as a
+// live badge or tabs. `title` replaces the range pills for pages that have a
+// heading instead of a date range (Members, Integrations).
 export function Toolbar({
   range = 'Last 7 days',
+  interval = 'Day',
   withAsk = true,
+  title,
+  children,
 }: {
   range?: string;
+  interval?: string;
   withAsk?: boolean;
+  title?: string;
+  children?: React.ReactNode;
 }) {
+  if (title) {
+    return (
+      <div className="row items-center gap-2">
+        <span className="font-medium text-[14px]">{title}</span>
+        <span className="flex-1" />
+        {children}
+      </div>
+    );
+  }
   return (
     <div className="row items-center gap-2">
       <Pill>
@@ -177,12 +210,13 @@ export function Toolbar({
       </Pill>
       <Pill>
         <ClockIcon className="size-3" />
-        Day
+        {interval}
       </Pill>
       <Pill>
         <FilterIcon className="size-3" />
         Filters
       </Pill>
+      {children}
       {withAsk && (
         <span className="row flex-1 items-center gap-2 rounded-md bg-neutral-100 px-2.5 py-1.5 text-[12px] text-neutral-500">
           <SparklesIcon className="size-3" />

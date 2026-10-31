@@ -1,94 +1,30 @@
-import { AiOverviewContent } from './dashboard-mock/ai-overview';
-import { ChatMock } from './dashboard-mock/chat';
-import {
-  type DashboardPage,
-  DashboardShell,
-  Toolbar,
-} from './dashboard-mock/frame';
-import {
-  MiniFunnel,
-  MiniNotification,
-  MiniRealtime,
-  MiniReplay,
-  MiniRetention,
-  MiniRevenue,
-} from './dashboard-mock/minis';
-import {
-  ProfileContent,
-  SeoContent,
-  SessionsContent,
-} from './dashboard-mock/more';
-import {
-  FunnelContent,
-  RetentionContent,
-} from './dashboard-mock/product-analytics';
-import { WebOverviewContent } from './dashboard-mock/web-overview';
+import { AI_MOCKS } from './dashboard-mock/ai-overview';
+import { EVENT_MOCKS } from './dashboard-mock/events';
+import { DashboardShell, Toolbar } from './dashboard-mock/frame';
+import { MANAGE_MOCKS } from './dashboard-mock/manage';
+import { MINI_MOCKS } from './dashboard-mock/minis';
+import { PRODUCT_MOCKS } from './dashboard-mock/product-analytics';
+import { PROFILE_MOCKS } from './dashboard-mock/profiles';
+import { REPORT_MOCKS } from './dashboard-mock/reports';
+import { REVENUE_MOCKS } from './dashboard-mock/revenue';
+import { SESSION_MOCKS } from './dashboard-mock/sessions';
+import type { MockDefinition } from './dashboard-mock/types';
+import { WEB_MOCKS } from './dashboard-mock/web-overview';
 import { cn } from '@/lib/utils';
 
-// One entry per thing we can show. `content` is the view itself; `shell`
-// says which dashboard page it lives on when shown as a full window.
-interface MockDefinition {
-  content: () => React.ReactNode;
-  shell?: { page: DashboardPage; project: string; range?: string };
-  // Natural width of the content when shown cut off at a panel edge.
-  insetWidth?: number;
-}
-
+// Every mock a page can show by name. Each dashboard-mock file owns its
+// own entries; add a view there and it shows up here and on /visuals.
 const MOCKS = {
-  'web-overview': {
-    content: () => <WebOverviewContent />,
-    shell: { page: 'overview', project: 'Acme Web' },
-    insetWidth: 900,
-  },
-  product: {
-    content: () => (
-      <>
-        <FunnelContent />
-        <RetentionContent />
-      </>
-    ),
-    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
-    insetWidth: 900,
-  },
-  funnel: {
-    content: () => <FunnelContent />,
-    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
-    insetWidth: 820,
-  },
-  retention: {
-    content: () => <RetentionContent />,
-    shell: { page: 'reports', project: 'Acme SaaS', range: 'Last 30 days' },
-    insetWidth: 820,
-  },
-  ai: {
-    content: () => <AiOverviewContent />,
-    shell: { page: 'ai', project: 'Acme SaaS' },
-    insetWidth: 900,
-  },
-  chat: {
-    content: () => <ChatMock />,
-  },
-  seo: {
-    content: () => <SeoContent />,
-    shell: { page: 'overview', project: 'Acme Web' },
-    insetWidth: 900,
-  },
-  sessions: {
-    content: () => <SessionsContent />,
-    shell: { page: 'sessions', project: 'Acme Web' },
-    insetWidth: 820,
-  },
-  profile: {
-    content: () => <ProfileContent />,
-    shell: { page: 'overview', project: 'Acme SaaS' },
-    insetWidth: 820,
-  },
-  'mini-funnel': { content: () => <MiniFunnel /> },
-  'mini-retention': { content: () => <MiniRetention /> },
-  'mini-replay': { content: () => <MiniReplay /> },
-  'mini-notifications': { content: () => <MiniNotification /> },
-  'mini-revenue': { content: () => <MiniRevenue /> },
-  'mini-realtime': { content: () => <MiniRealtime /> },
+  ...WEB_MOCKS,
+  ...PRODUCT_MOCKS,
+  ...REPORT_MOCKS,
+  ...SESSION_MOCKS,
+  ...PROFILE_MOCKS,
+  ...EVENT_MOCKS,
+  ...REVENUE_MOCKS,
+  ...MANAGE_MOCKS,
+  ...AI_MOCKS,
+  ...MINI_MOCKS,
 } satisfies Record<string, MockDefinition>;
 
 export type VisualMockName = keyof typeof MOCKS;
