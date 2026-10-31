@@ -1,59 +1,93 @@
+import Image from 'next/image';
 import { Reveal } from '@/components/reveal';
 import { Section } from '@/components/section';
+import { TESTIMONIALS, type Testimonial } from '@/lib/testimonials';
 import { cn } from '@/lib/utils';
 
-interface CustomerQuote {
-  quote: React.ReactNode;
-  author: string;
-  role: string;
-  company?: { name: string; url: string };
+const STAGGER_MS = 70;
+
+// Turns the **highlight** markers in a quote into bold runs.
+function renderQuote(quote: string) {
+  return quote.split(/(\*\*[^*]+\*\*)/).map((part, index) =>
+    part.startsWith('**') ? (
+      // biome-ignore lint/suspicious/noArrayIndexKey: static text runs
+      <strong key={index}>{part.slice(2, -2)}</strong>
+    ) : (
+      part
+    )
+  );
 }
 
-const QUOTES: CustomerQuote[] = [
-  {
-    quote: (
-      <>
-        After testing several product analytics tools for Strackr,{' '}
-        <strong>
-          we chose OpenPanel and we are very satisfied with the product
-        </strong>
-        . We have been using it since the beta, and there are constant updates.
-        Profiles and conversion events are our favourite features.
-      </>
-    ),
-    author: 'Julien Hany',
-    role: 'Founder',
-    company: { name: 'Strackr', url: 'https://strackr.com' },
-  },
-  {
-    quote: (
-      <>
-        After paying a lot to PostHog for years, OpenPanel gives us the same, in
-        many ways better, analytics while keeping full ownership of our data.{' '}
-        <strong>
-          It's truly self-hosted but surprisingly low maintenance.
-        </strong>{' '}
-        The support is fantastic. We honestly don't want to run any business
-        without OpenPanel anymore.
-      </>
-    ),
-    author: 'Engineering team',
-    role: 'Self-hosted customer, switched from PostHog',
-  },
-  {
-    quote: (
-      <>
-        Before OpenPanel I was using Plausible, and it was ok.{' '}
-        <strong>But OpenPanel is like 10 leagues ahead.</strong> Better UX and
-        UI, many more features, and incredible support from the founder. Bonus
-        point: one-click install on Coolify. I won't switch to anything else.
-      </>
-    ),
-    author: 'Thomas Sanlis',
-    role: 'Founder',
-    company: { name: 'Uneed', url: 'https://uneed.best' },
-  },
-];
+function initials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase();
+}
+
+function Avatar({ item }: { item: Testimonial }) {
+  if (item.avatarUrl) {
+    return (
+      <Image
+        alt=""
+        className="size-10 rounded-full object-cover"
+        height={40}
+        src={item.avatarUrl}
+        width={40}
+      />
+    );
+  }
+  return (
+    <span className="center-center size-10 rounded-full bg-neutral-100 font-medium text-neutral-600 text-sm">
+      {initials(item.author)}
+    </span>
+  );
+}
+
+function Quote({ item, index }: { item: Testimonial; index: number }) {
+  return (
+    <Reveal
+      as="li"
+      className="mb-4 break-inside-avoid"
+      delay={index * STAGGER_MS}
+    >
+      <figure className="col gap-6 rounded-2xl bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4">
+        <blockquote
+          className={cn(
+            'text-pretty text-neutral-700 leading-relaxed [&_strong]:font-semibold [&_strong]:text-neutral-900',
+            item.featured ? 'text-[17px]' : 'text-[15px]'
+          )}
+        >
+          {renderQuote(item.quote)}
+        </blockquote>
+        <figcaption className="row items-center gap-3 text-sm">
+          <Avatar item={item} />
+          <span className="col">
+            <span className="font-medium">{item.author}</span>
+            <span className="text-neutral-500">
+              {item.role}
+              {item.company && (
+                <>
+                  {', '}
+                  <a
+                    className="underline-offset-4 hover:underline"
+                    href={item.company.url}
+                    rel="noopener noreferrer nofollow"
+                    target="_blank"
+                  >
+                    {item.company.name}
+                  </a>
+                </>
+              )}
+            </span>
+          </span>
+        </figcaption>
+      </figure>
+    </Reveal>
+  );
+}
 
 export function Testimonials({
   withHeader = true,
@@ -69,37 +103,9 @@ export function Testimonials({
           What our customers say
         </h2>
       )}
-      <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        {QUOTES.map((item, index) => (
-          <Reveal
-            as="li"
-            className="col justify-between gap-8 rounded-2xl bg-white p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-16px_rgba(0,0,0,0.12)] ring-1 ring-black/4"
-            delay={index * 90}
-            key={item.author}
-          >
-            <blockquote className="text-pretty text-[15px] text-neutral-700 leading-relaxed [&_strong]:font-semibold [&_strong]:text-neutral-900">
-              “{item.quote}”
-            </blockquote>
-            <figcaption className="col text-sm">
-              <span className="font-medium">{item.author}</span>
-              <span className="text-neutral-500">
-                {item.role}
-                {item.company && (
-                  <>
-                    {', '}
-                    <a
-                      className="underline-offset-4 hover:underline"
-                      href={item.company.url}
-                      rel="noopener noreferrer nofollow"
-                      target="_blank"
-                    >
-                      {item.company.name}
-                    </a>
-                  </>
-                )}
-              </span>
-            </figcaption>
-          </Reveal>
+      <ul className="columns-1 gap-4 md:columns-2 lg:columns-3">
+        {TESTIMONIALS.map((item, index) => (
+          <Quote index={index} item={item} key={item.author} />
         ))}
       </ul>
     </Section>
