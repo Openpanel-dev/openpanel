@@ -120,3 +120,88 @@ export function ChatMock({ className }: { className?: string }) {
     </div>
   );
 }
+
+const DEFAULT_PROMPTS = [
+  'What changed this week compared to last week?',
+  'Show me unique visitors per day for the last 30 days',
+  'Build a dashboard for signups and where they come from',
+  'How do I connect the MCP server to Claude?',
+];
+
+// The Chat page inside the dashboard: composer, default prompts, and an
+// answer that asks for approval before it writes.
+export function ChatInappContent() {
+  return (
+    <div className="col mx-auto w-full max-w-[640px] gap-4 py-2">
+      <div className="col items-center gap-1 text-center">
+        <span className="font-semibold text-[15px]">Ask about Acme SaaS</span>
+        <span className="text-[12px] text-neutral-500">
+          Answers come with the data behind them. Writes ask first.
+        </span>
+      </div>
+      <div className="max-w-[80%] self-end rounded-2xl rounded-br-md bg-neutral-100 px-4 py-2.5 text-[13px]">
+        Build a dashboard for signups and where they come from
+      </div>
+      <div className="col gap-3 text-[13px] leading-relaxed">
+        <p>
+          I will create a dashboard with four reports: sign-ups per day,
+          sign-ups by referrer, sign-ups by UTM campaign, and a visit to sign-up
+          conversion line.
+        </p>
+        <div className="col gap-3 rounded-lg border border-neutral-200 p-3">
+          <div className="row items-center justify-between">
+            <span className="col">
+              <span className="font-medium text-[12.5px]">
+                Create dashboard
+              </span>
+              <span className="text-[11px] text-neutral-500">
+                "Signups" · 4 reports · Acme SaaS
+              </span>
+            </span>
+            <span className="rounded border border-neutral-200 px-1.5 py-0.5 font-mono text-[10px] text-neutral-500">
+              needs approval
+            </span>
+          </div>
+          <div className="row gap-2 text-[12px]">
+            <span className="rounded-md bg-neutral-900 px-2.5 py-1 font-medium text-white">
+              Approve
+            </span>
+            <span className="rounded-md border border-neutral-200 px-2.5 py-1 text-neutral-700">
+              Reject
+            </span>
+          </div>
+        </div>
+      </div>
+      <div className="row flex-wrap gap-1.5">
+        {DEFAULT_PROMPTS.map((prompt) => (
+          <span
+            className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[11px] text-neutral-600"
+            key={prompt}
+          >
+            {prompt}
+          </span>
+        ))}
+      </div>
+      <div className="col gap-2 rounded-2xl border border-neutral-200 px-4 py-3 shadow-sm">
+        <span className="text-[13px] text-neutral-400">
+          Ask about your data, build a chart, or ask how something works…
+        </span>
+        <div className="row items-center gap-3 text-[12px] text-neutral-500">
+          <PlusIcon className="size-3.5" />
+          <span className="row items-center gap-1">
+            GPT-6.1 Sol
+            <ChevronDownIcon className="size-3" />
+          </span>
+          <span className="row items-center gap-1 text-neutral-400">
+            <SparklesIcon className="size-3" />
+            balanced
+          </span>
+          <span className="ml-auto">14 of 20 messages today</span>
+          <span className="center-center size-6 rounded-full bg-neutral-900 text-white">
+            <ArrowUpIcon className="size-3" />
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}

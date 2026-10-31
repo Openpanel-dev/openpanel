@@ -91,12 +91,8 @@ export function MiniNotification() {
           <BellIcon className="size-3.5" />
         </span>
         <span className="col gap-0.5">
-          <span className="font-medium">
-            Sign-ups dropped 38% in the last hour
-          </span>
-          <span className="text-neutral-500">
-            Acme Web · usual: 42/h, now: 26/h
-          </span>
+          <span className="font-medium">New purchase: Pro plan · $29</span>
+          <span className="text-neutral-500">Ada Svensson · Slack #sales</span>
         </span>
       </div>
       <div className="row items-start gap-2.5 rounded-lg border border-neutral-200 bg-white p-3 text-[12px] opacity-70">
@@ -104,10 +100,8 @@ export function MiniNotification() {
           <PlayIcon className="size-3.5" />
         </span>
         <span className="col gap-0.5">
-          <span className="font-medium">
-            New customer: fullscript.io upgraded
-          </span>
-          <span className="text-neutral-500">Slack · #sales</span>
+          <span className="font-medium">Funnel "Trial to paid" completed</span>
+          <span className="text-neutral-500">Discord · #growth</span>
         </span>
       </div>
     </div>

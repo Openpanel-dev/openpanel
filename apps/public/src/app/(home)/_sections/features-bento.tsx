@@ -39,7 +39,8 @@ const ITEMS: BentoItem[] = [
   },
   {
     title: 'Notifications',
-    description: 'A drop, a spike or a new customer, sent to Slack or Discord.',
+    description:
+      'A sign-up, a purchase or a completed funnel, sent to Slack or Discord.',
     href: '/features/notifications',
     visual: <MiniNotification />,
   },

@@ -44,16 +44,16 @@
         "answer": "Integrations are the destinations (Slack channel, webhook URL, Discord server). Notification rules are the triggers (when event X happens with filter Y). You create both, then attach integrations to rules. When a rule fires, all attached integrations receive the data."
       },
       {
-        "question": "Can I use webhooks with Zapier?",
-        "answer": "Yes. Create a webhook integration pointing to your Zapier webhook URL. You can use the JavaScript transform to shape the payload into whatever format your Zap expects. This lets you trigger any Zapier workflow based on real user events in OpenPanel."
+        "question": "Can I use webhooks with Zapier, Make or n8n?",
+        "answer": "Yes. Create a Webhook integration with the catch URL those tools give you. There is no native Zapier app; the generic webhook is the way in, and the JavaScript transform lets you shape the payload the way the receiving step expects."
       },
       {
         "question": "What does the JavaScript transform do?",
         "answer": "The JavaScript transform is a function that receives the raw event payload and returns a modified version. You can rename fields, filter out properties, add computed values, or completely restructure the data. It runs before the payload is sent to the webhook URL."
       },
       {
-        "question": "When will S3 and GCS integrations be available?",
-        "answer": "S3-compatible storage and Google Cloud Storage integrations are on the near-term roadmap. These will let you automatically export events for import into BigQuery, Redshift, or any data warehouse without building custom ETL pipelines."
+        "question": "What do the S3 and GCS exports contain?",
+        "answer": "Raw events as gzipped JSON lines, written to your bucket every 60 seconds under the prefix you choose. S3 Export works with AWS S3 and S3-compatible storage such as Cloudflare R2 and MinIO through the endpoint URL; GCS Export writes to Google Cloud Storage. Load the files into Snowflake, BigQuery, Athena, Redshift or DuckDB."
       },
       {
         "question": "Can one integration be used by multiple notification rules?",
@@ -62,6 +62,10 @@
       {
         "question": "Is there a limit to how many integrations I can create?",
         "answer": "There's no hard limit. Create as many integrations and notification rules as you need to cover your workflows."
+      },
+      {
+        "question": "Can I import data from another tool?",
+        "answer": "Yes. Settings › Imports pulls events from Mixpanel and Amplitude through their export APIs (with US or EU residency), and from Umami through an exported file. The import history shows progress and lets you retry."
       }
     ]
   },

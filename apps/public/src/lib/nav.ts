@@ -30,7 +30,7 @@ export const PRIMARY_FEATURES: NavFeature[] = [
   {
     title: 'AI observability',
     description: 'Cost, tokens and latency for every model call.',
-    href: '/docs/ai-observability',
+    href: '/features/ai-observability',
     icon: BotIcon,
   },
   {
@@ -55,6 +55,12 @@ export const PRIMARY_FEATURES: NavFeature[] = [
 
 // Slugs match content/features/<slug>.json.
 export const MORE_FEATURES: NavFeature[] = [
+  {
+    title: 'AI observability',
+    description: 'What every model call costs, per user.',
+    href: '/features/ai-observability',
+    icon: BotIcon,
+  },
   {
     title: 'Funnels',
     description: 'See where people drop off.',

@@ -40,7 +40,7 @@
     "items": [
       {
         "question": "What's the difference between notifications and integrations?",
-        "answer": "Integrations are connections to external services (Slack, Discord, webhooks). Notifications are rules that define when those integrations should fire. You create an integration once, then attach it to as many notification rules as you want."
+        "answer": "An integration is a place a message can go: Slack, Discord, a webhook, email or the dashboard itself. A notification rule decides when a message is sent, on which event or funnel, with which filters and template, and to which integrations. One integration can serve many rules."
       },
       {
         "question": "What template variables can I use?",
@@ -56,11 +56,15 @@
       },
       {
         "question": "Is there a delay between the event and the notification?",
-        "answer": "No. Notifications fire in real time as events arrive. There's no batching or delay - when an event matches a rule, the attached integrations are triggered immediately."
+        "answer": "Event rules are checked as the event is ingested and the message goes out within seconds. Funnel rules are checked when the session ends, which is after 30 minutes without activity."
       },
       {
         "question": "Can I see past notifications?",
         "answer": "Yes. The Notifications tab shows a feed of every notification that fired. You can search, sort by date, and see details like the integration used, country, OS, browser, and profile for each notification."
+      },
+      {
+        "question": "Can it alert me when a metric drops?",
+        "answer": "No. Rules fire on an event that matches your filters, or on a session that completes a funnel. For changes in the numbers, the Insights page and the weekly digest email compare each week with the previous ones."
       }
     ]
   },

@@ -57,6 +57,10 @@
       {
         "question": "Can I change a member's access after they've joined?",
         "answer": "Yes. You can update a member's access (add or remove projects, or switch to org-wide) or remove them from the organization at any time from the members area."
+      },
+      {
+        "question": "Is there single sign-on?",
+        "answer": "Not SAML. Members sign in with email and password, Google or GitHub. Roles and per-project access cover who can see and edit what once they are in."
       }
     ]
   },

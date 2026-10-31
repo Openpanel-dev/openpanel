@@ -39,7 +39,7 @@
     "items": [
       {
         "question": "Which AI clients work with OpenPanel MCP?",
-        "answer": "Any MCP-compatible client: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code with an MCP extension, and any custom client built against the MCP spec. The transport is streamable HTTP, which all major clients support."
+        "answer": "Any client that speaks MCP over streamable HTTP. The settings page writes the config for Claude Desktop, Claude Code, Cursor, Windsurf, VS Code (Copilot) and Raycast, and the same URL and token work in an agent you build yourself."
       },
       {
         "question": "Do I need to install anything?",
@@ -51,11 +51,11 @@
       },
       {
         "question": "What's the difference between a read client and a root client?",
-        "answer": "A `read` client is scoped to a single project—the one it was created under. A `root` client can query any project in your organization. Use `read` for single-project setups. Use `root` if you need to ask questions across multiple projects or want to list all projects."
+        "answer": "A read client is tied to one project and gets the 39 read tools. A root client can reach every project in the organization and adds the 9 tools that create and edit dashboards and reports. Write clients cannot authenticate with MCP at all."
       },
       {
         "question": "Can the AI modify my data?",
-        "answer": "No. The MCP server is strictly read-only. It can query events, fetch profiles, and run analytics computations, but it has no tools for writing events, modifying users, or changing any configuration."
+        "answer": "With a read client, no: its 39 tools only read. A root client also gets 9 write tools that create, update, delete and lay out dashboards and reports, so treat a root token as write access. Neither can change events, profiles or settings."
       },
       {
         "question": "Does it work with self-hosted OpenPanel?",
