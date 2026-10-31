@@ -182,7 +182,6 @@ function agentTurn(
   const profile = FEATURE_PROFILES[context.feature] ?? DEFAULT_PROFILE;
   const question = rng.one(AI_QUESTIONS);
   const answer = rng.one(AI_ANSWERS);
-  const incident = isIncident(journey.now);
   const model = rng.chance(profile.premiumChance)
     ? AI_PREMIUM_MODEL
     : rng.pick(AI_MODELS);
@@ -213,7 +212,7 @@ function agentTurn(
     answer,
     contextTokens,
     toolCall: tools.length > 0,
-    incident,
+    toolNames: tools.map((tool) => tool.name),
     turn,
   });
   totalMs += result.latencyMs;
@@ -225,7 +224,7 @@ function agentTurn(
       answer,
       contextTokens,
       toolCall: false,
-      incident,
+      toolNames: [],
       turn,
     });
     totalMs += result.latencyMs;
@@ -240,7 +239,7 @@ function agentTurn(
       answer,
       contextTokens,
       toolCall: false,
-      incident,
+      toolNames: [],
       turn,
     });
     totalMs += result.latencyMs;
@@ -388,7 +387,8 @@ interface GenerationInput {
   answer: string;
   contextTokens: number;
   toolCall: boolean;
-  incident: boolean;
+  /** Tools the model asks for; empty when it answers directly. */
+  toolNames: string[];
   turn: number;
 }
 
@@ -399,10 +399,9 @@ function generation(
   call: GenerationInput
 ): GenerationResult {
   const { model } = call;
-  const failed = rng.chance(
-    call.incident ? INCIDENT_ERROR_CHANCE : AI_ERROR_CHANCE
-  );
-  const error = failed ? errorFor(rng, call.incident) : null;
+  const incident = isIncident(journey.now);
+  const failed = rng.chance(incident ? INCIDENT_ERROR_CHANCE : AI_ERROR_CHANCE);
+  const error = failed ? errorFor(rng, incident) : null;
   const inputTokens =
     tokenCount(rng, AI_INPUT_MEDIAN_TOKENS, AI_INPUT_SIGMA) +
     call.contextTokens;
@@ -415,7 +414,7 @@ function generation(
     : tokenCount(rng, model.outputMedian, AI_OUTPUT_SIGMA);
   const reasoningTokens = Math.round(outputTokens * model.reasoningShare);
   const slowdown =
-    (call.incident ? INCIDENT_LATENCY_FACTOR : 1) *
+    (incident ? INCIDENT_LATENCY_FACTOR : 1) *
     (failed ? AI_FAILED_LATENCY_SHARE : 1);
   const latencyMs = Math.round(latency(rng, model.latencyMedian) * slowdown);
   const cost = generationCost(
@@ -498,13 +497,11 @@ function assistantContent(call: GenerationInput): unknown {
   if (!call.toolCall) {
     return call.answer;
   }
-  return [
-    {
-      type: 'tool_call',
-      toolName: 'get_report_data',
-      input: { question: call.question },
-    },
-  ];
+  return call.toolNames.map((toolName) => ({
+    type: 'tool_call',
+    toolName,
+    input: { question: call.question },
+  }));
 }
 
 function stopReasonFor(failed: boolean, toolCall: boolean): string {

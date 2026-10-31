@@ -147,6 +147,8 @@ describe('generate', () => {
     const sink = await run();
     const background = sink.events.filter((event) => event.session_id === '');
     expect(background.length).toBeGreaterThan(0);
+    const backgroundIds = new Set(background.map((event) => event.id));
+    expect(sink.aiEvents.some((row) => backgroundIds.has(row.id))).toBe(true);
     for (const event of background) {
       expect(event.device_id).toBe('');
       expect(event.device).toBe('server');

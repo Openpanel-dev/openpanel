@@ -98,7 +98,7 @@ function isShortcut(event: KeyboardEvent, key: string) {
 
 function SidebarKbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="font-mono text-2xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+    <kbd className="font-mono text-2xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
       {children}
     </kbd>
   );

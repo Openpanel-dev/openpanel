@@ -157,7 +157,11 @@ function UsageBody({
             {data.topModels.length > 0 && (
               <div className="row flex-wrap gap-1">
                 {data.topModels.map((model) => (
-                  <Badge key={model} variant="secondary">
+                  <Badge
+                    className="max-w-full truncate"
+                    key={model}
+                    variant="secondary"
+                  >
                     {model}
                   </Badge>
                 ))}

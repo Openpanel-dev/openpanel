@@ -103,6 +103,7 @@ export function ReportInterval({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          aria-label={`Interval: ${selectedItem?.label ?? 'none'}`}
           className={cn('justify-start', className)}
           icon={ClockIcon}
           responsive
