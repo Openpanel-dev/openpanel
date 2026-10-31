@@ -64,11 +64,13 @@ export function CtaBanner({
 }) {
   return (
     <Band
+      backdrop={
+        <GrowthLine className="absolute inset-x-0 bottom-0 h-[62%] w-full" />
+      }
       className="overflow-hidden"
       innerClassName="pointer-events-none grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16"
       tone="fade"
     >
-      <GrowthLine className="pointer-events-auto absolute inset-x-0 bottom-0 h-[62%] w-full" />
       <div className="col pointer-events-auto gap-6">
         <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
           {title}

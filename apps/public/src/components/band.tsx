@@ -10,15 +10,18 @@ const TONES = {
 } as const;
 
 // A full-width section with the content kept inside the container.
+// `backdrop` spans the whole band and sits behind the content.
 export function Band({
   tone = 'canvas',
   children,
+  backdrop,
   className,
   innerClassName,
   id,
 }: {
   tone?: keyof typeof TONES;
   children: React.ReactNode;
+  backdrop?: React.ReactNode;
   className?: string;
   innerClassName?: string;
   id?: string;
@@ -28,6 +31,7 @@ export function Band({
       className={cn('relative py-20 md:py-28', TONES[tone], className)}
       id={id}
     >
+      {backdrop}
       <div className={cn('container relative', innerClassName)}>{children}</div>
     </section>
   );
