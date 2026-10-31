@@ -920,3 +920,81 @@ describe('startKafkaEventsConsumer', () => {
     });
   });
 });
+
+describe('rebalance interruption', () => {
+  test('drains sibling handlers and their durability gate before rejecting a heartbeat', async () => {
+    let releaseSlow!: () => void;
+    const slow = new Promise<void>((resolve) => {
+      releaseSlow = resolve;
+    });
+    const completed: string[] = [];
+    const { deps, flushBufferedEvents } = makeDeps({
+      handleEvent: async (_payload, meta) => {
+        if (meta.offset === '16') {
+          await slow;
+        }
+        completed.push(meta.offset);
+      },
+    });
+    const handler = createEventsBatchHandler(deps);
+    const { payload, heartbeat, resolveOffset } = makeBatch([
+      ...Array.from({ length: 16 }, (_, offset) => message(offset, 'fast')),
+      message(16, 'slow'),
+      message(17, 'slow'),
+    ]);
+    const rebalanceError = new Error('REBALANCE_IN_PROGRESS');
+    heartbeat.mockImplementation(async () => {
+      throw rebalanceError;
+    });
+    let settled = false;
+    const batch = handler.eachBatch(payload).catch((error: unknown) => {
+      settled = true;
+      return error;
+    });
+    await Bun.sleep(0);
+    expect(heartbeat).toHaveBeenCalled();
+    expect(settled).toBe(false);
+    expect(flushBufferedEvents).not.toHaveBeenCalled();
+    releaseSlow();
+    expect(await batch).toBe(rebalanceError);
+    expect(completed).toContain('16');
+    expect(completed).not.toContain('17');
+    expect(flushBufferedEvents).toHaveBeenCalledTimes(1);
+    expect(resolveOffset).not.toHaveBeenCalled();
+  });
+});
+
+describe('legacy Kafka envelope identity', () => {
+  test('derives stable ids from topic, partition and offset while preserving producer ids', async () => {
+    const { deps, handleEvent } = makeDeps();
+    const handler = createEventsBatchHandler(deps);
+    await handler.eachBatch(
+      makeBatch([message(42, 'a'), message(43, 'a')]).payload
+    );
+    await handler.eachBatch(makeBatch([message(42, 'a')]).payload);
+    const ids = handleEvent.mock.calls.map(([payload]) => payload.id);
+    expect(ids[0]).toBeString();
+    expect(ids[0]).toBe(ids[2]);
+    expect(ids[0]).not.toBe(ids[1]);
+    await handler.eachBatch(
+      makeBatch([
+        message(
+          42,
+          'a',
+          JSON.stringify({ ...payloadFor(42), id: 'producer-id' })
+        ),
+      ]).payload
+    );
+    expect(handleEvent.mock.calls[3]![0].id).toBe('producer-id');
+    const otherTopic = createEventsBatchHandler({
+      ...deps,
+      topic: 'other-topic',
+    });
+    await otherTopic.eachBatch(makeBatch([message(42, 'a')]).payload);
+    expect(handleEvent.mock.calls[4]![0].id).not.toBe(ids[0]);
+    const otherPartition = makeBatch([message(42, 'a')]);
+    otherPartition.payload.batch.partition = PARTITION + 1;
+    await handler.eachBatch(otherPartition.payload);
+    expect(handleEvent.mock.calls[5]![0].id).not.toBe(ids[0]);
+  });
+});
