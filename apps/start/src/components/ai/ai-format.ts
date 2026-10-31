@@ -1,3 +1,5 @@
+// The dashboard formats numbers in one locale (see `useNumber`), not the browser's.
+const NUMBER_LOCALE = 'en-US';
 const SUB_CENT = 0.01;
 const SECOND_MS = 1000;
 const MINUTE_MS = 60_000;
@@ -29,12 +31,12 @@ export function formatLatency(ms: number): string {
 
 export function formatTokens(value: number): string {
   if (value >= COMPACT_THRESHOLD) {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(NUMBER_LOCALE, {
       notation: 'compact',
       maximumFractionDigits: 1,
     }).format(value);
   }
-  return new Intl.NumberFormat().format(value);
+  return new Intl.NumberFormat(NUMBER_LOCALE).format(value);
 }
 
 export const AI_TYPE_LABELS = {

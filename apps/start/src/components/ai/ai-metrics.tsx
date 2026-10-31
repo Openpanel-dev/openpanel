@@ -25,6 +25,8 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
 const PREV_LINE_COLOR = 'oklch(from var(--foreground) l c h / 0.4)';
+// Room for sub-cent cost ticks such as "$0.005".
+const Y_AXIS_WIDTH = 52;
 
 interface MetricDefinition {
   key: AiMetricKey;
@@ -187,11 +189,11 @@ export function AiMetrics({ projectId }: { projectId: string }) {
               aspectRatio="auto"
               className="h-full"
               data={chartData}
-              margin={{ top: 0, right: 20, bottom: 40, left: 20 }}
+              margin={{ top: 0, right: 20, bottom: 40, left: Y_AXIS_WIDTH }}
               xDataKey="date"
             >
               <Grid horizontal />
-              <YAxis numTicks={4} />
+              <YAxis formatValue={active.format} numTicks={4} />
               <XAxis />
               <Area
                 animate={false}

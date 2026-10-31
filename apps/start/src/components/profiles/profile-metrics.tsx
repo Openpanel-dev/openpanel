@@ -7,14 +7,8 @@ interface Props {
 }
 
 // The card's 'min' unit takes seconds and renders them as a duration.
+// First and last seen are in the properties list next to this.
 const PROFILE_METRICS = [
-  {
-    title: 'Total Events',
-    key: 'totalEvents',
-    unit: '',
-    inverted: false,
-    hideOnZero: false,
-  },
   {
     title: 'Sessions',
     key: 'sessions',
@@ -23,72 +17,30 @@ const PROFILE_METRICS = [
     hideOnZero: false,
   },
   {
-    title: 'Page Views',
+    title: 'Events',
+    key: 'totalEvents',
+    unit: '',
+    inverted: false,
+    hideOnZero: false,
+  },
+  {
+    title: 'Page views',
     key: 'screenViews',
     unit: '',
     inverted: false,
     hideOnZero: false,
   },
   {
-    title: 'Avg Events/Session',
-    key: 'avgEventsPerSession',
-    unit: '',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'Bounce Rate',
-    key: 'bounceRate',
-    unit: '%',
-    inverted: true,
-    hideOnZero: false,
-  },
-  {
-    title: 'Session Duration (Avg)',
+    title: 'Avg session',
     key: 'durationAvg',
     unit: 'min',
     inverted: false,
     hideOnZero: false,
   },
   {
-    title: 'Session Duration (P90)',
-    key: 'durationP90',
-    unit: 'min',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'First seen',
-    key: 'firstSeen',
-    unit: 'timeAgo',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'Last seen',
-    key: 'lastSeen',
-    unit: 'timeAgo',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'Days Active',
+    title: 'Days active',
     key: 'uniqueDaysActive',
     unit: '',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'Conversion Events',
-    key: 'conversionEvents',
-    unit: '',
-    inverted: false,
-    hideOnZero: false,
-  },
-  {
-    title: 'Avg Time Between Sessions',
-    key: 'avgTimeBetweenSessions',
-    unit: 'min',
     inverted: false,
     hideOnZero: false,
   },
@@ -99,7 +51,15 @@ const PROFILE_METRICS = [
     inverted: false,
     hideOnZero: true,
   },
+  {
+    title: 'Bounce rate',
+    key: 'bounceRate',
+    unit: '%',
+    inverted: true,
+    hideOnZero: false,
+  },
 ] as const;
+const VISIBLE_METRICS = 6;
 
 export const ProfileMetrics = ({ data }: Props) => {
   if (!data) {
@@ -107,14 +67,12 @@ export const ProfileMetrics = ({ data }: Props) => {
   }
 
   return (
-    <div className="relative col-span-6 -m-4 mt-0 mb-0 md:m-0">
-      <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-4 lg:grid-cols-6">
-        {PROFILE_METRICS.filter((metric) => {
-          if (metric.hideOnZero && data[metric.key] === 0) {
-            return false;
-          }
-          return true;
-        }).map((metric) => (
+    <div className="card grid grid-cols-2 overflow-hidden rounded-md md:grid-cols-3">
+      {PROFILE_METRICS.filter(
+        (metric) => !(metric.hideOnZero && data[metric.key] === 0)
+      )
+        .slice(0, VISIBLE_METRICS)
+        .map((metric) => (
           <OverviewMetricCard
             data={[]}
             id={metric.key}
@@ -123,16 +81,12 @@ export const ProfileMetrics = ({ data }: Props) => {
             key={metric.key}
             label={metric.title}
             metric={{
-              current:
-                metric.unit === 'timeAgo' && data[metric.key]
-                  ? new Date(data[metric.key]!).getTime()
-                  : (data[metric.key] as number) || 0,
+              current: data[metric.key] || 0,
               previous: null,
             }}
             unit={metric.unit}
           />
         ))}
-      </div>
     </div>
   );
 };

@@ -8,13 +8,17 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
 
-type EventListItemProps = IServiceEventMinimal | IServiceEvent;
+type EventListItemProps = (IServiceEventMinimal | IServiceEvent) & {
+  /** On the profile's own page the name would only repeat it. */
+  hideProfile?: boolean;
+};
 
 export function EventListItem(props: EventListItemProps) {
   const { openEvent } = useEventDrawer();
   const { organizationId, projectId } = useAppParams();
   const { createdAt, name, path, meta } = props;
-  const profile = 'profile' in props ? props.profile : null;
+  const profile =
+    'profile' in props && !props.hideProfile ? props.profile : null;
 
   const renderName = () => {
     if (name === 'screen_view') {
@@ -44,10 +48,10 @@ export function EventListItem(props: EventListItemProps) {
       }}
       type="button"
     >
-      <div>
+      <div className="min-w-0">
         <div className="flex items-center gap-4 text-left">
           <EventIcon meta={meta} name={name} size="sm" />
-          <span className="font-medium">{renderName()}</span>
+          <span className="truncate font-medium">{renderName()}</span>
         </div>
         <div className="pl-10">
           <div className="flex origin-left scale-75 gap-1">
@@ -57,7 +61,7 @@ export function EventListItem(props: EventListItemProps) {
           </div>
         </div>
       </div>
-      <div className="flex gap-4">
+      <div className="flex shrink-0 gap-4 pl-4">
         {profile && (
           <Tooltiper asChild content={getProfileName(profile)}>
             <Link

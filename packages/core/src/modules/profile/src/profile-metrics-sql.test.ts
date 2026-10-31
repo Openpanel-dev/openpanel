@@ -66,18 +66,19 @@ describe('profileMetricsQuery', () => {
       'WHERE id = {p1:String} AND project_id = {p2:String}'
     );
     expect(query).toContain(
-      'WHERE profile_id = {p3:String} AND project_id = {p4:String}'
+      'WHERE profile_id = {p3:String} AND project_id = {p4:String} AND name NOT IN {p5:Array(String)}'
     );
     expect(query).toContain(
-      'PREWHERE project_id = {p5:String} AND profile_id = {p6:String}'
+      'PREWHERE project_id = {p6:String} AND profile_id = {p7:String}'
     );
     expect(query_params).toEqual({
       p1: hostileProfile,
       p2: hostileProject,
       p3: hostileProfile,
       p4: hostileProject,
-      p5: hostileProject,
-      p6: hostileProfile,
+      p5: ['ai_trace', 'ai_span', 'ai_embedding'],
+      p6: hostileProject,
+      p7: hostileProfile,
     });
   });
 

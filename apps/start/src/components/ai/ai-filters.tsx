@@ -1,77 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangleIcon, ChevronDownIcon, XIcon } from 'lucide-react';
+import {
+  AlertTriangleIcon,
+  CpuIcon,
+  LayersIcon,
+  ServerIcon,
+  XIcon,
+} from 'lucide-react';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Button } from '@/components/ui/button';
 import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ToolbarMultiSelect } from '@/components/ui/toolbar-select';
 import { useAiFilters } from '@/hooks/use-ai-filters';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
-interface ValuePickerProps {
-  label: string;
-  values: { value: string; count: number }[];
-  selected: string[];
-  onChange: (next: string[]) => void;
-}
-
-function ValuePicker({ label, values, selected, onChange }: ValuePickerProps) {
-  const active = selected.length > 0;
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          className={cn(active && 'border-foreground/40')}
-          size="sm"
-          variant="outline"
-        >
-          {label}
-          {active && (
-            <span className="rounded bg-def-200 px-1 font-mono text-2xs">
-              {selected.length}
-            </span>
-          )}
-          <ChevronDownIcon className="size-3 opacity-60" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {values.length === 0 && (
-          <div className="px-2 py-1.5 text-muted-foreground text-sm">
-            Nothing in this range
-          </div>
-        )}
-        {values.map((item) => (
-          <DropdownMenuCheckboxItem
-            checked={selected.includes(item.value)}
-            key={item.value}
-            onCheckedChange={(checked) =>
-              onChange(
-                checked
-                  ? [...selected, item.value]
-                  : selected.filter((value) => value !== item.value)
-              )
-            }
-            onSelect={(event) => event.preventDefault()}
-          >
-            <span className="min-w-0 flex-1 truncate">{item.value}</span>
-            <span className="ml-2 font-mono text-2xs text-muted-foreground">
-              {item.count}
-            </span>
-          </DropdownMenuCheckboxItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+const NO_VALUES_TEXT = 'Nothing in this range';
 
 export function AiFilters({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
@@ -86,33 +29,38 @@ export function AiFilters({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ValuePicker
+      <ToolbarMultiSelect
+        emptyText={NO_VALUES_TEXT}
+        icon={CpuIcon}
         label="Model"
         onChange={(models) =>
           setState({ models: models.length ? models : null })
         }
+        options={values.data?.model ?? []}
         selected={state.models ?? []}
-        values={values.data?.model ?? []}
       />
-      <ValuePicker
+      <ToolbarMultiSelect
+        emptyText={NO_VALUES_TEXT}
+        icon={ServerIcon}
         label="Provider"
         onChange={(providers) =>
           setState({ providers: providers.length ? providers : null })
         }
+        options={values.data?.provider ?? []}
         selected={state.providers ?? []}
-        values={values.data?.provider ?? []}
       />
-      <ValuePicker
+      <ToolbarMultiSelect
+        emptyText={NO_VALUES_TEXT}
+        icon={LayersIcon}
         label="Feature"
         onChange={(names) => setState({ names: names.length ? names : null })}
+        options={values.data?.name ?? []}
         selected={state.names ?? []}
-        values={values.data?.name ?? []}
       />
       <Button
         className={cn(state.errors && 'border-destructive/60 text-destructive')}
         icon={AlertTriangleIcon}
         onClick={() => setState({ errors: state.errors ? null : true })}
-        size="sm"
         variant="outline"
       >
         Errors only
@@ -147,7 +95,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
         />
       )}
       {activeCount > 0 && (
-        <Button onClick={clear} size="sm" variant="ghost">
+        <Button onClick={clear} variant="ghost">
           Clear
         </Button>
       )}
@@ -157,7 +105,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
 
 function ScopePill({ label, onClear }: { label: string; onClear: () => void }) {
   return (
-    <span className="row h-8 items-center gap-1 rounded-md border bg-def-100 px-2 text-xs">
+    <span className="row h-9 items-center gap-1 rounded-md border bg-def-100 px-2 text-xs">
       <span className="max-w-48 truncate">{label}</span>
       <button
         aria-label={`Remove ${label}`}

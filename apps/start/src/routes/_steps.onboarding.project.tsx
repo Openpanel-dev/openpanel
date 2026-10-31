@@ -511,7 +511,6 @@ function Component() {
                       searchable
                       size="xl"
                       value={field.value}
-                      variant="input"
                     />
                   </WithLabel>
                 )}

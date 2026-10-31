@@ -326,7 +326,7 @@ export function TimeWindowPicker({
           </div>
         </PopoverContent>
       </Popover>
-      <div className="flex items-center">
+      <div className="hidden items-center sm:flex">
         <Button
           aria-label="Previous period"
           className={cn(className, 'rounded-r-none px-2')}

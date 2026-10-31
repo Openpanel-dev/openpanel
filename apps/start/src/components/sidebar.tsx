@@ -1,15 +1,8 @@
 import type { IServiceOrganization } from '@openpanel/core';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from '@tanstack/react-router';
-import {
-  BookOpenIcon,
-  HeartIcon,
-  MenuIcon,
-  SparklesIcon,
-  XIcon,
-} from 'lucide-react';
+import { BookOpenIcon, HeartIcon, MenuIcon, XIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useChatLaunch } from './chat/chat-launch';
 import { FeedbackButton } from './feedback-button';
 import { LogoSquare } from './logo';
 import { ProfileToggle } from './profile-toggle';
@@ -88,8 +81,6 @@ export function SidebarContainer({
   const [active, setActive] = useState(false);
   const location = useLocation();
   const { isSelfHosted } = useAppContext();
-  const { projectId } = useParams({ strict: false });
-  const launchChat = useChatLaunch();
 
   useEffect(() => {
     setActive(false);
@@ -168,17 +159,6 @@ export function SidebarContainer({
               Docs
             </a>
             <div className="flex-1" />
-            {projectId && (
-              <button
-                aria-label="Open AI chat"
-                className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')}
-                onClick={() => launchChat()}
-                title="Open AI chat (⌘J)"
-                type="button"
-              >
-                <SparklesIcon className="size-4" />
-              </button>
-            )}
             <ProfileToggle className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')} />
           </div>
         </div>

@@ -3,10 +3,10 @@
 // returning-visitor pool never hands out a visitor from the future.
 
 import type { Archetype } from './archetypes/archetype';
-import { Journey } from './archetypes/archetype';
+import { Journey, type JourneyEvent } from './archetypes/archetype';
 import { CAMPAIGNS, type Campaign } from './data/referrers';
 import { Rng } from './rng';
-import { buildSessionRows } from './rows';
+import { buildBackgroundRows, buildSessionRows } from './rows';
 import type { RowSink } from './sink';
 import { TrafficModel } from './traffic';
 import { World } from './world';
@@ -76,6 +76,22 @@ function daysOf(config: GenerateConfig): Date[] {
     days.push(new Date(today.getTime() - offset * MS_PER_DAY));
   }
   return days;
+}
+
+/** Events up to `now`; a trace still running at `now` is left out whole, not cut. */
+function settledEvents(
+  events: readonly JourneyEvent[],
+  now: Date
+): JourneyEvent[] {
+  const unfinished = new Set(
+    events
+      .filter((event) => event.ai && event.at > now)
+      .map((event) => event.ai?.trace_id)
+  );
+  return events.filter(
+    (event) =>
+      event.at <= now && !(event.ai && unfinished.has(event.ai.trace_id))
+  );
 }
 
 export function planDays(config: GenerateConfig): DayPlan[] {
@@ -218,6 +234,21 @@ export async function generate(
           });
         }
         await sink.flushFull();
+      }
+
+      for (const background of archetype.background?.(rng, date) ?? []) {
+        const events = settledEvents(background.events, config.now);
+        const rows = buildBackgroundRows(rng, { projectId, events });
+        sink.addEvents(rows.events);
+        sink.addAiEvents(rows.aiEvents);
+        projectStats.events += rows.events.length;
+        const first = events[0]?.at;
+        if (
+          first &&
+          (!projectStats.firstEventAt || first < projectStats.firstEventAt)
+        ) {
+          projectStats.firstEventAt = first;
+        }
       }
     }
 
