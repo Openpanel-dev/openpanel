@@ -139,7 +139,7 @@ const METRIC_COLUMNS = sql`
   countIf(type = 'generation') AS generations,
   count() AS events,
   uniq(trace_id) AS traces,
-  uniq(profile_id) AS users,
+  uniqIf(profile_id, profile_id != '') AS users,
   uniqIf(conversation_id, conversation_id != '') AS conversations,
   sum(total_cost) AS cost,
   sum(input_tokens) AS input_tokens,
@@ -191,13 +191,16 @@ export function breakdownQuery(
   const dimension = DIMENSION_COLUMN[input.dimension];
   const onlyErrors =
     input.dimension === 'errorCode' ? sql`AND is_error = true` : sql.empty;
+  // Anonymous AI usage is a real share of the spend, so it stays as its own row.
+  const withoutEmptyKey =
+    input.dimension === 'profile' ? sql.empty : sql`HAVING key != ''`;
   return sql`
     SELECT
       ${dimension} AS key,
       countIf(type = 'generation') AS generations,
       count() AS events,
       uniq(trace_id) AS traces,
-      uniq(profile_id) AS users,
+      uniqIf(profile_id, profile_id != '') AS users,
       sum(total_cost) AS cost,
       sum(input_tokens) + sum(output_tokens) AS tokens,
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
@@ -208,7 +211,7 @@ export function breakdownQuery(
     WHERE ${scopeWhere(input)}
       ${onlyErrors}
     GROUP BY key
-    HAVING key != ''
+    ${withoutEmptyKey}
     ORDER BY cost DESC, events DESC
     LIMIT ${sql.uint64(input.limit)}
   `;

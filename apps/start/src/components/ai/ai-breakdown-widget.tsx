@@ -72,6 +72,10 @@ function RowLabel({
   row: IAiBreakdownRow;
   dimension: AiBreakdownDimension;
 }) {
+  const isAnonymous = dimension === 'profile' && !row.key;
+  if (isAnonymous) {
+    return <span className="truncate text-muted-foreground">Anonymous</span>;
+  }
   if (dimension === 'profile') {
     const profile = row.profile;
     return (

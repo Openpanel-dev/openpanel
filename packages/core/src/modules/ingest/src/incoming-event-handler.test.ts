@@ -687,6 +687,37 @@ describe('incomingEvent with an ai row', () => {
     });
   });
 
+  test('an anonymous ai event opens no session and keeps no device id, even with a browser user-agent', async () => {
+    const { deps, createEvent, ingest, getExistingSession } = ctx;
+
+    await incomingEvent(
+      buildJobData({
+        uaInfo,
+        deviceId: '',
+        sessionId: '',
+        event: {
+          name: 'ai_generation',
+          properties: {},
+          timestamp: Date.now(),
+          isTimestampFromThePast: false,
+        },
+        ai: aiDraft,
+      }),
+      deps
+    );
+
+    expect(ingest).not.toHaveBeenCalled();
+    expect(getExistingSession).not.toHaveBeenCalled();
+    expect(createdEvents(createEvent)).toEqual([
+      expect.objectContaining({
+        name: 'ai_generation',
+        deviceId: '',
+        sessionId: '',
+        profileId: '',
+      }),
+    ]);
+  });
+
   test('an event the project filter excludes leaves no ai row', async () => {
     const { deps, createEvent, addAiEvent } = ctx;
     (deps.projects.getCached as ReturnType<typeof mock>).mockResolvedValue({
