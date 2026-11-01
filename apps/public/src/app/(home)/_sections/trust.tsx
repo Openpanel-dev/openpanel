@@ -85,6 +85,13 @@ export function Trust() {
           >
             more
           </Link>
+          , or read our list of the{' '}
+          <Link
+            className="font-medium text-neutral-900 underline-offset-4 hover:underline"
+            href="/articles/mixpanel-alternatives"
+          >
+            best Mixpanel alternatives
+          </Link>
           .
         </p>
       </Reveal>
