@@ -88,6 +88,10 @@ model Organization {
   conversations   Conversation[]
   timezone        String?
   onboarding      String?          @default("completed")
+  // First touch on openpanel.dev before sign-up (referrer, landing page, UTM),
+  // so paying organizations can be traced back to the channel that brought them.
+  /// [IPrismaOrganizationAttribution]
+  attribution     Json?
 
   // Subscription
   subscriptionId                          String?

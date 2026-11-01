@@ -10,6 +10,7 @@ import type { IImportConfig } from '@openpanel/core/modules/import/import.consta
 import type { InsightPayload } from '@openpanel/core/modules/insight/insight.constants';
 import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
 import type { INotificationRuleConfig } from '@openpanel/core/modules/notification/notification.constants';
+import type { IOrganizationAttributionStored } from '@openpanel/core/modules/onboarding/onboarding.constants';
 import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
 import type { IProjectFilters } from '@openpanel/core/modules/project/project.constants';
 import type {
@@ -25,6 +26,7 @@ declare global {
     type IPrismaNotificationPayload = INotificationPayload;
     type IPrismaProjectFilters = IProjectFilters[];
     type IPrismaInviteProjectAccess = IProjectAccessGrant[];
+    type IPrismaOrganizationAttribution = IOrganizationAttributionStored;
     type IPrismaProjectInsightPayload = InsightPayload;
     type IPrismaWidgetOptions = IWidgetOptions;
     type IPrismaClickhouseEvent = IClickhouseEvent;

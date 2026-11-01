@@ -1,10 +1,44 @@
 import { z } from 'zod';
 import { zTimezone } from '../organization/organization.constants';
 
+// Set by openpanel.dev on the first visit, readable by the dashboard because
+// both share the registrable domain. The value is URL-encoded JSON matching
+// `zOrganizationAttribution`.
+export const ATTRIBUTION_COOKIE_NAME = 'op_attribution';
+const ATTRIBUTION_FIELD_MAX_LENGTH = 512;
+const zAttributionField = z
+  .string()
+  .trim()
+  .max(ATTRIBUTION_FIELD_MAX_LENGTH)
+  .optional();
+
+export const zOrganizationAttribution = z.object({
+  referrer: zAttributionField,
+  landingPage: zAttributionField,
+  utmSource: zAttributionField,
+  utmMedium: zAttributionField,
+  utmCampaign: zAttributionField,
+  utmContent: zAttributionField,
+  utmTerm: zAttributionField,
+  firstSeenAt: z.string().datetime().optional(),
+});
+export type IOrganizationAttribution = z.infer<typeof zOrganizationAttribution>;
+
+// What ends up on the organization row: the cookie plus the referrer resolved
+// to the same name/type the event pipeline uses, so Postgres can group by it.
+export type IOrganizationAttributionStored = {
+  [Key in keyof IOrganizationAttribution]-?: string | null;
+} & {
+  referrerName: string | null;
+  referrerType: string | null;
+};
+
 export const zOnboardingProject = z
   .object({
     organization: z.string().optional(),
     organizationId: z.string().optional(),
+    // Only used when a new organization is created.
+    attribution: zOrganizationAttribution.optional(),
     project: z.string().min(3, 'Use at least 3 characters'),
     domain: z.string().url().or(z.literal('').or(z.null())),
     cors: z.array(z.string()).default([]),
