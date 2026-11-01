@@ -105,6 +105,7 @@ describe('ingestTrack with an ai body', () => {
     const outcome = await ingestTrack(aiRequest(), transport);
 
     expect(outcome).toEqual({ status: 'ok', deviceId: '', sessionId: '' });
+    expect(getGeoLocation).toHaveBeenCalled();
     expect(produced).toHaveLength(1);
     const { payload, partitionKey } = produced[0]!;
     expect(payload.deviceId).toBe('');

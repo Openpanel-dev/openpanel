@@ -33,4 +33,14 @@ describe('ids from /track', () => {
     expect(sdk.getDeviceId()).toBe('device-1');
     expect(sdk.getSessionId()).toBe('session-1');
   });
+
+  test('an ai event on a fresh sdk adopts no ids', async () => {
+    const { sdk, fetch } = createSdk();
+
+    await sdk.ai({ kind: 'span', traceId: 'trace-1' });
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(sdk.getDeviceId()).toBe('');
+    expect(sdk.getSessionId()).toBe('');
+  });
 });
