@@ -688,7 +688,14 @@ describe('incomingEvent with an ai row', () => {
   });
 
   test('an anonymous ai event opens no session and keeps no device id, even with a browser user-agent', async () => {
-    const { deps, createEvent, ingest, getExistingSession } = ctx;
+    const { deps, createEvent, addAiEvent, ingest, getExistingSession } = ctx;
+    const anonymousDocument = {
+      ...storedDocument,
+      profile_id: '',
+      device_id: '',
+      session_id: '',
+    };
+    createEvent.mockResolvedValueOnce({ document: anonymousDocument });
 
     await incomingEvent(
       buildJobData({
@@ -716,6 +723,11 @@ describe('incomingEvent with an ai row', () => {
         profileId: '',
       }),
     ]);
+    expect(addAiEvent.mock.calls[0]![0]).toMatchObject({
+      profile_id: '',
+      device_id: '',
+      session_id: '',
+    });
   });
 
   test('an event the project filter excludes leaves no ai row', async () => {
