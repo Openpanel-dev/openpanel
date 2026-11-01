@@ -1,6 +1,7 @@
 {
   "slug": "plausible-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
     "title": "Plausible Alternative with Retention and User Profiles",
     "description": "OpenPanel vs Plausible: both are cookieless and AGPL. OpenPanel adds retention, cohorts and user profiles. Prices at 10k to 10M pageviews, and when to stay put.",
@@ -25,7 +26,7 @@
   },
   "meta": {
     "author": "Carl-Gerhard Lindesvärd",
-    "updated": "2026-10-18",
+    "updated": "2026-11-01",
     "prices_checked": "2026-10-18"
   },
   "overview": {
@@ -288,13 +289,17 @@
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express / Node.js",
           "React Native",
           "Swift (iOS)",
           "Kotlin (Android)",
+          "Java",
           "Python",
+          "Ruby",
+          "Rust",
           "REST API"
         ],
         "competitor": [
@@ -303,7 +308,7 @@
           "WordPress plugin",
           "Events API"
         ],
-        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel), Ruby, Rust and Java."
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter."
       },
       {
         "label": "Self-hosting stack",

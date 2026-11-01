@@ -1,6 +1,7 @@
 {
   "slug": "simple-analytics-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
     "title": "Best Simple Analytics Alternative 2026 - Open Source & Free",
     "description": "Looking for a Simple Analytics alternative? OpenPanel adds product analytics, user identification, and self-hosting with longer data retention. Open source, privacy-first, and free to start.",
@@ -8,7 +9,7 @@
   },
   "hero": {
     "heading": "Best Simple Analytics Alternative",
-    "subheading": "Love Simple Analytics' privacy focus and clean dashboard? OpenPanel adds product analytics capabilities - funnels, cohorts, retention, and user identification - plus free self-hosting with full, unlimited data retention.",
+    "subheading": "Love Simple Analytics' privacy focus and clean dashboard? OpenPanel adds product analytics (funnels, cohorts, retention, user identification), session replay and free self-hosting with unlimited data retention.",
     "badges": [
       "Open-source",
       "Privacy-first",
@@ -24,12 +25,17 @@
     "founded": 2018,
     "headquarters": "Amsterdam, Netherlands"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Simple Analytics?",
     "paragraphs": [
-      "Simple Analytics lives up to its name \u2014 it's a clean, privacy-focused web analytics tool based in the Netherlands with a thoughtful AI assistant feature. For teams that need basic traffic metrics with strong privacy guarantees, it does the job well. But its web-only focus and limited free tier (only 30 days of data retention) leave gaps for teams building products rather than content sites.",
-      "OpenPanel provides the same privacy-first foundation \u2014 cookie-free tracking, no consent banners, EU data processing \u2014 while adding the product analytics depth that Simple Analytics lacks. Funnels, retention analysis, cohort breakdowns, and individual user profiles let you understand not just traffic volume, but how users actually engage with your product over time.",
-      "Data retention is another area where OpenPanel pulls ahead. Where Simple Analytics limits free users to just 30 days of historical data, OpenPanel provides full data retention on every paid tier \u2014 and unlimited retention when self-hosted for free. Self-hosting is a key differentiator \u2014 Simple Analytics is cloud-only, while OpenPanel can be deployed on your own infrastructure via Docker Compose for complete data ownership.",
+      "Simple Analytics lives up to its name: a clean, privacy-focused web analytics tool based in the Netherlands with a thoughtful AI assistant. For teams that need basic traffic metrics with strong privacy guarantees, it does the job well. But its web-only focus and a free plan that keeps one month of history leave gaps for teams building products rather than content sites.",
+      "OpenPanel provides the same privacy-first foundation, cookie-free tracking, no consent banners, EU data processing, while adding the product analytics depth that Simple Analytics lacks. Funnels, retention analysis, cohort breakdowns, and individual user profiles let you understand not just traffic volume, but how users actually engage with your product over time.",
+      "Data retention is another difference. Simple Analytics' free plan keeps the latest month of data, while OpenPanel keeps everything on paid Cloud tiers and without limit when self-hosted for free. Self-hosting itself is a key differentiator: Simple Analytics is cloud-only, while OpenPanel runs on your own infrastructure via Docker Compose for complete data ownership.",
       "If you've been happy with Simple Analytics' privacy approach but need deeper insights into user behavior, mobile app support through native SDKs, or unlimited data retention via free self-hosting, OpenPanel is a natural step up."
     ]
   },
@@ -40,8 +46,8 @@
     "best_for_openpanel": [
       "SaaS products needing user-level analytics and retention tracking",
       "Teams wanting self-hosting for complete data control",
-      "Projects needing unlimited data retention via free self-hosting (vs 30 days)",
-      "Mobile app developers needing native iOS, Android, React Native, Flutter SDKs"
+      "Projects needing more than one month of history on a budget (free self-hosting)",
+      "Mobile app developers needing iOS, Android and React Native SDKs"
     ],
     "best_for_competitor": [
       "Simple content sites and blogs wanting traffic stats only",
@@ -69,8 +75,8 @@
       {
         "label": "Data Retention",
         "openpanel": "Unlimited (self-hosted), full on paid cloud",
-        "competitor": "30-day retention on free tier",
-        "notes": "OpenPanel keeps unlimited data when self-hosted (free) and full retention on every paid cloud tier. Simple Analytics' free tier deletes data older than 30 days automatically."
+        "competitor": "1 month on the free plan",
+        "notes": "OpenPanel keeps unlimited data when self-hosted (free) and full retention on every paid cloud tier. Simple Analytics' free plan keeps the latest month of analytics data."
       },
       {
         "label": "User Identification",
@@ -80,9 +86,9 @@
       },
       {
         "label": "AI Assistant",
-        "openpanel": "Coming Soon",
-        "competitor": "Yes - Chat with analytics",
-        "notes": "Simple Analytics offers an AI assistant that lets you chat with your analytics to get insights. OpenPanel is developing similar capabilities."
+        "openpanel": "Yes, built-in chat plus an MCP server",
+        "competitor": "Yes, chat with analytics",
+        "notes": "Both let you ask questions in plain language. OpenPanel also exposes 48 MCP tools so Claude, Cursor or your own agent can query your data."
       }
     ]
   },
@@ -165,6 +171,12 @@
             "openpanel": true,
             "competitor": false,
             "notes": "Simple Analytics shows top pages but not user journeys"
+          },
+          {
+            "name": "Session Replay",
+            "openpanel": "Opt-in",
+            "competitor": false,
+            "notes": "OpenPanel replay is masked by default and kept 30 days"
           }
         ]
       },
@@ -173,21 +185,21 @@
         "features": [
           {
             "name": "A/B Testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns only",
             "competitor": false,
-            "notes": "Simple Analytics is analytics-only, no experimentation"
+            "notes": "Simple Analytics is analytics-only. OpenPanel can break any report down by a variant property; it has no experiment engine or significance test."
           },
           {
             "name": "AI Chat Assistant",
-            "openpanel": false,
+            "openpanel": true,
             "competitor": true,
-            "notes": "Simple Analytics AI lets you chat with your analytics"
+            "notes": "Simple Analytics AI chats with your analytics; OpenPanel has a built-in chat and an MCP server"
           },
           {
             "name": "Email Reports",
             "openpanel": false,
             "competitor": true,
-            "notes": "Simple Analytics offers scheduled email reports. OpenPanel doesn't — it sends real-time alerts via Slack, Discord, webhook, and in-app."
+            "notes": "Simple Analytics offers scheduled email reports. OpenPanel sends a weekly insights digest and real-time alerts via Slack, Discord, webhook and in-app."
           },
           {
             "name": "Dashboard Sharing",
@@ -244,9 +256,9 @@
           },
           {
             "name": "HIPAA Compliant",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "Simple Analytics claims HIPAA compliance (no PHI collected)"
+            "notes": "OpenPanel cannot sign a BAA; self-hosting keeps data on your own servers. Simple Analytics claims HIPAA compliance (no PHI collected)"
           }
         ]
       },
@@ -287,29 +299,30 @@
     "items": [
       {
         "label": "SDK Size",
-        "openpanel": "2.3 KB (gzipped)",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only when enabled",
         "competitor": "1.9 KB (light) / 3.7 KB (full) gzipped",
         "notes": null
       },
       {
         "label": "Platforms",
         "openpanel": [
-          "JavaScript/TypeScript",
+          "Script tag",
+          "JavaScript / Web",
+          "Node.js",
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
           "Astro",
           "Remix",
+          "Express",
           "React Native",
-          "Flutter",
-          "iOS (Swift)",
-          "Android (Kotlin)",
-          "Node.js",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
           "Python",
           "Ruby",
-          "Rust",
-          "Java",
-          "PHP"
+          "Rust"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -323,7 +336,7 @@
           "Looker Studio",
           "Power BI"
         ],
-        "notes": null
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter. There is no Go SDK."
       },
       {
         "label": "Open Source",
@@ -333,7 +346,7 @@
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "Not available (cloud-only service)",
         "notes": null
       },
@@ -346,7 +359,7 @@
       {
         "label": "Data Retention",
         "openpanel": "Unlimited (self-hosted), configurable (cloud)",
-        "competitor": "30 days (free), 3 years (Simple), 5 years (Team)",
+        "competitor": "1 month on the free plan; paid retention not stated on the pricing page",
         "notes": null
       },
       {
@@ -359,16 +372,16 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Simple Analytics has a free tier but with limited data retention. OpenPanel offers free self-hosting with full retention, plus affordable cloud pricing.",
+    "intro": "Simple Analytics has a free plan with one month of history. OpenPanel offers free self-hosting with full retention, plus flat cloud pricing. Simple Analytics prices from simpleanalytics.com on November 1, 2026.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events and full data retention."
+      "description": "Flat monthly tiers by event volume from $2.50 for 5,000 events, with a 30-day free trial and no free tier. All features included at every tier. Self-host free with unlimited events and full data retention."
     },
     "competitor": {
-      "model": "Datapoint-based with limited free tier",
-      "description": "Free: Unlimited pageviews, 30-day retention, 5 sites, 1 user. Simple ($15/month): 10 sites, 3-year retention. Team ($40/month): 20 sites, 5-year retention, 2+ users, export API. 50% discount for nonprofits.",
-      "free_tier": "Free forever - unlimited pageviews (fair use), 30-day retention",
-      "pricing_url": "https://simpleanalytics.com/pricing"
+      "model": "Pageview-based, one self-serve plan",
+      "description": "Free: unlimited pageviews under fair use, 5 websites, 1 user, the latest month of data, badge required. Self-serve: from €20/month for 100k pageviews (slider up to 2.5M), 1 user included, €20/month per extra user, 2 months free on yearly billing. Enterprise: custom.",
+      "free_tier": "Free forever: unlimited pageviews (fair use), 1 month of history, 5 sites",
+      "pricing_url": "https://www.simpleanalytics.com/pricing"
     }
   },
   "migration": {
@@ -418,17 +431,17 @@
       },
       {
         "title": "Teams Who Want Self-Hosting",
-        "description": "Simple Analytics is cloud-only with no self-hosting option. If data sovereignty or compliance requirements mean you need to host your own analytics, OpenPanel provides full self-hosting via Docker Compose: a one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes.",
+        "description": "Simple Analytics is cloud-only with no self-hosting option. If data sovereignty or compliance requirements mean you need to host your own analytics, OpenPanel provides full self-hosting via Docker Compose: one install script brings the whole stack up.",
         "icon": "server"
       },
       {
         "title": "Projects Needing Longer Data Retention",
-        "description": "Simple Analytics' free tier only keeps 30 days of data. If you need historical data for trend analysis on a budget, OpenPanel offers unlimited retention via free self-hosting, and full retention on every paid cloud tier.",
+        "description": "Simple Analytics' free plan keeps one month of data. If you need history for trend analysis on a budget, OpenPanel offers unlimited retention via free self-hosting, and full retention on every paid cloud tier.",
         "icon": "database"
       },
       {
         "title": "Mobile App Analytics",
-        "description": "Simple Analytics is designed for websites and doesn't provide native mobile SDKs. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs with full product analytics capabilities.",
+        "description": "Simple Analytics is designed for websites and doesn't provide native mobile SDKs. OpenPanel offers iOS, Android and React Native SDKs with full product analytics capabilities.",
         "icon": "smartphone"
       },
       {
@@ -448,11 +461,11 @@
       },
       {
         "question": "Why switch from Simple Analytics to OpenPanel?",
-        "answer": "Teams typically switch when they need: 1) Product analytics (funnels, retention, cohorts), 2) User identification, 3) Self-hosting options, 4) Unlimited data retention via free self-hosting, or 5) Native mobile SDKs. Simple Analytics excels at simple web analytics but doesn't offer these capabilities."
+        "answer": "Teams typically switch when they need product analytics (funnels, retention, cohorts), user identification, session replay, self-hosting, more than a month of history on a budget, or mobile SDKs. Simple Analytics excels at simple web analytics but does not offer these."
       },
       {
         "question": "Does Simple Analytics have a free tier?",
-        "answer": "Yes, but with limitations. Simple Analytics offers a free-forever plan with unlimited pageviews (fair use) but only 30-day data retention and basic features. OpenPanel doesn't have a free cloud tier (30-day trial, then from $2.50/month for 5,000 events), but it is free to self-host with unlimited events, full data retention, and all features."
+        "answer": "Yes, with limits: unlimited pageviews under fair use, 5 websites, one user, one month of history and a required badge. OpenPanel has no free cloud tier (30-day trial, then from $2.50/month for 5,000 events), but self-hosting is free with unlimited events and full retention."
       },
       {
         "question": "Can I self-host Simple Analytics?",
@@ -460,19 +473,19 @@
       },
       {
         "question": "Which has the smaller tracking script?",
-        "answer": "Simple Analytics offers two script versions: a 'light' version at 1.9KB and a full version at 3.7KB (gzipped). OpenPanel's script is 2.3KB. All are significantly smaller than Google Analytics (45KB+)."
+        "answer": "Simple Analytics offers a light script at 1.9 KB and a full one at 3.7 KB gzipped. OpenPanel's is about 3 KB gzipped. All are far smaller than Google Analytics (45 KB+)."
       },
       {
         "question": "Can Simple Analytics track mobile apps?",
-        "answer": "Not natively. Simple Analytics is designed for web analytics and doesn't provide mobile SDKs. They have an iOS app to view your dashboard, but not to track mobile app users. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs."
+        "answer": "Not natively. Simple Analytics is designed for web analytics and doesn't provide mobile SDKs. They have an iOS app to view your dashboard, but not to track mobile app users. OpenPanel offers iOS, Android and React Native SDKs."
       },
       {
         "question": "What will I lose switching from Simple Analytics?",
-        "answer": "Simple Analytics has an AI chat assistant that lets you query your analytics conversationally - OpenPanel doesn't have this yet. They also have a Google Analytics import tool, a 'Mini Websites' feature showing referring pages, and an iOS app for viewing dashboards. However, you'll gain product analytics, self-hosting, and user identification that Simple Analytics doesn't offer."
+        "answer": "The Mini Websites view of exactly which pages linked to you, the Google Analytics import and the iOS app for checking your dashboard. Both tools have an AI assistant. You gain product analytics, session replay, self-hosting and user identification."
       },
       {
         "question": "Is Simple Analytics or OpenPanel better for blogs/content sites?",
-        "answer": "For simple content sites where you just need traffic stats, Simple Analytics' simplicity and AI assistant are excellent. Their Mini Websites feature is unique for seeing exactly which tweets or pages linked to you. If you're running a SaaS, e-commerce, or any product where understanding user behavior matters, OpenPanel's product analytics features provide more value."
+        "answer": "For simple content sites where you just need traffic stats, Simple Analytics' simplicity and free plan are excellent, and Mini Websites shows exactly which tweets or pages linked to you. For a SaaS, a shop or any product where user behavior matters, OpenPanel's product analytics provide more value."
       }
     ]
   },

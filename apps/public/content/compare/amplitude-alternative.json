@@ -1,6 +1,7 @@
 {
   "slug": "amplitude-alternative",
   "page_type": "alternative",
+  "category": "product",
   "seo": {
     "title": "OpenPanel vs Amplitude: Pricing, Privacy and Self-Hosting",
     "description": "OpenPanel vs Amplitude: flat event pricing from $2.50 a month, cookie-free tracking, EU hosting and free self-hosting, against Amplitude's event tiers and sales-led plans.",
@@ -9,12 +10,7 @@
   "hero": {
     "heading": "OpenPanel vs Amplitude",
     "subheading": "OpenPanel is an open-source, privacy-first alternative to Amplitude. Get powerful product analytics with web analytics built in, cookie-free tracking, and the freedom to self-host or use our cloud.",
-    "badges": [
-      "Open-source",
-      "Cookie-free",
-      "EU-only hosting",
-      "Self-hostable"
-    ]
+    "badges": ["Open-source", "Cookie-free", "EU-only hosting", "Self-hostable"]
   },
   "competitor": {
     "name": "Amplitude",
@@ -24,12 +20,17 @@
     "founded": 2012,
     "headquarters": "San Francisco, CA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Amplitude?",
     "paragraphs": [
-      "Amplitude is one of the leading enterprise product analytics platforms, trusted by large companies for behavioral analytics, experimentation, and customer data management. But its power comes with significant complexity — a steep learning curve, enterprise-level pricing that can scale to six figures annually, and a cloud-only architecture that gives you no option to self-host your data.",
-      "OpenPanel offers a simpler, more affordable approach to product analytics without sacrificing the features that matter most. You get event tracking, funnels, retention analysis, cohort breakdowns, and user profiles — all in a clean interface that doesn't require a dedicated analytics team to operate. And because OpenPanel is open source, you can inspect the code, self-host on your own infrastructure, and avoid vendor lock-in entirely.",
-      "One of the biggest differences is privacy. Amplitude uses cookies and stores data on US servers by default, which means consent banners and GDPR complexity for European users. OpenPanel is cookie-free by default with EU-only data storage, so you can track user behavior without privacy trade-offs. The SDK is also dramatically smaller — 2.3 KB compared to Amplitude's 36-96 KB — which directly impacts your page performance and Core Web Vitals.",
+      "Amplitude is one of the leading enterprise product analytics platforms, trusted by large companies for behavioral analytics, experimentation, and customer data management. But its power comes with significant complexity, a steep learning curve, custom enterprise pricing above the Plus plan, and a cloud-only architecture that gives you no option to self-host your data.",
+      "OpenPanel offers a simpler, more affordable approach to product analytics without sacrificing the features that matter most. You get event tracking, funnels, retention analysis, cohort breakdowns, and user profiles, all in a clean interface that doesn't require a dedicated analytics team to operate. And because OpenPanel is open source, you can inspect the code, self-host on your own infrastructure, and avoid vendor lock-in entirely.",
+      "One of the biggest differences is privacy. Amplitude uses cookies and stores data on US servers by default, which means consent banners and GDPR complexity for European users. OpenPanel is cookie-free by default with EU-only data storage, so you can track user behavior without privacy trade-offs. The SDK is also dramatically smaller, ~3 KB compared to Amplitude's 36-96 KB, which directly impacts your page performance and Core Web Vitals.",
       "For startups and growing teams who need solid product analytics without the enterprise overhead, OpenPanel delivers the insights you need at a price point that makes sense from day one."
     ]
   },
@@ -57,7 +58,7 @@
       {
         "label": "Price",
         "openpanel": "From $2.50/month (or free self-hosted)",
-        "competitor": "Free tier (50K MTUs), then $49+/month"
+        "competitor": "Free plan (2M events/month), then Plus by event volume, Growth and Enterprise custom"
       },
       {
         "label": "Cookies required",
@@ -172,9 +173,9 @@
         "features": [
           {
             "name": "A/B testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns",
             "competitor": true,
-            "notes": "Amplitude Experiment is full-featured"
+            "notes": "Track the variant as an event or profile property and break any report down by it. No experiment runner, no feature flags, no significance test."
           },
           {
             "name": "Feature flags",
@@ -243,9 +244,9 @@
           },
           {
             "name": "DPA available",
-            "openpanel": "on request",
+            "openpanel": true,
             "competitor": true,
-            "notes": null
+            "notes": "OpenPanel publishes its GDPR DPA at openpanel.dev/dpa."
           }
         ]
       },
@@ -266,9 +267,9 @@
           },
           {
             "name": "CDP integrations",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "Amplitude has its own CDP product"
+            "notes": "OpenPanel has webhooks and S3/GCS export, no CDP integration."
           },
           {
             "name": "Webhook notifications",
@@ -286,7 +287,7 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "~3 KB gzipped",
         "competitor": "~36 KB gzipped (analytics only), ~96 KB unified",
         "notes": "Amplitude's unified SDK includes analytics, experiment, session replay, and guides"
       },
@@ -297,16 +298,20 @@
           "React",
           "Next.js",
           "Vue",
-          "Node.js",
-          "Python",
-          "Swift",
-          "Kotlin",
-          "React Native",
-          "Flutter",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express",
-          "PHP"
+          "Node.js",
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Flutter (community)",
+          "PHP (community)"
         ],
         "competitor": [
           "JavaScript",
@@ -331,7 +336,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose, one-command install script",
         "competitor": "Not available",
         "notes": "Amplitude is cloud-only"
       },
@@ -339,7 +344,7 @@
         "label": "Database",
         "openpanel": "ClickHouse + PostgreSQL",
         "competitor": "Proprietary (AWS-hosted)",
-        "notes": "OpenPanel gives you direct SQL access to your data"
+        "notes": "Self-hosters can query ClickHouse directly"
       },
       {
         "label": "Data retention",
@@ -354,12 +359,12 @@
     "intro": "Amplitude has a free tier but pricing scales quickly. OpenPanel offers simpler, more predictable costs.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. No limits on users, dashboards, or data retention."
+      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. No limits on users, dashboards or sites."
     },
     "competitor": {
-      "model": "MTU-based with event limits",
-      "description": "Starter (Free): Up to 50K MTUs and 10M events. Plus: $49-1,000+/month based on MTUs (1K-300K). Growth: Custom pricing, typically $22K-254K/year. Enterprise: Custom pricing for large organizations. Overages charged at 1.2x rate.",
-      "free_tier": "Yes (50K MTUs, limited features)",
+      "model": "Event-based, custom above Plus",
+      "description": "Free: 2M events/month, 10K session replays, one active experiment, no time limit. Plus: starts at $0 for the first 2M events and scales by event volume up to 70M events, 2-year retention. Growth and Enterprise: custom quotes, with replays, experiments and guides sold as add-ons.",
+      "free_tier": "Yes (2M events/month, limited features)",
       "pricing_url": "https://amplitude.com/pricing"
     }
   },
@@ -371,23 +376,23 @@
     "steps": [
       {
         "title": "Install the OpenPanel SDK",
-        "description": "Add @openpanel/web (or the framework SDK that matches your stack: React, Next.js, Vue, Node, Python, Swift, Kotlin, React Native) to your app. The JS bundle is ~2.3 KB gzipped — drop-in replacement for Amplitude's 36 KB analytics SDK or 96 KB unified bundle."
+        "description": "Add @openpanel/web (or the framework SDK that matches your stack: React, Next.js, Vue, Node, Python, Swift, Kotlin, React Native) to your app. The JS bundle is ~3 KB gzipped, drop-in replacement for Amplitude's 36 KB analytics SDK or 96 KB unified bundle."
       },
       {
         "title": "Map your tracking calls (the cheat sheet)",
-        "description": "Most Amplitude calls map directly. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). amplitude.setGroup('org', orgId) becomes op.setGroup(orgId) — OpenPanel has native group support via setGroup/setGroups. amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). amplitude.logRevenue() becomes op.revenue(amount) (or op.track with a revenue property). Keep your existing event names. Track plans don't need rewriting."
+        "description": "Most Amplitude calls map directly. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). amplitude.setGroup('org', orgId) becomes op.setGroup(orgId), OpenPanel has native group support via setGroup/setGroups. amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). amplitude.logRevenue() becomes op.revenue(amount) (or op.track with a revenue property). Keep your existing event names. Track plans don't need rewriting."
       },
       {
         "title": "Re-map advanced features (or accept feature loss)",
-        "description": "Amplitude features without a 1-to-1 mapping in OpenPanel: predictive cohorts (no equivalent), feature flags (use a dedicated tool like Hypertune or Statsig), Guides & Surveys (no equivalent), and Amplitude Experiment (you'll need a separate experimentation tool — OpenPanel handles A/B test events but doesn't run experiments). Behavioral cohorts, funnels, retention, custom events, user properties, and session replay all have direct equivalents."
+        "description": "Amplitude features without a 1-to-1 mapping in OpenPanel: predictive cohorts (no equivalent), feature flags (use a dedicated tool like Hypertune or Statsig), Guides & Surveys (no equivalent), and Amplitude Experiment (you'll need a separate experimentation tool, OpenPanel handles A/B test events but doesn't run experiments). Behavioral cohorts, funnels, retention, custom events, user properties, and session replay all have direct equivalents."
       },
       {
         "title": "Set up dashboards and reports",
-        "description": "Recreate your key Amplitude charts in OpenPanel: Funnels, Retention, Cohorts, Custom event reports. The math is the same; the UI is different. OpenPanel's report builder is simpler — no separate behavioral cohort builder, fewer chart types — but that's the point. Most teams find their critical reports take 30 minutes total."
+        "description": "Recreate your key Amplitude charts in OpenPanel: Funnels, Retention, Cohorts, Custom event reports. The math is the same; the UI is different. OpenPanel's report builder is simpler, no separate behavioral cohort builder, fewer chart types, but that's the point. Most teams find their critical reports take 30 minutes total."
       },
       {
         "title": "Run in parallel and validate",
-        "description": "Keep both SDKs firing events for 5-7 days. Compare totals on key events (signups, purchases, key feature events) between the two dashboards. Differences over 5% usually point to identify() mismatches — Amplitude attaches anonymous events to users on first identify, OpenPanel does the same but uses a slightly different anonymous-id strategy. Once parity is confirmed, remove the Amplitude SDK."
+        "description": "Keep both SDKs firing events for 5-7 days. Compare totals on key events (signups, purchases, key feature events) between the two dashboards. Differences over 5% usually point to identify() mismatches, Amplitude attaches anonymous events to users on first identify, OpenPanel does the same but uses a slightly different anonymous-id strategy. Once parity is confirmed, remove the Amplitude SDK."
       }
     ],
     "sdk_compatibility": {
@@ -405,7 +410,7 @@
     "items": [
       {
         "title": "Startups and growing teams",
-        "description": "Get the product analytics you need without Amplitude's complexity or enterprise pricing. Start free and scale predictably.",
+        "description": "Get the product analytics you need without Amplitude's complexity or enterprise pricing. A 30-day trial, then predictable flat tiers.",
         "icon": "rocket"
       },
       {
@@ -415,17 +420,17 @@
       },
       {
         "title": "Self-hosted requirements",
-        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. A one-command `./setup` wizard walks you through configuration and brings the whole Docker Compose stack up in minutes. Amplitude is cloud-only with no self-hosting option.",
+        "description": "Deploy OpenPanel on your own infrastructure for complete data ownership. One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes. Amplitude is cloud-only with no self-hosting option.",
         "icon": "server"
       },
       {
         "title": "Faster websites and apps",
-        "description": "OpenPanel's 2.3 KB SDK vs Amplitude's 36-96 KB means better performance, faster loads, and improved user experience.",
+        "description": "OpenPanel's ~3 KB SDK vs Amplitude's 36-96 KB means better performance, faster loads, and improved user experience.",
         "icon": "zap"
       },
       {
         "title": "Simpler analytics needs",
-        "description": "If you don't need predictive ML models or feature flags, OpenPanel gives you core analytics — including session replay — without the enterprise bloat.",
+        "description": "If you don't need predictive ML models or feature flags, OpenPanel gives you core analytics, including session replay, without the enterprise bloat.",
         "icon": "target"
       }
     ]
@@ -436,27 +441,27 @@
     "items": [
       {
         "question": "What are the best Amplitude alternatives in 2026?",
-        "answer": "The top Amplitude alternatives depend on your team's needs: OpenPanel (open source, self-hostable, cookie-free — best for privacy-conscious teams and startups), PostHog (open source all-in-one with session replay and feature flags — best for developer-led teams who want everything in one tool), Mixpanel (mature event-based analytics with strong funnels and cohorts — best for established product teams), Heap (automatic event capture with retroactive analysis — best for teams who don't want to instrument events manually), and Plausible (simple, lightweight web analytics — best for teams who only need traffic data, not product analytics). OpenPanel is the strongest open-source alternative if self-hosting or cookie-free tracking matters to you."
+        "answer": "The top Amplitude alternatives depend on your team's needs: OpenPanel (open source, self-hostable, cookie-free, best for privacy-conscious teams and startups), PostHog (open source all-in-one with session replay and feature flags, best for developer-led teams who want everything in one tool), Mixpanel (mature event-based analytics with strong funnels and cohorts, best for established product teams), Heap (automatic event capture with retroactive analysis, best for teams who don't want to instrument events manually), and Plausible (simple, lightweight web analytics, best for teams who only need traffic data, not product analytics). OpenPanel is the strongest open-source alternative if self-hosting or cookie-free tracking matters to you."
       },
       {
         "question": "How does Amplitude compare to PostHog?",
-        "answer": "Both Amplitude and PostHog are powerful product analytics platforms, but they differ significantly in approach. PostHog is fully open source and self-hostable, bundles session replay, feature flags, and A/B testing natively, and has a generous free tier. Amplitude is more mature in behavioral analytics and experimentation but is cloud-only, charges based on MTUs, and its pricing can reach six figures annually for large teams. PostHog tends to appeal to developer-led companies; Amplitude fits enterprise product and growth teams with dedicated analysts."
+        "answer": "Both Amplitude and PostHog are powerful product analytics platforms, but they differ significantly in approach. PostHog is fully open source and self-hostable, bundles session replay, feature flags, and A/B testing natively, and has a generous free tier. Amplitude is more mature in behavioral analytics and experimentation but is cloud-only, and its Growth and Enterprise plans are custom-quoted. PostHog tends to appeal to developer-led companies; Amplitude fits enterprise product and growth teams with dedicated analysts."
       },
       {
         "question": "How does Amplitude compare to Mixpanel?",
-        "answer": "Amplitude and Mixpanel are the two most common enterprise product analytics tools and are often evaluated together. Mixpanel charges per event (not per user like Amplitude), which can be cheaper or more expensive depending on your usage pattern. Amplitude has stronger experimentation features and ML-powered predictions; Mixpanel is generally considered easier to set up and use. Neither offers self-hosting. For teams looking for an open-source alternative to both, OpenPanel covers core funnels, retention, and cohorts without the enterprise pricing of either."
+        "answer": "Amplitude and Mixpanel are the two most common enterprise product analytics tools and are often evaluated together. Both now charge by events, with free plans of 1M (Mixpanel) and 2M (Amplitude) events a month. Amplitude has stronger experimentation features and ML-powered predictions; Mixpanel is generally considered easier to set up and use. Neither offers self-hosting. For teams looking for an open-source alternative to both, OpenPanel covers core funnels, retention, and cohorts without the enterprise pricing of either."
       },
       {
         "question": "Is there a free Amplitude alternative?",
-        "answer": "Yes — OpenPanel is free to self-host with unlimited events. You run it on your own infrastructure using Docker, and there are no per-event or per-user fees. The cloud-hosted version starts at $2.50/month. PostHog also has a generous free tier (1M events/month). Mixpanel's free plan includes up to 1M events. If you're looking for something completely free with no limits, self-hosted OpenPanel is the strongest option."
+        "answer": "Yes, OpenPanel is free to self-host with unlimited events. You run it on your own infrastructure using Docker, and there are no per-event or per-user fees. The cloud-hosted version starts at $2.50/month. PostHog also has a generous free tier (1M events/month). Mixpanel's free plan includes up to 1M events. If you're looking for something completely free with no limits, self-hosted OpenPanel is the strongest option."
       },
       {
         "question": "Is Amplitude free?",
-        "answer": "Amplitude offers a free Starter plan with up to 50,000 Monthly Tracked Users (MTUs) and 10 million events. However, it has limited features, no customer support, and you'll need to upgrade quickly as you grow. The Plus plan starts at $49/month for just 1,000 MTUs."
+        "answer": "Amplitude's Free plan includes 2M events a month, 10K session replays and one active experiment, with no time limit. Plus starts at $0 for the first 2M events and scales with volume up to 70M events. Growth and Enterprise are custom quotes with add-ons for replays, experiments and guides."
       },
       {
         "question": "Why switch from Amplitude?",
-        "answer": "Common reasons include: pricing that escalates quickly as you grow, complexity that requires dedicated analysts to use effectively, privacy concerns with cookies and consent requirements, no self-hosting option, and a heavy SDK that impacts page performance."
+        "answer": "Common reasons include: custom-quoted pricing above the Plus plan, complexity that requires dedicated analysts to use effectively, privacy concerns with cookies and consent requirements, no self-hosting option, and a heavy SDK that impacts page performance."
       },
       {
         "question": "Do I need a cookie consent banner with OpenPanel?",
@@ -472,7 +477,7 @@
       },
       {
         "question": "How does the SDK size affect my app?",
-        "answer": "OpenPanel's JavaScript SDK is ~2.3 KB gzipped compared to Amplitude's 36 KB (analytics only) or 96 KB (unified). This means faster initial page loads, better Core Web Vitals, and reduced bandwidth costs."
+        "answer": "OpenPanel's JavaScript SDK is ~3 KB gzipped compared to Amplitude's 36 KB (analytics only) or 96 KB (unified). This means faster initial page loads, better Core Web Vitals, and reduced bandwidth costs."
       },
       {
         "question": "Can I import my Amplitude data?",
@@ -484,11 +489,11 @@
       },
       {
         "question": "How do I migrate Amplitude.track() calls to OpenPanel?",
-        "answer": "Most calls map 1-to-1 with no logic change. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). Identify: amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). User properties: amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). Revenue: amplitude.logRevenue({price, quantity}) becomes op.revenue(price * quantity) (or op.track with a revenue property). Groups: amplitude.setGroup('org', orgId) becomes op.setGroup(orgId) — OpenPanel has native group support via setGroup/setGroups. Keep your existing event names; the track plan doesn't need rewriting. The full migration is usually a 2-4 hour find-and-replace job."
+        "answer": "Most calls map 1-to-1 with no logic change. amplitude.track('Signup', {plan: 'pro'}) becomes op.track('Signup', {plan: 'pro'}). Identify: amplitude.identify(userId, traits) becomes op.identify({ profileId: userId, ...traits }). User properties: amplitude.setUserProperties(traits) becomes op.identify({ profileId, ...traits }). Revenue: amplitude.logRevenue({price, quantity}) becomes op.revenue(price * quantity) (or op.track with a revenue property). Groups: amplitude.setGroup('org', orgId) becomes op.setGroup(orgId), OpenPanel has native group support via setGroup/setGroups. Keep your existing event names; the track plan doesn't need rewriting. The full migration is usually a 2-4 hour find-and-replace job."
       },
       {
         "question": "What does Amplitude cost at 100K, 500K, 1M MTUs vs OpenPanel?",
-        "answer": "Direct comparison at common volumes: 100K MTUs/month — Amplitude Plus tier ~$995/mo (custom-quoted, varies), OpenPanel ~$20/mo (100K events, not MTUs — OpenPanel charges per event, which usually works out cheaper since one MTU can fire dozens of events). 500K MTUs/month — Amplitude Growth tier typically $22K-50K/year ($1,800-4,200/mo), OpenPanel $50/mo (500K events). 1M MTUs/month — Amplitude Growth/Enterprise tier typically $50K-150K/year ($4,200-12,500/mo), OpenPanel $90/mo (1M events). Self-hosted OpenPanel is unlimited and free regardless of volume — your only cost is the server. Amplitude does not offer self-hosting at any tier. Note: Amplitude charges by Monthly Tracked Users (MTU); OpenPanel charges by events. A typical SaaS app fires 30-100 events per MTU, so the gap in absolute cost can be even larger than the per-MTU rates suggest. Always check Amplitude's current pricing — Growth and Enterprise tiers are custom-quoted and rates have moved upward year-over-year."
+        "answer": "Direct comparison at common volumes: 100K MTUs/month, Amplitude Plus tier ~$995/mo (custom-quoted, varies), OpenPanel ~$20/mo (100K events, not MTUs, OpenPanel charges per event, which usually works out cheaper since one MTU can fire dozens of events). 500K MTUs/month, Amplitude Growth tier typically $22K-50K/year ($1,800-4,200/mo), OpenPanel $50/mo (500K events). 1M MTUs/month, Amplitude Growth/Enterprise tier typically $50K-150K/year ($4,200-12,500/mo), OpenPanel $90/mo (1M events). Self-hosted OpenPanel is unlimited and free regardless of volume, your only cost is the server. Amplitude does not offer self-hosting at any tier. Note: Amplitude charges by Monthly Tracked Users (MTU); OpenPanel charges by events. A typical SaaS app fires 30-100 events per MTU, so the gap in absolute cost can be even larger than the per-MTU rates suggest. Always check Amplitude's current pricing, Growth and Enterprise tiers are custom-quoted and rates have moved upward year-over-year."
       }
     ]
   },

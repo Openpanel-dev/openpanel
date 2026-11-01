@@ -1,6 +1,7 @@
 {
   "slug": "mixpanel-alternative",
   "page_type": "alternative",
+  "category": "product",
   "seo": {
     "title": "OpenPanel vs Mixpanel (2026): Full Feature & Pricing Comparison",
     "description": "Side-by-side comparison of OpenPanel and Mixpanel: pricing, features, self-hosting, privacy, and migration guide. See which product analytics platform is right for your team.",
@@ -8,7 +9,7 @@
   },
   "hero": {
     "heading": "OpenPanel vs Mixpanel",
-    "subheading": "A complete side-by-side comparison of OpenPanel and Mixpanel \u2014 pricing, features, self-hosting, privacy, and what it takes to switch. Make an informed decision before you migrate.",
+    "subheading": "A complete side-by-side comparison of OpenPanel and Mixpanel, pricing, features, self-hosting, privacy, and what it takes to switch. Make an informed decision before you migrate.",
     "badges": [
       "Open-source",
       "EU-only hosting",
@@ -24,12 +25,17 @@
     "founded": 2009,
     "headquarters": "San Francisco, CA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Mixpanel?",
     "paragraphs": [
       "Mixpanel is one of the most established product analytics platforms, used by product teams worldwide to track user behavior, build funnels, and analyze retention. It's powerful, but that power comes with increasingly complex pricing, a cloud-only architecture, and cookie-based tracking that creates friction for privacy-conscious teams.",
-      "OpenPanel provides the core product analytics features most teams actually use \u2014 events, funnels, retention, cohorts, and user profiles \u2014 in a simpler package with transparent, predictable pricing. Starting at just $2.50 per month, or completely free when self-hosted, OpenPanel is dramatically more affordable than Mixpanel's pricing which can scale to thousands per month as your event volume grows.",
-      "Privacy is where the two platforms diverge most sharply. Mixpanel uses cookies by default and stores data on US servers, which means GDPR consent banners and data transfer concerns for European users. OpenPanel is cookie-free by default with EU-only hosting, making compliance straightforward. You can also self-host OpenPanel on your own infrastructure for complete data sovereignty \u2014 something Mixpanel simply doesn't offer.",
+      "OpenPanel provides the core product analytics features most teams actually use, events, funnels, retention, cohorts, and user profiles, in a simpler package with transparent, predictable pricing. Starting at just $2.50 per month, or completely free when self-hosted, OpenPanel is dramatically more affordable than Mixpanel's pricing which can scale to thousands per month as your event volume grows.",
+      "Privacy is where the two platforms diverge most sharply. Mixpanel uses cookies by default and stores data on US servers, which means GDPR consent banners and data transfer concerns for European users. OpenPanel is cookie-free by default with EU-only hosting, making compliance straightforward. You can also self-host OpenPanel on your own infrastructure for complete data sovereignty, something Mixpanel simply doesn't offer.",
       "For teams that want Mixpanel-style product analytics without the enterprise pricing, vendor lock-in, or privacy trade-offs, OpenPanel is a compelling open-source alternative that gives you full ownership of your analytics data."
     ]
   },
@@ -44,10 +50,10 @@
       "Teams looking for both web and product analytics in one tool"
     ],
     "best_for_competitor": [
-      "Enterprise teams needing advanced experimentation and feature flags",
-      "Teams needing Metric Trees for organizational goal alignment",
-      "Companies with complex data warehouse integration needs",
-      "Teams that need Metric Trees for organizational alignment"
+      "Enterprise teams that need experiments with statistics and feature flags",
+      "Teams that want Metric Trees for goal alignment",
+      "Companies with data warehouse pipelines",
+      "Mobile apps that want session replay on iOS and Android"
     ]
   },
   "highlights": {
@@ -56,8 +62,8 @@
     "items": [
       {
         "label": "Starting price",
-        "openpanel": "$2.50/month (5k events)",
-        "competitor": "$0 (1M events free, then $20+/month)"
+        "openpanel": "$2.50/month (5k events), no free tier",
+        "competitor": "$0 for 1M events; first paid tier $140/month for 1.5M events ($100 on yearly billing)"
       },
       {
         "label": "Self-hosting",
@@ -172,21 +178,21 @@
         "features": [
           {
             "name": "A/B testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns only",
             "competitor": true,
-            "notes": "Mixpanel has more advanced experimentation with Experimentation 2.0"
+            "notes": "Mixpanel runs experiments with statistics. OpenPanel can break any report down by a variant property, but has no experiment engine."
           },
           {
             "name": "Feature flags",
             "openpanel": false,
             "competitor": true,
-            "notes": "Mixpanel offers native feature flags (Enterprise)"
+            "notes": "Mixpanel includes feature flags on every plan (10 active on Free)"
           },
           {
             "name": "Session replay",
             "openpanel": true,
             "competitor": true,
-            "notes": "Mixpanel supports web, iOS, and Android. OpenPanel also offers session replay."
+            "notes": "Mixpanel includes 10K replays a month on Free, 20K on Growth. OpenPanel replay is opt-in, masked by default and not metered."
           },
           {
             "name": "Group analytics",
@@ -216,7 +222,7 @@
             "name": "Notifications/Alerts",
             "openpanel": true,
             "competitor": true,
-            "notes": "OpenPanel supports webhooks, Slack, Discord"
+            "notes": "OpenPanel fires on events and completed funnels to Slack, Discord, email or a webhook. Mixpanel adds threshold and anomaly alerts."
           }
         ]
       },
@@ -249,9 +255,9 @@
           },
           {
             "name": "DPA available",
-            "openpanel": "on request",
+            "openpanel": true,
             "competitor": true,
-            "notes": null
+            "notes": "OpenPanel publishes its DPA at openpanel.dev/dpa"
           },
           {
             "name": "SOC 2 Type II",
@@ -278,9 +284,9 @@
           },
           {
             "name": "Warehouse connectors",
-            "openpanel": false,
+            "openpanel": "S3 / GCS export (JSONL)",
             "competitor": true,
-            "notes": "Mixpanel has extensive warehouse integration"
+            "notes": "OpenPanel exports raw events to S3-compatible storage or GCS every minute; Mixpanel has native warehouse connectors"
           },
           {
             "name": "Segment integration",
@@ -298,27 +304,30 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only when enabled",
         "competitor": "~20+ KB gzipped",
         "notes": "OpenPanel's lighter SDK means faster page loads"
       },
       {
         "label": "Supported platforms",
         "openpanel": [
-          "JavaScript",
+          "Script tag",
+          "JavaScript / Web",
+          "Node.js",
           "React",
           "Next.js",
           "Vue",
-          "Node.js",
-          "Python",
-          "Swift",
-          "Kotlin",
-          "React Native",
-          "Flutter",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express",
-          "PHP"
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust"
         ],
         "competitor": [
           "JavaScript",
@@ -334,7 +343,7 @@
           "Go",
           "Java"
         ],
-        "notes": null
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter. There is no Go SDK."
       },
       {
         "label": "Open source",
@@ -344,7 +353,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "Not available",
         "notes": null
       },
@@ -352,11 +361,11 @@
         "label": "Database",
         "openpanel": "ClickHouse + PostgreSQL",
         "competitor": "Proprietary (Arb)",
-        "notes": "OpenPanel gives you direct SQL access to your data"
+        "notes": "Self-hosters can query their own ClickHouse; there is no SQL editor in the dashboard"
       },
       {
         "label": "Autocapture",
-        "openpanel": "Manual events + auto pageviews",
+        "openpanel": "Screen views, outgoing links and data-track attributes; everything else is an explicit call",
         "competitor": "Full autocapture available",
         "notes": "Mixpanel can automatically capture clicks, inputs, etc."
       }
@@ -364,17 +373,39 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "OpenPanel offers predictable, affordable pricing. Mixpanel's pricing can scale significantly as your usage grows.",
+    "intro": "OpenPanel is a flat monthly price for an event volume. Mixpanel is free up to 1M events and then priced in volume tiers.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. No limits on users, dashboards, or features at any tier."
+      "description": "Flat monthly tiers by event volume: $2.50 for 5k events, $20 for 100k, $90 for 1M, $350 for 10M. 30-day free trial, then paid; there is no free tier. Self-hosting is free with unlimited events. Every feature on every tier."
     },
     "competitor": {
       "model": "Event-based, tiered",
-      "description": "Free tier includes 1M events/month with limited features. Growth plans start at $20/month and scale with usage. Enterprise plans start around $1,167/month with advanced features like session replay and feature flags.",
+      "description": "Free up to 1M events a month, including 10K session replays and 10 active feature flags. Growth starts at $140/month for 1.5M events ($100 on yearly billing) and runs to 20M events at $2,289/month. Enterprise is custom. Group analytics and data pipelines are paid add-ons.",
       "free_tier": "Yes (1M events/month)",
       "pricing_url": "https://mixpanel.com/pricing"
-    }
+    },
+    "volumes": [
+      {
+        "volume": "100k events",
+        "openpanel": "$20",
+        "competitor": "$0"
+      },
+      {
+        "volume": "1M events",
+        "openpanel": "$90",
+        "competitor": "$0"
+      },
+      {
+        "volume": "1.5M events",
+        "openpanel": "$180 (2.5M tier)",
+        "competitor": "$140 ($100 yearly)"
+      },
+      {
+        "volume": "20M events",
+        "openpanel": "$530",
+        "competitor": "$2,289 ($1,635 yearly)"
+      }
+    ]
   },
   "migration": {
     "title": "Migrating from Mixpanel to OpenPanel",
@@ -388,11 +419,11 @@
       },
       {
         "title": "Import into OpenPanel",
-        "description": "OpenPanel has a built-in Mixpanel importer. Upload your exported data to maintain historical context."
+        "description": "OpenPanel has a built-in Mixpanel importer: connect with a service account, your project id and a date range (US or EU residency) and it pulls the history in."
       },
       {
         "title": "Install the OpenPanel SDK",
-        "description": "Replace the Mixpanel SDK with OpenPanel's lightweight tracker. The API is similar\u2014track(), identify(), and setGlobalProperties() work the same way."
+        "description": "Replace the Mixpanel SDK with OpenPanel's lightweight tracker. The API is similar, track(), identify(), and setGlobalProperties() work the same way."
       },
       {
         "title": "Update your event calls",
@@ -409,7 +440,7 @@
     },
     "historical_data": {
       "can_import": true,
-      "notes": "OpenPanel has a built-in Mixpanel importer. Contact us if you need assistance with large data migrations."
+      "notes": "Built-in Mixpanel importer in project settings: service account, project id, date range. Contact us for very large migrations."
     }
   },
   "use_cases": {
@@ -438,7 +469,7 @@
       },
       {
         "title": "Developer-led teams",
-        "description": "Open source, tiny SDK, direct database access. Built by developers, for developers who want control.",
+        "description": "Open source, a 3 KB script, S3 or GCS export of raw events, and your own ClickHouse when self-hosted.",
         "icon": "code"
       }
     ]
@@ -449,31 +480,31 @@
     "items": [
       {
         "question": "Does OpenPanel have all the features I use in Mixpanel?",
-        "answer": "OpenPanel covers the core features most teams actually use: event tracking, funnels, retention, cohorts, user profiles, A/B testing, session replay, and group analytics. If you rely heavily on Mixpanel's feature flags or Metric Trees, those aren't available in OpenPanel."
+        "answer": "OpenPanel covers event tracking, funnels, retention, cohorts, user profiles, group analytics and session replay. It can compare variants by breaking a report down by a property, but has no experiment engine, no feature flags and no Metric Trees."
       },
       {
         "question": "Can I import my historical Mixpanel data?",
-        "answer": "Yes! OpenPanel has a built-in Mixpanel importer. You can export your data from Mixpanel and import it directly into OpenPanel to maintain historical context."
+        "answer": "Yes. OpenPanel has a built-in Mixpanel importer. Give it a service account, the project id and a date range, and your events are pulled in with their history."
       },
       {
         "question": "How does pricing compare at scale?",
-        "answer": "OpenPanel is significantly cheaper at most scales. For example, 100k events costs $20/month on OpenPanel. On Mixpanel, once you exceed the free tier limits, costs can climb quickly into hundreds per month. Self-hosting OpenPanel is free with no event limits."
+        "answer": "Below 1M events a month Mixpanel is free and OpenPanel Cloud is not. From there Mixpanel's first paid tier is $140 a month for 1.5M events ($100 on yearly billing), against $90 for 1M or $180 for 2.5M on OpenPanel. At 20M events Mixpanel lists $2,289 a month against $530. Self-hosting OpenPanel is free at any volume."
       },
       {
         "question": "Is OpenPanel GDPR compliant?",
-        "answer": "Yes. OpenPanel is EU-based (Sweden), uses cookie-free tracking by default, and stores data in EU servers. We also offer DPA agreements on request."
+        "answer": "Yes. OpenPanel Cloud runs in Germany, tracking is cookie-free by default, and the data processing agreement is published at openpanel.dev/dpa."
       },
       {
         "question": "Can I self-host OpenPanel?",
-        "answer": "Yes. OpenPanel is fully open source and can be self-hosted with a Docker Compose stack. A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes. Self-hosting is completely free with unlimited events."
+        "answer": "Yes. OpenPanel is open source (AGPL-3.0) and runs on Docker Compose with ClickHouse, Postgres and Redis. One install script sets it up. Self-hosting is free with unlimited events; releases arrive a month or two after Cloud."
       },
       {
         "question": "How does the SDK size compare?",
-        "answer": "OpenPanel's JavaScript SDK is ~2.3 KB gzipped compared to Mixpanel's 20+ KB. This means faster page loads and better Core Web Vitals scores."
+        "answer": "OpenPanel's web script is about 3 KB gzipped. Mixpanel's browser SDK is over 20 KB. Session replay in OpenPanel loads as a separate script only when you enable it."
       },
       {
         "question": "Does OpenPanel support mobile apps?",
-        "answer": "Yes. OpenPanel has SDKs for Swift (iOS), Kotlin (Android), and React Native. While not as mature as Mixpanel's mobile SDKs, they cover the core tracking needs."
+        "answer": "Yes. OpenPanel has Swift (iOS), Kotlin (Android) and React Native SDKs for event tracking. Session replay is web only; Mixpanel offers mobile replay on Enterprise."
       }
     ]
   },
