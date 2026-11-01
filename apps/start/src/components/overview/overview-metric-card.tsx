@@ -106,7 +106,7 @@ export function OverviewMetricCard({
             {label}
           </span>
           {hasValue && (
-            <div className="absolute top-2.5 right-3">
+            <div className="shrink-0">
               <PreviousDiffIndicatorPure
                 {...diff}
                 inverted={inverted}

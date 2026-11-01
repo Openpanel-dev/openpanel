@@ -133,7 +133,6 @@ export default function AddNotificationRule({ rule }: Props) {
             name="config.type"
             render={({ field }) => (
               <Combobox
-                variant="input"
                 {...field}
                 aria-describedby={
                   typeError ? fieldMessageId(typeId) : undefined

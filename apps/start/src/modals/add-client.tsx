@@ -134,7 +134,6 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
                     items={CLIENT_TYPE_ITEMS}
                     onChange={field.onChange}
                     placeholder="Select a client type"
-                    variant="input"
                   />
                 </WithLabel>
               )}

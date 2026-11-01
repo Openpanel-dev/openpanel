@@ -339,7 +339,7 @@ export function entitySummaryQuery(input: {
       countIf(is_error AND type = 'generation') AS errors,
       min(created_at) AS first_at,
       max(created_at) AS last_at,
-      topK(3)(model) AS top_models
+      topKIf(3)(model, type = 'generation') AS top_models
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE project_id = ${sql.string(input.projectId)}
       AND ${input.where}

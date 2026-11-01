@@ -20,6 +20,13 @@ export type AiEventName = (typeof AI_EVENT_NAMES)[AiEventKind];
 
 export const AI_EVENT_NAME_LIST = Object.values(AI_EVENT_NAMES);
 
+/** Plumbing around a model call; activity views show the `ai_generation` itself. */
+export const AI_INTERNAL_EVENT_NAMES: readonly AiEventName[] = [
+  AI_EVENT_NAMES.trace,
+  AI_EVENT_NAMES.span,
+  AI_EVENT_NAMES.embedding,
+];
+
 export function isAiEventName(name: string): name is AiEventName {
   return (AI_EVENT_NAME_LIST as string[]).includes(name);
 }

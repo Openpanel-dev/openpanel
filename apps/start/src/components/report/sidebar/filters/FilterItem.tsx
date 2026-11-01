@@ -297,7 +297,6 @@ export function PureFilterItem({
           placeholder="Select..."
           size="sm"
           value={filter.value}
-          variant="input"
         />
       );
     }
