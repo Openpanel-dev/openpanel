@@ -31,9 +31,19 @@ describe('readAttribution', () => {
 
   it('ignores a cookie that is not valid attribution', () => {
     expect(readAttribution('op_attribution=not-json')).toBeUndefined();
+    expect(readAttribution(cookieHeader('a string'))).toBeUndefined();
+  });
+
+  it('drops a bad field but keeps the rest of the first touch', () => {
     expect(
-      readAttribution(cookieHeader({ firstSeenAt: 'yesterday' }))
-    ).toBeUndefined();
+      readAttribution(
+        cookieHeader({
+          referrer: 'x'.repeat(600),
+          utmSource: 'reddit',
+          firstSeenAt: 'yesterday',
+        })
+      )
+    ).toEqual({ utmSource: 'reddit' });
   });
 });
 

@@ -15,6 +15,17 @@ const UTM_KEYS = {
   utm_term: 'utmTerm',
 } as const;
 
+// A referrer's query string can carry the referring site's own tokens and
+// adds nothing to attribution.
+function withoutQuery(url: string) {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    return url;
+  }
+}
+
 function readFirstTouch() {
   const params = new URLSearchParams(window.location.search);
   const value: Record<string, string> = {
@@ -22,7 +33,7 @@ function readFirstTouch() {
     firstSeenAt: new Date().toISOString(),
   };
   if (document.referrer) {
-    value.referrer = document.referrer;
+    value.referrer = withoutQuery(document.referrer);
   }
   for (const [param, key] of Object.entries(UTM_KEYS)) {
     const utm = params.get(param);

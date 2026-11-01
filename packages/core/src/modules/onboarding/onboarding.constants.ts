@@ -6,11 +6,14 @@ import { zTimezone } from '../organization/organization.constants';
 // `zOrganizationAttribution`.
 export const ATTRIBUTION_COOKIE_NAME = 'op_attribution';
 const ATTRIBUTION_FIELD_MAX_LENGTH = 512;
+// One bad field (oversized, wrong type) drops that field, not the whole
+// first touch.
 const zAttributionField = z
   .string()
   .trim()
   .max(ATTRIBUTION_FIELD_MAX_LENGTH)
-  .optional();
+  .optional()
+  .catch(undefined);
 
 export const zOrganizationAttribution = z.object({
   referrer: zAttributionField,
@@ -20,7 +23,7 @@ export const zOrganizationAttribution = z.object({
   utmCampaign: zAttributionField,
   utmContent: zAttributionField,
   utmTerm: zAttributionField,
-  firstSeenAt: z.string().datetime().optional(),
+  firstSeenAt: z.string().datetime().optional().catch(undefined),
 });
 export type IOrganizationAttribution = z.infer<typeof zOrganizationAttribution>;
 
