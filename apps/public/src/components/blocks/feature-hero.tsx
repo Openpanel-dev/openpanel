@@ -14,6 +14,7 @@ export function FeatureHero({
   title,
   description,
   pill,
+  eyebrow,
   visual,
   wide = true,
   fade = true,
@@ -22,6 +23,7 @@ export function FeatureHero({
   title: React.ReactNode;
   description: React.ReactNode;
   pill?: { label: string; text: string; href: string };
+  eyebrow?: React.ReactNode;
   visual?: React.ReactNode;
   wide?: boolean;
   fade?: boolean;
@@ -46,6 +48,7 @@ export function FeatureHero({
         }
         className="pb-0 md:pb-0"
         description={description}
+        eyebrow={eyebrow}
         pill={pill}
         title={title}
       />

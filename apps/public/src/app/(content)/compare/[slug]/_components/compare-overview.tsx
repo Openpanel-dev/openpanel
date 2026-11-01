@@ -1,26 +1,26 @@
-import { Section } from '@/components/section';
+import { Reveal } from '@/components/reveal';
+import { SectionLabel } from '@/components/section';
 import type { CompareOverview as CompareOverviewData } from '@/lib/compare';
 
-interface CompareOverviewProps {
+// The long-form read, for people who want the reasoning and for search.
+export function CompareOverview({
+  overview,
+}: {
   overview: CompareOverviewData;
-}
-
-export function CompareOverview({ overview }: CompareOverviewProps) {
+}) {
   return (
-    <Section className="container">
-      <article className="col max-w-3xl gap-6">
-        <h2 className="font-semibold text-3xl md:text-4xl">{overview.title}</h2>
-        <div className="col gap-4">
-          {overview.paragraphs.map((paragraph) => (
-            <p
-              className="text-base text-muted-foreground leading-relaxed md:text-lg"
-              key={paragraph.slice(0, 48)}
-            >
-              {paragraph}
-            </p>
-          ))}
-        </div>
-      </article>
-    </Section>
+    <section className="container grid grid-cols-1 gap-8 py-16 md:grid-cols-[5fr_7fr] md:gap-20 md:py-24">
+      <Reveal className="col gap-4">
+        <SectionLabel>In depth</SectionLabel>
+        <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+          {overview.title}
+        </h2>
+      </Reveal>
+      <Reveal className="col gap-5 text-neutral-600 leading-relaxed" delay={80}>
+        {overview.paragraphs.map((paragraph) => (
+          <p key={paragraph.slice(0, 40)}>{paragraph}</p>
+        ))}
+      </Reveal>
+    </section>
   );
 }

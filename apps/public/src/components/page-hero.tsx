@@ -12,6 +12,7 @@ function rise(step: number) {
 // Everything rises in on load in the same rhythm as the homepage.
 export function PageHero({
   pill,
+  eyebrow,
   title,
   description,
   actions,
@@ -20,6 +21,9 @@ export function PageHero({
   children,
 }: {
   pill?: { label: string; text: string; href: string };
+  // Anything that should sit above the headline when it is not a pill
+  // (the "OpenPanel vs X" lockup on compare pages).
+  eyebrow?: React.ReactNode;
   title: React.ReactNode;
   description?: React.ReactNode;
   actions?: React.ReactNode;
@@ -46,6 +50,11 @@ export function PageHero({
             centered ? 'items-center text-center' : 'items-start text-left'
           )}
         >
+          {eyebrow && (
+            <div className="animate-rise" style={rise(0)}>
+              {eyebrow}
+            </div>
+          )}
           {pill && (
             <Link
               className="row animate-rise items-center gap-2 rounded-full bg-white py-1 pr-3 pl-1 text-sm shadow-sm ring-1 ring-black/6 transition-colors hover:bg-neutral-50"
