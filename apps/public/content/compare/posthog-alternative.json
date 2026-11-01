@@ -2,7 +2,7 @@
   "slug": "posthog-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "PostHog Alternative: OpenPanel vs PostHog",
+    "title": "OpenPanel vs PostHog: Pricing, Script Size and Self-Hosting",
     "description": "OpenPanel vs PostHog: a 3 KB vs 105 KB tracking script, cookie-free by default, simpler self-hosting, and what each costs at 1M and 10M events a month.",
     "noindex": false
   },
@@ -26,7 +26,7 @@
   },
   "meta": {
     "author": "Carl-Gerhard Lindesvärd",
-    "updated": "2026-10-18",
+    "updated": "2026-11-01",
     "prices_checked": "2026-10-18"
   },
   "overview": {

@@ -2,12 +2,12 @@
   "slug": "google-analytics-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Open Source Google Analytics Alternative 2026 - Free & Private",
-    "description": "Switch from Google Analytics to OpenPanel \u2014 open-source, cookie-free, GDPR-compliant analytics with EU hosting. No consent banners needed. Self-host for free or start from $2.50/mo.",
+    "title": "OpenPanel vs Google Analytics: Cookie-Free, Open Source, EU-Hosted",
+    "description": "Switch from Google Analytics to OpenPanel — open-source, cookie-free, GDPR-compliant analytics with EU hosting. No consent banners needed. Self-host for free or start from $2.50/mo.",
     "noindex": false
   },
   "hero": {
-    "heading": "The Open Source Google Analytics Alternative",
+    "heading": "OpenPanel vs Google Analytics",
     "subheading": "OpenPanel is an open-source, privacy-first alternative to Google Analytics that combines web analytics with product analytics in one tool. Cookie-free tracking, EU data hosting, and a 2.3 KB SDK that won't slow down your site.",
     "badges": [
       "Open source (AGPL-3.0)",
@@ -28,9 +28,9 @@
   "overview": {
     "title": "Why teams are switching from Google Analytics to OpenPanel",
     "paragraphs": [
-      "Google Analytics has been the default analytics tool since 2005. But the forced migration to GA4 fundamentally changed the product \u2014 the new event-based model has a steep learning curve, the interface is confusing for most users, and data retention dropped to just 14 months on the free tier. Meanwhile, privacy regulations like GDPR and the ePrivacy Directive mean GA4 requires cookie consent banners that hurt conversion rates and annoy visitors.",
-      "OpenPanel is built for the post-GA4 world. It's fully open source under the AGPL-3.0 license, which means you can inspect, modify, and self-host the entire codebase. Unlike Google Analytics, OpenPanel tracks visitors without cookies \u2014 no consent banners needed, and full GDPR compliance out of the box. Your data stays on EU servers in Sweden, or you can self-host on your own infrastructure for complete data sovereignty.",
-      "Where GA4 splits functionality between free and enterprise tiers ($50,000+/year for GA4 360), OpenPanel gives you everything in one package: real-time dashboards, funnels, retention analysis, cohorts, user profiles, custom events, and revenue tracking. The SDK is just 2.3 KB gzipped \u2014 over 13x smaller than Google's gtag.js \u2014 which directly improves your Core Web Vitals and page load times.",
+      "Google Analytics has been the default analytics tool since 2005. But the forced migration to GA4 fundamentally changed the product — the new event-based model has a steep learning curve, the interface is confusing for most users, and data retention dropped to just 14 months on the free tier. Meanwhile, privacy regulations like GDPR and the ePrivacy Directive mean GA4 requires cookie consent banners that hurt conversion rates and annoy visitors.",
+      "OpenPanel is built for the post-GA4 world. It's fully open source under the AGPL-3.0 license, which means you can inspect, modify, and self-host the entire codebase. Unlike Google Analytics, OpenPanel tracks visitors without cookies — no consent banners needed, and full GDPR compliance out of the box. Your data stays on EU servers in Sweden, or you can self-host on your own infrastructure for complete data sovereignty.",
+      "Where GA4 splits functionality between free and enterprise tiers ($50,000+/year for GA4 360), OpenPanel gives you everything in one package: real-time dashboards, funnels, retention analysis, cohorts, user profiles, custom events, and revenue tracking. The SDK is just 2.3 KB gzipped — over 13x smaller than Google's gtag.js — which directly improves your Core Web Vitals and page load times.",
       "OpenPanel also goes beyond what GA4 offers for free: built-in A/B testing, unlimited data retention (when self-hosted), no data sampling, and direct SQL access to your analytics data via ClickHouse. If you don't rely heavily on Google Ads attribution, OpenPanel gives you better analytics with better privacy at a fraction of the complexity."
     ]
   },
@@ -43,7 +43,7 @@
       "EU businesses that need GDPR-compliant analytics with European data hosting",
       "Developers who want to self-host and own their analytics data completely",
       "Teams frustrated with GA4's complexity who want simpler, actionable insights",
-      "Sites that care about performance \u2014 2.3 KB SDK vs Google's 30+ KB",
+      "Sites that care about performance — 2.3 KB SDK vs Google's 30+ KB",
       "Teams who need both web analytics and product analytics in one tool"
     ],
     "best_for_competitor": [
@@ -59,8 +59,8 @@
     "items": [
       {
         "label": "Open source",
-        "openpanel": "Yes \u2014 AGPL-3.0 license, full source code on GitHub",
-        "competitor": "No \u2014 proprietary, closed-source Google product"
+        "openpanel": "Yes — AGPL-3.0 license, full source code on GitHub",
+        "competitor": "No — proprietary, closed-source Google product"
       },
       {
         "label": "Price",
@@ -69,7 +69,7 @@
       },
       {
         "label": "Cookies",
-        "openpanel": "Cookie-free by default \u2014 no consent banner needed",
+        "openpanel": "Cookie-free by default — no consent banner needed",
         "competitor": "Requires first-party cookies and a consent banner under GDPR"
       },
       {
@@ -79,22 +79,22 @@
       },
       {
         "label": "SDK size",
-        "openpanel": "2.3 KB gzipped \u2014 minimal impact on page speed",
-        "competitor": "30+ KB gzipped \u2014 impacts Core Web Vitals"
+        "openpanel": "2.3 KB gzipped — minimal impact on page speed",
+        "competitor": "30+ KB gzipped — impacts Core Web Vitals"
       },
       {
         "label": "Data retention",
         "openpanel": "Unlimited (self-hosted) or plan-based (cloud)",
-        "competitor": "2\u201314 months free tier, up to 50 months on GA4 360"
+        "competitor": "2–14 months free tier, up to 50 months on GA4 360"
       },
       {
         "label": "Data sampling",
-        "openpanel": "Never \u2014 every event counted accurately",
-        "competitor": "Yes \u2014 free tier samples data at high traffic volumes"
+        "openpanel": "Never — every event counted accurately",
+        "competitor": "Yes — free tier samples data at high traffic volumes"
       },
       {
         "label": "Self-hosting",
-        "openpanel": "Yes \u2014 Docker Compose, guided setup wizard",
+        "openpanel": "Yes — Docker Compose, guided setup wizard",
         "competitor": "Not available"
       }
     ]
@@ -204,7 +204,7 @@
             "name": "A/B testing",
             "openpanel": true,
             "competitor": false,
-            "notes": "Google Optimize was shut down September 2023 \u2014 no built-in replacement"
+            "notes": "Google Optimize was shut down September 2023 — no built-in replacement"
           },
           {
             "name": "Custom dashboards",
@@ -222,7 +222,7 @@
             "name": "Attribution modeling",
             "openpanel": false,
             "competitor": true,
-            "notes": "GA4 has data-driven attribution \u2014 its strongest advantage for advertisers"
+            "notes": "GA4 has data-driven attribution — its strongest advantage for advertisers"
           },
           {
             "name": "Alerts & notifications",
@@ -304,7 +304,7 @@
             "name": "Google Ads integration",
             "openpanel": false,
             "competitor": true,
-            "notes": "GA4's strongest feature \u2014 native Google Ads conversion tracking"
+            "notes": "GA4's strongest feature — native Google Ads conversion tracking"
           },
           {
             "name": "Google Search Console",
@@ -336,7 +336,7 @@
         "label": "SDK size (JavaScript)",
         "openpanel": "~2.3 KB gzipped",
         "competitor": "~30+ KB gzipped (gtag.js + analytics.js)",
-        "notes": "OpenPanel's SDK is 13x smaller \u2014 a direct improvement to Core Web Vitals and page load speed"
+        "notes": "OpenPanel's SDK is 13x smaller — a direct improvement to Core Web Vitals and page load speed"
       },
       {
         "label": "Supported SDKs",
@@ -367,8 +367,8 @@
       },
       {
         "label": "Open source",
-        "openpanel": "Yes \u2014 AGPL-3.0, full source code on GitHub",
-        "competitor": "No \u2014 proprietary Google product",
+        "openpanel": "Yes — AGPL-3.0, full source code on GitHub",
+        "competitor": "No — proprietary Google product",
         "notes": "OpenPanel can be audited, forked, and self-hosted"
       },
       {
@@ -379,20 +379,20 @@
       },
       {
         "label": "Database & data access",
-        "openpanel": "ClickHouse (analytics) + PostgreSQL (config) \u2014 direct SQL access",
-        "competitor": "Proprietary Google infrastructure \u2014 no direct access",
+        "openpanel": "ClickHouse (analytics) + PostgreSQL (config) — direct SQL access",
+        "competitor": "Proprietary Google infrastructure — no direct access",
         "notes": "OpenPanel gives you direct SQL access to your raw event data"
       },
       {
         "label": "Data retention",
         "openpanel": "Unlimited when self-hosted, plan-based on cloud",
-        "competitor": "2\u201314 months (free tier), up to 50 months (GA4 360 at $50k+/year)",
+        "competitor": "2–14 months (free tier), up to 50 months (GA4 360 at $50k+/year)",
         "notes": "GA4's strict retention limits are a common reason teams switch"
       },
       {
         "label": "Data sampling",
-        "openpanel": "Never \u2014 100% accurate data",
-        "competitor": "Yes \u2014 GA4 free tier samples at high traffic volumes",
+        "openpanel": "Never — 100% accurate data",
+        "competitor": "Yes — GA4 free tier samples at high traffic volumes",
         "notes": "Data sampling means your reports may not reflect actual numbers"
       }
     ]
@@ -406,7 +406,7 @@
     },
     "competitor": {
       "model": "Freemium with enterprise tier",
-      "description": "GA4 free tier has significant limitations: data sampling at high volumes, 14-month maximum data retention, limited Explorations, and no BigQuery export. GA4 360 (enterprise) starts at $50,000/year for higher limits, unsampled data, and support. The 'free' tier is subsidized by Google's advertising business \u2014 your visitors' data is the product.",
+      "description": "GA4 free tier has significant limitations: data sampling at high volumes, 14-month maximum data retention, limited Explorations, and no BigQuery export. GA4 360 (enterprise) starts at $50,000/year for higher limits, unsampled data, and support. The 'free' tier is subsidized by Google's advertising business — your visitors' data is the product.",
       "free_tier": "Yes (with major limitations and privacy tradeoffs)",
       "pricing_url": "https://marketingplatform.google.com/about/analytics/"
     }
@@ -431,7 +431,7 @@
       },
       {
         "title": "Configure dashboards and funnels",
-        "description": "Set up your reports in OpenPanel's visual dashboard builder. It's simpler than GA4's Explorations \u2014 most teams get set up in minutes."
+        "description": "Set up your reports in OpenPanel's visual dashboard builder. It's simpler than GA4's Explorations — most teams get set up in minutes."
       },
       {
         "title": "Verify data and remove GA4",
@@ -463,7 +463,7 @@
       },
       {
         "title": "Self-hosted for complete data sovereignty",
-        "description": "Deploy OpenPanel on your own servers with a one-command Docker Compose setup. Your analytics data never leaves your infrastructure \u2014 critical for healthcare, finance, and government.",
+        "description": "Deploy OpenPanel on your own servers with a one-command Docker Compose setup. Your analytics data never leaves your infrastructure — critical for healthcare, finance, and government.",
         "icon": "server"
       },
       {
@@ -478,7 +478,7 @@
       },
       {
         "title": "Teams frustrated with GA4's complexity",
-        "description": "If your team struggles with GA4's confusing interface, complex event model, and limited Explorations \u2014 OpenPanel gives you the insights you need without the steep learning curve.",
+        "description": "If your team struggles with GA4's confusing interface, complex event model, and limited Explorations — OpenPanel gives you the insights you need without the steep learning curve.",
         "icon": "chart"
       }
     ]
@@ -489,15 +489,15 @@
     "items": [
       {
         "question": "Is Google Analytics open source?",
-        "answer": "No. Google Analytics is a proprietary, closed-source product owned by Google. You cannot inspect the tracking code, verify how your data is processed, or self-host it. OpenPanel is fully open source under the AGPL-3.0 license \u2014 the complete source code is available on GitHub for anyone to audit, modify, or self-host."
+        "answer": "No. Google Analytics is a proprietary, closed-source product owned by Google. You cannot inspect the tracking code, verify how your data is processed, or self-host it. OpenPanel is fully open source under the AGPL-3.0 license — the complete source code is available on GitHub for anyone to audit, modify, or self-host."
       },
       {
         "question": "Is Google Analytics really free?",
-        "answer": "GA4 is free to use, but the cost is your visitors' privacy \u2014 data is processed on Google's US servers and used within Google's advertising ecosystem. There are also significant feature limitations: 14-month data retention, data sampling at high volumes, and no BigQuery export. GA4 360 removes these limits but costs $50,000+/year. OpenPanel offers a free self-hosted option with no limitations, or cloud hosting starting at $2.50/month."
+        "answer": "GA4 is free to use, but the cost is your visitors' privacy — data is processed on Google's US servers and used within Google's advertising ecosystem. There are also significant feature limitations: 14-month data retention, data sampling at high volumes, and no BigQuery export. GA4 360 removes these limits but costs $50,000+/year. OpenPanel offers a free self-hosted option with no limitations, or cloud hosting starting at $2.50/month."
       },
       {
         "question": "Why are people switching away from Google Analytics?",
-        "answer": "The main reasons teams switch from GA4 are: 1) Privacy concerns \u2014 data sent to Google's US servers creates GDPR compliance issues, 2) Cookie consent banners \u2014 GA4 requires them, which hurts UX and conversion rates, 3) GA4 complexity \u2014 the new interface and event model have a steep learning curve, 4) Data limitations \u2014 sampling, short retention, and limited exports on the free tier, 5) Performance \u2014 the 30+ KB gtag.js script impacts page load speed."
+        "answer": "The main reasons teams switch from GA4 are: 1) Privacy concerns — data sent to Google's US servers creates GDPR compliance issues, 2) Cookie consent banners — GA4 requires them, which hurts UX and conversion rates, 3) GA4 complexity — the new interface and event model have a steep learning curve, 4) Data limitations — sampling, short retention, and limited exports on the free tier, 5) Performance — the 30+ KB gtag.js script impacts page load speed."
       },
       {
         "question": "Do I need a cookie consent banner with OpenPanel?",
@@ -509,7 +509,7 @@
       },
       {
         "question": "Can I self-host OpenPanel?",
-        "answer": "Yes. OpenPanel can be self-hosted using Docker Compose (ClickHouse, Postgres, and Redis). A one-command ./setup wizard walks you through configuration, then ./start brings the whole stack up in minutes \u2014 the entire process takes about 15 minutes. When self-hosted, you get unlimited events, unlimited data retention, and complete control over your data \u2014 no usage fees. The source code is available under the AGPL-3.0 license."
+        "answer": "Yes. OpenPanel can be self-hosted using Docker Compose (ClickHouse, Postgres, and Redis). A one-command ./setup wizard walks you through configuration, then ./start brings the whole stack up in minutes — the entire process takes about 15 minutes. When self-hosted, you get unlimited events, unlimited data retention, and complete control over your data — no usage fees. The source code is available under the AGPL-3.0 license."
       },
       {
         "question": "Can I import my Google Analytics data into OpenPanel?",

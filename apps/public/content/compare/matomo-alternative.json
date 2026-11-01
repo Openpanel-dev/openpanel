@@ -2,14 +2,19 @@
   "slug": "matomo-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Matomo Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Matomo alternative? OpenPanel offers simpler setup, truly cookie-free tracking, and a modern UI \u2014 no premium plugin costs. Open source and free to self-host.",
+    "title": "OpenPanel vs Matomo: Cookie-Free, Simpler Self-Hosting, No Plugins",
+    "description": "Looking for a Matomo alternative? OpenPanel offers simpler setup, truly cookie-free tracking, and a modern UI — no premium plugin costs. Open source and free to self-host.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Matomo Alternative",
+    "heading": "OpenPanel vs Matomo",
     "subheading": "OpenPanel is a modern, open-source alternative to Matomo. Get powerful web and product analytics with a cleaner interface, truly cookie-free tracking by default, and no premium plugins required for essential features.",
-    "badges": ["Open-source", "Cookie-free", "EU-only hosting", "Self-hostable"]
+    "badges": [
+      "Open-source",
+      "Cookie-free",
+      "EU-only hosting",
+      "Self-hostable"
+    ]
   },
   "competitor": {
     "name": "Matomo",
@@ -23,9 +28,9 @@
     "title": "Why consider OpenPanel over Matomo?",
     "paragraphs": [
       "Matomo is one of the most established open-source analytics platforms, used by over 1.4 million websites worldwide. It offers both self-hosted and cloud options with a strong focus on privacy and data ownership. However, Matomo's age shows in its interface, and many essential features like funnels, A/B testing, and heatmaps are locked behind premium plugins that cost $229 per year each.",
-      "OpenPanel is a modern, open-source alternative that includes all features at every tier \u2014 no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available on every paid plan and when self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
-      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler \u2014 a one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes, versus Matomo's PHP, MySQL, and web server stack.",
-      "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, lighter tracking (2.3 KB vs 20 KB), and simpler deployment \u2014 OpenPanel delivers what Matomo promises, without the hidden costs."
+      "OpenPanel is a modern, open-source alternative that includes all features at every tier — no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available on every paid plan and when self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
+      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler — a one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes, versus Matomo's PHP, MySQL, and web server stack.",
+      "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, lighter tracking (2.3 KB vs 20 KB), and simpler deployment — OpenPanel delivers what Matomo promises, without the hidden costs."
     ]
   },
   "summary_comparison": {

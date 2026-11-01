@@ -2,12 +2,12 @@
   "slug": "umami-alternative",
   "page_type": "alternative",
   "seo": {
-    "title": "Best Umami Alternative 2026 - Open Source & Free",
+    "title": "OpenPanel vs Umami: Product Analytics on Top of Web Stats",
     "description": "Looking for an Umami alternative? OpenPanel offers deeper product analytics, user identification, and mobile SDKs while staying open source and privacy-first. Free to self-host.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Umami Alternative",
+    "heading": "OpenPanel vs Umami",
     "subheading": "Love Umami's simplicity and privacy focus? OpenPanel adds deeper product analytics - user identification, mobile SDKs, A/B testing, and detailed user profiles - while staying open source and cookie-free.",
     "badges": [
       "Open-source",
@@ -28,7 +28,7 @@
     "title": "Why consider OpenPanel over Umami?",
     "paragraphs": [
       "Umami Analytics is a popular open-source web analytics tool known for its clean interface, lightweight script, and privacy-friendly design. It's a great option for developers who want simple, anonymous website metrics. But as your product grows beyond a simple website, Umami's anonymous-only model and lack of product analytics features become limiting.",
-      "OpenPanel builds on the same open-source, privacy-first foundation but adds the product analytics layer that Umami doesn't have. User identification lets you track logged-in users across sessions, while funnels, retention analysis, and cohort breakdowns help you understand how people actually use your product \u2014 not just that they visited your site.",
+      "OpenPanel builds on the same open-source, privacy-first foundation but adds the product analytics layer that Umami doesn't have. User identification lets you track logged-in users across sessions, while funnels, retention analysis, and cohort breakdowns help you understand how people actually use your product — not just that they visited your site.",
       "Mobile app analytics is another area where OpenPanel pulls ahead. Umami is web-only with no native mobile SDKs, while OpenPanel offers first-party SDKs for iOS, Android, React Native, and Flutter. OpenPanel also includes built-in A/B testing for experimentation, which Umami doesn't offer at all.",
       "OpenPanel is AGPL-3.0 licensed and Umami is MIT — both are open source and support self-hosting, so you won't sacrifice the open-source values that made Umami appealing. If you need to go beyond anonymous pageview counting and actually understand your users, OpenPanel is the natural upgrade from Umami."
     ]
