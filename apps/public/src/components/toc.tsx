@@ -1,8 +1,24 @@
 import type { TableOfContents } from 'fumadocs-core/toc';
 import Link from 'next/link';
+import { Children, isValidElement, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 const INDENT_PX = 12;
+
+// Headings can carry inline markup such as links. A link inside <Link> is
+// invalid HTML and makes Next throw, so the table of contents shows plain text.
+function headingText(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return headingText(node.props.children);
+  }
+  return Children.toArray(node).map(headingText).join('');
+}
 
 export function Toc({ toc }: { toc: TableOfContents }) {
   if (toc.length === 0) {
@@ -26,7 +42,7 @@ export function Toc({ toc }: { toc: TableOfContents }) {
               )}
               href={item.url}
             >
-              {item.title}
+              {headingText(item.title)}
             </Link>
           </li>
         ))}
