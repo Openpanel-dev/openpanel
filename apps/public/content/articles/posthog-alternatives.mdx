@@ -1,0 +1,344 @@
+---
+date: 2026-11-01
+title: "8 Best PostHog Alternatives in 2026 (Open Source and Cloud)"
+description: "Eight PostHog alternatives compared on price, script size, self-hosting and features: OpenPanel, Mixpanel, Amplitude, Plausible, Umami, Matomo and more."
+updated: 2026-11-01
+tag: Comparison
+team: OpenPanel Team
+cover: /content/cover-default.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+PostHog bundles product analytics, session replay, feature flags, experiments, surveys, error tracking and a data warehouse into one product, and the first 1M analytics events a month cost nothing. That is why so many teams start there, and also why some leave: the browser script is about 105 KB gzipped, every product has its own meter once you pass its free allowance, and self-hosting means running ClickHouse, Kafka, ZooKeeper, Redis, Postgres and MinIO on a 16 GB server for a deployment PostHog's own docs call unsupported.
+
+This list is for teams in that position. It covers eight PostHog alternatives: three for product analytics (OpenPanel, Mixpanel, Amplitude), three for web analytics only (Plausible, Umami, Matomo), one for feature flags and experiments (Statsig) and one for free session recordings (Microsoft Clarity).
+
+We build OpenPanel, so it is listed first. Every tool gets the same pricing and cons treatment, and the next section says when PostHog is still the right answer.
+
+## Quick comparison
+
+| Tool | Type | Open source | Self-host | Free tier | Paid from | Best for |
+|------|------|-------------|-----------|-----------|-----------|----------|
+| [**OpenPanel**](#openpanel) | Web + product analytics | Yes (AGPL-3.0) | Docker Compose, free | 30-day trial | $2.50/mo (5k events) | Analytics plus replay with a 3 KB script |
+| [**Mixpanel**](#mixpanel) | Product analytics | No | No | 1M events/mo | $140/mo (1.5M events) | Deep product analytics without flags |
+| [**Amplitude**](#amplitude) | Product analytics | No | No | 2M events/mo | Usage-based after 2M | Enterprise product analytics |
+| [**Plausible**](#plausible) | Web analytics | Yes (AGPL-3.0) | Community Edition, free | 30-day trial | $9/mo (10k pageviews) | Simple, cookieless traffic stats |
+| [**Umami**](#umami) | Web analytics | Yes (MIT) | Docker or Node, free | 100k events/mo | $20/mo (1M events) | Lightweight self-hosted web stats |
+| [**Matomo**](#matomo) | Web analytics | Yes (GPL-3.0) | PHP + MySQL, free core | Self-hosted core | €29/mo (50k hits) | Google Analytics replacement |
+| [**Statsig**](#statsig) | Flags + experiments + analytics | No | No | 2M events/mo | $150/mo (5M events) | Experiments first, analytics second |
+| [**Microsoft Clarity**](#microsoft-clarity) | Recordings + heatmaps | No | No | Free, no traffic limits | Free | Free recordings next to another tool |
+
+Prices checked November 2026. PostHog for reference: the first 1M analytics events a month are free, then $0.00005 per event up to 2M and $0.0000343 per event from 2M to 15M, so 10M events cost about $324 a month. Session replay (5K free recordings), feature flags (1M free requests) and surveys (1,500 free responses) are each metered separately.
+
+## How to choose a PostHog alternative
+
+Four reasons come up when teams look for a PostHog alternative, and they point at different tools.
+
+The first is script weight. posthog-js is about 105 KB gzipped (the `dist/array.js` bundle), before the replay recorder loads. OpenPanel's tracker is 3.3 KB gzipped and Plausible's is under 1 KB. If a slow landing page is the reason you are here, pick by script size.
+
+The second is metered per-product pricing. PostHog's free allowances are separate: 1M events, 5K recordings, 1M flag requests, 1,500 survey responses, each with its own price curve, so a product with 3M events and 40K recordings pays on two meters. Flat tiers (OpenPanel) or a single event meter (Mixpanel, Umami, Statsig) are easier to budget.
+
+The third is the self-hosting stack. PostHog's hobby deploy needs 4 vCPU, 16 GB RAM and six backing services. The docs call it "officially unsupported" and ask you to reconsider above 300K events a month. OpenPanel, Plausible Community Edition, Umami and Matomo each run on one server.
+
+The fourth is scope. If you use two of PostHog's eight products, the navigation still carries the other six.
+
+There are also reasons to stay on PostHog. Stay if you use feature flags or experiments joined to analytics; only Statsig on this list does that well. Stay for SQL in the dashboard, because HogQL has no equivalent here. Stay for surveys or error tracking; none of the eight tools ships either. And stay if you are under the free allowances and the script does not bother you. The 1:1 comparison is at [PostHog vs OpenPanel](/compare/posthog-alternative).
+
+---
+
+## OpenPanel
+
+**Best for: Teams that want product and web analytics with replay, a small script and one-server self-hosting**
+
+[OpenPanel](/) is open-source (AGPL-3.0) product and web analytics. It tracks pageviews, referrers and devices alongside custom events, and turns those into [funnels](/features/funnels), [retention](/features/retention), cohorts and user profiles. [Session replay](/features/session-replay) is part of every plan with 30-day retention and no cap on recordings. Tracking is cookie-free by default, and an MCP server lets Claude or ChatGPT query your project data.
+
+![OpenPanel dashboard](/content/tools/openpanel.png)
+
+The tracker is 3.3 KB gzipped; the replay module loads separately and only if you turn replay on. Self-hosting is Docker Compose with ClickHouse, Postgres and Redis behind a one-command setup script ([guide](/docs/self-hosting/self-hosting)). Self-hosted gets the full product, with releases arriving a month or two after Cloud.
+
+### Key features
+- Web analytics dashboard: pages, referrers, countries, devices, real-time view
+- Funnels, retention, cohorts, user profiles and session history
+- Session replay included, 30-day retention, unlimited recordings
+- Cookie-free tracking by default
+- SDKs for script tag, Web, Node, Next.js, React, Vue, Astro, Remix, Express, React Native, Swift, Kotlin and Python
+
+### Pricing
+Cloud is a flat monthly price for an event volume, with every feature on every tier: $2.50 for 5k events, $20 for 100k, $90 for 1M, $350 for 10M. Websites, team members, dashboards and tracked profiles are not metered. There is no free tier; you get a 30-day trial. Self-hosting is free with no event limit. Full table on the [pricing page](/pricing).
+
+### Pros
+- 3.3 KB script against PostHog's 105 KB
+- One flat price covers analytics and replay; no separate meters
+- Self-hosting on one server is a supported path, not a hobby deploy
+- Open source with a free, unlimited self-hosted option
+
+### Cons
+- No feature flags, experiments, surveys, error tracking or heatmaps
+- No SQL editor in the dashboard (self-hosters can query ClickHouse directly)
+- No free cloud tier; PostHog is cheaper below 1M events
+- Smaller community and younger project than PostHog or Mixpanel
+
+<ArticleCta
+  id="posthog-alternatives-openpanel"
+  title="Try OpenPanel on your own events"
+  description="Start a 30-day cloud trial, add the 3 KB script and compare funnels, retention and replay against your PostHog project side by side. Self-host with Docker Compose when you are ready."
+  secondary={{ text: 'See the full PostHog comparison', href: '/compare/posthog-alternative' }}
+/>
+
+---
+
+## Mixpanel
+
+**Best for: Product teams that want deep behavioral analytics and reports, and do not need flags or self-hosting**
+
+[Mixpanel](https://mixpanel.com) has done event-based product analytics since 2009, and its report builder is still the reference for segmentation, flows and cohort work. Replay is included in the event plans; flags and experiments exist at small allowances. Cloud only and proprietary, with US hosting by default and EU or India residency as options.
+
+### Key features
+- Insights, funnels, flows, retention and cohort reports with breakdowns on any property
+- Session replay: 10K recordings a month on Free, 20K on Growth
+- Unlimited seats on every plan
+
+### Pricing
+Free covers 1M events a month, 10K session replays, up to 10 active feature flags and 2 years of data retention. Growth bills by event volume above the free 1M: 1.5M events is $140 a month on monthly billing ($100 on yearly), 2M is $259 ($185), 5M is $613 ($438), 10M is $1,176 ($840). Source: [mixpanel.com/pricing](https://mixpanel.com/pricing); see also our [Mixpanel pricing guide](/articles/mixpanel-pricing).
+
+### Pros
+- The most mature report builder on this list
+- 1M free events plus 10K replays with unlimited seats
+
+### Cons
+- $1,176 a month for 10M events, against about $324 on PostHog and $350 on OpenPanel
+- Cloud only, no self-hosting, not open source
+- Uses cookies by default, so a consent banner stays
+
+Compare with OpenPanel: [Mixpanel vs OpenPanel](/compare/mixpanel-alternative)
+
+---
+
+## Amplitude
+
+**Best for: Larger product organizations that want analytics, experiments and a CDP from one enterprise vendor**
+
+[Amplitude](https://amplitude.com) is the enterprise option. Its analytics covers what Mixpanel does and adds behavioral cohorts, experiments, feature flags, session replay and a customer data platform. A free plan gets you in, Plus is self-serve, and Growth and Enterprise are negotiated with sales.
+
+![Amplitude dashboard](/content/tools/amplitude.png)
+
+### Key features
+- Charts, funnels, retention, journeys and behavioral cohorts
+- Experiments and feature flags on every plan, including Free
+- Session replay with 10K recordings a month on Free and Plus
+- Unlimited team members on every plan
+
+### Pricing
+Free covers 2M events a month with 10K session replays, 1 year of data access and 1 month of replay retention. Plus "starts at $0": the first 2M events are free, then you pay by event volume up to 70M events a month, with 2 years of data access. Amplitude does not publish the per-event figures. Growth and Enterprise are custom. Plans at [amplitude.com/pricing](https://amplitude.com/pricing).
+
+### Pros
+- 2M free events, the largest free analytics allowance here
+- Flags and experiments at no extra charge
+- EU hosting in Frankfurt available
+
+### Cons
+- No published price above 2M events; you estimate, then negotiate
+- Cloud only, proprietary, no self-hosting
+- First-party cookies by default
+
+Compare with OpenPanel: [Amplitude vs OpenPanel](/compare/amplitude-alternative)
+
+---
+
+## Plausible
+
+**Best for: Content and marketing sites that want cookieless traffic stats with the smallest possible script**
+
+[Plausible](https://plausible.io) is web analytics with a one-page dashboard: visitors, sources, pages, countries, devices and goals. It is AGPL-3.0 and hosted in Germany. The tracker is under 1 KB and sets no cookies. There are no user profiles by design, so it is a PostHog alternative only if the part of PostHog you used was the web analytics tab.
+
+![Plausible dashboard](/content/tools/plausible.png)
+
+### Key features
+- One-screen dashboard with real-time visitors
+- Goals, custom events and saved segments
+- Google Analytics import on every plan
+- Funnels, user journeys and the Stats API on the Business plan
+
+### Pricing
+At 10k pageviews a month: Starter $9, Growth $14, Business $19. At 1M pageviews: $69, $104, $139. Business adds funnels, user journeys, ecommerce revenue attribution and the API. 30-day trial, no free tier. The self-hosted Community Edition is free but ships twice a year and leaves out funnels, user journeys, ecommerce revenue goals, SSO and the sites API. Prices from [plausible.io](https://plausible.io/#pricing).
+
+### Pros
+- Sub-1 KB script, no cookies, no consent banner for analytics
+- Nothing to learn: the dashboard is one page
+- Cheaper than OpenPanel at 1M pageviews on Starter ($69 against $90)
+
+### Cons
+- No user identification, retention, cohorts or profiles
+- Funnels cost $19 a month minimum and are missing from the self-hosted edition
+- No session replay
+
+Compare with OpenPanel: [Plausible vs OpenPanel](/compare/plausible-alternative)
+
+---
+
+## Umami
+
+**Best for: Developers who want MIT-licensed web analytics they can run on a $5 VPS**
+
+[Umami](https://umami.is) is a Node.js web analytics app on Postgres or MySQL. It is MIT licensed, the most permissive license on this list, and light enough that one small VPS handles a busy site. Umami 2 added funnel, retention, journey and goal reports, but they run on anonymous visitors; there is no identify call and no per-user profile.
+
+![Umami dashboard](/content/tools/umami.png)
+
+### Key features
+- Pageviews, referrers, devices, countries and custom events
+- Funnel, retention, UTM, goal and journey reports
+- Cookieless tracking
+- REST API and MCP access on paid cloud plans
+
+### Pricing
+Umami Cloud Hobby is free for 100K events a month, 1 website and 6 months of data retention. Pro is $20 a month for 1M events, then $0.00003 per extra event, with 2 years of retention. Business is $200 a month for 10M events. Self-hosting is free with no limits. Plans at [umami.is/pricing](https://umami.is/pricing).
+
+### Pros
+- MIT license, so no copyleft questions when you modify it
+- Smallest footprint of any tool here to self-host
+- $20 for 1M events on cloud
+
+### Cons
+- No user profiles, session replay or product analytics beyond anonymous funnels
+- Free cloud tier is now 100K events with 6-month retention
+- Fewer integrations than Plausible or Matomo
+
+Compare with OpenPanel: [Umami vs OpenPanel](/compare/umami-alternative)
+
+---
+
+## Matomo
+
+**Best for: Organizations replacing Google Analytics who want the familiar report structure under their own control**
+
+[Matomo](https://matomo.org) (formerly Piwik) started in 2007 and is the most complete web analytics suite you can self-host. It runs on PHP and MySQL; Matomo Cloud is hosted in Frankfurt. The core is GPL-3.0 and free; funnels, heatmaps, session recording and A/B testing are premium plugins, sold as paid bundles to self-hosters and included on Cloud.
+
+![Matomo dashboard](/content/tools/matomo.png)
+
+### Key features
+- Traffic, acquisition, campaigns, goals and ecommerce reports
+- Google Analytics data import
+- Funnels, heatmaps, session recording and A/B testing (Cloud or paid bundles)
+- Tag manager and a large plugin marketplace
+
+### Pricing
+Cloud starts at €29 a month excluding tax for 50,000 hits (pageviews plus events), with all features and 24 months of raw data retention. The On-Premise core is free with unlimited hits and users. Premium features for self-hosters come as bundles: Team from €275 for up to 4 users and 5M hits, then Business at €1,450 and Enterprise at €3,400; check the billing period on Matomo's pricing page, which lists the bundles without one. Prices at [matomo.org/pricing](https://matomo.org/pricing/).
+
+### Pros
+- Closest match to Google Analytics reports, with an import for GA history
+- Long compliance track record with public-sector users
+- Cloud includes funnels, heatmaps and recordings in the base price
+
+### Cons
+- Self-hosted funnels, heatmaps and recordings are paid bundles from €275
+- PHP and MySQL stack, heavier at scale than ClickHouse-based tools
+- Uses cookies by default; cookieless mode needs configuration
+
+Compare with OpenPanel: [Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Statsig
+
+**Best for: Teams leaving PostHog for the flags and experiments, not the analytics**
+
+[Statsig](https://www.statsig.com) started as an experimentation platform and added product analytics, session replay and a warehouse-native mode around it. If flags with statistics are the PostHog feature you cannot lose, Statsig is the only tool on this list that matches it. OpenAI announced in September 2025 that it would acquire Statsig; the pricing page has not changed, but the roadmap now sits inside OpenAI.
+
+### Key features
+- Feature flags and dynamic configs with unlimited checks on every plan
+- Experiments with sequential testing, CUPED and metric lifts
+- Product analytics: metrics, funnels, retention
+- Session replay, 50K recordings a month on the free plan
+
+### Pricing
+Developer is free with 2M metered events a month, 50K session replays, unlimited flag checks, unlimited seats and 1 year of analytics retention. Above 2M events, flags keep working but metric lift calculations stop until you upgrade. Pro is $150 a month for 5M events, then $0.05 per 1,000 events, with 100K replays and unlimited retention. Plans at [statsig.com/pricing](https://www.statsig.com/pricing).
+
+### Pros
+- Flag checks are free and unlimited, where PostHog meters them after 1M
+- Stronger experiment statistics than PostHog
+- 2M free events and 50K free replays
+
+### Cons
+- Analytics is the secondary product; reports are thinner than Mixpanel or Amplitude
+- Proprietary and cloud only (the SDKs are open source, the platform is not)
+- Ownership changed in 2025, so long-term direction is less certain
+
+---
+
+## Microsoft Clarity
+
+**Best for: Sites that want free session recordings and heatmaps and already have an analytics tool for the numbers**
+
+[Microsoft Clarity](https://clarity.microsoft.com) is Microsoft's free behavior analytics product: session recordings, heatmaps, rage-click insights and a Google Analytics integration. It has no retention tables, cohorts or user profiles, and the data lives in Microsoft Azure under Microsoft's terms. It replaces the replay part of PostHog, not the analytics part.
+
+### Key features
+- Session recordings, up to 100,000 sessions per project per day
+- Click, scroll and area heatmaps (up to 100,000 pageviews per heatmap)
+- Funnels and basic segmentation
+- SDKs for Android, iOS, Flutter and React Native
+
+### Pricing
+Free, with no traffic limits and no paid tier. Recordings are kept for 30 days; favorited recordings and a sampled set are kept up to 9 months.
+
+### Pros
+- Free at any volume, where PostHog meters replay after 5K recordings
+- Fast to install, good heatmaps, mobile SDKs included
+
+### Cons
+- No product analytics: no retention, cohorts, profiles or custom reports
+- No self-hosting
+- Needs cookie consent in the EU; without it, recordings and funnels degrade
+
+Compare with OpenPanel: [Microsoft Clarity vs OpenPanel](/compare/microsoft-clarity-alternative)
+
+---
+
+## Which PostHog alternative should you pick?
+
+- Choose **OpenPanel** if you want funnels, retention, profiles and replay with a 3 KB script and one flat price, and you do not use flags or surveys.
+- Choose **Mixpanel** if report depth is the priority and you are under 1M events or can afford Growth.
+- Choose **Amplitude** if you are an enterprise buyer who wants analytics, experiments and a CDP under one contract.
+- Choose **Plausible** if you only used PostHog's web analytics tab and want the smallest script.
+- Choose **Umami** if you want MIT-licensed web analytics on your own box for the cost of a VPS.
+- Choose **Matomo** if you are replacing Google Analytics and want the same report shapes.
+- Choose **Statsig** if flags and experiments are what you are leaving PostHog for.
+- Choose **Microsoft Clarity** if you want recordings and heatmaps for free next to one of the tools above.
+- Stay on **PostHog** if you use flags, surveys, error tracking or HogQL.
+
+For the self-hosted options only, see the [self-hosted web analytics comparison](/articles/self-hosted-web-analytics).
+
+## Frequently asked questions
+
+<Faqs>
+<FaqItem question="What is the best free PostHog alternative?">
+For free cloud analytics, Amplitude gives 2M events a month, Statsig 2M events plus 50K replays, and Mixpanel 1M events plus 10K replays. Microsoft Clarity is free for recordings and heatmaps with no traffic limit. For free with no limits at all, self-host OpenPanel (AGPL-3.0) or Umami (MIT). OpenPanel Cloud has no free tier, only a 30-day trial.
+</FaqItem>
+
+<FaqItem question="Is there an open source alternative to PostHog?">
+Yes. OpenPanel (AGPL-3.0) is the closest in scope: product analytics, web analytics and session replay. Plausible (AGPL-3.0), Umami (MIT) and Matomo (GPL-3.0) are open source but cover web analytics only. PostHog itself is MIT licensed, so the switch is about stack and pricing, not about leaving open source.
+</FaqItem>
+
+<FaqItem question="Which PostHog alternative is easiest to self-host?">
+Umami is the lightest: Node.js plus Postgres or MySQL. OpenPanel is Docker Compose with ClickHouse, Postgres and Redis behind a one-command setup script, and it is the only self-hostable option here with funnels, retention and replay. PostHog's hobby deploy needs 16 GB RAM and six backing services, and its docs call it unsupported.
+</FaqItem>
+
+<FaqItem question="What is the cheapest PostHog alternative at 10M events a month?">
+OpenPanel is $350 a month flat with replay included. PostHog is about $324 for analytics events alone, before replay or flags. Umami Business is $200 but is web analytics only. Mixpanel Growth is $1,176 on monthly billing. If you self-host OpenPanel or Umami, the cost is the server.
+</FaqItem>
+
+<FaqItem question="Which alternative is best if I only need web analytics?">
+Plausible, Umami or Matomo. Plausible has the smallest script and the simplest dashboard, Umami is MIT licensed and the cheapest to run yourself, Matomo has the deepest reports and a Google Analytics import. OpenPanel covers the same metrics if you expect to add funnels or profiles later.
+</FaqItem>
+
+<FaqItem question="Which PostHog alternative works for mobile apps?">
+OpenPanel has Swift, Kotlin and React Native SDKs. Mixpanel, Amplitude and Statsig all have native mobile SDKs. Microsoft Clarity has Android, iOS, Flutter and React Native SDKs for recordings. Plausible and Umami are built for websites.
+</FaqItem>
+
+<FaqItem question="Can I migrate my PostHog data to another tool?">
+Event history usually does not move. Every tool here starts from the day you install its tracker, so run both for two to four weeks, confirm the counts match, then remove PostHog. OpenPanel accepts server-side events over its API if you want to replay an export; dashboards, cohorts and recordings are rebuilt.
+</FaqItem>
+
+<FaqItem question="Does OpenPanel have feature flags or surveys?">
+No. OpenPanel does product and web analytics with session replay, and can break any report down by an experiment variant you pass as a property, but it does not deliver flags, run experiment statistics or collect surveys. If you need those, PostHog or Statsig is the better choice.
+</FaqItem>
+</Faqs>
