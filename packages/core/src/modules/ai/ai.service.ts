@@ -451,7 +451,7 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
     if (input.dimension === 'profile') {
       const profiles = await getProfilesCached(
         deps,
-        items.map((item) => item.key),
+        items.map((item) => item.key).filter(Boolean),
         input.projectId
       );
       const byId = new Map(profiles.map((profile) => [profile.id, profile]));

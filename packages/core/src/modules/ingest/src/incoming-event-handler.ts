@@ -327,6 +327,7 @@ async function ingestIncomingEvent(
     deviceId,
     sessionId,
     uaInfo,
+    ai,
     // Producer-minted; a redelivered message re-creates the same row id.
     // Absent on messages produced before the field existed — createEvent then
     // falls back to a fresh uuid.
@@ -401,10 +402,11 @@ async function ingestIncomingEvent(
         : undefined,
   };
 
-  // Server-side and "timestamp from the past" events ride alongside an
+  // Server-side, AI and "timestamp from the past" events ride alongside an
   // existing client session if there is one — they don't open / close
-  // sessions of their own.
-  if (uaInfo.isServer || isTimestampFromThePast) {
+  // sessions of their own. AI counts as server-side even when the caller
+  // forwards a browser's user-agent.
+  if (uaInfo.isServer || isTimestampFromThePast || ai) {
     const session =
       profileId && !isTimestampFromThePast
         ? await deps.sessions.getExistingSession({ profileId, projectId })

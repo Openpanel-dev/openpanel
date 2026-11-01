@@ -106,6 +106,7 @@ const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
  */
 const EARLIEST_ACCEPTED_TIMESTAMP_MS = Date.UTC(2000, 0, 1);
 const FALLBACK_USER_AGENT = 'unknown/1.0';
+const NO_DEVICE = { deviceId: '', sessionId: '' } as const;
 
 /** The whitelisted subset that ships with the queue payload. */
 export function getStringHeaders(
@@ -295,17 +296,22 @@ async function buildContext(
     getSalts(deps),
   ]);
 
-  const deviceIdResult = await getDeviceId({
-    projectId,
-    ip,
-    ua,
-    salts,
-    overrideDeviceId,
-    eventTimeMs: timestamp.timestamp,
-    sessionBuffer: buffers.session,
-    sessionTimeoutMs,
-    logger: deps.logger,
-  });
+  // The ip + user-agent hash identifies a browser; for an AI call it would
+  // only name the backend that made it, and show up as an anonymous user.
+  const isDeviceless = request.body.type === 'ai' && !overrideDeviceId;
+  const deviceIdResult = isDeviceless
+    ? NO_DEVICE
+    : await getDeviceId({
+        projectId,
+        ip,
+        ua,
+        salts,
+        overrideDeviceId,
+        eventTimeMs: timestamp.timestamp,
+        sessionBuffer: buffers.session,
+        sessionTimeoutMs,
+        logger: deps.logger,
+      });
 
   return {
     projectId,
@@ -412,7 +418,9 @@ async function handleAi(
     ai: normalized.draft,
   };
 
-  const partitionKey = profileId ? `${projectId}:${profileId}` : deviceId;
+  const partitionKey = profileId
+    ? `${projectId}:${profileId}`
+    : deviceId || generateId();
   await transport.produceIncomingEvent(queueData, partitionKey);
 }
 
