@@ -6,6 +6,7 @@ import { getRootMetadata } from '@/lib/metadata';
 import { cn } from '@/lib/utils';
 import './global.css';
 import { OpenPanelComponent } from '@openpanel/nextjs';
+import { AttributionCookie } from '@/components/attribution-cookie';
 import { ScrollTracker } from '@/components/scroll-tracker';
 
 const font = Geist({
@@ -41,6 +42,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <TooltipProvider>{children}</TooltipProvider>
         </RootProvider>
         <ScrollTracker />
+        <AttributionCookie />
         {process.env.NEXT_PUBLIC_OP_CLIENT_ID && (
           <OpenPanelComponent
             clientId={process.env.NEXT_PUBLIC_OP_CLIENT_ID}
