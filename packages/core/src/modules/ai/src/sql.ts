@@ -229,6 +229,7 @@ export function breakdownQuery(
       quantileIf(0.95)(latency_ms, type = 'generation') AS p95_latency_ms,
       countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
       countIf(${IS_UNPRICED_CALL}) AS unpriced_calls,
+      countIf(type = 'generation') AS chat_calls,
       max(created_at) AS last_at
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE ${scopeWhere(input)}
@@ -365,6 +366,7 @@ export function entitySummaryQuery(input: {
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
       countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
       countIf(${IS_UNPRICED_CALL}) AS unpriced_calls,
+      countIf(type = 'generation') AS chat_calls,
       min(created_at) AS first_at,
       max(created_at) AS last_at,
       topKIf(3)(model, ${IS_MODEL_CALL}) AS top_models

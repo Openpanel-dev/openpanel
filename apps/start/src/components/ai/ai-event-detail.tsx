@@ -3,6 +3,7 @@ import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
 import { AlertTriangleIcon } from 'lucide-react';
 import { useState } from 'react';
 import { AiContent } from './ai-conversation';
+import { AiCost, isUnpricedCall } from './ai-cost';
 import {
   AI_TYPE_LABELS,
   formatCost,
@@ -53,8 +54,16 @@ export function AiEventStats({ event }: { event: IServiceAiEvent }) {
     event.cacheReadTokens > 0
       ? { label: 'Cached', value: formatTokens(event.cacheReadTokens) }
       : null,
-    event.totalCost > 0 || event.costSource !== 'none'
-      ? { label: 'Cost', value: formatCost(event.totalCost) }
+    event.totalCost > 0 || event.costSource !== 'none' || isUnpricedCall(event)
+      ? {
+          label: 'Cost',
+          value: (
+            <AiCost
+              cost={event.totalCost}
+              unpricedCalls={isUnpricedCall(event) ? 1 : 0}
+            />
+          ),
+        }
       : null,
     { label: 'Latency', value: formatLatency(event.latencyMs) },
     event.timeToFirstTokenMs > 0

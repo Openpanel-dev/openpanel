@@ -8,18 +8,42 @@ const SECOND_MS = 1000;
 const MINUTE_MS = 60_000;
 const COMPACT_THRESHOLD = 10_000;
 
-/** USD. LLM calls cost fractions of a cent, so two decimals would read as $0.00. */
-export function formatCost(value: number): string {
+const CENTS = 100;
+
+/** Drops digits past the shown precision instead of rounding them up. */
+function floorToPrecision(value: number): number {
+  if (value >= SUB_CENT) {
+    return Math.floor(value * CENTS) / CENTS;
+  }
+  const step =
+    10 ** (Math.floor(Math.log10(value)) - COST_SIGNIFICANT_DIGITS + 1);
+  return Math.floor(value / step) * step;
+}
+
+/**
+ * USD. LLM calls cost fractions of a cent, so two decimals would read as $0.00.
+ * `down` keeps a lower bound from claiming more than was priced.
+ */
+export function formatCost(
+  value: number,
+  rounding: 'nearest' | 'down' = 'nearest'
+): string {
   if (!value) {
     return '$0';
   }
   if (Math.abs(value) < SMALLEST_SHOWN_COST) {
     return '<$0.000001';
   }
+  const shown = rounding === 'down' ? floorToPrecision(value) : value;
   if (Math.abs(value) < SUB_CENT) {
-    return `$${Number(value.toPrecision(COST_SIGNIFICANT_DIGITS))}`;
+    return `$${Number(shown.toPrecision(COST_SIGNIFICANT_DIGITS))}`;
   }
-  return `$${value.toFixed(2)}`;
+  return `$${shown.toFixed(2)}`;
+}
+
+/** No chat calls in range means latency was not measured, not that it was 0ms. */
+export function formatLatencyOrNone(ms: number | null): string {
+  return ms === null ? '—' : formatLatency(ms);
 }
 
 export function formatLatency(ms: number): string {

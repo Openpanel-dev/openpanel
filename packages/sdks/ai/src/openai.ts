@@ -135,6 +135,7 @@ interface ResponseObject {
 interface ResponseStreamEvent {
   type?: string;
   response?: ResponseObject;
+  delta?: string;
 }
 
 interface EmbeddingParams {
@@ -176,6 +177,7 @@ const FINAL_RESPONSE_EVENTS = new Set([
 ]);
 const RESPONSE_CREATED_EVENT = 'response.created';
 const DELTA_EVENT_SUFFIX = '.delta';
+const OUTPUT_TEXT_DELTA_EVENT = 'response.output_text.delta';
 
 function contentPart(part: ContentPart): MessagePart {
   switch (part.type) {
@@ -486,10 +488,14 @@ function responsesResult(response: ResponseObject): CallResult {
   };
 }
 
-/** The final `response.*` event carries the whole response, so nothing is rebuilt from deltas. */
+/**
+ * The final `response.*` event carries the whole response. Text deltas are
+ * kept only for a stream the caller stops reading before that event.
+ */
 class ResponsesStreamAccumulator implements StreamAccumulator {
   private model: string | undefined;
   private response: ResponseObject | undefined;
+  private partialText = '';
 
   observe(value: unknown): boolean {
     const event = value as ResponseStreamEvent;
@@ -500,14 +506,25 @@ class ResponsesStreamAccumulator implements StreamAccumulator {
     if (FINAL_RESPONSE_EVENTS.has(type)) {
       this.response = event.response;
     }
+    if (type === OUTPUT_TEXT_DELTA_EVENT) {
+      this.partialText += event.delta ?? '';
+    }
     return type.endsWith(DELTA_EVENT_SUFFIX);
   }
 
   result(): CallResult {
-    if (!this.response) {
-      return { model: this.model };
+    if (this.response) {
+      return responsesResult(this.response);
     }
-    return responsesResult(this.response);
+    const output: Message[] = this.partialText
+      ? [
+          {
+            role: 'assistant',
+            content: [{ type: 'text', text: this.partialText }],
+          },
+        ]
+      : [];
+    return { model: this.model, output };
   }
 }
 

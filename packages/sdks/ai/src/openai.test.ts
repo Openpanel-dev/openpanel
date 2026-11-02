@@ -492,6 +492,60 @@ describe('wrapOpenAI', () => {
     expect(payloads[0]?.timeToFirstTokenMs).toBeNumber();
   });
 
+  test('keeps the Responses text that arrived when the reader stops early', async () => {
+    const { openai, payloads } = client([
+      () =>
+        sseResponse(
+          [
+            {
+              type: 'response.created',
+              sequence_number: 0,
+              response: {
+                ...functionCallResponse,
+                status: 'in_progress',
+                output: [],
+              },
+            },
+            {
+              type: 'response.output_text.delta',
+              sequence_number: 1,
+              item_id: 'msg_1',
+              output_index: 0,
+              content_index: 0,
+              delta: 'Sun',
+            },
+            {
+              type: 'response.output_text.delta',
+              sequence_number: 2,
+              item_id: 'msg_1',
+              output_index: 0,
+              content_index: 0,
+              delta: 'ny',
+            },
+          ],
+          { named: true }
+        ),
+    ]);
+
+    const stream = await openai.responses.create({
+      model: 'gpt-5',
+      input: 'Weather?',
+      stream: true,
+    });
+    let seen = 0;
+    for await (const _event of stream) {
+      seen += 1;
+      if (seen === 3) {
+        break;
+      }
+    }
+
+    expect(payloads[0]?.error?.message).toBe('stream cancelled');
+    expect(payloads[0]?.output).toEqual([
+      { role: 'assistant', content: [{ type: 'text', text: 'Sunny' }] },
+    ]);
+  });
+
   test('records embeddings with their texts and token count', async () => {
     const { openai, payloads } = client([
       () =>

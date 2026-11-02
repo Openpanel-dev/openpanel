@@ -191,10 +191,11 @@ class MessagesStreamAccumulator implements StreamAccumulator {
         this.message = { ...event.message };
         return false;
       case 'content_block_start':
+        // A block opens empty; the first token is its first delta.
         if (event.content_block) {
           this.blocks[index] = { ...event.content_block };
         }
-        return true;
+        return false;
       case 'content_block_delta':
         this.applyDelta(index, event.delta);
         return true;

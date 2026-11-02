@@ -62,6 +62,16 @@ describe('calculateAiCost', () => {
     });
   });
 
+  test('a call that reported no tokens has an unknown cost, not $0', () => {
+    expect(
+      calculateAiCost({
+        model: 'gpt-5-mini',
+        provider: 'openai',
+        usage: { inputTokens: 0, outputTokens: 0 },
+      }).source
+    ).toBe('none');
+  });
+
   test('prices input and output tokens from the catalog', () => {
     const cost = calculateAiCost({
       model: 'gpt-5-mini',

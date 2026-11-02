@@ -3,7 +3,7 @@ import type { AiBreakdownDimension } from '@openpanel/core/modules/ai/ai.constan
 import { useQuery } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
 import { AiCost } from './ai-cost';
-import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { formatCost, formatLatencyOrNone, formatTokens } from './ai-format';
 import { type AiMeasure, breakdownReportDraft } from './ai-report-draft';
 import { OpenAsReportLink } from './open-as-report-link';
 import { ProjectLink } from '@/components/links';
@@ -31,14 +31,14 @@ const MEASURE_LABEL: Record<Measure, string> = {
   p95LatencyMs: 'p95',
 };
 
-function formatMeasure(measure: Measure, value: number): string {
+function formatMeasure(measure: Measure, value: number | null): string {
   switch (measure) {
     case 'cost':
-      return formatCost(value);
+      return formatCost(value ?? 0);
     case 'p95LatencyMs':
-      return formatLatency(value);
+      return formatLatencyOrNone(value);
     default:
-      return formatTokens(value);
+      return formatTokens(value ?? 0);
   }
 }
 
@@ -136,7 +136,7 @@ export function AiBreakdownWidget({
     })
   );
   const rows = query.data ?? [];
-  const max = Math.max(...rows.map((row) => row[measure]), 0) || 1;
+  const max = Math.max(...rows.map((row) => row[measure] ?? 0), 0) || 1;
 
   return (
     <Widget className={cn('col-span-6 md:col-span-3', className)}>
@@ -165,7 +165,7 @@ export function AiBreakdownWidget({
             <div className="group relative px-3 py-1.5" key={row.key}>
               <div
                 className="absolute top-0 bottom-0 left-0 rounded bg-def-200 transition-colors group-hover:bg-def-300"
-                style={{ width: `${(row[measure] / max) * 100}%` }}
+                style={{ width: `${((row[measure] ?? 0) / max) * 100}%` }}
               />
               <div className="row relative min-w-0 items-center justify-between gap-2 text-sm">
                 <RowLabel dimension={dimension} row={row} />

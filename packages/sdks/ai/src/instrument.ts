@@ -191,7 +191,16 @@ export function instrumentCreate(
         startedAt: Date.now(),
       })
     );
-    const response = original.apply(this, args);
+    let response: unknown;
+    try {
+      response = original.apply(this, args);
+    } catch (error) {
+      // The SDKs validate some params before any request, e.g. a `max_tokens` too large for a non-streamed call.
+      if (call) {
+        record(call, { error }, options);
+      }
+      throw error;
+    }
     if (!call) {
       return response;
     }
