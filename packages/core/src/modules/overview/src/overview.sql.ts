@@ -187,6 +187,7 @@ function rollupDateLiteral(interval: IInterval): SqlFragment {
     : sql`toDateTime(${sql.string(`${ROLLUP_DATE_PREFIX} 00:00:00`)})`;
 }
 
+/** Sessionless views still count, but cannot contribute elapsed time. */
 export function metricsWithPageFilterQuery(
   input: PageFilterMetricsQueryInput
 ): SqlFragment {
@@ -209,7 +210,7 @@ export function metricsWithPageFilterQuery(
         ${dateBucket} AS date,
         profile_id,
         session_id,
-        dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration,
+        if(session_id = '', 0, dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at))) AS duration,
         ${input.rawEventFilterWhere ?? sql`true`} AS matches_filter
       FROM events
       WHERE project_id = ${sql.string(input.projectId)}
@@ -556,12 +557,14 @@ export interface OrderedEventsQueryInput {
   rawFilterWhere: SqlFragment | null;
 }
 
+/** The empty ID is shared by unrelated events, so it cannot define a journey. */
 function orderedEventsQuery(input: OrderedEventsQueryInput): SqlFragment {
   return sql`
     SELECT session_id, concat(origin, path) as path, created_at
     FROM events
     WHERE project_id = ${sql.string(input.projectId)}
       AND name = 'screen_view'
+      AND session_id != ''
       AND path != ''
       AND path IS NOT NULL
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
