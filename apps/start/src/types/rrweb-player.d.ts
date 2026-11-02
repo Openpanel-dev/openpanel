@@ -7,6 +7,14 @@ declare module 'rrweb-player' {
     showController?: boolean;
     speedOption?: number[];
     skipInactive?: boolean;
+    mouseTail?:
+      | boolean
+      | {
+          duration?: number;
+          lineCap?: string;
+          lineWidth?: number;
+          strokeStyle?: string;
+        };
   }
 
   interface RrwebPlayerOptions {
@@ -30,6 +38,8 @@ declare module 'rrweb-player' {
     toggle: () => void;
     goto: (timeOffset: number, play?: boolean) => void;
     setSpeed: (speed: number) => void;
+    toggleSkipInactive: () => void;
+    triggerResize: () => void;
     getMetaData: () => RrwebPlayerMetaData;
     getReplayer: () => RrwebReplayer;
     addEvent: (event: {
