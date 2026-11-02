@@ -269,17 +269,22 @@ export const CATEGORY_PILLARS: Record<CompareCategory, CategoryPillar[]> = {
 };
 
 export const INSTALL_LINES = [
+  { text: '# One Linux box with Docker, one command', tone: 'muted' as const },
+  { text: 'curl -fsSL https://raw.githubusercontent.com/\\' },
+  { text: '  Openpanel-dev/openpanel/main/self-hosting/install.sh | sh' },
+  { text: '' },
   {
-    text: '# One command on any Linux box with Docker',
+    text: '# The script asks for a domain and brings up',
     tone: 'muted' as const,
   },
   {
-    text: 'curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh',
-  },
-  { text: '' },
-  {
-    text: '# ClickHouse, Postgres, Redis, Redpanda, api, worker',
+    text: '# ClickHouse, Postgres, Redis, Redpanda, api and worker',
     tone: 'muted' as const,
   },
   { text: 'docker compose up -d' },
+  { text: '' },
+  {
+    text: '✔ OpenPanel is running at https://analytics.acme.com',
+    tone: 'string' as const,
+  },
 ];

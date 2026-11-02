@@ -48,6 +48,7 @@ export function CardGrid({
   items,
   columns = 3,
   className,
+  id,
 }: {
   label?: string;
   title?: string;
@@ -55,9 +56,13 @@ export function CardGrid({
   items: CardItem[];
   columns?: 2 | 3;
   className?: string;
+  id?: string;
 }) {
   return (
-    <section className={cn('col container gap-12 py-16 md:py-24', className)}>
+    <section
+      className={cn('col container gap-12 py-16 md:py-24', className)}
+      id={id}
+    >
       {title && (
         <Reveal>
           <SectionHeader

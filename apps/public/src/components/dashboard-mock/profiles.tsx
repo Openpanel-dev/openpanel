@@ -62,6 +62,7 @@ export function ActivityHeatmap({ weeks = WEEKS }: { weeks?: number }) {
       className="grid gap-[3px]"
       style={{
         gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${DAYS}, minmax(0, 1fr))`,
         gridAutoFlow: 'column',
       }}
     >
