@@ -303,7 +303,7 @@ describe('wrapOpenAI', () => {
         },
       ],
     });
-    expect(payloads[0]?.usage).toBeUndefined();
+    expect(payloads[0]?.usage).toEqual({ inputTokens: 0, outputTokens: 0 });
   });
 
   test('records the SDK stream helper through create', async () => {
@@ -373,6 +373,7 @@ describe('wrapOpenAI', () => {
     expect(payloads[0]).toMatchObject({
       model: 'gpt-nope',
       error: { httpStatus: 400, code: 'invalid_request_error' },
+      usage: { inputTokens: 0, outputTokens: 0 },
     });
   });
 

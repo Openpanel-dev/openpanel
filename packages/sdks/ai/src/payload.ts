@@ -53,6 +53,8 @@ const MAX_ERROR_MESSAGE_LENGTH = 2000;
 const HTTP_STATUS_MIN = 100;
 const HTTP_STATUS_MAX = 599;
 const GENERIC_ERROR_NAME = 'Error';
+// Ingest requires token counts; a failed call or a stream without usage has none.
+const UNKNOWN_USAGE = { inputTokens: 0, outputTokens: 0 } as const;
 
 /** Per-call context wins over the ambient `withAiContext`, which wins over `defaults`. */
 export function resolveContext(
@@ -119,7 +121,7 @@ export function buildPayload(
     input: privacyMode ? undefined : call.input,
     output: privacyMode ? undefined : outcome.output,
     tools: privacyMode ? undefined : call.tools,
-    usage: outcome.usage,
+    usage: outcome.usage ?? UNKNOWN_USAGE,
     latencyMs: Date.now() - call.startedAt,
     timeToFirstTokenMs: outcome.timeToFirstTokenMs,
     error: outcome.error === undefined ? undefined : errorOf(outcome.error),
