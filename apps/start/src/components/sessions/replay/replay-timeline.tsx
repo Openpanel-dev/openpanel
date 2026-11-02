@@ -218,6 +218,7 @@ export function ReplayTimeline({
     activity,
   } = useReplayContext();
   const trackRef = useRef<HTMLDivElement>(null);
+  const scrubPointerRef = useRef<number | null>(null);
   const playedRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ pct: number; timeMs: number } | null>(
@@ -280,7 +281,8 @@ export function ReplayTimeline({
 
   const startScrub = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!e.isPrimary) {
+      // A pen and a finger can both be primary; only one scrub at a time.
+      if (!e.isPrimary || scrubPointerRef.current !== null) {
         return;
       }
       const first = getTimeFromClientX(e.clientX);
@@ -288,6 +290,7 @@ export function ReplayTimeline({
         seek(first.timeMs);
       }
       const { pointerId } = e;
+      scrubPointerRef.current = pointerId;
       const onMove = (move: PointerEvent) => {
         if (move.pointerId !== pointerId) {
           return;
@@ -302,6 +305,7 @@ export function ReplayTimeline({
         if (end.pointerId !== pointerId) {
           return;
         }
+        scrubPointerRef.current = null;
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onEnd);
         window.removeEventListener('pointercancel', onEnd);

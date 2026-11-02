@@ -26,6 +26,7 @@ import {
   sessionEventsQueryOptions,
   useSessionEvents,
 } from '@/components/sessions/use-session-events';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
   Widget,
@@ -222,7 +223,11 @@ function Component() {
 
   useEntityPageContext('session', { sessionId });
 
-  const events = useSessionEvents(trpc, { projectId, sessionId });
+  const {
+    events,
+    isIncomplete,
+    retry: retryEvents,
+  } = useSessionEvents(trpc, { projectId, sessionId });
 
   const { data: profile } = useSuspenseQuery(
     trpc.profile.byId.queryOptions({
@@ -290,6 +295,18 @@ function Component() {
       >
         <SessionFacts session={session} />
       </PageHeader>
+
+      {isIncomplete && (
+        <Alert className="row items-center justify-between gap-4">
+          <AlertDescription>
+            Some of this session's events could not be loaded, so the journey
+            and timeline are incomplete.
+          </AlertDescription>
+          <Button onClick={retryEvents} size="sm" variant="outline">
+            Retry
+          </Button>
+        </Alert>
+      )}
 
       <SessionMetrics events={events} session={session} />
 

@@ -25,11 +25,18 @@ export function sessionEventsQueryOptions(
   );
 }
 
+interface SessionEvents {
+  events: IServiceEvent[];
+  /** A later page failed, so `events` is only part of the session. */
+  isIncomplete: boolean;
+  retry: () => void;
+}
+
 /** Every event in the session, loading the remaining pages in the background. */
 export function useSessionEvents(
   trpc: Trpc,
   params: { projectId: string; sessionId: string }
-): IServiceEvent[] {
+): SessionEvents {
   const query = useSuspenseInfiniteQuery(
     sessionEventsQueryOptions(trpc, params)
   );
@@ -47,8 +54,13 @@ export function useSessionEvents(
     }
   }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
-  return useMemo(
+  const events = useMemo(
     () => query.data.pages.flatMap((page) => page.data),
     [query.data]
   );
+  return {
+    events,
+    isIncomplete: isFetchNextPageError,
+    retry: () => fetchNextPage(),
+  };
 }
