@@ -84,9 +84,11 @@ export function useSessionEvents(
     [query.data]
   );
   const pageCount = query.data.pages.length;
-  const lastPageHasEvents = (query.data.pages.at(-1)?.data.length ?? 0) > 0;
+  // A short last page means the session ended inside the limit.
+  const isLastPageFull =
+    (query.data.pages.at(-1)?.data.length ?? 0) >= EVENT_PAGE_SIZE;
   const isCapped =
-    !hasNextPage && pageCount >= MAX_SESSION_EVENT_PAGES && lastPageHasEvents;
+    !hasNextPage && pageCount >= MAX_SESSION_EVENT_PAGES && isLastPageFull;
 
   return {
     events,
