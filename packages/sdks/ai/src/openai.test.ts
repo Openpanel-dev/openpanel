@@ -546,6 +546,59 @@ describe('wrapOpenAI', () => {
     ]);
   });
 
+  test('keeps partial text from separate Responses output items apart', async () => {
+    const delta = (outputIndex: number, text: string, sequence: number) => ({
+      type: 'response.output_text.delta',
+      sequence_number: sequence,
+      item_id: `msg_${outputIndex}`,
+      output_index: outputIndex,
+      content_index: 0,
+      delta: text,
+    });
+    const { openai, payloads } = client([
+      () =>
+        sseResponse(
+          [
+            {
+              type: 'response.created',
+              sequence_number: 0,
+              response: {
+                ...functionCallResponse,
+                status: 'in_progress',
+                output: [],
+              },
+            },
+            delta(0, 'Let me check.', 1),
+            delta(1, 'The answer is 5', 2),
+          ],
+          { named: true }
+        ),
+    ]);
+
+    const stream = await openai.responses.create({
+      model: 'gpt-5',
+      input: 'Sum?',
+      stream: true,
+    });
+    let seen = 0;
+    for await (const _event of stream) {
+      seen += 1;
+      if (seen === 3) {
+        break;
+      }
+    }
+
+    expect(payloads[0]?.output).toEqual([
+      {
+        role: 'assistant',
+        content: [
+          { type: 'text', text: 'Let me check.' },
+          { type: 'text', text: 'The answer is 5' },
+        ],
+      },
+    ]);
+  });
+
   test('records embeddings with their texts and token count', async () => {
     const { openai, payloads } = client([
       () =>

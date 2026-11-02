@@ -3,21 +3,23 @@ const NUMBER_LOCALE = 'en-US';
 const SUB_CENT = 0.01;
 const COST_SIGNIFICANT_DIGITS = 2;
 // Below this a few-token embedding prints as $4e-8 or a digit string too wide for a table cell.
-const SMALLEST_SHOWN_COST = 0.000_001;
+export const SMALLEST_SHOWN_COST = 0.000_001;
 const SECOND_MS = 1000;
 const MINUTE_MS = 60_000;
 const COMPACT_THRESHOLD = 10_000;
 
-const CENTS = 100;
+const CENT_DECIMALS = 2;
 
-/** Drops digits past the shown precision instead of rounding them up. */
+/**
+ * Drops digits past the shown precision instead of rounding them up. Works on
+ * the decimal string: `0.29 * 100` is 28.999… in binary and would floor to 0.28.
+ */
 function floorToPrecision(value: number): number {
-  if (value >= SUB_CENT) {
-    return Math.floor(value * CENTS) / CENTS;
-  }
-  const step =
-    10 ** (Math.floor(Math.log10(value)) - COST_SIGNIFICANT_DIGITS + 1);
-  return Math.floor(value / step) * step;
+  const [whole = '0', fraction = ''] = String(value).split('.');
+  const leadingZeros = fraction.match(/^0*/)?.[0].length ?? 0;
+  const decimals =
+    value >= SUB_CENT ? CENT_DECIMALS : leadingZeros + COST_SIGNIFICANT_DIGITS;
+  return Number(`${whole}.${fraction.slice(0, decimals) || '0'}`);
 }
 
 /**

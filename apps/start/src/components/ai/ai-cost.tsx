@@ -1,6 +1,6 @@
 import type { IServiceAiEvent } from '@openpanel/core';
 import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
-import { formatCost } from './ai-format';
+import { formatCost, SMALLEST_SHOWN_COST } from './ai-format';
 import { Tooltiper } from '@/components/ui/tooltip';
 
 const UNKNOWN_COST_HINT =
@@ -23,7 +23,8 @@ export function describeAiCost(
   if (unpricedCalls === 0) {
     return { text: formatCost(cost) };
   }
-  if (cost === 0) {
+  // Below the smallest shown amount, `<$0.000001+` would claim an upper and a lower bound at once.
+  if (cost < SMALLEST_SHOWN_COST) {
     return { text: '—', hint: UNKNOWN_COST_HINT };
   }
   const calls =

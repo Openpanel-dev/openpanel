@@ -17,6 +17,11 @@ describe('describeAiCost', () => {
     expect(describeAiCost(0.016, 1).text).toBe('$0.01+');
     expect(describeAiCost(0.002_39, 3).text).toBe('$0.0023+');
     expect(describeAiCost(0.016, 1).hint).toContain('1 call has');
+    expect(describeAiCost(0.29, 1).text).toBe('$0.29+');
+  });
+
+  it('shows a dash when the priced part is too small to show', () => {
+    expect(describeAiCost(4e-8, 1).text).toBe('—');
   });
 });
 
@@ -46,6 +51,10 @@ describe('formatCost rounding', () => {
     expect(formatCost(0.016)).toBe('$0.02');
     expect(formatCost(0.016, 'down')).toBe('$0.01');
     expect(formatCost(0.000_529, 'down')).toBe('$0.00052');
+    expect(formatCost(0.29, 'down')).toBe('$0.29');
+    expect(formatCost(0.000_29, 'down')).toBe('$0.00029');
+    expect(formatCost(0.289_999_999_999_99, 'down')).toBe('$0.28');
+    expect(formatCost(1.5, 'down')).toBe('$1.50');
   });
 });
 

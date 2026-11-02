@@ -136,6 +136,7 @@ interface ResponseStreamEvent {
   type?: string;
   response?: ResponseObject;
   delta?: string;
+  output_index?: number;
 }
 
 interface EmbeddingParams {
@@ -495,7 +496,8 @@ function responsesResult(response: ResponseObject): CallResult {
 class ResponsesStreamAccumulator implements StreamAccumulator {
   private model: string | undefined;
   private response: ResponseObject | undefined;
-  private partialText = '';
+  /** Text per output item, so separate messages don't run together. */
+  private readonly partialText = new Map<number, string>();
 
   observe(value: unknown): boolean {
     const event = value as ResponseStreamEvent;
@@ -507,7 +509,11 @@ class ResponsesStreamAccumulator implements StreamAccumulator {
       this.response = event.response;
     }
     if (type === OUTPUT_TEXT_DELTA_EVENT) {
-      this.partialText += event.delta ?? '';
+      const item = event.output_index ?? 0;
+      this.partialText.set(
+        item,
+        (this.partialText.get(item) ?? '') + (event.delta ?? '')
+      );
     }
     return type.endsWith(DELTA_EVENT_SUFFIX);
   }
@@ -516,14 +522,11 @@ class ResponsesStreamAccumulator implements StreamAccumulator {
     if (this.response) {
       return responsesResult(this.response);
     }
-    const output: Message[] = this.partialText
-      ? [
-          {
-            role: 'assistant',
-            content: [{ type: 'text', text: this.partialText }],
-          },
-        ]
-      : [];
+    const parts = [...this.partialText.entries()]
+      .sort(([a], [b]) => a - b)
+      .map(([, text]): MessagePart => ({ type: 'text', text }));
+    const output: Message[] =
+      parts.length > 0 ? [{ role: 'assistant', content: parts }] : [];
     return { model: this.model, output };
   }
 }
