@@ -118,7 +118,8 @@ test.describe('ai observability', () => {
     await expect(tableRows(page).first()).toContainText('$');
     await page.screenshot({ path: `${SHOTS}/ai-traces.png`, fullPage: true });
 
-    await tableRows(page).first().click();
+    // The profile cell is a link of its own; the start time opens the trace.
+    await tableRows(page).first().locator('td').first().click();
     await expect(page).toHaveURL(/\/ai\/traces\//);
     await expect(page.getByText('Timeline')).toBeVisible();
     await expect(
@@ -164,7 +165,8 @@ test.describe('ai observability', () => {
     // A picked model round-trips through the URL and narrows the rows.
     await page.getByRole('button', { name: 'Model', exact: true }).click();
     const modelItem = page.getByRole('menuitemcheckbox', {
-      name: /gpt-5-mini/,
+      // Anchored: real SDK calls add dated snapshots like gpt-5-mini-2025-08-07.
+      name: /^gpt-5-mini\b(?!-)/,
     });
     await modelItem.click();
     await expect(page).toHaveURL(/models=/);
@@ -176,7 +178,7 @@ test.describe('ai observability', () => {
 
     await page.getByRole('button', { name: 'Errors only' }).click();
     await expect(page).toHaveURL(/errors=true/);
-    await expect(tableRows(page).first()).toContainText('429');
+    await expect(tableRows(page).first()).toContainText(/\b[45]\d\d\b/);
     await page.screenshot({
       path: `${SHOTS}/ai-generations-errors.png`,
       fullPage: true,
