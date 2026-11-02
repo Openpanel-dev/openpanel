@@ -14,6 +14,7 @@ import {
 import type { IInterval } from '../report/report.constants';
 import type {
   AiBreakdownDimension,
+  AiBreakdownSort,
   AiEventKind,
   IAiFilters,
 } from './ai.constants';
@@ -102,6 +103,7 @@ export interface IServiceAiTrace {
   inputTokens: number;
   outputTokens: number;
   cost: number;
+  unpricedCalls: number;
   isError: boolean;
   models: string[];
   groups: string[];
@@ -142,6 +144,7 @@ export interface IAiBreakdownRow {
   avgLatencyMs: number;
   p95LatencyMs: number;
   errors: number;
+  unpricedCalls: number;
   lastAt: Date;
   profile?: IServiceProfile;
   group?: IServiceGroup;
@@ -156,6 +159,7 @@ export interface IAiEntitySummary {
   outputTokens: number;
   avgLatencyMs: number;
   errors: number;
+  unpricedCalls: number;
   firstAt: Date | null;
   lastAt: Date | null;
   topModels: string[];
@@ -193,6 +197,7 @@ interface TraceRow {
   total_output_tokens: string | number;
   cost: number;
   has_error: boolean | number;
+  unpriced_calls: string | number;
   models: string[];
   all_groups: string[];
 }
@@ -208,6 +213,7 @@ interface BreakdownRow {
   avg_latency_ms: number | null;
   p95_latency_ms: number | null;
   errors: string | number;
+  unpriced_calls: string | number;
   last_at: string;
 }
 
@@ -220,6 +226,7 @@ interface SummaryRow {
   output_tokens: string | number;
   avg_latency_ms: number | null;
   errors: string | number;
+  unpriced_calls: string | number;
   first_at: string;
   last_at: string;
   top_models: string[];
@@ -331,6 +338,7 @@ function transformTrace(row: TraceRow): IServiceAiTrace {
     inputTokens: num(row.total_input_tokens),
     outputTokens: num(row.total_output_tokens),
     cost: num(row.cost),
+    unpricedCalls: num(row.unpriced_calls),
     isError: Boolean(row.has_error),
     models: row.models ?? [],
     groups: row.all_groups ?? [],
@@ -347,6 +355,7 @@ function transformSummary(row: SummaryRow | undefined): IAiEntitySummary {
     outputTokens: num(row?.output_tokens),
     avgLatencyMs: Math.round(num(row?.avg_latency_ms)),
     errors: num(row?.errors),
+    unpricedCalls: num(row?.unpriced_calls),
     firstAt: row ? toDateOrNull(row.first_at) : null,
     lastAt: row ? toDateOrNull(row.last_at) : null,
     topModels: row?.top_models ?? [],
@@ -367,6 +376,7 @@ export interface AiBreakdownInput {
   timezone: string;
   dimension: AiBreakdownDimension;
   limit: number;
+  sort?: AiBreakdownSort;
   filters?: IAiFilters;
 }
 
@@ -431,7 +441,7 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
     input: AiBreakdownInput
   ): Promise<IAiBreakdownRow[]> {
     const rows = await rangedQuery<BreakdownRow>(
-      breakdownQuery(input),
+      breakdownQuery({ ...input, sort: input.sort ?? 'cost' }),
       input.timezone
     );
     const items: IAiBreakdownRow[] = rows.map((row) => ({
@@ -446,6 +456,7 @@ export function createAiService(deps: ServiceDeps, _services: () => Services) {
       avgLatencyMs: Math.round(num(row.avg_latency_ms)),
       p95LatencyMs: Math.round(num(row.p95_latency_ms)),
       errors: num(row.errors),
+      unpricedCalls: num(row.unpriced_calls),
       lastAt: convertClickhouseDateToJs(row.last_at),
     }));
     if (input.dimension === 'profile') {

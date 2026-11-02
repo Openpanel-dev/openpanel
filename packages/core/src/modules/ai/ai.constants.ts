@@ -270,6 +270,10 @@ export type AiBreakdownDimension = (typeof AI_BREAKDOWN_DIMENSIONS)[number];
 
 export const AI_LIST_DEFAULT_TAKE = 50;
 export const AI_LIST_MAX_TAKE = 500;
+/** `errors` ranks by error count and drops rows without any. */
+export const AI_BREAKDOWN_SORTS = ['cost', 'errors'] as const;
+export type AiBreakdownSort = (typeof AI_BREAKDOWN_SORTS)[number];
+
 export const AI_BREAKDOWN_DEFAULT_LIMIT = 10;
 export const AI_BREAKDOWN_MAX_LIMIT = 100;
 

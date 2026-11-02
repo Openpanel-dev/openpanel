@@ -3,12 +3,9 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { z } from 'zod';
+import { AiCost, isUnpricedCall } from '@/components/ai/ai-cost';
 import { AiEventDetail } from '@/components/ai/ai-event-detail';
-import {
-  formatCost,
-  formatLatency,
-  formatTokens,
-} from '@/components/ai/ai-format';
+import { formatLatency, formatTokens } from '@/components/ai/ai-format';
 import { AiTraceTree, buildTraceNodes } from '@/components/ai/ai-trace-tree';
 import { ProfileCell } from '@/components/ai/ai-traces-table';
 import FullPageLoadingState from '@/components/full-page-loading-state';
@@ -67,8 +64,9 @@ function Component() {
       tokens: acc.tokens + event.inputTokens + event.outputTokens,
       generations: acc.generations + (isAiModelCall(event.type) ? 1 : 0),
       errors: acc.errors + (event.isError ? 1 : 0),
+      unpricedCalls: acc.unpricedCalls + (isUnpricedCall(event) ? 1 : 0),
     }),
-    { cost: 0, tokens: 0, generations: 0, errors: 0 }
+    { cost: 0, tokens: 0, generations: 0, errors: 0, unpricedCalls: 0 }
   );
   const root = events.find((event) => event.type === 'trace');
   const name =
@@ -115,9 +113,13 @@ function Component() {
           </div>
           <div className="row flex-wrap gap-x-5 gap-y-1 font-mono text-xs tabular-nums">
             <span>{formatLatency(totalMs)}</span>
-            <span>{totals.generations} generations</span>
+            <span>
+              {totals.generations} {totals.generations === 1 ? 'call' : 'calls'}
+            </span>
             <span>{formatTokens(totals.tokens)} tokens</span>
-            <span>{formatCost(totals.cost)}</span>
+            <span>
+              <AiCost cost={totals.cost} unpricedCalls={totals.unpricedCalls} />
+            </span>
             {totals.errors > 0 && (
               <span className="text-destructive">{totals.errors} errors</span>
             )}

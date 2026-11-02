@@ -4,12 +4,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { AlertTriangleIcon, BotIcon, CheckIcon } from 'lucide-react';
 import { useMemo } from 'react';
-import {
-  AI_TYPE_LABELS,
-  formatCost,
-  formatLatency,
-  formatTokens,
-} from './ai-format';
+import { AiCost, isUnpricedCall } from './ai-cost';
+import { AI_TYPE_LABELS, formatLatency, formatTokens } from './ai-format';
 import { ProfileCell } from './ai-traces-table';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { useEventDrawer } from '@/components/events/use-event-drawer';
@@ -113,7 +109,10 @@ function useColumns(): ColumnDef<IServiceAiEvent>[] {
         size: 100,
         cell: ({ row }) => (
           <span className="font-mono tabular-nums">
-            {formatCost(row.original.totalCost)}
+            <AiCost
+              cost={row.original.totalCost}
+              unpricedCalls={isUnpricedCall(row.original) ? 1 : 0}
+            />
           </span>
         ),
       },

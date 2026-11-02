@@ -46,7 +46,7 @@ const METRICS: MetricDefinition[] = [
   },
   {
     key: 'generations',
-    title: 'Generations',
+    title: 'Calls',
     unit: '',
     inverted: false,
     format: formatTokens,

@@ -2,6 +2,7 @@ import type { IAiBreakdownRow } from '@openpanel/core';
 import type { AiBreakdownDimension } from '@openpanel/core/modules/ai/ai.constants';
 import { useQuery } from '@tanstack/react-query';
 import type { LucideIcon } from 'lucide-react';
+import { AiCost } from './ai-cost';
 import { formatCost, formatLatency, formatTokens } from './ai-format';
 import { type AiMeasure, breakdownReportDraft } from './ai-report-draft';
 import { OpenAsReportLink } from './open-as-report-link';
@@ -24,7 +25,7 @@ type Measure = AiMeasure;
 
 const MEASURE_LABEL: Record<Measure, string> = {
   cost: 'Cost',
-  generations: 'Generations',
+  generations: 'Calls',
   errors: 'Errors',
   tokens: 'Tokens',
   p95LatencyMs: 'p95',
@@ -131,6 +132,7 @@ export function AiBreakdownWidget({
       filters,
       dimension,
       limit,
+      sort: measure === 'errors' ? 'errors' : 'cost',
     })
   );
   const rows = query.data ?? [];
@@ -172,7 +174,14 @@ export function AiBreakdownWidget({
                     {formatMeasure(secondary, row[secondary])}
                   </span>
                   <span className="w-16 text-right font-medium">
-                    {formatMeasure(measure, row[measure])}
+                    {measure === 'cost' ? (
+                      <AiCost
+                        cost={row.cost}
+                        unpricedCalls={row.unpricedCalls}
+                      />
+                    ) : (
+                      formatMeasure(measure, row[measure])
+                    )}
                   </span>
                 </span>
               </div>

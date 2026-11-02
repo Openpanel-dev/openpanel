@@ -4,13 +4,19 @@ import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
 import { TABLE_NAMES } from '../../../shared/ch-tables';
 import type { IInterval } from '../../report/report.constants';
-import type { AiBreakdownDimension, IAiFilters } from '../ai.constants';
+import type {
+  AiBreakdownDimension,
+  AiBreakdownSort,
+  IAiFilters,
+} from '../ai.constants';
 
 export const AI_EVENTS_TABLE = TABLE_NAMES.ai_events;
 
 /** The columns a list or detail row selects. */
 /** Calls billed by a provider. Latency stays generation-only: embeddings answer in a fraction of the time and would drag p95 down. */
 const IS_MODEL_CALL = sql`type IN ('generation', 'embedding')`;
+/** A successful call whose model has no catalog price; its $0 is unknown, not free. */
+const IS_UNPRICED_CALL = sql`${IS_MODEL_CALL} AND NOT is_error AND cost_source = 'none'`;
 
 export const AI_EVENT_COLUMNS = sql`
   project_id, id, type, trace_id, span_id, parent_id, conversation_id, name,
@@ -189,14 +195,27 @@ const DIMENSION_COLUMN: Record<AiBreakdownDimension, SqlFragment> = {
 };
 
 export function breakdownQuery(
-  input: AiScopedQueryInput & { dimension: AiBreakdownDimension; limit: number }
+  input: AiScopedQueryInput & {
+    dimension: AiBreakdownDimension;
+    limit: number;
+    sort: AiBreakdownSort;
+  }
 ): SqlFragment {
   const dimension = DIMENSION_COLUMN[input.dimension];
   const onlyErrors =
     input.dimension === 'errorCode' ? sql`AND is_error = true` : sql.empty;
+  const byErrors = input.sort === 'errors';
   // Anonymous AI usage is a real share of the spend, so it stays as its own row.
-  const withoutEmptyKey =
-    input.dimension === 'profile' ? sql.empty : sql`HAVING key != ''`;
+  const keepEmptyKey = input.dimension === 'profile';
+  const having = [
+    keepEmptyKey ? null : sql`key != ''`,
+    byErrors ? sql`errors > 0` : null,
+  ].filter((condition): condition is SqlFragment => condition !== null);
+  const havingClause =
+    having.length > 0 ? sql`HAVING ${sql.join(having, ' AND ')}` : sql.empty;
+  const orderBy = byErrors
+    ? sql`errors DESC, cost DESC`
+    : sql`cost DESC, events DESC`;
   return sql`
     SELECT
       ${dimension} AS key,
@@ -209,13 +228,14 @@ export function breakdownQuery(
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
       quantileIf(0.95)(latency_ms, type = 'generation') AS p95_latency_ms,
       countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
+      countIf(${IS_UNPRICED_CALL}) AS unpriced_calls,
       max(created_at) AS last_at
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE ${scopeWhere(input)}
       ${onlyErrors}
     GROUP BY key
-    ${withoutEmptyKey}
-    ORDER BY cost DESC, events DESC
+    ${havingClause}
+    ORDER BY ${orderBy}
     LIMIT ${sql.uint64(input.limit)}
   `;
 }
@@ -256,6 +276,7 @@ export function traceListQuery(input: TraceListQueryInput): SqlFragment {
       sum(output_tokens) AS total_output_tokens,
       sum(total_cost) AS cost,
       max(is_error) AS has_error,
+      countIf(${IS_UNPRICED_CALL}) AS unpriced_calls,
       arrayDistinct(groupArrayIf(model, model != '')) AS models,
       arrayDistinct(arrayFlatten(groupArray(groups))) AS all_groups
     FROM ${sql.id(AI_EVENTS_TABLE)}
@@ -343,6 +364,7 @@ export function entitySummaryQuery(input: {
       sum(output_tokens) AS output_tokens,
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
       countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
+      countIf(${IS_UNPRICED_CALL}) AS unpriced_calls,
       min(created_at) AS first_at,
       max(created_at) AS last_at,
       topKIf(3)(model, ${IS_MODEL_CALL}) AS top_models
