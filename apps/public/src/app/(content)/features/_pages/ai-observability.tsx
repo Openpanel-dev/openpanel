@@ -11,8 +11,11 @@ import { Timeline } from '@/components/dashboard-mock/primitives-ui';
 import { VisualMock } from '@/components/visual-mock';
 
 const MIDDLEWARE_SNIPPET = [
+  { text: "import { wrapLanguageModel } from 'ai';" },
+  { text: "import { openai } from '@ai-sdk/openai';" },
   { text: 'import { openpanelAiMiddleware }' },
   { text: "  from '@openpanel/ai/vercel';", tone: 'string' as const },
+  { text: '' },
   { text: 'const model = wrapLanguageModel({' },
   { text: "  model: openai('gpt-5')," },
   { text: '  middleware:' },
@@ -20,7 +23,7 @@ const MIDDLEWARE_SNIPPET = [
   { text: '});' },
 ];
 
-const MIDDLEWARE_CARD_SNIPPET = MIDDLEWARE_SNIPPET.slice(2);
+const MIDDLEWARE_CARD_SNIPPET = MIDDLEWARE_SNIPPET.slice(5);
 
 const CONTEXT_SNIPPET = [
   { text: 'await generateText({' },

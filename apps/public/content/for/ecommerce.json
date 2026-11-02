@@ -132,7 +132,7 @@
       },
       {
         "question": "How does OpenPanel pricing compare to Mixpanel for a busy store?",
-        "answer": "A store with 20K sessions a month and 50 events a session fires 1M events. Mixpanel charges a few hundred a month at that volume. OpenPanel Cloud is $90 a month for 1M events, or free self-hosted. In a Black Friday spike you move up a flat tier rather than paying overages."
+        "answer": "A store with 20K sessions a month and 50 events a session fires 1M events. Mixpanel's free plan covers 1M events a month; its first paid tier is $140 a month for 1.5M events. OpenPanel Cloud is $90 a month for 1M events, or free self-hosted. In a Black Friday spike you move up a flat tier rather than paying overages."
       },
       {
         "question": "Can I track multi-store setups (Shopify Plus with multiple stores)?",

@@ -148,7 +148,7 @@ export default async function ComparePage({
       <CtaBanner
         ctaLink={data.ctas.primary.href}
         ctaText={data.ctas.primary.label}
-        description={`Switching from ${competitorName} takes an afternoon. 30-day free trial on Cloud, or self-host for free.`}
+        description={`The steps above are what switching from ${competitorName} takes. 30-day free trial on Cloud, or self-host for free.`}
         title="Try it on your own data"
       />
     </div>

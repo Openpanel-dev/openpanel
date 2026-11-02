@@ -161,6 +161,7 @@ export function FeatureTable({
             </summary>
             <div className="overflow-x-auto border-neutral-200 border-t">
               <table className="w-full text-left text-sm">
+                {heads}
                 {folded.map((group) => (
                   <GroupRows
                     features={group.features}

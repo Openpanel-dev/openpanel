@@ -33,6 +33,7 @@ const CONFIG_SNIPPET = [
   { text: '    "Authorization":' },
   { text: '      "Bearer <token>"' },
   { text: '  }' },
+  { text: '}' },
 ];
 
 function ToolChips({ tools }: { tools: string[] }) {

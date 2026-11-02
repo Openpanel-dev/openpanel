@@ -181,7 +181,12 @@ function Steps() {
               <span className="text-neutral-600 text-sm leading-relaxed">
                 {step.text}
               </span>
-              <CodeSnippet className="mt-auto" compact lines={step.lines} />
+              <CodeSnippet
+                className="mt-auto"
+                compact
+                decorative={false}
+                lines={step.lines}
+              />
             </Link>
           </li>
         ))}

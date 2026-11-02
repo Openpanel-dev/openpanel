@@ -94,8 +94,9 @@ thing on screen.
 
 - Short sentences, plain words, no marketing adjectives. Say what the
   reader gets, not what the feature is called.
-- "Mixpanel alternative" stays in the homepage title/H1/body (it is the
-  only non-brand phrase the homepage ranks for).
+- "Mixpanel alternative" stays in the homepage title, lede and FAQ (it is
+  the only non-brand phrase the homepage ranks for). The H1 names web,
+  product and AI analytics on purpose.
 - Facts to keep straight: no free tier, cloud from $2.50 a month with a
   30-day trial, self-hosting is free and uses Docker Compose, EU hosting,
   cookie-less, AGPL. See the memory note "Canonical OpenPanel facts for

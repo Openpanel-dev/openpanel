@@ -8,6 +8,14 @@ import { SignUpButton } from './sign-up-button';
 import { Button } from './ui/button';
 import { siteName } from '@/lib/layout.shared';
 import { MORE_FEATURES, NAV_LINKS, PRIMARY_FEATURES } from '@/lib/nav';
+
+// The desktop menu shows both lists; features already in the primary row
+// are not repeated below it.
+const PRIMARY_HREFS = new Set(PRIMARY_FEATURES.map((feature) => feature.href));
+const SECONDARY_FEATURES = MORE_FEATURES.filter(
+  (feature) => !PRIMARY_HREFS.has(feature.href)
+);
+
 import { cn } from '@/lib/utils';
 
 const CLOSE_DELAY_MS = 120;
@@ -91,7 +99,7 @@ const Navbar = () => {
                 'row items-center gap-1 rounded-md px-3 py-2 font-medium text-foreground/80 transition-colors hover:text-foreground',
                 isFeaturesOpen && 'text-foreground'
               )}
-              onClick={() => setIsFeaturesOpen((open) => !open)}
+              onClick={openFeatures}
               onFocus={openFeatures}
               onMouseEnter={openFeatures}
               onMouseLeave={closeFeaturesSoon}
@@ -200,7 +208,7 @@ function FeaturesMenu({
         </div>
         <div className="col border-l bg-muted/40 p-3">
           <div className="grid flex-1 grid-cols-2 content-start gap-x-2">
-            {MORE_FEATURES.map((feature) => (
+            {SECONDARY_FEATURES.map((feature) => (
               <Link
                 className="row items-center gap-2 rounded-lg px-2.5 py-2 text-foreground/80 transition-colors hover:bg-background hover:text-foreground"
                 href={feature.href}
@@ -229,7 +237,7 @@ function FeaturesMenu({
 
 function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
   return (
-    <div className="container max-h-[calc(100vh-4rem)] overflow-y-auto border-t pb-6 md:hidden">
+    <div className="container max-h-[calc(100vh-4rem)] overflow-y-auto border-t bg-canvas pb-6 md:hidden">
       <p className="mt-5 mb-2 px-1 font-medium text-muted-foreground text-xs uppercase tracking-wider">
         Features
       </p>

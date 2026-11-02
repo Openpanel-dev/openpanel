@@ -256,6 +256,44 @@ export function SessionsContent() {
   );
 }
 
+// Rows that satisfy every chip shown above the table.
+const DOCS_SESSIONS: SessionRow[] = [
+  {
+    started: '13:41',
+    id: 'd41e9a0c',
+    replay: true,
+    user: 'MH',
+    name: 'Mia Holm',
+    entry: '/docs/sdks/nextjs',
+    exit: '/docs/sdks/nextjs',
+    duration: '4m 02s',
+    bounce: false,
+    referrer: 'Google',
+    where: 'Malmö, SE',
+    device: 'desktop',
+    events: 11,
+  },
+  {
+    started: '13:28',
+    id: '6c2f7b31',
+    replay: false,
+    user: 'PN',
+    entry: '/docs/self-hosting',
+    exit: '/docs/self-hosting/install',
+    duration: '7m 48s',
+    bounce: false,
+    referrer: 'Hacker News',
+    where: 'Paris, FR',
+    device: 'desktop',
+    events: 16,
+  },
+];
+
+const FILTERED_SESSIONS = [...SESSIONS, ...DOCS_SESSIONS].filter(
+  (row) =>
+    row.entry.startsWith('/docs') && !row.bounce && row.device !== 'mobile'
+);
+
 export function SessionsFilteredContent() {
   return (
     <>
@@ -266,7 +304,7 @@ export function SessionsFilteredContent() {
         <FilterChip field="Cohort" operator="in" value="Trial users" />
         <FilterChip field="Device" operator="is not" value="mobile" />
       </div>
-      <SessionsTable rows={SESSIONS.filter((row) => !row.bounce).slice(0, 4)} />
+      <SessionsTable rows={FILTERED_SESSIONS} />
     </>
   );
 }

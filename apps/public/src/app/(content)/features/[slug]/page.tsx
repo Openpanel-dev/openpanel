@@ -8,6 +8,12 @@ import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 
 export async function generateStaticParams() {
   const slugs = await getAllFeatureSlugs();
+  const unmapped = slugs.filter((slug) => !isFeatureSlug(slug));
+  if (unmapped.length > 0) {
+    throw new Error(
+      `content/features has no page composition for: ${unmapped.join(', ')} (add it to features/_pages/index.ts)`
+    );
+  }
   return slugs.map((slug) => ({ slug }));
 }
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 
 const DURATION_MS = 1100;
 // Leading symbols, the number itself, trailing unit: "$412.30", "19.9M", "8,634".
-const NUMBER_PATTERN = /^([^\d]*)([\d,]+(?:\.\d+)?)(.*)$/;
+const NUMBER_PATTERN = /^([^\d]*)([\d,]+(?:\.\d+)?)([^\d]*)$/;
 
 function easeOut(progress: number) {
   return 1 - (1 - progress) ** 3;
@@ -19,7 +19,10 @@ export function CountUp({ value }: { value: string }) {
   useEffect(() => {
     const element = ref.current;
     const match = NUMBER_PATTERN.exec(value);
-    if (!(element && match)) {
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)'
+    ).matches;
+    if (!(element && match) || reducedMotion) {
       return;
     }
     const [, prefix, digits, suffix] = match;

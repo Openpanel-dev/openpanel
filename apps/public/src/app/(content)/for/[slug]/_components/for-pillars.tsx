@@ -2,7 +2,10 @@ import { AUDIENCE_PILLARS, PillarVisual } from './for-visuals';
 import { Pillar } from '@/components/blocks/pillar';
 
 export function ForPillars({ audience }: { audience: string }) {
-  const pillars = AUDIENCE_PILLARS[audience] ?? [];
+  const pillars = AUDIENCE_PILLARS[audience];
+  if (!pillars) {
+    throw new Error(`No pillars for audience "${audience}" in for-visuals.tsx`);
+  }
   return (
     <div className="col py-6">
       {pillars.map((pillar, index) => {

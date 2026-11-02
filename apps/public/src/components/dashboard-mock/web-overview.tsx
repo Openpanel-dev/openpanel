@@ -266,13 +266,21 @@ function WidgetTable({
   );
 }
 
-function SourcesAndPages({ campaign = false }: { campaign?: boolean }) {
+function SourcesAndPages({
+  campaign = false,
+  referrers = REFERRERS,
+  pages = PAGES,
+}: {
+  campaign?: boolean;
+  referrers?: typeof REFERRERS;
+  pages?: typeof PAGES;
+}) {
   return (
     <div className="grid @2xl:grid-cols-[1.4fr_1fr] grid-cols-1 gap-3">
       <WidgetTable
         active={campaign ? 5 : 0}
         columns={[campaign ? 'Campaign' : 'Referrer', 'Views', 'Sess.']}
-        rows={campaign ? CAMPAIGNS : REFERRERS}
+        rows={campaign ? CAMPAIGNS : referrers}
         tabs={SOURCE_TABS}
       />
       <WidgetTable
@@ -282,12 +290,23 @@ function SourcesAndPages({ campaign = false }: { campaign?: boolean }) {
             ? ['Entry page', 'Sess.', 'Bounce']
             : ['Path', 'Views', 'Sess.']
         }
-        rows={campaign ? ENTRIES : PAGES}
+        rows={campaign ? ENTRIES : pages}
         tabs={PAGE_TABS}
       />
     </div>
   );
 }
+
+// The Product Hunt and Sweden slice: one referrer, and the pages it landed on.
+const FILTERED_REFERRERS = [
+  { cells: ['Product Hunt', '1,208', '960'], share: 100 },
+];
+const FILTERED_PAGES = [
+  { cells: ['/', '612', '540'], share: 100 },
+  { cells: ['/pricing', '338', '301'], share: 55 },
+  { cells: ['/docs/get-started', '141', '122'], share: 23 },
+  { cells: ['/compare/mixpanel-alternative', '74', '61'], share: 12 },
+];
 
 function DevicesAndGeo() {
   return (
@@ -366,7 +385,7 @@ export function WebFilteredContent() {
           secondary={[2, 3, 3, 4, 6, 5, 7, 6]}
         />
       </Panel>
-      <SourcesAndPages />
+      <SourcesAndPages pages={FILTERED_PAGES} referrers={FILTERED_REFERRERS} />
     </>
   );
 }

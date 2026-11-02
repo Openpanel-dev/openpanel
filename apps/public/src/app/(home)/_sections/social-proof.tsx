@@ -71,7 +71,7 @@ export function CustomerLogos({ className }: { className?: string }) {
         Trusted by teams tracking billions of events
       </p>
       <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
-        <div className="row w-max animate-scroll gap-14 [--animation-duration:70s] hover:[animation-play-state:paused]">
+        <div className="row w-max animate-scroll gap-14 [--animation-duration:70s] motion-reduce:animate-none hover:[animation-play-state:paused]">
           {track.map((customer, index) => (
             <CustomerMark
               customer={customer}

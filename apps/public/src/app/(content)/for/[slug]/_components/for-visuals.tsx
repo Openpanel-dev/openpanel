@@ -30,7 +30,7 @@ export const AUDIENCE_HERO: Record<string, VisualMockName> = {
 const INSTALL_CODE = [
   { text: '# One Linux box with Docker, one command', tone: 'muted' as const },
   { text: 'curl -fsSL https://raw.githubusercontent.com/\\' },
-  { text: '  Openpanel-dev/openpanel/main/self-hosting/install.sh | sh' },
+  { text: 'Openpanel-dev/openpanel/main/self-hosting/install.sh | sh' },
   { text: '' },
   {
     text: '# The script asks for a domain and brings up',
@@ -364,6 +364,7 @@ const API_LINES = [
     text: 'curl -X POST https://api.openpanel.dev/track \\',
     tone: 'muted' as const,
   },
+  { text: "  -H 'content-type: application/json' \\" },
   { text: "  -H 'openpanel-client-id: …' \\" },
   { text: "  -H 'openpanel-client-secret: …' \\" },
   { text: '  -d \'{"type":"track","payload":{"name":"sign_up"}}\'' },

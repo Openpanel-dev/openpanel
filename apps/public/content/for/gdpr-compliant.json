@@ -2,7 +2,7 @@
   "slug": "gdpr-compliant",
   "audience": "gdpr-compliant",
   "seo": {
-    "title": "GDPR-Compliant Analytics, No Cookies, No Consent Banner, No DPA",
+    "title": "GDPR-Compliant Analytics: No Cookies, No Consent Banner, One DPA",
     "description": "GDPR-compliant web and product analytics without cookie banners or US data routing. Hosted on Hetzner in Germany, cookieless by default, one DPA included, and fully self-hostable on your own infrastructure.",
     "noindex": false
   },

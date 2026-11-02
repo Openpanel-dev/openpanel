@@ -81,8 +81,12 @@ export function StatCard({
   );
 }
 
-function smoothPath(points: number[], width: number, height: number) {
-  const max = Math.max(...points) * 1.1;
+function smoothPath(
+  points: number[],
+  width: number,
+  height: number,
+  max: number
+) {
   const step = width / (points.length - 1);
   const coordinates = points.map((value, index) => ({
     x: index * step,
@@ -112,8 +116,10 @@ export function AreaChart({
   height?: number;
 }) {
   const width = 600;
-  const main = smoothPath(primary, width, height);
-  const compare = secondary ? smoothPath(secondary, width, height) : null;
+  // Both lines share one scale, so a lower previous period draws lower.
+  const max = Math.max(...primary, ...(secondary ?? [])) * 1.1;
+  const main = smoothPath(primary, width, height, max);
+  const compare = secondary ? smoothPath(secondary, width, height, max) : null;
   const gridLines = [0.25, 0.5, 0.75];
   return (
     <div className={cn('col gap-2', className)}>

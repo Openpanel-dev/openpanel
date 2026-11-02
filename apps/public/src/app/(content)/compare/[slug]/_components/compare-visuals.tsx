@@ -45,7 +45,7 @@ const SELF_HOST_PILLAR: CategoryPillar = {
   label: 'Self-hosting',
   title: 'Run it yourself for free',
   description:
-    '{competitor} is cloud only. OpenPanel is AGPL and ships as Docker Compose with ClickHouse, Postgres and Redis. One install script, no event limits, your servers.',
+    'OpenPanel is AGPL and ships as Docker Compose with ClickHouse, Postgres and Redis. One install script, no event limits, your servers, and the same product as Cloud.',
   points: [
     {
       title: 'One command',
@@ -67,7 +67,7 @@ const PRODUCT_ANALYTICS_PILLAR: CategoryPillar = {
   label: 'Product analytics',
   title: 'Keep going when traffic numbers are not enough',
   description:
-    '{competitor} stops at pageviews. OpenPanel adds funnels, retention, profiles and session replay on the same events, so the questions can change without a second tool.',
+    'Traffic numbers answer the first question. OpenPanel adds funnels, retention, profiles and session replay on the same events, so the next questions do not need a second tool.',
   points: [
     {
       title: 'Funnels and conversion',
@@ -271,7 +271,7 @@ export const CATEGORY_PILLARS: Record<CompareCategory, CategoryPillar[]> = {
 export const INSTALL_LINES = [
   { text: '# One Linux box with Docker, one command', tone: 'muted' as const },
   { text: 'curl -fsSL https://raw.githubusercontent.com/\\' },
-  { text: '  Openpanel-dev/openpanel/main/self-hosting/install.sh | sh' },
+  { text: 'Openpanel-dev/openpanel/main/self-hosting/install.sh | sh' },
   { text: '' },
   {
     text: '# The script asks for a domain and brings up',

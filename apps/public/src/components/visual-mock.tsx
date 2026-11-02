@@ -32,7 +32,7 @@ export type VisualMockName = keyof typeof MOCKS;
 export const VISUAL_MOCK_NAMES = Object.keys(MOCKS) as VisualMockName[];
 
 export function isVisualMockName(name: string): name is VisualMockName {
-  return name in MOCKS;
+  return Object.hasOwn(MOCKS, name);
 }
 
 type Frame = 'window' | 'inset' | 'bare';

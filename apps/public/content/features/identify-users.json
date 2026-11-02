@@ -14,7 +14,7 @@
   },
   "hero": {
     "heading": "User tracking",
-    "subheading": "See who they are, when they first appeared, and what they did - with full respect for privacy. No fingerprinting, no surveillance."
+    "subheading": "See who they are, when they first appeared, and what they did - with full respect for privacy. No cookies, no cross-site tracking."
   },
   "related_features": [
     {
@@ -43,7 +43,7 @@
       },
       {
         "question": "Is this GDPR-compliant?",
-        "answer": "Yes. You control exactly what data you send. OpenPanel doesn't add tracking pixels, fingerprinting, or third-party cookies. If you self-host, no data ever leaves your infrastructure. You can also delete a user's data at any time to comply with erasure requests."
+        "answer": "Yes. You control exactly what data you send. OpenPanel doesn't add tracking pixels, persistent identifiers or third-party cookies. If you self-host, no data ever leaves your infrastructure. You can also delete a user's data at any time to comply with erasure requests."
       },
       {
         "question": "How is this different from Google Analytics user tracking?",

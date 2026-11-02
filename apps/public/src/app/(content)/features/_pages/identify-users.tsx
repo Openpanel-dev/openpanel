@@ -46,8 +46,8 @@ export function IdentifyUsersPage({ data }: FeaturePageProps) {
             text: 'Earlier events in the same session, up to six hours back, move to the profile.',
           },
           {
-            title: 'No fingerprinting',
-            text: 'Anonymous visitors stay anonymous. There is no cross-device merge.',
+            title: 'No cross-device tracking',
+            text: 'An anonymous visitor is a daily-rotating hash. There is no cross-device merge.',
           },
         ]}
         title="From anonymous to a name"

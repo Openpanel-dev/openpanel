@@ -125,8 +125,16 @@ export function GrowthLine({ className }: { className?: string }) {
   }, []);
 
   const handleMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = (event.clientX - rect.left) / rect.width;
+    // The viewBox is cropped by preserveAspectRatio, so CSS pixels do not
+    // map linearly; go through the SVG's own transform instead.
+    const matrix = event.currentTarget.getScreenCTM();
+    if (!matrix) {
+      return;
+    }
+    const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(
+      matrix.inverse()
+    );
+    const ratio = point.x / WIDTH;
     const index = Math.round(ratio * (POINT_COUNT - 1));
     setHovered(POINTS[Math.min(Math.max(index, 0), POINT_COUNT - 1)]);
   };

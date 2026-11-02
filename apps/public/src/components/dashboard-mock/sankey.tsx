@@ -35,7 +35,7 @@ export function SankeyMock({
     ...columns.map(
       (column) =>
         column.reduce((sum, node) => sum + node.value, 0) +
-        GAP * (column.length - 1)
+        GAP * 2 * (column.length - 1)
     )
   );
   const scale = (height - GAP) / maxTotal;

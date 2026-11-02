@@ -12,15 +12,19 @@ export function CodeSnippet({
   tabs,
   className,
   compact = false,
+  decorative = true,
 }: {
   lines: CodeLine[];
   tabs?: string[];
   className?: string;
   compact?: boolean;
+  // Decorative snippets are hidden from assistive tech; pass false where the
+  // code is the content, as on the docs home page.
+  decorative?: boolean;
 }) {
   return (
     <div
-      aria-hidden
+      aria-hidden={decorative || undefined}
       className={cn(
         'overflow-hidden rounded-2xl bg-neutral-900 text-left text-neutral-200 shadow-[0_30px_60px_-24px_rgba(0,0,0,0.35)]',
         compact && 'rounded-xl shadow-none',

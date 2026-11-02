@@ -505,7 +505,7 @@
       },
       {
         "question": "Is Google Analytics really free?",
-        "answer": "GA4 is free to use, but the cost is your visitors' privacy, data is processed on Google's US servers and used within Google's advertising ecosystem. There are also significant feature limitations: 14-month data retention, data sampling at high volumes, and no BigQuery export. GA4 360 removes these limits but costs $50,000+/year. OpenPanel offers a free self-hosted option with no limitations, or cloud hosting starting at $2.50/month."
+        "answer": "GA4 is free to use, but the cost is your visitors' privacy, data is processed on Google's US servers and used within Google's advertising ecosystem. There are also significant feature limitations: 14-month data retention, data sampling at high volumes, and a BigQuery export capped at 1 million events a day. GA4 360 removes these limits but costs $50,000+/year. OpenPanel offers a free self-hosted option with no limitations, or cloud hosting starting at $2.50/month."
       },
       {
         "question": "Why are people switching away from Google Analytics?",
