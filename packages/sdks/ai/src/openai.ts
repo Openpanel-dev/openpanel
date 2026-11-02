@@ -137,6 +137,7 @@ interface ResponseStreamEvent {
   response?: ResponseObject;
   delta?: string;
   output_index?: number;
+  content_index?: number;
 }
 
 interface EmbeddingParams {
@@ -496,8 +497,11 @@ function responsesResult(response: ResponseObject): CallResult {
 class ResponsesStreamAccumulator implements StreamAccumulator {
   private model: string | undefined;
   private response: ResponseObject | undefined;
-  /** Text per output item, so separate messages don't run together. */
-  private readonly partialText = new Map<number, string>();
+  /** Text per output item and content part, so separate parts don't run together. */
+  private readonly partialText = new Map<
+    string,
+    { item: number; part: number; text: string }
+  >();
 
   observe(value: unknown): boolean {
     const event = value as ResponseStreamEvent;
@@ -509,22 +513,29 @@ class ResponsesStreamAccumulator implements StreamAccumulator {
       this.response = event.response;
     }
     if (type === OUTPUT_TEXT_DELTA_EVENT) {
-      const item = event.output_index ?? 0;
-      this.partialText.set(
-        item,
-        (this.partialText.get(item) ?? '') + (event.delta ?? '')
-      );
+      this.addPartialText(event);
     }
     return type.endsWith(DELTA_EVENT_SUFFIX);
+  }
+
+  private addPartialText(event: ResponseStreamEvent): void {
+    if (!event.delta) {
+      return;
+    }
+    const item = event.output_index ?? 0;
+    const part = event.content_index ?? 0;
+    const key = `${item}:${part}`;
+    const previous = this.partialText.get(key)?.text ?? '';
+    this.partialText.set(key, { item, part, text: previous + event.delta });
   }
 
   result(): CallResult {
     if (this.response) {
       return responsesResult(this.response);
     }
-    const parts = [...this.partialText.entries()]
-      .sort(([a], [b]) => a - b)
-      .map(([, text]): MessagePart => ({ type: 'text', text }));
+    const parts = [...this.partialText.values()]
+      .sort((a, b) => a.item - b.item || a.part - b.part)
+      .map(({ text }): MessagePart => ({ type: 'text', text }));
     const output: Message[] =
       parts.length > 0 ? [{ role: 'assistant', content: parts }] : [];
     return { model: this.model, output };

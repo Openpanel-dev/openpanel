@@ -569,7 +569,9 @@ describe('wrapOpenAI', () => {
               },
             },
             delta(0, 'Let me check.', 1),
-            delta(1, 'The answer is 5', 2),
+            delta(1, '', 2),
+            delta(1, 'The answer is 5', 3),
+            { ...delta(1, ' (checked)', 4), content_index: 1 },
           ],
           { named: true }
         ),
@@ -583,7 +585,7 @@ describe('wrapOpenAI', () => {
     let seen = 0;
     for await (const _event of stream) {
       seen += 1;
-      if (seen === 3) {
+      if (seen === 5) {
         break;
       }
     }
@@ -594,6 +596,7 @@ describe('wrapOpenAI', () => {
         content: [
           { type: 'text', text: 'Let me check.' },
           { type: 'text', text: 'The answer is 5' },
+          { type: 'text', text: ' (checked)' },
         ],
       },
     ]);
