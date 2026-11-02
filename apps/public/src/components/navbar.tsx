@@ -26,6 +26,7 @@ const Navbar = () => {
   const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navbarRef = useRef<HTMLElement>(null);
+  const featuresRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 8);
@@ -61,11 +62,15 @@ const Navbar = () => {
     }
     setIsFeaturesOpen(true);
   };
+  // A keyboard user with focus inside the menu keeps it open when the
+  // pointer wanders off; Escape and an outside click still close it.
   const closeFeaturesSoon = () => {
-    closeTimer.current = setTimeout(
-      () => setIsFeaturesOpen(false),
-      CLOSE_DELAY_MS
-    );
+    closeTimer.current = setTimeout(() => {
+      const focusInside = featuresRef.current?.contains(document.activeElement);
+      if (!focusInside) {
+        setIsFeaturesOpen(false);
+      }
+    }, CLOSE_DELAY_MS);
   };
 
   return (
@@ -91,7 +96,7 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden items-center gap-1 text-sm md:flex">
-          <div className="relative">
+          <div className="relative" ref={featuresRef}>
             <button
               aria-expanded={isFeaturesOpen}
               aria-haspopup="menu"
