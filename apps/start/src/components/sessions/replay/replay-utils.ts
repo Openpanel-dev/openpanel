@@ -66,9 +66,17 @@ export function sortEventsByOffset(
   events: IServiceEvent[],
   startTime: number
 ): EventWithOffset[] {
-  return sortEventsAscending(events)
-    .map((event) => ({ event, offsetMs: getEventOffsetMs(event, startTime) }))
-    .filter(({ offsetMs }) => offsetMs >= -EARLY_EVENT_TOLERANCE_MS);
+  const withOffsets = sortEventsAscending(events).map((event) => ({
+    event,
+    offsetMs: getEventOffsetMs(event, startTime),
+  }));
+  const isEarly = ({ offsetMs }: EventWithOffset) =>
+    offsetMs < -EARLY_EVENT_TOLERANCE_MS;
+  // The page the recording opened on can be viewed long before the recorder starts.
+  const openingView = withOffsets
+    .filter((item) => isEarly(item) && item.event.name === 'screen_view')
+    .at(-1);
+  return withOffsets.filter((item) => !isEarly(item) || item === openingView);
 }
 
 /** Index of the last item at or before `timeMs`, or -1 when none has happened yet. */

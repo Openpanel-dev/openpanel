@@ -280,6 +280,9 @@ export function ReplayTimeline({
 
   const startScrub = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!e.isPrimary) {
+        return;
+      }
       const first = getTimeFromClientX(e.clientX);
       if (first) {
         seek(first.timeMs);

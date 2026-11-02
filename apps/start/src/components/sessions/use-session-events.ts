@@ -33,13 +33,19 @@ export function useSessionEvents(
   const query = useSuspenseInfiniteQuery(
     sessionEventsQueryOptions(trpc, params)
   );
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = query;
+  const {
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = query;
 
+  // A failed page stops the chain; the page shows what loaded rather than retrying forever.
   useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage) {
+    if (hasNextPage && !(isFetchingNextPage || isFetchNextPageError)) {
       fetchNextPage();
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
 
   return useMemo(
     () => query.data.pages.flatMap((page) => page.data),

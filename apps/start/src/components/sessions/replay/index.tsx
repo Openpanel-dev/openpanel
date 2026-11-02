@@ -194,10 +194,17 @@ function ReplayStage({
   const { startTime, duration } = useReplayContext();
   const currentTime = useCurrentTime(FEED_TICK_MS);
 
-  const sorted = useMemo<EventWithOffset[]>(
-    () => (startTime == null ? [] : sortEventsByOffset(events, startTime)),
-    [events, startTime]
-  );
+  // Until the duration is known every event is kept; after that, only what
+  // the recording covers can be seeked to.
+  const sorted = useMemo<EventWithOffset[]>(() => {
+    if (startTime == null) {
+      return [];
+    }
+    const all = sortEventsByOffset(events, startTime);
+    return duration > 0
+      ? all.filter(({ offsetMs }) => offsetMs <= duration)
+      : all;
+  }, [events, startTime, duration]);
   const segments = useMemo(
     () => getPageSegments(sorted, duration),
     [sorted, duration]
