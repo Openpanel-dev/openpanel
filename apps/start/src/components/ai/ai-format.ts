@@ -1,6 +1,9 @@
 // The dashboard formats numbers in one locale (see `useNumber`), not the browser's.
 const NUMBER_LOCALE = 'en-US';
 const SUB_CENT = 0.01;
+const COST_SIGNIFICANT_DIGITS = 2;
+// Below this a few-token embedding prints as $4e-8 or a digit string too wide for a table cell.
+const SMALLEST_SHOWN_COST = 0.000_001;
 const SECOND_MS = 1000;
 const MINUTE_MS = 60_000;
 const COMPACT_THRESHOLD = 10_000;
@@ -10,8 +13,11 @@ export function formatCost(value: number): string {
   if (!value) {
     return '$0';
   }
+  if (Math.abs(value) < SMALLEST_SHOWN_COST) {
+    return '<$0.000001';
+  }
   if (Math.abs(value) < SUB_CENT) {
-    return `$${Number(value.toPrecision(2))}`;
+    return `$${Number(value.toPrecision(COST_SIGNIFICANT_DIGITS))}`;
   }
   return `$${value.toFixed(2)}`;
 }
