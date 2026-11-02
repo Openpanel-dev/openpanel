@@ -10,7 +10,7 @@ import { Step, Steps } from 'fumadocs-ui/components/steps';
 AI observability is in beta; the wrapper options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
 </Callout>
 
-`@openpanel/ai/openai` wraps an `openai` client. After that, every model call it makes shows up in OpenPanel with its cost, tokens, latency, messages and errors, tied to the user who triggered it.
+`@openpanel/ai/openai` wraps an `openai` client. After that, every model call it makes shows up in OpenPanel with its tokens, latency, messages and errors, tied to the user who triggered it. Its cost is added when the model is in the built-in price catalog.
 
 It records:
 
@@ -136,13 +136,16 @@ The event is recorded when the stream ends, with time to first token. Ask for `i
 
 ```ts title="app/api/chat/route.ts"
 import { withAiContext } from '@openpanel/ai';
+import { requireUser } from '@/lib/auth';
 import { openai } from '@/lib/openai';
 
 export async function POST(request: Request) {
-  const { messages, threadId, userId } = await request.json();
+  // Take the user from your auth, never from the request body.
+  const user = await requireUser(request);
+  const { messages, threadId } = await request.json();
 
   return withAiContext(
-    { profileId: userId, conversationId: threadId, name: 'chat' },
+    { profileId: user.id, conversationId: threadId, name: 'chat' },
     async () => {
       const stream = await openai.chat.completions.create({
         model: 'gpt-5-mini',
@@ -272,6 +275,8 @@ Each chat or Responses call becomes an `ai_generation` event, and each embedding
 The messages, tool definitions and model parameters (`temperature`, `max_completion_tokens`, `reasoning_effort` and so on) are kept for 30 days and shown on the generation in the dashboard. Images, audio and files are replaced by a `[file]` placeholder and never uploaded.
 
 A failed call is recorded with its error and then rethrown, so your own error handling is unchanged. Recording never blocks the model call and can never make it fail.
+
+Two kinds of call are not recorded: one read with `.asResponse()`, because the wrapper would have to read the body you asked to keep unread, and the polling of a background Responses call (`background: true`). Its `create` is recorded with the queued status, but `responses.retrieve` is not wrapped.
 
 ## Privacy
 
