@@ -265,7 +265,7 @@ The system prompt, messages, thinking, tool definitions and model parameters (`m
 
 A failed call, including an overloaded or rate-limited one, is recorded with its error and then rethrown, so your own error handling and retries are unchanged. Recording never blocks the model call and can never make it fail.
 
-A call read with `.asResponse()` is not recorded, because the wrapper would have to read the body you asked to keep unread.
+A successful call read with `.asResponse()` is not recorded, because the wrapper would have to read the body you asked to keep unread. A failed one is still recorded with its error.
 
 ## Privacy
 
