@@ -10,7 +10,7 @@ import { articleSource, compareSource, featureSource } from '@/lib/source';
 const FOOTER_COMPARE: { slug: string; label: string }[] = [
   { slug: 'posthog-alternative', label: 'PostHog' },
   { slug: 'plausible-alternative', label: 'Plausible' },
-  { slug: 'mixpanel-alternative', label: 'Mixpanel' },
+  { slug: 'mixpanel-alternative', label: 'Mixpanel alternative' },
   { slug: 'google-analytics-alternative', label: 'Google Analytics' },
   { slug: 'amplitude-alternative', label: 'Amplitude' },
   { slug: 'umami-alternative', label: 'Umami' },

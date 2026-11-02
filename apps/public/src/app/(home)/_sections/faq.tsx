@@ -24,7 +24,7 @@ const faqData: FaqEntry[] = [
   {
     question: 'Is OpenPanel a good Mixpanel alternative?',
     answer:
-      'Yes. OpenPanel covers the core of what most teams use in Mixpanel: event tracking, funnels, retention, cohorts and user profiles. It starts at $2.50 a month, can be self-hosted for free, and is cookie-free with EU hosting. See the [OpenPanel vs Mixpanel comparison](/compare/mixpanel-alternative) or our list of the [best Mixpanel alternatives](/articles/mixpanel-alternatives).',
+      'Yes. OpenPanel covers the core of what most teams use in Mixpanel: event tracking, funnels, retention, cohorts and user profiles. It starts at $2.50 a month, can be self-hosted for free, and is cookie-free with EU hosting. See [OpenPanel as a Mixpanel alternative](/compare/mixpanel-alternative), feature by feature, or our list of the [best Mixpanel alternatives](/articles/mixpanel-alternatives).',
   },
   {
     question: 'Is my data GDPR compliant?',

@@ -1,4 +1,4 @@
-import { isValidElement } from 'react';
+import { cloneElement, isValidElement } from 'react';
 import { CodeSnippet } from './code-snippet';
 import { Band } from '@/components/band';
 import { Reveal } from '@/components/reveal';
@@ -16,8 +16,30 @@ const STAGGER_MS = 90;
 
 // Code blocks are dark panels of their own; everything else gets the white
 // card frame so a small mini does not float in empty space.
-function isCodeSnippet(visual: React.ReactNode) {
+function isCodeSnippet(
+  visual: React.ReactNode
+): visual is React.ReactElement<React.ComponentProps<typeof CodeSnippet>> {
   return isValidElement(visual) && visual.type === CodeSnippet;
+}
+
+// Code is part of the instructions, so it stays readable by assistive
+// technology; replicas are decorative and hidden.
+function StepVisual({ visual }: { visual: React.ReactNode }) {
+  if (isCodeSnippet(visual)) {
+    return (
+      <div className="h-48 overflow-hidden rounded-xl">
+        {cloneElement(visual, { decorative: false })}
+      </div>
+    );
+  }
+  return (
+    <div
+      aria-hidden
+      className={cn('h-48 overflow-hidden rounded-xl', visual && 'surface p-4')}
+    >
+      {visual}
+    </div>
+  );
 }
 
 // "How it works" as one row of numbered steps on a grey band. The columns
@@ -73,17 +95,7 @@ export function StepsBand({
               <h3 className="font-medium">{step.title}</h3>
               <p className="text-neutral-600 text-sm">{step.text}</p>
             </div>
-            {hasVisuals && (
-              <div
-                aria-hidden
-                className={cn(
-                  'h-48 overflow-hidden rounded-xl',
-                  step.visual && !isCodeSnippet(step.visual) && 'surface p-4'
-                )}
-              >
-                {step.visual}
-              </div>
-            )}
+            {hasVisuals && <StepVisual visual={step.visual} />}
           </Reveal>
         ))}
       </ol>

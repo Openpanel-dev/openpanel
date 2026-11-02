@@ -56,7 +56,7 @@ export function HeroShowcase() {
       >
         {VIEWS.map((view) => (
           <button
-            aria-controls={panelId(view.id)}
+            aria-controls={view.id === activeId ? panelId(view.id) : undefined}
             aria-selected={view.id === activeId}
             className={cn(
               'row items-center gap-2 rounded-full py-2 pr-4 pl-3 font-medium text-sm transition-colors',

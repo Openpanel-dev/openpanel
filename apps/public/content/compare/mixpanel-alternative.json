@@ -3,8 +3,8 @@
   "page_type": "alternative",
   "category": "product",
   "seo": {
-    "title": "OpenPanel vs Mixpanel (2026): Full Feature & Pricing Comparison",
-    "description": "Side-by-side comparison of OpenPanel and Mixpanel: pricing, features, self-hosting, privacy, and migration guide. See which product analytics platform is right for your team.",
+    "title": "Mixpanel Alternative: OpenPanel vs Mixpanel (2026, Open Source)",
+    "description": "OpenPanel is the open-source Mixpanel alternative: funnels, retention, profiles and session replay from $2.50 a month or free self-hosted, cookie-less, EU-hosted. Pricing, features and migration compared side by side.",
     "noindex": false
   },
   "hero": {
@@ -42,7 +42,7 @@
   "summary_comparison": {
     "title": "OpenPanel vs Mixpanel: Which is right for you?",
     "intro": "Both platforms help you understand how users interact with your product. The key differences are pricing structure, data privacy approach, and complexity level.",
-    "one_liner": "OpenPanel is simpler, more affordable, and privacy-focused; Mixpanel is more powerful for enterprise teams with complex analytics needs.",
+    "one_liner": "OpenPanel is the open-source Mixpanel alternative: simpler, from $2.50 a month or free self-hosted, and cookie-less. Mixpanel goes deeper for enterprise teams with complex analytics needs.",
     "best_for_openpanel": [
       "Startups and medium-sized businesses who want powerful analytics without enterprise pricing",
       "Privacy-conscious teams requiring EU-only data storage",

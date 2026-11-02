@@ -38,5 +38,5 @@ export const FEATURE_PAGES = {
 export type FeatureSlug = keyof typeof FEATURE_PAGES;
 
 export function isFeatureSlug(slug: string): slug is FeatureSlug {
-  return slug in FEATURE_PAGES;
+  return Object.hasOwn(FEATURE_PAGES, slug);
 }
