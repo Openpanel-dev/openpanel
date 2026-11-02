@@ -3,17 +3,26 @@
   "short_name": "AI observability",
   "seo": {
     "title": "AI Observability - Cost, Tokens and Latency for Every Model Call",
-    "description": "See what every AI call costs, how long it takes and which user it belongs to. Traces for agents, a Vercel AI SDK middleware, and prompts stored only if you want them.",
+    "description": "See what every AI call costs, how long it takes and which user it belongs to. Wrappers for the Vercel AI SDK, OpenAI and Anthropic, traces for agents, and prompts stored only if you want them.",
     "keywords": ["ai observability", "llm cost tracking", "llm analytics"]
   },
   "hero": {
     "heading": "AI observability: cost, tokens and latency for every model call",
-    "subheading": "Wrap the Vercel AI SDK once, or send the events yourself, and every generation shows up with its cost, tied to the user and the session behind it."
+    "subheading": "Wrap the Vercel AI SDK, the OpenAI client or the Anthropic client once, or send the events yourself, and every generation shows up with its cost, tied to the user and the session behind it."
   },
   "related_features": [
-    { "slug": "mcp", "title": "MCP" },
-    { "slug": "identify-users", "title": "Identify users" },
-    { "slug": "session-tracking", "title": "Session tracking" }
+    {
+      "slug": "mcp",
+      "title": "MCP"
+    },
+    {
+      "slug": "identify-users",
+      "title": "Identify users"
+    },
+    {
+      "slug": "session-tracking",
+      "title": "Session tracking"
+    }
   ],
   "faqs": {
     "title": "Frequently asked questions",
@@ -21,7 +30,7 @@
     "items": [
       {
         "question": "Which SDKs can send AI events?",
-        "answer": "The Vercel AI SDK through the `openpanelAiMiddleware` in `@openpanel/ai`, and any backend through the manual `ai()` call in `@openpanel/sdk`. See the docs for the payload shape."
+        "answer": "`@openpanel/ai` wraps the Vercel AI SDK (`openpanelAiMiddleware`), the official `openai` client (`wrapOpenAI`, including Azure and any OpenAI-compatible base URL) and the Anthropic client (`wrapAnthropic`). Any other backend sends the manual `ai()` call from `@openpanel/sdk`. AI events always go through a server with the client secret."
       },
       {
         "question": "What is stored for each call?",

@@ -166,8 +166,8 @@ export function AiObservabilityPage({ data }: FeaturePageProps) {
         items={[
           {
             value: '1',
-            title: 'middleware',
-            text: 'Wraps every provider the Vercel AI SDK supports. OpenAI, Anthropic, Google, Bedrock, Mistral, OpenRouter.',
+            title: 'package',
+            text: 'Wraps the Vercel AI SDK, the OpenAI client and the Anthropic client. Every provider they reach, Azure and OpenRouter included.',
           },
           {
             value: '4',
@@ -247,9 +247,9 @@ export function AiObservabilityPage({ data }: FeaturePageProps) {
         description="How the events get in, and where else they show up."
         items={[
           {
-            title: 'One middleware for the Vercel AI SDK',
+            title: 'Wrap the SDK you already use',
             description:
-              'wrapLanguageModel once and every call is recorded. Sending never blocks the model.',
+              'wrapLanguageModel for the Vercel AI SDK, wrapOpenAI or wrapAnthropic around the official clients. Sending never blocks the model.',
             visual: <CodeSnippet compact lines={MIDDLEWARE_CARD_SNIPPET} />,
           },
           {
