@@ -4,7 +4,18 @@ import { Logo } from './logo';
 import { TOOLS } from '@/app/tools/tools';
 import { getAllForSlugs, getForData } from '@/lib/for';
 import { articleSource, compareSource, featureSource } from '@/lib/source';
-import { cn } from '@/lib/utils';
+
+// The comparisons most visitors look for; the rest are one click away on
+// /compare. Short labels, so nothing truncates in the column.
+const FOOTER_COMPARE: { slug: string; label: string }[] = [
+  { slug: 'posthog-alternative', label: 'PostHog' },
+  { slug: 'plausible-alternative', label: 'Plausible' },
+  { slug: 'mixpanel-alternative', label: 'Mixpanel' },
+  { slug: 'google-analytics-alternative', label: 'Google Analytics' },
+  { slug: 'amplitude-alternative', label: 'Amplitude' },
+  { slug: 'umami-alternative', label: 'Umami' },
+  { slug: 'matomo-alternative', label: 'Matomo' },
+];
 
 const LATEST_ARTICLES = 8;
 
@@ -23,7 +34,7 @@ export async function Footer() {
   ).filter((page): page is NonNullable<typeof page> => page !== null);
   const year = new Date().getFullYear();
 
-  const columns: { title: string; links: FooterLink[]; wide?: boolean }[] = [
+  const columns: { title: string; links: FooterLink[] }[] = [
     {
       title: 'Product',
       links: [
@@ -51,11 +62,13 @@ export async function Footer() {
     },
     {
       title: 'Compare',
-      wide: true,
-      links: compareSource.map((item) => ({
-        url: item.url,
-        title: item?.hero?.heading,
-      })),
+      links: [
+        ...FOOTER_COMPARE.flatMap(({ slug, label }) => {
+          const item = compareSource.find((entry) => entry.slug === slug);
+          return item ? [{ title: label, url: item.url }] : [];
+        }),
+        { title: 'All comparisons', url: '/compare' },
+      ],
     },
     {
       title: 'Resources',
@@ -124,22 +137,11 @@ export async function Footer() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-3 lg:grid-cols-5">
           {columns.map((column) => (
-            <div
-              className={cn(
-                'col gap-3',
-                column.wide && 'sm:col-span-2 lg:col-span-2'
-              )}
-              key={column.title}
-            >
+            <div className="col gap-3" key={column.title}>
               <h3 className="font-medium text-neutral-900">{column.title}</h3>
-              <ul
-                className={cn(
-                  'col gap-2 text-neutral-500',
-                  column.wide && 'sm:grid sm:grid-cols-2 sm:gap-x-6'
-                )}
-              >
+              <ul className="col gap-2 text-neutral-500">
                 {column.links.map((link) => (
                   <li className="truncate" key={link.url}>
                     <Link
