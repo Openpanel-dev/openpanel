@@ -81,12 +81,14 @@ describe('eventListQuery', () => {
     }).toStatement();
 
     expect(query).toContain(
-      'WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < {p3:String} AND project_id = {p4:String}'
+      'WHERE created_at >= toDateTime64({p1:String}, 3) - INTERVAL {p2:Float64} DAY AND created_at < toDateTime64({p3:String}, 3) AND project_id = {p4:String}'
     );
+    // The upper bound keeps the millisecond: a whole-second bound would skip
+    // the unread events that share the last row's second.
     expect(query_params).toMatchObject({
       p1: '2026-09-01 12:34:56',
       p2: 7,
-      p3: '2026-09-01 12:34:56',
+      p3: '2026-09-01 12:34:56.789',
       p4: PROJECT_ID,
     });
   });
