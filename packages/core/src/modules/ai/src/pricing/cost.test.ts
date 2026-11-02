@@ -19,6 +19,9 @@ describe('resolveModelPrice', () => {
     ['claude-sonnet-5-5', 'anthropic', 'claude-sonnet-5-5'],
     ['claude-sonnet-5-5@20260301', 'anthropic', 'claude-sonnet-5-5'],
     ['anthropic/claude-sonnet-5-5', 'openrouter', 'claude-sonnet-5-5'],
+    ['anthropic/claude-sonnet-4.5', 'openrouter', 'claude-sonnet-4-5'],
+    ['anthropic/claude-haiku-4.5', 'openrouter', 'claude-haiku-4-5'],
+    ['gpt-4.1', 'openai', 'gpt-4.1'],
     [
       'anthropic.claude-sonnet-5-5-v1:0',
       'bedrock',
