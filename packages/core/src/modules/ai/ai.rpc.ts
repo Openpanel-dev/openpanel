@@ -12,6 +12,7 @@ import {
   AI_BREAKDOWN_DEFAULT_LIMIT,
   AI_BREAKDOWN_DIMENSIONS,
   AI_BREAKDOWN_MAX_LIMIT,
+  AI_BREAKDOWN_SORTS,
   AI_LIST_DEFAULT_TAKE,
   AI_LIST_MAX_TAKE,
   zAiFilters,
@@ -88,6 +89,7 @@ export const aiRouter = createTRPCRouter({
           .min(1)
           .max(AI_BREAKDOWN_MAX_LIMIT)
           .default(AI_BREAKDOWN_DEFAULT_LIMIT),
+        sort: z.enum(AI_BREAKDOWN_SORTS).default('cost'),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -103,6 +105,7 @@ export const aiRouter = createTRPCRouter({
         timezone,
         dimension: input.dimension,
         limit: input.limit,
+        sort: input.sort,
         filters: input.filters,
       });
     }),

@@ -7,7 +7,8 @@ import {
   WorkflowIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
-import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { AiCost, isUnpricedCall } from './ai-cost';
+import { formatLatency, formatTokens } from './ai-format';
 import { cn } from '@/utils/cn';
 
 interface TraceNode {
@@ -150,8 +151,14 @@ export function AiTraceTree({ events, selectedId, onSelect }: Props) {
                     · {formatTokens(event.inputTokens + event.outputTokens)}t
                   </span>
                 )}
-                {event.totalCost > 0 && (
-                  <span className="ml-1">· {formatCost(event.totalCost)}</span>
+                {(event.totalCost > 0 || isUnpricedCall(event)) && (
+                  <span className="ml-1">
+                    ·{' '}
+                    <AiCost
+                      cost={event.totalCost}
+                      unpricedCalls={isUnpricedCall(event) ? 1 : 0}
+                    />
+                  </span>
                 )}
               </span>
             </div>

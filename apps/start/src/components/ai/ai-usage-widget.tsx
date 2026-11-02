@@ -1,7 +1,8 @@
 import type { IAiEntitySummary } from '@openpanel/core';
 import { type UseQueryResult, useQuery } from '@tanstack/react-query';
 import { BotIcon } from 'lucide-react';
-import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { AiCost } from './ai-cost';
+import { formatLatencyOrNone, formatTokens } from './ai-format';
 import { ProjectLink } from '@/components/links';
 import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
 import { Skeleton } from '@/components/skeleton';
@@ -121,13 +122,19 @@ function UsageBody({
 
   const stats = data
     ? [
-        { label: 'Generations', value: formatTokens(data.generations) },
-        { label: 'Cost', value: formatCost(data.cost) },
+        { label: 'Calls', value: formatTokens(data.generations) },
+        {
+          label: 'Cost',
+          value: <AiCost cost={data.cost} unpricedCalls={data.unpricedCalls} />,
+        },
         {
           label: 'Tokens',
           value: formatTokens(data.inputTokens + data.outputTokens),
         },
-        { label: 'Avg latency', value: formatLatency(data.avgLatencyMs) },
+        {
+          label: 'Avg latency',
+          value: formatLatencyOrNone(data.avgLatencyMs),
+        },
         { label: 'Errors', value: formatTokens(data.errors) },
         { label: 'Last call', value: data.lastAt ? timeAgo(data.lastAt) : '—' },
       ]
