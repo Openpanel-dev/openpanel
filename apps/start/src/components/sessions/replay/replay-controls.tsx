@@ -156,16 +156,6 @@ function useFullscreen(target: React.RefObject<HTMLElement | null>) {
   return { isFullscreen, toggle };
 }
 
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) {
-    return false;
-  }
-  return (
-    target.isContentEditable ||
-    ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
-  );
-}
-
 function nextSpeed(current: number, direction: 1 | -1) {
   const index = SPEED_OPTIONS.indexOf(
     current as (typeof SPEED_OPTIONS)[number]
@@ -180,9 +170,11 @@ function nextSpeed(current: number, direction: 1 | -1) {
 /** Player shortcuts; ignored while the user is typing anywhere on the page. */
 function useReplayHotkeys({
   events,
+  scope,
   onFullscreen,
 }: {
   events: EventWithOffset[];
+  scope: React.RefObject<HTMLElement | null>;
   onFullscreen: () => void;
 }) {
   const {
@@ -203,7 +195,11 @@ function useReplayHotkeys({
     }
     const onKeyDown = (e: KeyboardEvent) => {
       const hasModifier = e.metaKey || e.ctrlKey || e.altKey;
-      if (hasModifier || isTypingTarget(e.target)) {
+      // Only while nothing else on the page has focus, or focus is in the player.
+      const isInScope =
+        e.target === document.body ||
+        (e.target instanceof Node && scope.current?.contains(e.target));
+      if (hasModifier || !isInScope) {
         return;
       }
       const actions: Record<string, () => void> = {
@@ -242,6 +238,7 @@ function useReplayHotkeys({
     setSpeed,
     toggleSkipInactive,
     jumps,
+    scope,
     onFullscreen,
   ]);
 }
@@ -265,7 +262,11 @@ export function ReplayControls({
   } = useReplayContext();
   const jumps = useEventJumps(events);
   const fullscreen = useFullscreen(fullscreenTarget);
-  useReplayHotkeys({ events, onFullscreen: fullscreen.toggle });
+  useReplayHotkeys({
+    events,
+    scope: fullscreenTarget,
+    onFullscreen: fullscreen.toggle,
+  });
 
   return (
     <div

@@ -22,6 +22,10 @@ import { groupEventsByPage } from '@/components/sessions/details/session-pages';
 import { SessionProperties } from '@/components/sessions/details/session-properties';
 import { SessionTimeline } from '@/components/sessions/details/session-timeline';
 import { ReplayShell } from '@/components/sessions/replay';
+import {
+  sessionEventsQueryOptions,
+  useSessionEvents,
+} from '@/components/sessions/use-session-events';
 import { Button } from '@/components/ui/button';
 import {
   Widget,
@@ -51,12 +55,10 @@ export const Route = createFileRoute(
           projectId: params.projectId,
         })
       ),
-      context.queryClient.prefetchQuery(
-        context.trpc.event.events.queryOptions({
+      context.queryClient.prefetchInfiniteQuery(
+        sessionEventsQueryOptions(context.trpc, {
           projectId: params.projectId,
           sessionId: params.sessionId,
-          filters: [],
-          columnVisibility: {},
         })
       ),
     ]);
@@ -92,8 +94,8 @@ function SessionFacts({ session }: { session: IServiceSession }) {
       <HeaderFact icon={<ClockIcon className="size-4" />}>
         {fancyMinutes(session.duration / MS_PER_SECOND)}
       </HeaderFact>
-      {session.country && (
-        <HeaderFact icon={<SerieIcon name={session.country} />}>
+      {location && (
+        <HeaderFact icon={<SerieIcon name={session.country || session.city} />}>
           {location}
         </HeaderFact>
       )}
@@ -220,15 +222,7 @@ function Component() {
 
   useEntityPageContext('session', { sessionId });
 
-  const { data: eventsData } = useSuspenseQuery(
-    trpc.event.events.queryOptions({
-      projectId,
-      sessionId,
-      filters: [],
-      columnVisibility: {},
-    })
-  );
-  const events = eventsData?.data ?? [];
+  const events = useSessionEvents(trpc, { projectId, sessionId });
 
   const { data: profile } = useSuspenseQuery(
     trpc.profile.byId.queryOptions({
@@ -300,7 +294,11 @@ function Component() {
       <SessionMetrics events={events} session={session} />
 
       {session.hasReplay && (
-        <ReplayShell projectId={projectId} sessionId={sessionId} />
+        <ReplayShell
+          events={events}
+          projectId={projectId}
+          sessionId={sessionId}
+        />
       )}
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">

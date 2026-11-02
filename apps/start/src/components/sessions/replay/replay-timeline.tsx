@@ -36,8 +36,9 @@ function groupMarkers(
   const groups: EventWithOffset[][] = [];
   for (const item of events) {
     const last = groups.at(-1);
-    const lastItem = last?.at(-1);
-    if (last && lastItem && item.offsetMs - lastItem.offsetMs <= thresholdMs) {
+    // Measured from the group's first event, which is where its marker sits.
+    const anchor = last?.[0];
+    if (last && anchor && item.offsetMs - anchor.offsetMs <= thresholdMs) {
       last.push(item);
     } else {
       groups.push([item]);
@@ -239,8 +240,12 @@ export function ReplayTimeline({
 
   const rageClicks = useMemo(
     () =>
-      startTime == null ? [] : detectRageClicks(activity.clicks, startTime),
-    [activity.clicks, startTime]
+      startTime == null
+        ? []
+        : detectRageClicks(activity.clicks, startTime).filter(
+            (rage) => rage.offsetMs >= 0 && rage.offsetMs <= duration
+          ),
+    [activity.clicks, startTime, duration]
   );
 
   // The playhead moves on every tick; write to the DOM instead of re-rendering.
@@ -279,19 +284,28 @@ export function ReplayTimeline({
       if (first) {
         seek(first.timeMs);
       }
+      const { pointerId } = e;
       const onMove = (move: PointerEvent) => {
+        if (move.pointerId !== pointerId) {
+          return;
+        }
         const info = getTimeFromClientX(move.clientX);
         if (info) {
           setHover(info);
           seek(info.timeMs);
         }
       };
-      const onUp = () => {
+      const onEnd = (end: PointerEvent) => {
+        if (end.pointerId !== pointerId) {
+          return;
+        }
         window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointerup', onEnd);
+        window.removeEventListener('pointercancel', onEnd);
       };
       window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointerup', onEnd);
+      window.addEventListener('pointercancel', onEnd);
     },
     [getTimeFromClientX, seek]
   );

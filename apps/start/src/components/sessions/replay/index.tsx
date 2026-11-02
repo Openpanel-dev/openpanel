@@ -141,8 +141,10 @@ function SkippingBadge() {
   );
 }
 
-function StagePlaceholder({ isLoading }: { isLoading: boolean }) {
-  if (isLoading) {
+type StageStatus = 'loading' | 'error' | 'empty';
+
+function StagePlaceholder({ status }: { status: StageStatus }) {
+  if (status === 'loading') {
     return (
       <div className="absolute inset-0 grid place-items-center p-6">
         <div className="col aspect-video w-full max-w-3xl overflow-hidden rounded-xl bg-card shadow-[0_0_0_1px_var(--border)]">
@@ -161,21 +163,32 @@ function StagePlaceholder({ isLoading }: { isLoading: boolean }) {
     <div className="col absolute inset-0 items-center justify-center gap-3 text-muted-foreground">
       <VideoOffIcon className="size-8" />
       <span className="text-sm">
-        No recording was captured for this session.
+        {status === 'error'
+          ? 'The recording could not be loaded. Reload the page to try again.'
+          : 'No recording was captured for this session.'}
       </span>
     </div>
   );
+}
+
+function getStageStatus(isLoading: boolean, isError: boolean): StageStatus {
+  if (isLoading) {
+    return 'loading';
+  }
+  return isError ? 'error' : 'empty';
 }
 
 function ReplayStage({
   events,
   playerEvents,
   isLoading,
+  isError,
   fullscreenTarget,
 }: {
   events: IServiceEvent[];
   playerEvents: ReplayRecordEvent[];
   isLoading: boolean;
+  isError: boolean;
   fullscreenTarget: React.RefObject<HTMLDivElement | null>;
 }) {
   const { startTime, duration } = useReplayContext();
@@ -217,7 +230,7 @@ function ReplayStage({
               url={<CurrentUrl segment={currentSegment} />}
             />
           ) : (
-            <StagePlaceholder isLoading={isLoading} />
+            <StagePlaceholder status={getStageStatus(isLoading, isError)} />
           )}
           <SkippingBadge />
         </div>
@@ -246,24 +259,21 @@ function ReplayStage({
 export function ReplayShell({
   sessionId,
   projectId,
+  events,
 }: {
   sessionId: string;
   projectId: string;
+  events: IServiceEvent[];
 }) {
   const trpc = useTRPC();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: eventsData } = useQuery(
-    trpc.event.events.queryOptions({
-      projectId,
-      sessionId,
-      filters: [],
-      columnVisibility: {},
-    })
-  );
-
   // The first batch carries the full snapshot the player needs to start.
-  const { data: firstBatch, isLoading } = useQuery(
+  const {
+    data: firstBatch,
+    isLoading,
+    isError,
+  } = useQuery(
     trpc.session.replayChunksFrom.queryOptions({
       sessionId,
       projectId,
@@ -271,14 +281,14 @@ export function ReplayShell({
     })
   );
 
-  const events = eventsData?.data ?? [];
   const playerEvents = useMemo(
     () => firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [],
     [firstBatch]
   );
 
   return (
-    <ReplayProvider>
+    // Keyed so playback state (e.g. the start overlay) resets per session.
+    <ReplayProvider key={sessionId}>
       <div
         className="card overflow-hidden [&:fullscreen]:rounded-none [&:fullscreen]:border-0"
         id="replay"
@@ -287,6 +297,7 @@ export function ReplayShell({
         <ReplayStage
           events={events}
           fullscreenTarget={rootRef}
+          isError={isError}
           isLoading={isLoading}
           playerEvents={playerEvents}
         />

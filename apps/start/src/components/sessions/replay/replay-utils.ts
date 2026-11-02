@@ -1,4 +1,5 @@
 import type { IServiceEvent } from '@openpanel/core';
+import { sortEventsAscending } from '../details/session-pages';
 
 export interface ReplayRecordEvent {
   type: number;
@@ -65,10 +66,9 @@ export function sortEventsByOffset(
   events: IServiceEvent[],
   startTime: number
 ): EventWithOffset[] {
-  return events
+  return sortEventsAscending(events)
     .map((event) => ({ event, offsetMs: getEventOffsetMs(event, startTime) }))
-    .filter(({ offsetMs }) => offsetMs >= -EARLY_EVENT_TOLERANCE_MS)
-    .sort((a, b) => a.offsetMs - b.offsetMs);
+    .filter(({ offsetMs }) => offsetMs >= -EARLY_EVENT_TOLERANCE_MS);
 }
 
 /** Index of the last item at or before `timeMs`, or -1 when none has happened yet. */
@@ -162,34 +162,39 @@ export function getClick(
   return { timestamp: event.timestamp, x: data.x ?? 0, y: data.y ?? 0 };
 }
 
+/** Clicks elsewhere in between do not break a burst on one spot. */
 export function detectRageClicks(
   clicks: { timestamp: number; x: number; y: number }[],
   startTime: number
 ): RageClick[] {
   const sorted = [...clicks].sort((a, b) => a.timestamp - b.timestamp);
+  const counted = new Set<number>();
   const rageClicks: RageClick[] = [];
-  let index = 0;
-  while (index < sorted.length) {
-    const first = sorted[index]!;
-    let end = index + 1;
-    while (end < sorted.length) {
-      const click = sorted[end]!;
-      const withinWindow =
-        click.timestamp - first.timestamp <= RAGE_CLICK_WINDOW_MS;
+  for (const [index, first] of sorted.entries()) {
+    if (counted.has(index)) {
+      continue;
+    }
+    const burst = [index];
+    for (let next = index + 1; next < sorted.length; next++) {
+      const click = sorted[next]!;
+      if (click.timestamp - first.timestamp > RAGE_CLICK_WINDOW_MS) {
+        break;
+      }
       const samePlace =
         Math.hypot(click.x - first.x, click.y - first.y) <=
         RAGE_CLICK_RADIUS_PX;
-      if (!(withinWindow && samePlace)) {
-        break;
+      if (samePlace && !counted.has(next)) {
+        burst.push(next);
       }
-      end++;
     }
-    const count = end - index;
-    if (count >= RAGE_CLICK_MIN_CLICKS) {
-      rageClicks.push({ offsetMs: first.timestamp - startTime, clicks: count });
-      index = end;
-    } else {
-      index++;
+    if (burst.length >= RAGE_CLICK_MIN_CLICKS) {
+      for (const member of burst) {
+        counted.add(member);
+      }
+      rageClicks.push({
+        offsetMs: first.timestamp - startTime,
+        clicks: burst.length,
+      });
     }
   }
   return rageClicks;

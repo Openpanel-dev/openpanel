@@ -6,6 +6,7 @@ import {
 import { cn } from '@/utils/cn';
 
 const COLUMNS_BY_COUNT: Record<number, string> = {
+  4: 'xl:grid-cols-4',
   5: 'xl:grid-cols-5',
   6: 'xl:grid-cols-6',
 };
@@ -26,9 +27,9 @@ export function SessionMetrics({
   events: IServiceEvent[];
 }) {
   const pageViews = events.filter((event) => event.name === 'screen_view');
-  const uniquePages = new Set(pageViews.map((event) => event.path)).size;
+  const uniquePages = new Set(pageViews.map((event) => event.path || '/')).size;
   const durationSeconds = session.duration / MS_PER_SECOND;
-  const pageCount = Math.max(session.screenViewCount, 1);
+  const hasPageViews = session.screenViewCount > 0;
 
   // The card's 'min' unit takes seconds and renders them as a duration.
   const metrics: SessionMetric[] = [
@@ -41,12 +42,16 @@ export function SessionMetrics({
     },
     { key: 'uniquePages', label: 'Unique pages', value: uniquePages, unit: '' },
     { key: 'events', label: 'Events', value: session.eventCount, unit: '' },
-    {
-      key: 'timePerPage',
-      label: 'Time per page',
-      value: durationSeconds / pageCount,
-      unit: 'min',
-    },
+    ...(hasPageViews
+      ? [
+          {
+            key: 'timePerPage',
+            label: 'Time per page',
+            value: durationSeconds / session.screenViewCount,
+            unit: 'min' as const,
+          },
+        ]
+      : []),
     ...(session.revenue > 0
       ? [
           {

@@ -13,8 +13,29 @@ function toMs(date: Date | string): number {
   return date instanceof Date ? date.getTime() : new Date(date).getTime();
 }
 
+function pagePath(event: IServiceEvent): string {
+  return event.path || '/';
+}
+
+/**
+ * Within one millisecond the query's order is arbitrary, so an event goes after
+ * a screen view only when it happened on that view's page.
+ */
+function compareEvents(a: IServiceEvent, b: IServiceEvent): number {
+  const difference = toMs(a.createdAt) - toMs(b.createdAt);
+  const aIsView = a.name === 'screen_view';
+  const bIsView = b.name === 'screen_view';
+  if (difference !== 0 || aIsView === bIsView) {
+    return difference;
+  }
+  const view = aIsView ? a : b;
+  const other = aIsView ? b : a;
+  const viewGoesFirst = pagePath(other) === pagePath(view);
+  return viewGoesFirst === aIsView ? -1 : 1;
+}
+
 export function sortEventsAscending(events: IServiceEvent[]): IServiceEvent[] {
-  return [...events].sort((a, b) => toMs(a.createdAt) - toMs(b.createdAt));
+  return [...events].sort(compareEvents);
 }
 
 /** Splits a session's events into page visits, each lasting until the next page. */
@@ -29,7 +50,7 @@ export function groupEventsByPage(
     if (isPageView || !current) {
       visits.push({
         view: isPageView ? event : null,
-        path: isPageView ? event.path || '/' : '',
+        path: isPageView ? pagePath(event) : '',
         startedAt: toMs(event.createdAt),
         durationMs: 0,
         events: isPageView ? [] : [event],
