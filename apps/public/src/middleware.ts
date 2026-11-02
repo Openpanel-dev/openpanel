@@ -16,16 +16,24 @@ const UTM_KEYS = {
   utm_term: 'utmTerm',
 } as const;
 
+function isOwnHost(hostname: string, requestHost: string) {
+  return (
+    hostname === requestHost ||
+    hostname === ATTRIBUTION_COOKIE_DOMAIN ||
+    hostname.endsWith(`.${ATTRIBUTION_COOKIE_DOMAIN}`)
+  );
+}
+
 // A referrer's query string can carry the referring site's own tokens and
-// adds nothing to attribution. A referrer on our own domain is navigation,
-// not a source.
-function externalReferrer(referer: string | null, host: string) {
+// adds nothing to attribution. A referrer on our own domain (any subdomain,
+// the dashboard included) is navigation, not a source.
+function externalReferrer(referer: string | null, requestHost: string) {
   if (!referer) {
     return undefined;
   }
   try {
     const parsed = new URL(referer);
-    if (parsed.hostname === host) {
+    if (isOwnHost(parsed.hostname, requestHost)) {
       return undefined;
     }
     return `${parsed.origin}${parsed.pathname}`;
