@@ -2,13 +2,13 @@
   "slug": "gdpr-compliant",
   "audience": "gdpr-compliant",
   "seo": {
-    "title": "GDPR-Compliant Analytics — No Cookies, No Consent Banner, No DPA",
-    "description": "GDPR-compliant web and product analytics without cookie banners, US data routing, or DPA paperwork. EU-hosted, cookieless by default, and fully self-hostable on your own infrastructure.",
+    "title": "GDPR-Compliant Analytics, No Cookies, No Consent Banner, No DPA",
+    "description": "GDPR-compliant web and product analytics without cookie banners or US data routing. Hosted on Hetzner in Germany, cookieless by default, one DPA included, and fully self-hostable on your own infrastructure.",
     "noindex": false
   },
   "hero": {
     "heading": "GDPR-compliant analytics that doesn't need a consent banner",
-    "subheading": "Google Analytics needs explicit consent, and banner-dismissal rates kill your attribution data. Mixpanel and Amplitude route data through US servers, which Schrems II made a legal mess. OpenPanel is cookieless, EU-hosted, and self-hostable for full data sovereignty. No banner. No DPA hell. No US transfer risk.",
+    "subheading": "Google Analytics needs explicit consent, and banner rejection rates wreck attribution. Most US tools route EU data through US servers. OpenPanel is cookieless, hosted in Germany, and self-hostable for full data sovereignty. No banner, no transfer risk, one DPA.",
     "badges": [
       "EU-hosted",
       "Cookieless by default",
@@ -21,7 +21,7 @@
     "intro": "The analytics stack most teams default to creates GDPR compliance work that scales worse than the tools themselves.",
     "items": [
       {
-        "title": "GA4 requires explicit consent — which most users decline",
+        "title": "GA4 requires explicit consent, which most users decline",
         "description": "Consent banner dismissal and rejection rates routinely run 30–60%. That means up to half your traffic is invisible to GA4 by design, your conversion attribution is broken, and you're paying for a tool you can't use on the data that matters most."
       },
       {
@@ -29,50 +29,50 @@
         "description": "Mixpanel, Amplitude, PostHog Cloud, and Heap all process EU data on US infrastructure. The EU-US Data Privacy Framework patched the legal hole but EU DPAs continue to scrutinize US transfers. One adequacy challenge and your processor list is suddenly a compliance problem."
       },
       {
-        "title": "DPAs and BAAs are operational overhead — most teams skip them",
-        "description": "Every SaaS analytics tool you use as a processor needs a signed DPA. Healthcare-adjacent teams need BAAs. Most engineering teams don't track which tools have signed paperwork, which means most production analytics setups quietly fail their first GDPR audit."
+        "title": "Every processor needs its paperwork",
+        "description": "Each SaaS analytics tool you use as a processor needs a signed DPA, and US vendors add SCCs and transfer impact assessments on top. Most engineering teams do not track which tools have signed what, so a first GDPR audit finds gaps."
       },
       {
         "title": "Cookie consent rejection = no data",
-        "description": "Even when banners show, modern users dismiss them fast. The data you're collecting is the data from users who didn't notice the banner — not your real audience. Cookieless analytics is the structural fix; bolting consent on top of GA4 is not."
+        "description": "Even when banners show, modern users dismiss them fast. The data you're collecting is the data from users who didn't notice the banner, not your real audience. Cookieless analytics is the structural fix; bolting consent on top of GA4 is not."
       }
     ]
   },
   "features": {
     "title": "How OpenPanel makes GDPR analytics painless",
-    "intro": "Architecture-level decisions — not consent-banner workarounds — that put OpenPanel inside GDPR's legitimate-interest basis from the start.",
+    "intro": "Architecture-level decisions, not consent-banner workarounds, that put OpenPanel inside GDPR's legitimate-interest basis from the start.",
     "items": [
       {
         "title": "Cookieless tracking by default",
-        "description": "OpenPanel identifies sessions via a privacy-preserving daily-rotating hash of IP + user agent — no personal data persists beyond 24 hours. No cookies set, no PECR (EU cookie directive) consent required, no banner needed for product analytics."
+        "description": "A visitor is a daily-rotating salted hash of IP, user agent and site. No cookies, no localStorage, no persistent identifier. PECR does not apply and no banner is needed for analytics."
       },
       {
-        "title": "EU-hosted cloud option",
-        "description": "OpenPanel Cloud runs on EU infrastructure (Frankfurt). Your event data never crosses the Atlantic. No Schrems II adequacy problem to argue with your DPO."
+        "title": "EU-hosted cloud",
+        "description": "OpenPanel Cloud runs on Hetzner in Germany, with backups on Cloudflare R2 inside the EU. Your event data does not cross the Atlantic, and a GDPR data processing agreement is included at /dpa."
       },
       {
         "title": "Self-host for total data sovereignty",
-        "description": "Run OpenPanel on your own infrastructure (Docker Compose: ClickHouse + Postgres + Redis, one-command setup). Your servers, your data, your jurisdiction. No third-party processor, no DPA to sign with anyone."
+        "description": "Run OpenPanel on your own infrastructure (Docker Compose: ClickHouse, Postgres, Redis, one install script). Your servers, your data, your jurisdiction. No third-party processor at all."
       },
       {
-        "title": "IP anonymization built-in",
-        "description": "Raw IP addresses are never stored — they're hashed for the session identifier and discarded. Geo data is derived from the hash, not the IP. No configuration required."
+        "title": "No raw IP on events",
+        "description": "The IP is used once, for the country and city lookup and the daily device hash, and is not stored on events. Nothing to configure."
       },
       {
         "title": "Open-source codebase you can audit",
-        "description": "MIT-licensed. Show your DPO exactly which fields are collected, how they're hashed, and where they're stored. Competing tools can only ask you to take their word for it."
+        "description": "The platform is AGPL-3.0 and the SDKs are MIT. Show your DPO which fields are collected, how the visitor id is hashed and where it is stored. The privacy page lists every sub-processor."
       },
       {
-        "title": "Data subject request tooling",
-        "description": "Export or delete all data for a specific user via the API. Build automated GDPR Article 15 (access) and Article 17 (erasure) flows in minutes, not days."
+        "title": "Data subject requests",
+        "description": "Export every event for a profile through the REST API for an Article 15 request. For erasure, delete the profile's rows in your own ClickHouse when self-hosted, or ask us on Cloud."
       },
       {
         "title": "No third-country data transfers",
-        "description": "EU cloud or self-host means EU-only processing. No Standard Contractual Clauses to maintain, no transfer impact assessments, no chapter V exposure."
+        "description": "EU cloud or self-host means EU-only processing. No Standard Contractual Clauses, no transfer impact assessments, no chapter V exposure."
       },
       {
-        "title": "Audit-friendly architecture",
-        "description": "Every data flow is documented in open code. Hand the architecture diagram to your auditor; no proprietary 'trust us' to defend."
+        "title": "Documented data flow",
+        "description": "Open code, a public sub-processor list and a DPA you can read before you sign up. Hand the privacy page to your auditor; there is no proprietary black box to defend."
       }
     ]
   },
@@ -86,15 +86,15 @@
       },
       {
         "title": "No DPA paperwork burden",
-        "description": "Self-hosted OpenPanel is not a third-party processor — there's nothing to sign. Cloud users get one DPA from OpenPanel (EU entity) instead of a stack from US vendors."
+        "description": "Self-hosted OpenPanel is software you run, not a processor; there is nothing to sign. Cloud users sign one DPA with OpenPanel instead of a stack of them with US vendors."
       },
       {
         "title": "Pass GDPR audits without scrambling",
         "description": "Architecture-level privacy means the auditor's questions ('What's the lawful basis? Where's the data? Who's the processor?') have one-line answers."
       },
       {
-        "title": "Compliance scales with the company",
-        "description": "As you expand into healthcare, financial services, or EU public-sector contracts, the architecture already meets the higher bar. No re-platforming for stricter audits."
+        "title": "Compliance that scales with the company",
+        "description": "Stricter contracts, EU public-sector work or a data residency clause need no re-platforming: self-host and the data never leaves your network."
       }
     ]
   },
@@ -104,35 +104,35 @@
     "items": [
       {
         "question": "Do I still need a cookie consent banner with OpenPanel?",
-        "answer": "Not for product analytics. OpenPanel's default cookieless mode doesn't store cookies and doesn't collect personal data, so PECR (the EU cookie directive) doesn't apply and GDPR consent isn't required — legitimate interest (Article 6(1)(f)) is the lawful basis. If you add cookie-based features yourself (advertising tags, third-party scripts, etc.) those still need consent."
+        "answer": "Not for product analytics. OpenPanel's cookieless mode stores no cookies and no persistent identifier, so PECR does not apply and GDPR consent is not required; legitimate interest (Article 6(1)(f)) is the usual lawful basis. Cookie-based features you add yourself, such as advertising tags, still need consent."
       },
       {
         "question": "What's the lawful basis for processing without consent?",
-        "answer": "Legitimate interest under GDPR Article 6(1)(f). Because OpenPanel collects no personal data in cookieless mode (no IP retention, no persistent identifiers, no fingerprinting), the balancing test against data subject rights is straightforward — minimal data, no profiling, transparent purpose. Document the legitimate interest assessment (LIA) and you're covered."
+        "answer": "Legitimate interest under GDPR Article 6(1)(f). OpenPanel keeps no cookies, no persistent identifier and no raw IP on events, so the balancing test is straightforward: minimal data, no profiling of anonymous visitors, transparent purpose. Document the legitimate interest assessment and you are covered. Once you call identify() with a user id you are processing personal data as you already do in your product."
       },
       {
         "question": "Does OpenPanel solve Schrems II?",
-        "answer": "Yes. OpenPanel Cloud uses EU-only infrastructure (Frankfurt), so no transfer to the US occurs. Self-hosted is entirely on your infrastructure, so the question never arises. Compare this to Mixpanel/Amplitude/Heap/PostHog Cloud, which all process EU data on US servers and require SCCs and transfer impact assessments."
+        "answer": "OpenPanel Cloud runs on Hetzner in Germany with EU backups, so no transfer to the US occurs. Self-hosted is entirely on your infrastructure, so the question never arises. Compare this with tools that process EU data on US servers and need SCCs and transfer impact assessments."
       },
       {
         "question": "Do I need to sign a DPA with OpenPanel?",
-        "answer": "If you self-host, no — OpenPanel is software, not a service provider. If you use OpenPanel Cloud, yes, you sign one DPA (with our EU entity). Either way it's simpler than US tool stacks where every vendor needs its own DPA and SCCs."
+        "answer": "If you self-host, no: OpenPanel is software, not a service provider. If you use OpenPanel Cloud, yes, one DPA, published at /dpa. Either way it is simpler than a stack of US vendors each needing their own DPA and SCCs."
       },
       {
         "question": "How does data subject access / erasure (Articles 15 & 17) work?",
-        "answer": "OpenPanel exposes API endpoints to export all events for a given profileId (Article 15 — right of access) and to delete all events for that profileId (Article 17 — right of erasure). You wire those to your existing GDPR request workflow. Most teams build the whole flow in an afternoon."
+        "answer": "Access (Article 15): the REST API exports every event for a profileId, and the profile page shows the same data. Erasure (Article 17): when self-hosted you delete the profile's rows in ClickHouse; on Cloud you ask us and we remove them. Wire the export into your existing request workflow."
       },
       {
         "question": "What about HIPAA and CCPA?",
-        "answer": "Self-hosted OpenPanel works for HIPAA-regulated workloads — the architecture (no PII collection, encrypted-at-rest data store, audit logs) meets the technical safeguards, and self-hosting means no Business Associate Agreement is required. For CCPA (California), the same cookieless + opt-out architecture covers the 'Do Not Sell' and 'Limit Use of SPI' rights without code changes."
+        "answer": "OpenPanel does not offer HIPAA compliance and cannot sign a Business Associate Agreement, on Cloud or otherwise. If you handle health data, self-host: no third party sits in the data path, so no business associate relationship exists, and you control retention. Be careful with session replay (it records the DOM) and with PHI in URLs or event properties, which are stored as sent. For CCPA, the cookieless setup covers the 'Do Not Sell' and 'Limit Use' rights without code changes."
       },
       {
         "question": "How does OpenPanel compare to Plausible and Matomo for GDPR?",
-        "answer": "All three are cookieless and EU-hostable. Plausible is the simplest but lacks product analytics (no funnels, retention, cohorts, user profiles). Matomo has more features but adds cookie-based tracking by default (toggle-able to cookieless) and gates advanced features behind paid plugins. OpenPanel sits between them: simpler than Matomo, more product-analytics depth than Plausible. See `/articles/self-hosted-web-analytics` for a feature-by-feature comparison."
+        "answer": "All three are cookieless and EU-hostable. Plausible is the simplest but has no product analytics (no retention, cohorts, user profiles or replay). Matomo has more features but uses cookies by default (switchable) and sells advanced features as paid plugins. OpenPanel sits between them: simpler than Matomo, deeper than Plausible. See /articles/self-hosted-web-analytics for a feature-by-feature comparison."
       },
       {
         "question": "Is OpenPanel SOC 2 certified?",
-        "answer": "OpenPanel Cloud is working toward SOC 2 Type II as of 2026. For workloads that require certification today, self-hosting on your own SOC 2-certified infrastructure inherits your existing controls — the OpenPanel codebase is auditable, and you control all access boundaries."
+        "answer": "No. OpenPanel Cloud is not SOC 2 certified. For workloads that require certification, self-host on infrastructure that already has it: the codebase is open, and you control every access boundary."
       }
     ]
   },
@@ -142,7 +142,10 @@
         "title": "Website analytics setup",
         "url": "/guides/website-analytics-setup"
       },
-      { "title": "Track custom events", "url": "/guides/track-custom-events" }
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      }
     ],
     "articles": [
       {
@@ -159,8 +162,14 @@
       }
     ],
     "audiences": [
-      { "title": "For SaaS teams", "url": "/for/saas" },
-      { "title": "For WordPress", "url": "/for/wordpress" }
+      {
+        "title": "For SaaS teams",
+        "url": "/for/saas"
+      },
+      {
+        "title": "For WordPress",
+        "url": "/for/wordpress"
+      }
     ],
     "comparisons": [
       {
@@ -171,7 +180,10 @@
         "title": "OpenPanel vs Plausible",
         "url": "/compare/plausible-alternative"
       },
-      { "title": "OpenPanel vs Matomo", "url": "/compare/matomo-alternative" }
+      {
+        "title": "OpenPanel vs Matomo",
+        "url": "/compare/matomo-alternative"
+      }
     ]
   },
   "ctas": {
