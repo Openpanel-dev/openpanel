@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['index.ts', 'vercel.ts'],
+  entry: ['index.ts', 'vercel.ts', 'openai.ts', 'anthropic.ts'],
   format: ['cjs', 'esm'],
   dts: { resolve: [/^@openpanel\//] },
   splitting: false,
