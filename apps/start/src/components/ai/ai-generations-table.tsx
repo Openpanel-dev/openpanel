@@ -184,7 +184,7 @@ export function AiGenerationsTable({ projectId }: { projectId: string }) {
     <div className="col gap-3">
       <DataTable
         empty={{
-          title: 'No generations',
+          title: 'No calls',
           description: 'Model calls appear here once your app sends AI events.',
         }}
         error={query.isError}
