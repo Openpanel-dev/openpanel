@@ -1,3 +1,4 @@
+import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -64,7 +65,7 @@ function Component() {
     (acc, event) => ({
       cost: acc.cost + event.totalCost,
       tokens: acc.tokens + event.inputTokens + event.outputTokens,
-      generations: acc.generations + (event.type === 'generation' ? 1 : 0),
+      generations: acc.generations + (isAiModelCall(event.type) ? 1 : 0),
       errors: acc.errors + (event.isError ? 1 : 0),
     }),
     { cost: 0, tokens: 0, generations: 0, errors: 0 }

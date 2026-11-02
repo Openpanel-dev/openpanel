@@ -9,6 +9,9 @@ import type { AiBreakdownDimension, IAiFilters } from '../ai.constants';
 export const AI_EVENTS_TABLE = TABLE_NAMES.ai_events;
 
 /** The columns a list or detail row selects. */
+/** Calls billed by a provider. Latency stays generation-only: embeddings answer in a fraction of the time and would drag p95 down. */
+const IS_MODEL_CALL = sql`type IN ('generation', 'embedding')`;
+
 export const AI_EVENT_COLUMNS = sql`
   project_id, id, type, trace_id, span_id, parent_id, conversation_id, name,
   model, provider, input_tokens, output_tokens, cache_read_tokens,
@@ -136,7 +139,7 @@ function scopeWhere(input: AiScopedQueryInput): SqlFragment {
 }
 
 const METRIC_COLUMNS = sql`
-  countIf(type = 'generation') AS generations,
+  countIf(${IS_MODEL_CALL}) AS generations,
   count() AS events,
   uniq(trace_id) AS traces,
   uniqIf(profile_id, profile_id != '') AS users,
@@ -148,7 +151,7 @@ const METRIC_COLUMNS = sql`
   quantileIf(0.5)(latency_ms, type = 'generation') AS p50_latency_ms,
   quantileIf(0.95)(latency_ms, type = 'generation') AS p95_latency_ms,
   avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
-  countIf(is_error AND type = 'generation') AS errors
+  countIf(is_error AND ${IS_MODEL_CALL}) AS errors
 `;
 
 export function overviewTotalsQuery(input: AiScopedQueryInput): SqlFragment {
@@ -197,7 +200,7 @@ export function breakdownQuery(
   return sql`
     SELECT
       ${dimension} AS key,
-      countIf(type = 'generation') AS generations,
+      countIf(${IS_MODEL_CALL}) AS generations,
       count() AS events,
       uniq(trace_id) AS traces,
       uniqIf(profile_id, profile_id != '') AS users,
@@ -205,7 +208,7 @@ export function breakdownQuery(
       sum(input_tokens) + sum(output_tokens) AS tokens,
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
       quantileIf(0.95)(latency_ms, type = 'generation') AS p95_latency_ms,
-      countIf(is_error AND type = 'generation') AS errors,
+      countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
       max(created_at) AS last_at
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE ${scopeWhere(input)}
@@ -247,7 +250,7 @@ export function traceListQuery(input: TraceListQueryInput): SqlFragment {
       argMin(session_id, created_at) AS first_session_id,
       argMin(conversation_id, created_at) AS first_conversation_id,
       argMin(id, created_at) AS first_id,
-      countIf(type = 'generation') AS generations,
+      countIf(${IS_MODEL_CALL}) AS generations,
       count() AS events,
       sum(input_tokens) AS total_input_tokens,
       sum(output_tokens) AS total_output_tokens,
@@ -332,17 +335,17 @@ export function entitySummaryQuery(input: {
 }): SqlFragment {
   return sql`
     SELECT
-      countIf(type = 'generation') AS generations,
+      countIf(${IS_MODEL_CALL}) AS generations,
       uniq(trace_id) AS traces,
       uniqIf(conversation_id, conversation_id != '') AS conversations,
       sum(total_cost) AS cost,
       sum(input_tokens) AS input_tokens,
       sum(output_tokens) AS output_tokens,
       avgIf(latency_ms, type = 'generation') AS avg_latency_ms,
-      countIf(is_error AND type = 'generation') AS errors,
+      countIf(is_error AND ${IS_MODEL_CALL}) AS errors,
       min(created_at) AS first_at,
       max(created_at) AS last_at,
-      topKIf(3)(model, type = 'generation') AS top_models
+      topKIf(3)(model, ${IS_MODEL_CALL}) AS top_models
     FROM ${sql.id(AI_EVENTS_TABLE)}
     WHERE project_id = ${sql.string(input.projectId)}
       AND ${input.where}

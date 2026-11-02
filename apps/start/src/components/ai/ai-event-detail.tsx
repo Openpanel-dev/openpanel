@@ -1,4 +1,5 @@
 import type { IServiceAiEvent } from '@openpanel/core';
+import { isAiModelCall } from '@openpanel/core/modules/ai/ai.constants';
 import { AlertTriangleIcon } from 'lucide-react';
 import { useState } from 'react';
 import { AiContent } from './ai-conversation';
@@ -85,7 +86,7 @@ export function AiEventDetail({
   showTraceLink?: boolean;
 }) {
   const [tab, setTab] = useState<TabId>('conversation');
-  const isModelCall = event.type === 'generation' || event.type === 'embedding';
+  const isModelCall = isAiModelCall(event.type);
   const errorRecord =
     typeof event.error === 'object' && event.error !== null
       ? (event.error as Record<string, unknown>)

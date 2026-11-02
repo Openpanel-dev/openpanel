@@ -182,6 +182,11 @@ export const zAiModelParameters = z
 
 const MODEL_CALL_KINDS: readonly AiEventKind[] = ['generation', 'embedding'];
 
+/** A call billed by a provider, as opposed to a span or trace that groups calls. */
+export function isAiModelCall(kind: string): boolean {
+  return (MODEL_CALL_KINDS as readonly string[]).includes(kind);
+}
+
 export const zAiPayload = z
   .object({
     kind: z.enum(AI_EVENT_KINDS),
@@ -218,7 +223,7 @@ export const zAiPayload = z
         message: 'parentId must not be the span itself',
       });
     }
-    if (!MODEL_CALL_KINDS.includes(payload.kind)) {
+    if (!isAiModelCall(payload.kind)) {
       return;
     }
     for (const field of ['model', 'provider'] as const) {
