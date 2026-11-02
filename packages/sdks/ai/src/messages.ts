@@ -17,7 +17,20 @@ export interface Message {
   content: string | MessagePart[];
 }
 
-const FILE_PLACEHOLDER = '[file]';
+/** Stands in for binary content, which is never sent. */
+export const FILE_PLACEHOLDER = '[file]';
+
+/** Tool arguments arrive as JSON text; keep the raw text when it does not parse. */
+export function toolInput(raw: string | undefined): unknown {
+  if (!raw) {
+    return {};
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+}
 
 function partOf(part: Record<string, unknown>): MessagePart {
   switch (part.type) {

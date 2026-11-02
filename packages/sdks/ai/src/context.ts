@@ -21,7 +21,15 @@ export interface AiCallContext {
   privacyMode?: boolean;
 }
 
-const storage = new AsyncLocalStorage<AiCallContext>();
+// Every entry point (`@openpanel/ai`, `/openai`, `/vercel`…) is bundled on
+// its own, and an app may load both the ESM and CJS builds. A store per copy
+// would make `withAiContext` invisible to the wrappers, so all copies share one.
+const STORAGE_KEY = Symbol.for('openpanel.ai.context');
+const registry = globalThis as {
+  [STORAGE_KEY]?: AsyncLocalStorage<AiCallContext>;
+};
+registry[STORAGE_KEY] ??= new AsyncLocalStorage<AiCallContext>();
+const storage = registry[STORAGE_KEY];
 
 export function createAiTraceId(): string {
   return randomUUID();

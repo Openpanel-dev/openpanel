@@ -20,6 +20,13 @@ export type AiEventName = (typeof AI_EVENT_NAMES)[AiEventKind];
 
 export const AI_EVENT_NAME_LIST = Object.values(AI_EVENT_NAMES);
 
+/** Plumbing around a model call; activity views show the `ai_generation` itself. */
+export const AI_INTERNAL_EVENT_NAMES: readonly AiEventName[] = [
+  AI_EVENT_NAMES.trace,
+  AI_EVENT_NAMES.span,
+  AI_EVENT_NAMES.embedding,
+];
+
 export function isAiEventName(name: string): name is AiEventName {
   return (AI_EVENT_NAME_LIST as string[]).includes(name);
 }
@@ -175,6 +182,11 @@ export const zAiModelParameters = z
 
 const MODEL_CALL_KINDS: readonly AiEventKind[] = ['generation', 'embedding'];
 
+/** A call billed by a provider, as opposed to a span or trace that groups calls. */
+export function isAiModelCall(kind: string): boolean {
+  return (MODEL_CALL_KINDS as readonly string[]).includes(kind);
+}
+
 export const zAiPayload = z
   .object({
     kind: z.enum(AI_EVENT_KINDS),
@@ -211,7 +223,7 @@ export const zAiPayload = z
         message: 'parentId must not be the span itself',
       });
     }
-    if (!MODEL_CALL_KINDS.includes(payload.kind)) {
+    if (!isAiModelCall(payload.kind)) {
       return;
     }
     for (const field of ['model', 'provider'] as const) {
@@ -258,6 +270,10 @@ export type AiBreakdownDimension = (typeof AI_BREAKDOWN_DIMENSIONS)[number];
 
 export const AI_LIST_DEFAULT_TAKE = 50;
 export const AI_LIST_MAX_TAKE = 500;
+/** `errors` ranks by error count and drops rows without any. */
+export const AI_BREAKDOWN_SORTS = ['cost', 'errors'] as const;
+export type AiBreakdownSort = (typeof AI_BREAKDOWN_SORTS)[number];
+
 export const AI_BREAKDOWN_DEFAULT_LIMIT = 10;
 export const AI_BREAKDOWN_MAX_LIMIT = 100;
 

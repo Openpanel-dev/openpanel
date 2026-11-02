@@ -19,6 +19,9 @@ describe('resolveModelPrice', () => {
     ['claude-sonnet-5-5', 'anthropic', 'claude-sonnet-5-5'],
     ['claude-sonnet-5-5@20260301', 'anthropic', 'claude-sonnet-5-5'],
     ['anthropic/claude-sonnet-5-5', 'openrouter', 'claude-sonnet-5-5'],
+    ['anthropic/claude-sonnet-4.5', 'openrouter', 'claude-sonnet-4-5'],
+    ['anthropic/claude-haiku-4.5', 'openrouter', 'claude-haiku-4-5'],
+    ['gpt-4.1', 'openai', 'gpt-4.1'],
     [
       'anthropic.claude-sonnet-5-5-v1:0',
       'bedrock',
@@ -57,6 +60,16 @@ describe('calculateAiCost', () => {
       totalCost: 0.42,
       source: 'passthrough',
     });
+  });
+
+  test('a call that reported no tokens has an unknown cost, not $0', () => {
+    expect(
+      calculateAiCost({
+        model: 'gpt-5-mini',
+        provider: 'openai',
+        usage: { inputTokens: 0, outputTokens: 0 },
+      }).source
+    ).toBe('none');
   });
 
   test('prices input and output tokens from the catalog', () => {

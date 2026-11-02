@@ -5,7 +5,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { AlertTriangleIcon, BotIcon, CheckIcon } from 'lucide-react';
 import { useMemo } from 'react';
-import { formatCost, formatLatency, formatTokens } from './ai-format';
+import { AiCost } from './ai-cost';
+import { formatLatency, formatTokens } from './ai-format';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { ProjectLink } from '@/components/links';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
@@ -146,7 +147,10 @@ function useColumns(): ColumnDef<IServiceAiTrace>[] {
         size: 100,
         cell: ({ row }) => (
           <span className="font-mono tabular-nums">
-            {formatCost(row.original.cost)}
+            <AiCost
+              cost={row.original.cost}
+              unpricedCalls={row.original.unpricedCalls}
+            />
           </span>
         ),
       },

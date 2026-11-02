@@ -59,6 +59,8 @@ interface EventPayload {
   ai?: SeedAiEvent;
 }
 
+const BACKGROUND_SDK = { name: 'node', version: '1.0.0' };
+
 const UTM_KEYS = [
   'utm_medium',
   'utm_source',
@@ -306,6 +308,64 @@ export function buildSessionRows(rng: Rng, input: SessionInput): SessionRows {
     identified: last.profileId !== '',
     anonymousEvents: payloads.some((payload) => payload.profileId === ''),
   };
+}
+
+export interface BackgroundRows {
+  events: ClickhouseEventRow[];
+  aiEvents: ClickhouseAiEventRow[];
+}
+
+/**
+ * Events a backend sends with no browser behind them: no device, session,
+ * geo or referrer, which is what `createEvent` stores for a server-side call.
+ */
+export function buildBackgroundRows(
+  rng: Rng,
+  input: { projectId: string; events: readonly JourneyEvent[] }
+): BackgroundRows {
+  const events: ClickhouseEventRow[] = [];
+  const aiEvents: ClickhouseAiEventRow[] = [];
+  for (const event of input.events) {
+    const row: ClickhouseEventRow = {
+      id: rng.uuid(),
+      name: event.name,
+      device_id: '',
+      profile_id: event.person?.id ?? '',
+      project_id: input.projectId,
+      session_id: '',
+      properties: toDots(event.properties),
+      path: '',
+      origin: '',
+      created_at: toClickhouseDateTime(event.at),
+      country: '',
+      city: '',
+      region: '',
+      longitude: null,
+      latitude: null,
+      os: '',
+      os_version: '',
+      browser: '',
+      browser_version: '',
+      device: 'server',
+      brand: '',
+      model: '',
+      duration: 0,
+      referrer: '',
+      referrer_name: '',
+      referrer_type: '',
+      imported_at: null,
+      inserted_at: toClickhouseDateTime(new Date()),
+      sdk_name: BACKGROUND_SDK.name,
+      sdk_version: BACKGROUND_SDK.version,
+      revenue: undefined,
+      groups: [],
+    };
+    events.push(row);
+    if (event.ai) {
+      aiEvents.push(aiEventRow(event.ai, row));
+    }
+  }
+  return { events, aiEvents };
 }
 
 /** The worker's `buildAiEventRow`: identity and time copied from the stored event. */

@@ -47,6 +47,7 @@ function searchClause(search: string | undefined): SqlFragment {
   return sql`AND (e.path LIKE ${term} OR e.origin LIKE ${term} OR pt.title LIKE ${term})`;
 }
 
+/** Sessionless views still count, but cannot contribute elapsed time. */
 export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
   // Titles come from the requested range so the answer does not depend on the
   // wall clock — reading a fixed lookback window off the widest Map column
@@ -67,7 +68,7 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
       session_id,
       path,
       origin,
-      dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration
+      if(session_id = '', 0, dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at))) AS duration
     FROM events
     WHERE project_id = ${sql.string(input.projectId)}
       AND name = 'screen_view'

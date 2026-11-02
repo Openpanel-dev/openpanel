@@ -87,7 +87,7 @@ test.describe('ai observability', () => {
     ).toBeVisible();
     const cards = page.locator('.card').first();
     await expect(cards).toContainText('Cost');
-    await expect(cards).toContainText('Generations');
+    await expect(cards).toContainText('Calls');
     await expect(cards).toContainText('Latency p95');
     // The seeded SaaS project has four models; the cost widget lists them.
     await expect(page.getByText('Cost by model')).toBeVisible();
@@ -115,10 +115,16 @@ test.describe('ai observability', () => {
     await open(page, `${SAAS}/ai/traces?range=30d`);
 
     await expect(tableRows(page).first()).toBeVisible();
-    await expect(tableRows(page).first()).toContainText('$');
+    // A model without a catalog price shows — instead of a cost.
+    // A seeded chat trace (it has a conversation); real SDK calls in the same project come first.
+    const seededTrace = tableRows(page)
+      .filter({ hasText: 'assistant-chat' })
+      .first();
+    await expect(seededTrace).toContainText('$');
     await page.screenshot({ path: `${SHOTS}/ai-traces.png`, fullPage: true });
 
-    await tableRows(page).first().click();
+    // The profile cell is a link of its own; the start time opens the trace.
+    await seededTrace.locator('td').first().click();
     await expect(page).toHaveURL(/\/ai\/traces\//);
     await expect(page.getByText('Timeline')).toBeVisible();
     await expect(
@@ -150,8 +156,11 @@ test.describe('ai observability', () => {
     const problems = watch(page);
     await open(page, `${SAAS}/ai/generations?range=30d`);
 
-    await expect(tableRows(page).first()).toBeVisible();
-    await tableRows(page).first().click();
+    const seededGeneration = tableRows(page)
+      .filter({ hasText: 'insight-summary' })
+      .first();
+    await expect(seededGeneration).toBeVisible();
+    await seededGeneration.click();
     const drawer = page.getByRole('complementary', { name: 'Event details' });
     await expect(drawer).toBeVisible();
     await expect(drawer.getByText('Input', { exact: true })).toBeVisible();
@@ -164,7 +173,8 @@ test.describe('ai observability', () => {
     // A picked model round-trips through the URL and narrows the rows.
     await page.getByRole('button', { name: 'Model', exact: true }).click();
     const modelItem = page.getByRole('menuitemcheckbox', {
-      name: /gpt-5-mini/,
+      // Anchored: real SDK calls add dated snapshots like gpt-5-mini-2025-08-07.
+      name: /^gpt-5-mini\b(?!-)/,
     });
     await modelItem.click();
     await expect(page).toHaveURL(/models=/);
@@ -176,7 +186,7 @@ test.describe('ai observability', () => {
 
     await page.getByRole('button', { name: 'Errors only' }).click();
     await expect(page).toHaveURL(/errors=true/);
-    await expect(tableRows(page).first()).toContainText('429');
+    await expect(tableRows(page).first()).toContainText(/\b[45]\d\d\b/);
     await page.screenshot({
       path: `${SHOTS}/ai-generations-errors.png`,
       fullPage: true,
@@ -218,7 +228,7 @@ test.describe('ai observability', () => {
     await profileLink.click();
     await expect(page).toHaveURL(/\/profiles\//);
     await expect(page.getByText('AI usage')).toBeVisible();
-    await expect(page.getByText('Generations', { exact: true })).toBeVisible();
+    await expect(page.getByText('Calls', { exact: true })).toBeVisible();
     await page.screenshot({
       path: `${SHOTS}/ai-profile-usage.png`,
       fullPage: true,

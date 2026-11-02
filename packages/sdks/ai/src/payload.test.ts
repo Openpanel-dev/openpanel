@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import type { AiPayload } from '@openpanel/sdk';
 import { withAiContext } from './context';
+import { instrumentCreate } from './instrument';
 import {
   type AiCall,
   buildPayload,
@@ -8,6 +9,7 @@ import {
   recordCall,
   resolveContext,
 } from './payload';
+import { collect } from './test-helpers';
 
 const call: AiCall = {
   context: { profileId: 'usr_1', traceId: 'trace_1' },
@@ -125,5 +127,35 @@ describe('recordCall', () => {
     await Promise.resolve();
     expect(sent).toHaveLength(1);
     expect(sent[0]?.kind).toBe('generation');
+  });
+});
+
+describe('instrumentCreate', () => {
+  test('records a create that throws before returning, and rethrows', () => {
+    const { op, payloads } = collect();
+    const invalid = new Error(
+      'max_tokens is too large for a non-streaming call'
+    );
+    const resource = {
+      create: () => {
+        throw invalid;
+      },
+    };
+    instrumentCreate(
+      resource,
+      {
+        describe: () => ({
+          model: 'claude-x',
+          provider: 'anthropic',
+          stream: false,
+        }),
+        result: () => ({}),
+      },
+      { op }
+    );
+
+    expect(() => resource.create()).toThrow(invalid);
+    expect(payloads).toHaveLength(1);
+    expect(payloads[0]?.error?.message).toBe(invalid.message);
   });
 });

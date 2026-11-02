@@ -342,6 +342,7 @@ function profileJoinFilters(eventSeries: IChartEvent[]): IChartEventFilter[] {
   );
 }
 
+/** Empty session IDs cannot define funnels; sessionless profiles remain eligible. */
 export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const { projectId, eventSeries, breakdowns, group } = input;
 
@@ -374,6 +375,8 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   );
   const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
+  const sessionFilter =
+    group === 'session_id' ? sql` AND events.session_id != ''` : sql.empty;
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
@@ -432,7 +435,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ' OR '
   )})`;
 
-  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
+  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)}${sessionFilter} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `

@@ -255,6 +255,11 @@ export class OpenPanel {
       TrackHandlerPayload,
       { deviceId: string; sessionId: string }
     >('/track', payload, { keepalive: payload.type !== 'replay' });
+    // An ai event is stored without a device or session, so its empty ids
+    // must not replace the ones the other events resolved.
+    if (payload.type === 'ai') {
+      return result;
+    }
     this.deviceId = result?.deviceId;
     const hadSession = !!this.sessionId;
     this.sessionId = result?.sessionId;
@@ -423,11 +428,15 @@ export class OpenPanel {
     this.sessionId = undefined;
   }
 
+  /** Apply identity learned after queueing while preserving explicit bindings. */
   private buildFlushPayload(
     item: TrackHandlerPayload
   ): TrackHandlerPayload['payload'] {
     if (item.type === 'replay') {
-      return item.payload;
+      return {
+        ...item.payload,
+        sessionId: item.payload.sessionId ?? this.sessionId,
+      };
     }
     if (item.type === 'track') {
       const queuedGroups =

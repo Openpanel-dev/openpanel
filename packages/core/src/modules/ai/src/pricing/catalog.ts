@@ -101,7 +101,12 @@ function candidateNames(model: string): string[] {
   for (const name of [...names]) {
     names.push(...stripVersionSuffixes(name));
   }
-  return [...new Set(names)];
+  // OpenRouter writes `claude-sonnet-4.5` where the catalog has `claude-sonnet-4-5`.
+  // Tried last, because `gpt-4.1` and `gemini-2.5-pro` keep their dots in the catalog.
+  const dashed = names
+    .filter((name) => name.includes('.'))
+    .map((name) => name.replaceAll('.', '-'));
+  return [...new Set([...names, ...dashed])];
 }
 
 function longestPrefixMatch(name: string): ResolvedModelPrice | null {

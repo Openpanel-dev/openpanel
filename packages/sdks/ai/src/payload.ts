@@ -25,11 +25,14 @@ export interface AiIntegrationOptions {
 
 /** What an integration knows when a model call starts. */
 export interface AiCall {
+  /** Defaults to `generation`. */
+  kind?: 'generation' | 'embedding';
   context: AiCallContext;
   model: string;
   provider: string;
   startedAt: number;
-  input?: Message[];
+  /** Messages for a generation, the embedded texts for an embedding. */
+  input?: Message[] | string[];
   tools?: unknown;
   modelParameters?: AiPayload['modelParameters'];
 }
@@ -49,6 +52,9 @@ export interface AiCallOutcome {
 const MAX_ERROR_MESSAGE_LENGTH = 2000;
 const HTTP_STATUS_MIN = 100;
 const HTTP_STATUS_MAX = 599;
+const GENERIC_ERROR_NAME = 'Error';
+// Ingest requires token counts; a failed call or a stream without usage has none.
+const UNKNOWN_USAGE = { inputTokens: 0, outputTokens: 0 } as const;
 
 /** Per-call context wins over the ambient `withAiContext`, which wins over `defaults`. */
 export function resolveContext(
@@ -73,9 +79,11 @@ export function errorOf(error: unknown): NonNullable<AiPayload['error']> {
     return { message: String(error).slice(0, MAX_ERROR_MESSAGE_LENGTH) };
   }
   // Provider SDK errors carry the HTTP status as `statusCode` (AI SDK) or `status` (OpenAI, Anthropic).
-  const { statusCode, status } = error as {
+  const { statusCode, status, code, type } = error as {
     statusCode?: unknown;
     status?: unknown;
+    code?: unknown;
+    type?: unknown;
   };
   const candidate = typeof statusCode === 'number' ? statusCode : status;
   const httpStatus =
@@ -84,9 +92,12 @@ export function errorOf(error: unknown): NonNullable<AiPayload['error']> {
     candidate <= HTTP_STATUS_MAX
       ? candidate
       : undefined;
+  // Some SDKs (OpenAI 7) leave `name` as plain `Error` and say what went wrong in `code` or `type`.
+  const providerCode = [code, type].find((value) => typeof value === 'string');
+  const isGenericName = error.name === GENERIC_ERROR_NAME;
   return {
     message: error.message.slice(0, MAX_ERROR_MESSAGE_LENGTH),
-    code: error.name,
+    code: isGenericName ? (providerCode ?? error.name) : error.name,
     httpStatus,
   };
 }
@@ -100,7 +111,7 @@ export function buildPayload(
   const privacyMode = options.privacyMode || context.privacyMode;
   const hasProperties = Object.keys(context.properties ?? {}).length > 0;
   return {
-    kind: 'generation',
+    kind: call.kind ?? 'generation',
     traceId: context.traceId ?? createAiTraceId(),
     parentId: context.parentId,
     name: context.name,
@@ -110,7 +121,7 @@ export function buildPayload(
     input: privacyMode ? undefined : call.input,
     output: privacyMode ? undefined : outcome.output,
     tools: privacyMode ? undefined : call.tools,
-    usage: outcome.usage,
+    usage: outcome.usage ?? UNKNOWN_USAGE,
     latencyMs: Date.now() - call.startedAt,
     timeToFirstTokenMs: outcome.timeToFirstTokenMs,
     error: outcome.error === undefined ? undefined : errorOf(outcome.error),

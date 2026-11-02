@@ -86,6 +86,13 @@ export function calculateAiCost(input: AiCostInput): AiCost {
   if (!(input.model && input.usage)) {
     return NO_COST;
   }
+  // A completed call always uses tokens; zero means the provider reported no
+  // usage (a streamed chat completion without include_usage), so the cost is unknown.
+  const reportedTokens =
+    (input.usage.inputTokens ?? 0) + (input.usage.outputTokens ?? 0);
+  if (reportedTokens === 0) {
+    return NO_COST;
+  }
   const resolved = resolveModelPrice(input.model, input.provider);
   if (!resolved) {
     return NO_COST;

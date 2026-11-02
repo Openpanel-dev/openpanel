@@ -26,7 +26,7 @@ function Component() {
   const { activeTab, tabs } = usePageTabs([
     { id: 'ai', label: 'Overview' },
     { id: 'traces', label: 'Traces' },
-    { id: 'generations', label: 'Generations' },
+    { id: 'generations', label: 'Calls' },
   ]);
 
   const handleTabChange = (tabId: string) => {
