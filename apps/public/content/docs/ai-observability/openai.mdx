@@ -1,0 +1,73 @@
+---
+title: OpenAI SDK
+description: Record every call made through the official openai client, streamed or not, with one wrap.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta; the wrapper options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
+</Callout>
+
+`@openpanel/ai/openai` wraps an `openai` client so every call is recorded as an OpenPanel AI event. It covers Chat Completions, the Responses API and embeddings, streamed or not, and the SDK's own helpers built on them (`chat.completions.parse`, `chat.completions.stream`, `runTools`, `responses.parse`, `responses.stream`). It works the same for `AzureOpenAI` and for any OpenAI-compatible endpoint you reach through `baseURL`.
+
+## Installation
+
+```bash
+pnpm install @openpanel/sdk @openpanel/ai openai
+```
+
+Tested with `openai` 7.
+
+## Usage
+
+```ts
+import { OpenPanel } from '@openpanel/sdk';
+import { withAiContext } from '@openpanel/ai';
+import { wrapOpenAI } from '@openpanel/ai/openai';
+import OpenAI from 'openai';
+
+const op = new OpenPanel({ clientId: 'xxx', clientSecret: 'xxx' });
+const openai = wrapOpenAI(new OpenAI(), { op });
+
+await withAiContext(
+  {
+    profileId: user.id,          // the same id you identify with in the web SDK
+    conversationId: thread.id,   // groups this request's traces into one conversation
+    name: 'inbox-summary',       // the feature this call belongs to
+    groups: [user.orgId],
+  },
+  () =>
+    openai.chat.completions.create({
+      model: 'gpt-5-mini',
+      messages,
+    })
+);
+```
+
+`wrapOpenAI` instruments the client in place and returns it, so you can wrap the client you already export. Wrapping the same client twice records each call once.
+
+Each chat or Responses call becomes an `ai_generation` event: model, provider, messages in and out, tool definitions and tool calls, token usage with cached and reasoning tokens, latency, time to first token on streams, the finish reason, and errors. Embeddings become `ai_embedding` events with the input texts and token count; the vectors are never sent. A failed call is recorded with its HTTP status and then rethrown, and sending never blocks or fails the model call.
+
+A streamed call is recorded when the stream ends. If your code stops reading early, the event is recorded with what arrived so far and a `stream cancelled` error.
+
+<Callout title="Token usage on streamed chat completions">
+Chat Completions only report usage on a stream when you ask for it. Pass `stream_options: { include_usage: true }`, or the event has no tokens and no cost. The Responses API always reports usage.
+</Callout>
+
+## Who the call belongs to
+
+The OpenAI client has no field to carry OpenPanel context, so it comes from `withAiContext`. Every call inside it shares one trace, which turns an agent loop into one trace with a generation per step. Nested contexts merge over the outer one, so a step can override `name` while keeping the user and the trace. For context that applies to every call (a background job, a single-purpose script), pass `defaults`.
+
+## Options
+
+| Option | What it does |
+|---|---|
+| `op` | The OpenPanel client that sends the events. |
+| `privacyMode` | Never send prompts, completions or tool definitions. Tokens, cost and latency are still recorded. Also settable per request in `withAiContext`. |
+| `provider` | Reported instead of `openai`, for example `openrouter` or `groq` when `baseURL` points elsewhere, so cost is looked up for the right provider. |
+| `defaults` | Context for calls made outside any `withAiContext`. |
+
+## Linking to sessions
+
+A logged-in user's server-side model call lands in the same session as their page views, because OpenPanel resolves a server event to the profile's live session. For anonymous users, forward the web SDK's device id to your backend and pass it as `deviceId` in `withAiContext`.

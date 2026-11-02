@@ -1,4 +1,4 @@
 {
   "title": "AI observability",
-  "pages": ["index", "vercel-ai-sdk", "manual-capture", "..."]
+  "pages": ["index", "vercel-ai-sdk", "openai", "anthropic", "manual-capture", "..."]
 }

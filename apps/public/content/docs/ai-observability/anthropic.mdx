@@ -1,0 +1,70 @@
+---
+title: Anthropic SDK
+description: Record every Claude call made through the official @anthropic-ai/sdk client, streamed or not, with one wrap.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta; the wrapper options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
+</Callout>
+
+`@openpanel/ai/anthropic` wraps an Anthropic client so every `messages.create` call is recorded as an OpenPanel AI event, streamed or not. That includes the SDK's helpers built on it (`messages.stream()`, `messages.parse()`), `beta.messages`, and the Bedrock and Vertex clients that share the same interface.
+
+## Installation
+
+```bash
+pnpm install @openpanel/sdk @openpanel/ai @anthropic-ai/sdk
+```
+
+Tested with `@anthropic-ai/sdk` 1.
+
+## Usage
+
+```ts
+import { OpenPanel } from '@openpanel/sdk';
+import { withAiContext } from '@openpanel/ai';
+import { wrapAnthropic } from '@openpanel/ai/anthropic';
+import Anthropic from '@anthropic-ai/sdk';
+
+const op = new OpenPanel({ clientId: 'xxx', clientSecret: 'xxx' });
+const anthropic = wrapAnthropic(new Anthropic(), { op });
+
+await withAiContext(
+  {
+    profileId: user.id,          // the same id you identify with in the web SDK
+    conversationId: thread.id,   // groups this request's traces into one conversation
+    name: 'support-agent',       // the feature this call belongs to
+    groups: [user.orgId],
+  },
+  () =>
+    anthropic.messages.create({
+      model: 'claude-sonnet-5-5',
+      max_tokens: 1024,
+      messages,
+    })
+);
+```
+
+`wrapAnthropic` instruments the client in place and returns it, so you can wrap the client you already export. Wrapping the same client twice records each call once.
+
+Each call becomes an `ai_generation` event: model, provider, the system prompt and messages in and out, tool definitions and tool calls, thinking text, token usage, latency, time to first token on streams, the stop reason, and errors. Anthropic reports cached tokens separately from `input_tokens`; OpenPanel adds them to the input total and also keeps cache reads and writes as their own counts, so cost uses the right price for each. A failed call is recorded with its HTTP status and then rethrown, and sending never blocks or fails the model call.
+
+A streamed call is recorded when the stream ends. If your code stops reading early, the event is recorded with what arrived so far and a `stream cancelled` error.
+
+## Who the call belongs to
+
+The Anthropic client has no field to carry OpenPanel context, so it comes from `withAiContext`. Every call inside it shares one trace, which turns a tool-use loop into one trace with a generation per turn. Nested contexts merge over the outer one, so a step can override `name` while keeping the user and the trace. For context that applies to every call, pass `defaults`.
+
+## Options
+
+| Option | What it does |
+|---|---|
+| `op` | The OpenPanel client that sends the events. |
+| `privacyMode` | Never send prompts, completions or tool definitions. Tokens, cost and latency are still recorded. Also settable per request in `withAiContext`. |
+| `provider` | Reported instead of `anthropic`, for example `amazon-bedrock` when you use the Bedrock client. |
+| `defaults` | Context for calls made outside any `withAiContext`. |
+
+## Linking to sessions
+
+A logged-in user's server-side model call lands in the same session as their page views, because OpenPanel resolves a server event to the profile's live session. For anonymous users, forward the web SDK's device id to your backend and pass it as `deviceId` in `withAiContext`.
