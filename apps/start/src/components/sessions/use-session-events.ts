@@ -6,6 +6,8 @@ import type { useTRPC } from '@/integrations/trpc/react';
 // The list endpoint pages 50 events at a time; a session past this many pages
 // is a bot or a tab left open, and the page would not be readable anyway.
 const MAX_SESSION_EVENT_PAGES = 40;
+const EVENT_PAGE_SIZE = 50;
+export const MAX_SESSION_EVENTS = MAX_SESSION_EVENT_PAGES * EVENT_PAGE_SIZE;
 
 type Trpc = ReturnType<typeof useTRPC>;
 
@@ -25,11 +27,34 @@ export function sessionEventsQueryOptions(
   );
 }
 
+/**
+ * `loading`: later pages are still coming. `failed`: a page failed and can be
+ * retried. `capped`: the session has more events than the page will load.
+ */
+export type SessionEventsStatus = 'complete' | 'loading' | 'failed' | 'capped';
+
 interface SessionEvents {
   events: IServiceEvent[];
-  /** A later page failed, so `events` is only part of the session. */
-  isIncomplete: boolean;
+  status: SessionEventsStatus;
   retry: () => void;
+}
+
+function getStatus({
+  isFetchNextPageError,
+  hasNextPage,
+  isCapped,
+}: {
+  isFetchNextPageError: boolean;
+  hasNextPage: boolean;
+  isCapped: boolean;
+}): SessionEventsStatus {
+  if (isFetchNextPageError) {
+    return 'failed';
+  }
+  if (hasNextPage) {
+    return 'loading';
+  }
+  return isCapped ? 'capped' : 'complete';
 }
 
 /** Every event in the session, loading the remaining pages in the background. */
@@ -58,9 +83,14 @@ export function useSessionEvents(
     () => query.data.pages.flatMap((page) => page.data),
     [query.data]
   );
+  const pageCount = query.data.pages.length;
+  const lastPageHasEvents = (query.data.pages.at(-1)?.data.length ?? 0) > 0;
+  const isCapped =
+    !hasNextPage && pageCount >= MAX_SESSION_EVENT_PAGES && lastPageHasEvents;
+
   return {
     events,
-    isIncomplete: isFetchNextPageError,
+    status: getStatus({ isFetchNextPageError, hasNextPage, isCapped }),
     retry: () => fetchNextPage(),
   };
 }

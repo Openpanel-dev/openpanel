@@ -6,6 +6,7 @@ import {
   CalendarIcon,
   ClockIcon,
   CopyIcon,
+  Loader2Icon,
   VideoIcon,
 } from 'lucide-react';
 import { useMemo } from 'react';
@@ -23,6 +24,8 @@ import { SessionProperties } from '@/components/sessions/details/session-propert
 import { SessionTimeline } from '@/components/sessions/details/session-timeline';
 import { ReplayShell } from '@/components/sessions/replay';
 import {
+  MAX_SESSION_EVENTS,
+  type SessionEventsStatus,
   sessionEventsQueryOptions,
   useSessionEvents,
 } from '@/components/sessions/use-session-events';
@@ -121,6 +124,44 @@ function SessionFacts({ session }: { session: IServiceSession }) {
         </HeaderFact>
       )}
     </div>
+  );
+}
+
+// Everything below is built from the loaded events, except the metric totals.
+const EVENT_DERIVED_SECTIONS =
+  'the journey, timeline, unique pages, popular events and replay activity';
+
+function SessionEventsNotice({
+  status,
+  onRetry,
+}: {
+  status: SessionEventsStatus;
+  onRetry: () => void;
+}) {
+  if (status === 'complete') {
+    return null;
+  }
+  if (status === 'loading') {
+    return (
+      <div className="row items-center gap-2 text-muted-foreground text-sm">
+        <Loader2Icon className="size-4 animate-spin" />
+        Loading the rest of this session's events…
+      </div>
+    );
+  }
+  return (
+    <Alert className="row items-center justify-between gap-4">
+      <AlertDescription>
+        {status === 'failed'
+          ? `Some of this session's events could not be loaded, so ${EVENT_DERIVED_SECTIONS} are incomplete.`
+          : `This session has more than ${MAX_SESSION_EVENTS.toLocaleString()} events. Only the latest ${MAX_SESSION_EVENTS.toLocaleString()} are used for ${EVENT_DERIVED_SECTIONS}.`}
+      </AlertDescription>
+      {status === 'failed' && (
+        <Button onClick={onRetry} size="sm" variant="outline">
+          Retry
+        </Button>
+      )}
+    </Alert>
   );
 }
 
@@ -225,7 +266,7 @@ function Component() {
 
   const {
     events,
-    isIncomplete,
+    status: eventsStatus,
     retry: retryEvents,
   } = useSessionEvents(trpc, { projectId, sessionId });
 
@@ -296,17 +337,7 @@ function Component() {
         <SessionFacts session={session} />
       </PageHeader>
 
-      {isIncomplete && (
-        <Alert className="row items-center justify-between gap-4">
-          <AlertDescription>
-            Some of this session's events could not be loaded, so the journey
-            and timeline are incomplete.
-          </AlertDescription>
-          <Button onClick={retryEvents} size="sm" variant="outline">
-            Retry
-          </Button>
-        </Alert>
-      )}
+      <SessionEventsNotice onRetry={retryEvents} status={eventsStatus} />
 
       <SessionMetrics events={events} session={session} />
 
