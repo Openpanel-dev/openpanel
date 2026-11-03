@@ -1,20 +1,20 @@
 ---
-title: "Is Mixpanel Worth It in 2026? Real Costs at 1M, 10M & 20M Events"
-description: "Mixpanel is free up to 1M events, then $2,520/month at 10M and $5,320 at 20M — plus paid add-ons for session replay, feature flags, and account analytics. Here's the real math on whether it's worth it — and when teams switch."
+title: "Mixpanel Pricing in 2026: What You Pay at 2M, 10M and 20M Events"
+description: "Mixpanel is free to 1M events, then $259 a month at 2M, $1,176 at 10M and $2,289 at 20M, plus paid add-ons. The real math on whether it is worth it in 2026, and when teams switch."
 tag: Guide
 team: OpenPanel Team
 date: 2025-12-08
-updated: 2026-04-22
+updated: 2026-11-03
 cover: /content/mixpanel-pricing-cover.jpg
 ---
 
-**Is Mixpanel worth the price in 2026?** For teams tracking under 1 million events, the free plan makes it one of the best product analytics tools available. Above that, the math gets hard fast. The Growth plan reaches $2,520/month at 10 million events and $5,320 at 20 million, before you add the paid upgrades for session replay, feature flags, account-level analytics, and multi-touch attribution. That's enterprise-tier spend without enterprise-tier support.
+**Is Mixpanel worth the price in 2026?** For teams tracking under 1 million events, the free plan makes it one of the best product analytics tools available. Above that, the math gets hard fast. The Growth plan costs $1,176 a month at 10 million events and $2,289 at 20 million on monthly billing ($840 and $1,635 if you pay yearly), before you add the paid upgrades for session replay, feature flags, account-level analytics, and multi-touch attribution. That's enterprise-tier spend without enterprise-tier support.
 
 This guide breaks down what you pay at each tier, the add-on costs most teams miss, and the two cases where OpenPanel or PostHog end up much cheaper.
 
 ## Mixpanel pricing at a glance
 
-Mixpanel pricing starts with a free plan capped at **1 million monthly events**. The Growth plan charges **$0.00028 per event** ($0.28 per 1,000 events) after 1M free events, reaching ~$2,520/month at 10 million events. Enterprise pricing requires contacting sales and typically starts around $25,000/year.
+Mixpanel pricing starts with a free plan capped at **1 million monthly events**. The Growth plan includes the same 1 million free events and then prices in volume tiers: $259 a month at 2 million events, $613 at 5 million, $1,176 at 10 million and $2,289 at 20 million on monthly billing. Yearly billing is about 30% lower. Above 20 million events you talk to sales. Enterprise pricing requires contacting sales and typically starts around $25,000/year.
 
 Here's the quick overview:
 
@@ -62,20 +62,21 @@ The free plan works well for validating a product idea or running basic analytic
 
 ## Mixpanel Growth plan
 
-The Growth plan is where most paying customers land. It includes the first **1 million events free** each month. After that, you pay approximately **$0.00028 per event** ($0.28 per 1,000 events), with volume discounts available at higher tiers.
+The Growth plan is where most paying customers land. It includes the first **1 million events free** each month. Above that, Mixpanel no longer publishes a per-event rate; it shows a price for each volume tier, and the price per event falls as volume grows.
 
-Here's how Mixpanel Growth plan pricing scales with event volume:
+Here is how Mixpanel Growth plan pricing scales with event volume:
 
-| Monthly Events | Estimated Monthly Cost | Cost per 1K Events |
-|---------------|----------------------|-------------------|
-| 1M | $0 (free) | $0.00 |
-| 2M | ~$280 | ~$0.28 |
-| 5M | ~$1,120 | ~$0.28 |
-| 10M | ~$2,520 | ~$0.28 |
-| 20M | ~$5,320 | ~$0.28 |
-| 20M+ | Contact sales | Volume discounts |
+| Monthly events | Monthly billing | Yearly billing (per month) | Effective cost per 1K events above 1M |
+|---------------|-----------------|----------------------------|---------------------------------------|
+| 1M | $0 (free) | $0 | $0.00 |
+| 1.5M | $140 | $100 | $0.28 |
+| 2M | $259 | $185 | $0.26 |
+| 5M | $613 | $438 | $0.15 |
+| 10M | $1,176 | $840 | $0.13 |
+| 20M | $2,289 | $1,635 | $0.12 |
+| 20M+ | Contact sales | Contact sales | Negotiated |
 
-*Prices are approximate based on Mixpanel's pricing calculator. Annual billing typically offers 10-15% discounts.*
+*Prices from [mixpanel.com/pricing](https://mixpanel.com/pricing), checked 3 November 2026. The per-1K figures are the monthly-billing price divided by the events above the free million.*
 
 The Growth plan adds several important features over Free:
 
@@ -183,7 +184,7 @@ To qualify:
 - Less than **$8 million** in total funding
 - Haven't redeemed similar offers before
 
-The Startup Plan includes advanced features, Group Analytics, Data Pipelines, Warehouse Connectors, and Session Replay. You get up to 1 billion events over the year and 500,000 session replay recordings.
+The Startup Plan includes advanced features, Group Analytics, Data Pipelines, Warehouse Connectors, and Session Replay. You get up to 1 billion events over the year and 1 million session replay recordings.
 
 There's a catch: you need to start sending data within **90 days** of acceptance, or you get removed. And after the year is up, you'll need to move to a paid plan or downgrade to Free.
 
@@ -230,16 +231,16 @@ Here's how pricing stacks up at different event volumes:
 | 100K | ~$0 (free tier)* | $20 | — |
 | 500K | ~$0 (free tier)* | $50 | — |
 | 1M | $0 (free tier) | $90 | — |
-| 2.5M | ~$420 | $180 | 57% cheaper |
-| 5M | ~$1,120 | $250 | 78% cheaper |
-| 10M | ~$2,520 | $350 | 86% cheaper |
-| 20M | ~$5,320 | $530 | 90% cheaper |
+| 2M | $259 | $180 (2.5M tier) | 31% cheaper |
+| 5M | $613 | $250 | 59% cheaper |
+| 10M | $1,176 | $350 | 70% cheaper |
+| 20M | $2,289 | $530 | 77% cheaper |
 | 30M | Contact sales | $680 | — |
 | 50M | Contact sales | $900 | — |
 
-*Mixpanel's free tier covers up to 1M events but with limited features (5 saved reports per seat, no Group Analytics, no data export, limited cohorts).
+*Mixpanel's free tier covers up to 1M events but with limited features (5 saved reports per seat, no Group Analytics, no data export, limited cohorts). Both columns are monthly billing; Mixpanel's yearly prices are about 30% lower, OpenPanel's yearly plans cost ten months for twelve.
 
-At 10 million events, **OpenPanel is ~86% cheaper** than Mixpanel's Growth plan. But price is only part of the story.
+At 10 million events, **OpenPanel is about 70% cheaper** than Mixpanel's Growth plan on monthly billing ($350 against $1,176), and $350 against $840 if Mixpanel is paid yearly. But price is only part of the story.
 
 **Everything is included.** With [OpenPanel pricing](/pricing), all features are included at every tier. Unlimited websites, unlimited users, unlimited dashboards. No tiers within tiers, no add-ons, no "contact sales for this feature." Pick your event volume and that's your price.
 
@@ -261,7 +262,7 @@ If you decide Mixpanel is the right tool, here are ways to keep costs under cont
 
 **Use the startup program if you qualify.** That free year gives you runway to grow before analytics costs hit.
 
-**Consider annual billing.** Mixpanel typically offers 10-15% discounts for annual commitments. If you're confident you'll stick with the tool, this is easy savings.
+**Consider annual billing.** Mixpanel's yearly prices are about 30% below monthly: $840 instead of $1,176 a month at 10 million events. If you're confident you'll stick with the tool, this is easy savings.
 
 **Audit your tracking regularly.** Over time, teams accumulate tracking that's no longer used. Old features get deprecated and experiments end, but the events keep flowing. A quarterly audit can trim unnecessary events.
 
@@ -289,7 +290,7 @@ If the answers make you nervous about Mixpanel's pricing trajectory, look at alt
 
 <Faqs>
 <FaqItem question="How much does Mixpanel cost in 2026?">
-Mixpanel offers three plans in 2026: a Free plan with up to 1M monthly events and limited features, a Growth plan starting at $0 with 1M free events then $0.00028 per event ($0.28 per 1,000 events) scaling up to ~$5,320/month for 20M events, and an Enterprise plan with custom pricing typically starting around $25,000/year. Add-ons like Group Analytics, Data Pipelines, and extra Session Replays cost extra on top of the base plan.
+Mixpanel offers three plans in 2026: a Free plan with up to 1M monthly events and limited features, a Growth plan starting at $0 with 1M free events, then $259 a month at 2M events, $1,176 at 10M and $2,289 at 20M on monthly billing (about 30% less on yearly billing), and an Enterprise plan with custom pricing typically starting around $25,000/year. Add-ons like Group Analytics, Data Pipelines, and extra Session Replays cost extra on top of the base plan.
 </FaqItem>
 
 <FaqItem question="Does Mixpanel have a free tier?">
@@ -301,7 +302,7 @@ The Mixpanel free plan is limited to 1M monthly events, 5 saved reports per seat
 </FaqItem>
 
 <FaqItem question="How much does Mixpanel cost per event?">
-On the Mixpanel Growth plan, you pay approximately $0.00028 per event ($0.28 per 1,000 events) after the first 1 million free monthly events. Volume discounts may be available at higher tiers. Enterprise plans have custom per-event pricing negotiated directly with Mixpanel's sales team.
+Mixpanel no longer publishes a single per-event rate. Working back from the Growth tiers on monthly billing, the events above the free 1 million cost about $0.26 per 1,000 at 2 million events, $0.13 per 1,000 at 10 million and $0.12 per 1,000 at 20 million, so the effective rate falls with volume. Enterprise rates are negotiated with Mixpanel's sales team.
 </FaqItem>
 
 <FaqItem question="What counts as an event in Mixpanel?">
@@ -317,7 +318,7 @@ Yes. Group Analytics (account-level behavioral analytics) is a paid add-on on bo
 </FaqItem>
 
 <FaqItem question="How does Mixpanel pricing compare to OpenPanel?">
-OpenPanel is significantly cheaper at most event volumes and includes all features at every tier. At 10 million events, OpenPanel costs $350/month compared to Mixpanel's approximately $2,520/month — about 86% cheaper. OpenPanel also has no add-ons or hidden costs, and offers a free self-hosting option for maximum cost control.
+OpenPanel is significantly cheaper at most event volumes and includes all features at every tier. At 10 million events, OpenPanel costs $350 a month against Mixpanel's $1,176 on monthly billing, about 70% cheaper, or against $840 if Mixpanel is paid yearly. OpenPanel also has no add-ons or hidden costs, and offers a free self-hosting option for maximum cost control.
 </FaqItem>
 
 <FaqItem question="Can startups get Mixpanel for free?">
