@@ -6,6 +6,7 @@ import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { Band } from '@/components/band';
 import { CountUp } from '@/components/count-up';
 import { type FaqEntry, FaqSection } from '@/components/faq';
+import { DASHBOARD_WINDOW_WIDTH, FitWidth } from '@/components/fit-width';
 import { PageHero } from '@/components/page-hero';
 import { Reveal } from '@/components/reveal';
 import { SectionHeader, SectionLabel } from '@/components/section';
@@ -307,7 +308,9 @@ export default function OpenSourcePage() {
         description="See who uses your project, where they come from and which docs they read. Free web and product analytics for open source projects, up to 2.5M events a month."
         title="Free analytics for open source projects"
       >
-        <VisualMock name="web-overview" />
+        <FitWidth width={DASHBOARD_WINDOW_WIDTH}>
+          <VisualMock name="web-overview" />
+        </FitWidth>
       </PageHero>
       <Offer />
       <WhatWeAsk />

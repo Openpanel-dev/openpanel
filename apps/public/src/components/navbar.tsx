@@ -2,6 +2,7 @@
 import { ArrowRightIcon, ChevronDownIcon, MenuIcon, XIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { GetStartedButton } from './get-started-button';
 import { GithubButton } from './github-button';
 import { Logo } from './logo';
 import { SignUpButton } from './sign-up-button';
@@ -83,8 +84,11 @@ const Navbar = () => {
     >
       <div
         className={cn(
-          'container flex h-16 items-center justify-between transition-all duration-300',
+          'container relative flex h-16 items-center justify-between transition-all duration-300',
           isMobileMenuOpen && 'bg-canvas',
+          !isMobileMenuOpen &&
+            isScrolled &&
+            'max-md:bg-canvas/95 max-md:shadow-[0_1px_0_rgba(0,0,0,0.06)] max-md:backdrop-blur-md',
           !isMobileMenuOpen &&
             isScrolled &&
             'md:h-14 md:max-w-[1032px] md:rounded-full md:bg-white/80 md:shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.14)] md:ring-1 md:ring-black/5 md:backdrop-blur-md'
@@ -96,7 +100,7 @@ const Navbar = () => {
         </Link>
 
         <div className="hidden items-center gap-1 text-sm md:flex">
-          <div className="relative" ref={featuresRef}>
+          <div ref={featuresRef}>
             <button
               aria-expanded={isFeaturesOpen}
               aria-haspopup="menu"
@@ -178,7 +182,7 @@ function FeaturesMenu({
   return (
     <div
       className={cn(
-        'absolute top-full left-1/2 w-[720px] -translate-x-1/2 pt-3 transition-all duration-150',
+        'absolute top-full left-1/2 w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 pt-3 transition-all duration-150',
         open
           ? 'visible translate-y-0 opacity-100'
           : 'invisible -translate-y-1 opacity-0'
@@ -242,7 +246,7 @@ function FeaturesMenu({
 
 function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
   return (
-    <div className="container max-h-[calc(100vh-4rem)] overflow-y-auto border-t bg-canvas pb-6 md:hidden">
+    <div className="col container h-[calc(100dvh-4rem)] overflow-y-auto border-t bg-canvas pb-6 md:hidden">
       <p className="mt-5 mb-2 px-1 font-medium text-muted-foreground text-xs uppercase tracking-wider">
         Features
       </p>
@@ -277,6 +281,14 @@ function MobileMenu({ onNavigate }: { onNavigate: () => void }) {
             {link.text}
           </Link>
         ))}
+      </div>
+      <div className="col mt-auto gap-3 pt-6">
+        <GetStartedButton className="w-full" onClick={onNavigate} />
+        <Button asChild size="lg" variant="outline">
+          <Link href="https://git.new/openpanel" onClick={onNavigate}>
+            Star on GitHub
+          </Link>
+        </Button>
       </div>
     </div>
   );

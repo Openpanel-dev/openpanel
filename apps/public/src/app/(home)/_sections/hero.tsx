@@ -1,7 +1,7 @@
-import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
 import { HeroShowcase } from './hero-showcase';
 import { GetStartedButton } from '@/components/get-started-button';
+import { HeroPill } from '@/components/hero-pill';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -20,19 +20,14 @@ export function Hero() {
       />
       <div className="container relative pt-32 md:pt-40">
         <div className="col items-center gap-6 text-center">
-          <Link
-            className="row animate-rise items-center gap-2 rounded-full bg-white py-1 pr-3 pl-1 text-sm shadow-sm ring-1 ring-black/6 transition-colors hover:bg-neutral-50"
+          <HeroPill
+            className="animate-rise"
             href="/docs/ai-observability"
+            label="New"
+            shortText="AI observability is here"
             style={rise(0)}
-          >
-            <span className="rounded-full bg-neutral-900 px-2 py-0.5 font-medium text-[11px] text-white">
-              New
-            </span>
-            <span className="text-neutral-600">
-              AI observability: cost and traces for every model call
-            </span>
-            <ArrowRightIcon className="size-3.5 text-neutral-400" />
-          </Link>
+            text="AI observability: cost and traces for every model call"
+          />
           <h1
             className="max-w-4xl animate-rise text-balance font-semibold text-5xl leading-[1.02] tracking-[-0.03em] md:text-7xl"
             style={rise(1)}

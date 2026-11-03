@@ -143,7 +143,7 @@ export async function Footer() {
               <h3 className="font-medium text-neutral-900">{column.title}</h3>
               <ul className="col gap-2 text-neutral-500">
                 {column.links.map((link) => (
-                  <li className="truncate" key={link.url}>
+                  <li className="sm:truncate" key={link.url}>
                     <Link
                       className="transition-colors hover:text-neutral-900"
                       href={link.url}

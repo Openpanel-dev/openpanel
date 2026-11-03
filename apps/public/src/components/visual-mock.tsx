@@ -117,7 +117,7 @@ export function Inset({
     >
       <div
         className={cn(
-          '@container col shrink-0 gap-3 border-neutral-200 border-t bg-neutral-50/60 p-4 text-left text-neutral-900 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.2)]',
+          '@container col shrink-0 gap-3 border-neutral-200 border-t bg-neutral-50/60 p-4 text-left text-neutral-900 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.2)] max-sm:[zoom:0.75]',
           cutBottom ? 'rounded-t-xl border-x' : 'rounded-tl-xl border-l'
         )}
         style={cutBottom ? undefined : { width }}

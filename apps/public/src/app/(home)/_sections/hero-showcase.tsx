@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { DASHBOARD_WINDOW_WIDTH, FitWidth } from '@/components/fit-width';
 import { VisualMock } from '@/components/visual-mock';
 import { cn } from '@/lib/utils';
 
@@ -8,18 +9,21 @@ const VIEWS = [
   {
     id: 'web',
     label: 'Web analytics',
+    shortLabel: 'Web',
     dot: 'bg-blue-600',
     render: () => <VisualMock name="web-overview" />,
   },
   {
     id: 'product',
     label: 'Product analytics',
+    shortLabel: 'Product',
     dot: 'bg-emerald-600',
     render: () => <VisualMock name="product" />,
   },
   {
     id: 'ai',
     label: 'AI observability',
+    shortLabel: 'AI',
     dot: 'bg-violet-600',
     render: () => <VisualMock name="ai" />,
   },
@@ -59,7 +63,7 @@ export function HeroShowcase() {
             aria-controls={view.id === activeId ? panelId(view.id) : undefined}
             aria-selected={view.id === activeId}
             className={cn(
-              'row items-center gap-2 rounded-full py-2 pr-4 pl-3 font-medium text-sm transition-colors',
+              'row items-center gap-2 whitespace-nowrap rounded-full py-2 pr-4 pl-3 font-medium text-sm transition-colors',
               view.id === activeId
                 ? 'bg-neutral-100 text-neutral-900'
                 : 'text-neutral-500 hover:text-neutral-900'
@@ -79,7 +83,8 @@ export function HeroShowcase() {
                 view.id === activeId ? 'opacity-100' : 'opacity-40'
               )}
             />
-            {view.label}
+            <span className="sm:hidden">{view.shortLabel}</span>
+            <span className="max-sm:hidden">{view.label}</span>
           </button>
         ))}
       </div>
@@ -89,10 +94,12 @@ export function HeroShowcase() {
         id={panelId(active.id)}
         role="tabpanel"
       >
-        <div className="relative max-h-[680px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)] max-md:overflow-x-auto">
-          <div className="min-w-[960px] animate-rise" key={active.id}>
-            {active.render()}
-          </div>
+        <div className="relative max-h-[680px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)]">
+          <FitWidth width={DASHBOARD_WINDOW_WIDTH}>
+            <div className="animate-rise" key={active.id}>
+              {active.render()}
+            </div>
+          </FitWidth>
         </div>
       </div>
     </div>

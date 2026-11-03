@@ -1,5 +1,4 @@
-import { ArrowRightIcon } from 'lucide-react';
-import Link from 'next/link';
+import { HeroPill, type HeroPillProps } from './hero-pill';
 import { cn } from '@/lib/utils';
 
 const STAGGER_MS = 90;
@@ -20,7 +19,7 @@ export function PageHero({
   className,
   children,
 }: {
-  pill?: { label: string; text: string; href: string };
+  pill?: Pick<HeroPillProps, 'label' | 'text' | 'shortText' | 'href'>;
   // Anything that should sit above the headline when it is not a pill
   // (the "OpenPanel vs X" lockup on compare pages).
   eyebrow?: React.ReactNode;
@@ -56,17 +55,7 @@ export function PageHero({
             </div>
           )}
           {pill && (
-            <Link
-              className="row animate-rise items-center gap-2 rounded-full bg-white py-1 pr-3 pl-1 text-sm shadow-sm ring-1 ring-black/6 transition-colors hover:bg-neutral-50"
-              href={pill.href}
-              style={rise(0)}
-            >
-              <span className="rounded-full bg-neutral-900 px-2 py-0.5 font-medium text-[11px] text-white">
-                {pill.label}
-              </span>
-              <span className="text-neutral-600">{pill.text}</span>
-              <ArrowRightIcon className="size-3.5 text-neutral-400" />
-            </Link>
+            <HeroPill {...pill} className="animate-rise" style={rise(0)} />
           )}
           <h1
             className="max-w-4xl animate-rise text-balance font-semibold text-4xl leading-[1.05] tracking-[-0.03em] md:text-6xl"

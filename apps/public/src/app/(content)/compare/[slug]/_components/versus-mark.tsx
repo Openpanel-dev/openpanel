@@ -30,11 +30,14 @@ export function CompetitorMark({
   name,
   slug,
   size = 'md',
+  logoOnlyOnPhone = false,
   className,
 }: {
   name: string;
   slug: string;
   size?: 'sm' | 'md';
+  // Narrow table heads drop the name next to the logo on phones
+  logoOnlyOnPhone?: boolean;
   className?: string;
 }) {
   const logo = competitorLogoPath(slug);
@@ -62,7 +65,8 @@ export function CompetitorMark({
         <span
           className={cn(
             'font-semibold tracking-[-0.01em]',
-            size === 'sm' ? 'text-sm' : 'text-lg'
+            size === 'sm' ? 'text-sm' : 'text-lg',
+            logoOnlyOnPhone && logo && 'max-sm:sr-only'
           )}
         >
           {name}

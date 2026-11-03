@@ -1,7 +1,8 @@
-import { ColumnHeads } from './scoreboard';
+import { ColumnHeads, STACKED_TABLE } from './scoreboard';
 import { Reveal } from '@/components/reveal';
 import { SectionHeader } from '@/components/section';
 import type { CompareTechnicalComparison } from '@/lib/compare';
+import { cn } from '@/lib/utils';
 
 function Value({ value }: { value: string | string[] }) {
   if (Array.isArray(value)) {
@@ -43,13 +44,12 @@ export function TechnicalComparison({
       </Reveal>
       <Reveal className="surface overflow-hidden" delay={80}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-neutral-200 border-b">
-                <th
-                  className="w-1/4 px-5 py-4 font-medium text-neutral-500"
-                  scope="col"
-                >
+          <table className={STACKED_TABLE.table}>
+            <thead className={STACKED_TABLE.section}>
+              <tr
+                className={cn(STACKED_TABLE.row, 'border-neutral-200 border-b')}
+              >
+                <th className={STACKED_TABLE.topicHead} scope="col">
                   <span className="sr-only">Topic</span>
                 </th>
                 <ColumnHeads
@@ -58,16 +58,21 @@ export function TechnicalComparison({
                 />
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody
+              className={cn(
+                STACKED_TABLE.section,
+                'divide-y divide-neutral-100'
+              )}
+            >
               {technical.items.map((item) => (
-                <tr className="align-top" key={item.label}>
-                  <th className="px-5 py-4 font-medium" scope="row">
+                <tr className={STACKED_TABLE.row} key={item.label}>
+                  <th className={STACKED_TABLE.topic} scope="row">
                     {item.label}
                   </th>
-                  <td className="bg-blue-50/40 px-5 py-4">
+                  <td className={cn(STACKED_TABLE.cell, 'bg-blue-50/40')}>
                     <Value value={item.openpanel} />
                   </td>
-                  <td className="px-5 py-4 text-neutral-600">
+                  <td className={cn(STACKED_TABLE.cell, 'text-neutral-600')}>
                     <div className="col gap-1.5">
                       <Value value={item.competitor} />
                       {item.notes && (
