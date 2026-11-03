@@ -30,16 +30,14 @@ for (const projectId of PROJECT_IDS) {
     await page.setViewportSize({ width: 1440, height: 1000 });
 
     await page.goto(`/acme/${projectId}/realtime`);
-    for (const title of [
-      'Online now',
-      'Last 30 minutes',
-      'New sessions',
-      'Events',
-    ]) {
+    for (const title of ['Online now', 'Last 30 minutes', 'New sessions']) {
       await expect(
         page.getByText(title, { exact: true }).locator('visible=true').first()
       ).toBeVisible();
     }
+    await expect(
+      page.getByRole('region', { name: 'Events', exact: true })
+    ).toBeVisible();
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(2000);
     await shot(page, `siblings-${projectId}-realtime`);
@@ -69,7 +67,9 @@ for (const projectId of PROJECT_IDS) {
     await expect(
       page.getByRole('heading', { name: 'Insights', level: 1 })
     ).toBeVisible();
-    await expect(page.getByPlaceholder('Search insights')).toBeVisible();
+    await expect(
+      page.getByPlaceholder('Search insights', { exact: true })
+    ).toBeVisible();
     await page.waitForLoadState('networkidle');
     await shot(page, `siblings-${projectId}-insights`);
     await expect(page.locator('body')).not.toContainText(
@@ -129,7 +129,9 @@ test('insights: filters keep their state in the URL and the empty state is shown
     page.getByRole('heading', { name: 'Insights', level: 1 })
   ).toBeVisible();
   await page.waitForLoadState('networkidle');
-  await page.getByPlaceholder('Search insights').fill('google');
+  await page
+    .getByPlaceholder('Search insights', { exact: true })
+    .fill('google');
   await expect(page).toHaveURL(/search=google/);
   for (const [trigger, option] of [
     ['Time window', '7 days'],
@@ -141,10 +143,15 @@ test('insights: filters keep their state in the URL and the empty state is shown
       .click();
     await page.getByRole('menuitem', { name: option, exact: true }).click();
   }
+  await expect(page).toHaveURL(/window=rolling_7d/);
+  await expect(page).toHaveURL(/severity=severe/);
+  await expect(page).toHaveURL(/direction=up/);
   await shot(page, 'siblings-insights-filtered', false);
   const url = page.url();
   await page.reload();
-  await expect(page.getByPlaceholder('Search insights')).toHaveValue('google');
+  await expect(
+    page.getByPlaceholder('Search insights', { exact: true })
+  ).toHaveValue('google');
   expect(new URL(page.url()).search).toBe(new URL(url).search);
 });
 
