@@ -64,7 +64,7 @@ function BillingToggle({
           <button
             aria-checked={selected}
             className={cn(
-              'row items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium transition-all',
+              'row items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium transition-all max-sm:px-2.5',
               selected
                 ? 'bg-white text-neutral-900 shadow-sm ring-1 ring-black/5'
                 : 'text-neutral-500 hover:text-neutral-900'
