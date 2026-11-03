@@ -22,10 +22,12 @@ export const docs = defineDocs({
   },
 });
 
-// `z.coerce.date()` turns a `date: null` frontmatter line into the epoch;
-// only a string or a parsed YAML date may reach the coercion.
+// `z.coerce.date()` turns a `date: null` frontmatter line into the epoch and
+// a quoted "12" into a year; only a parsed YAML date or an ISO day may reach
+// the coercion.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
 const zFrontmatterDate = z
-  .union([z.date(), z.string().min(1)])
+  .union([z.date(), z.string().regex(ISO_DAY)])
   .pipe(z.coerce.date());
 
 const zArticle = z.object({

@@ -10,7 +10,7 @@ export function resolveArticleCover(cover?: string): string | undefined {
     return undefined;
   }
   if (cover.startsWith('http://') || cover.startsWith('https://')) {
-    return cover;
+    return URL.canParse(cover) ? cover : undefined;
   }
   return existsSync(join(PUBLIC_DIR, cover)) ? cover : undefined;
 }
