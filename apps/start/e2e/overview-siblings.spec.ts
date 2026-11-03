@@ -31,10 +31,10 @@ for (const projectId of PROJECT_IDS) {
 
     await page.goto(`/acme/${projectId}/realtime`);
     for (const title of [
-      'Unique visitors last 30 min',
-      'Geo',
-      'Referrals',
-      'Paths',
+      'Online now',
+      'Last 30 minutes',
+      'New sessions',
+      'Events',
     ]) {
       await expect(
         page.getByText(title, { exact: true }).locator('visible=true').first()
@@ -69,7 +69,7 @@ for (const projectId of PROJECT_IDS) {
     await expect(
       page.getByRole('heading', { name: 'Insights', level: 1 })
     ).toBeVisible();
-    await expect(page.getByPlaceholder('Search insights...')).toBeVisible();
+    await expect(page.getByPlaceholder('Search insights')).toBeVisible();
     await page.waitForLoadState('networkidle');
     await shot(page, `siblings-${projectId}-insights`);
     await expect(page.locator('body')).not.toContainText(
@@ -129,25 +129,22 @@ test('insights: filters keep their state in the URL and the empty state is shown
     page.getByRole('heading', { name: 'Insights', level: 1 })
   ).toBeVisible();
   await page.waitForLoadState('networkidle');
-  await page.getByPlaceholder('Search insights...').fill('google');
+  await page.getByPlaceholder('Search insights').fill('google');
   await expect(page).toHaveURL(/search=google/);
   for (const [trigger, option] of [
-    ['All Windows', '7 Days'],
-    ['All Severity', 'Severe'],
-    ['All Directions', 'Increasing'],
+    ['Time window', '7 days'],
+    ['Severity', 'Severe'],
+    ['Direction', 'Increasing'],
   ] as const) {
     await page
-      .getByRole('combobox')
-      .filter({ hasText: new RegExp(trigger, 'i') })
+      .getByRole('button', { name: new RegExp(`^${trigger}:`) })
       .click();
-    await page.getByRole('option', { name: option, exact: true }).click();
+    await page.getByRole('menuitem', { name: option, exact: true }).click();
   }
   await shot(page, 'siblings-insights-filtered', false);
   const url = page.url();
   await page.reload();
-  await expect(page.getByPlaceholder('Search insights...')).toHaveValue(
-    'google'
-  );
+  await expect(page.getByPlaceholder('Search insights')).toHaveValue('google');
   expect(new URL(page.url()).search).toBe(new URL(url).search);
 });
 
