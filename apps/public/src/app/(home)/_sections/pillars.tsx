@@ -1,6 +1,9 @@
 import { Pillar } from '@/components/blocks/pillar';
 import { ChatMock } from '@/components/dashboard-mock/chat';
+import { FitWidth } from '@/components/fit-width';
 import { VisualMock } from '@/components/visual-mock';
+
+const CHAT_MOCK_WIDTH = 640;
 
 export function Pillars() {
   return (
@@ -50,7 +53,9 @@ export function Pillars() {
         title="Ask for the numbers instead of building charts"
         visual={
           <div className="bleed-left max-h-[600px] overflow-hidden rounded-3xl bg-neutral-100 px-6 pt-6 md:px-10 md:pt-10">
-            <ChatMock className="rounded-b-none border-b-0" />
+            <FitWidth width={CHAT_MOCK_WIDTH}>
+              <ChatMock className="rounded-b-none border-b-0" />
+            </FitWidth>
           </div>
         }
       />

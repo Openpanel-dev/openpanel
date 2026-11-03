@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { DASHBOARD_WINDOW_WIDTH, FitWidth } from '@/components/fit-width';
 import { GetStartedButton } from '@/components/get-started-button';
+import type { HeroPillProps } from '@/components/hero-pill';
 import { PageHero } from '@/components/page-hero';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -22,7 +24,7 @@ export function FeatureHero({
 }: {
   title: React.ReactNode;
   description: React.ReactNode;
-  pill?: { label: string; text: string; href: string };
+  pill?: Pick<HeroPillProps, 'label' | 'text' | 'shortText' | 'href'>;
   eyebrow?: React.ReactNode;
   visual?: React.ReactNode;
   wide?: boolean;
@@ -62,12 +64,16 @@ export function FeatureHero({
         >
           <div
             className={cn(
-              'relative overflow-hidden max-md:overflow-x-auto',
+              'relative overflow-hidden',
               fade &&
                 'max-h-[640px] [mask-image:linear-gradient(to_bottom,black_82%,transparent)]'
             )}
           >
-            <div className={cn(wide && 'min-w-[960px]')}>{visual}</div>
+            {wide ? (
+              <FitWidth width={DASHBOARD_WINDOW_WIDTH}>{visual}</FitWidth>
+            ) : (
+              visual
+            )}
           </div>
         </div>
       )}

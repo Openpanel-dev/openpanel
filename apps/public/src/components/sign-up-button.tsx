@@ -23,9 +23,8 @@ export function SignUpButton() {
   }, []);
 
   return (
-    <Button asChild variant="outline">
+    <Button asChild className="max-md:hidden" variant="outline">
       <Link
-        className="hidden md:flex"
         href={`https://dashboard.openpanel.dev${isSignedIn ? '/' : '/onboarding'}`}
       >
         {isSignedIn ? 'Dashboard' : 'Sign up'}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
+import { DASHBOARD_WINDOW_WIDTH, FitWidth } from '@/components/fit-width';
 import { PageHero } from '@/components/page-hero';
 import { Reveal } from '@/components/reveal';
 import { SectionLabel } from '@/components/section';
@@ -227,10 +228,10 @@ export default function FeaturesIndexPage() {
         className="mx-auto mt-14 max-w-6xl animate-rise px-4 md:mt-20"
         style={{ animationDelay: '360ms' }}
       >
-        <div className="relative max-h-[560px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)] max-md:overflow-x-auto">
-          <div className="min-w-[960px]">
+        <div className="relative max-h-[560px] overflow-hidden [mask-image:linear-gradient(to_bottom,black_80%,transparent)]">
+          <FitWidth width={DASHBOARD_WINDOW_WIDTH}>
             <VisualMock name="web-overview" />
-          </div>
+          </FitWidth>
         </div>
       </div>
       <div className="col container gap-20 py-16 md:py-24">

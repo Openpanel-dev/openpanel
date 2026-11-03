@@ -55,7 +55,7 @@ function GroupRows({
     <tbody className="divide-y divide-neutral-100">
       <tr>
         <th
-          className="px-5 pt-6 pb-2 font-medium text-[11px] text-neutral-500 uppercase tracking-wider"
+          className="px-5 pt-6 pb-2 font-medium text-[11px] text-neutral-500 uppercase tracking-wider max-sm:px-4"
           colSpan={3}
           scope="colgroup"
         >
@@ -64,7 +64,7 @@ function GroupRows({
       </tr>
       {features.map((feature) => (
         <tr className="align-top" key={feature.name}>
-          <th className="px-5 py-3 font-medium" scope="row">
+          <th className="px-5 py-3 font-medium max-sm:px-4" scope="row">
             {feature.name}
             {feature.notes && (
               <p className="mt-0.5 font-normal text-neutral-500 text-xs">
@@ -72,10 +72,10 @@ function GroupRows({
               </p>
             )}
           </th>
-          <td className="bg-blue-50/40 px-5 py-3">
+          <td className="bg-blue-50/40 px-5 py-3 max-sm:px-4">
             <Cell value={feature.openpanel} />
           </td>
-          <td className="px-5 py-3 text-neutral-600">
+          <td className="px-5 py-3 text-neutral-600 max-sm:px-4">
             <Cell value={feature.competitor} />
           </td>
         </tr>
@@ -114,7 +114,7 @@ export function FeatureTable({
     <thead>
       <tr className="border-neutral-200 border-b">
         <th
-          className="w-2/5 px-5 py-4 font-medium text-neutral-500"
+          className="px-5 py-4 font-medium text-neutral-500 max-sm:px-4 sm:w-2/5"
           scope="col"
         >
           Feature
@@ -122,6 +122,7 @@ export function FeatureTable({
         <ColumnHeads
           competitorName={competitorName}
           competitorSlug={competitorSlug}
+          logoOnlyOnPhone
         />
       </tr>
     </thead>
