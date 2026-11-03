@@ -17,7 +17,7 @@
   "dependencies": {
     "@nivo/funnel": "0.99.0",
     "@number-flow/react": "0.5.10",
-    "@opennextjs/cloudflare": "1.17.1",
+    "@opennextjs/cloudflare": "1.20.15",
     "@openpanel/nextjs": "1.2.0",
     "@openpanel/payments": "workspace:^",
     "@openpanel/sdk-info": "workspace:^",
@@ -59,6 +59,6 @@
     "postcss": "8.5.6",
     "tailwindcss": "4.3.3",
     "typescript": "catalog:",
-    "wrangler": "4.85.0"
+    "wrangler": "4.157.0"
   }
 }
