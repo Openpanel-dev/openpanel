@@ -9,5 +9,8 @@ export function resolveArticleCover(cover?: string): string | undefined {
   if (!cover) {
     return undefined;
   }
+  if (cover.startsWith('http://') || cover.startsWith('https://')) {
+    return cover;
+  }
   return existsSync(join(PUBLIC_DIR, cover)) ? cover : undefined;
 }

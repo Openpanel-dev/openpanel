@@ -22,14 +22,20 @@ export const docs = defineDocs({
   },
 });
 
+// `z.coerce.date()` turns a `date: null` frontmatter line into the epoch;
+// only a string or a parsed YAML date may reach the coercion.
+const zFrontmatterDate = z
+  .union([z.date(), z.string().min(1)])
+  .pipe(z.coerce.date());
+
 const zArticle = z.object({
   title: z.string().min(1),
   description: z.string(),
   tag: z.string().optional(),
   team: z.string().optional(),
-  date: z.coerce.date(),
+  date: zFrontmatterDate,
   cover: z.string().default('/content/cover-default.jpg'),
-  updated: z.coerce.date().optional(),
+  updated: zFrontmatterDate.optional(),
 });
 const zPage = z.object({
   title: z.string().min(1),
@@ -42,8 +48,8 @@ const zGuide = z.object({
   description: z.string(),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   timeToComplete: z.number(), // minutes
-  date: z.coerce.date(),
-  updated: z.coerce.date().optional(),
+  date: zFrontmatterDate,
+  updated: zFrontmatterDate.optional(),
   cover: z.string().default('/content/cover-default.jpg'),
   team: z.string().optional(),
   steps: z.array(
