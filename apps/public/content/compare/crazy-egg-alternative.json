@@ -1,6 +1,7 @@
 {
   "slug": "crazy-egg-alternative",
   "page_type": "alternative",
+  "category": "replay",
   "seo": {
     "title": "Best Crazy Egg Alternative 2026 - Open Source & Free",
     "description": "Looking for a Crazy Egg alternative? OpenPanel goes beyond heatmaps with full product analytics, funnels, retention, and mobile SDKs. Open source, self-hostable, and free to start.",
@@ -8,7 +9,7 @@
   },
   "hero": {
     "heading": "Best Crazy Egg Alternative",
-    "subheading": "Get full product analytics capabilities beyond heatmaps. OpenPanel delivers funnel analysis, retention tracking, mobile SDKs, and user identification\u2014fully open source and self-hostable.",
+    "subheading": "Get full product analytics capabilities beyond heatmaps. OpenPanel delivers funnel analysis, retention tracking, mobile SDKs, and user identification, fully open source and self-hostable.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -24,12 +25,17 @@
     "founded": 2005,
     "headquarters": "La Mirada, CA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Crazy Egg?",
     "paragraphs": [
-      "Crazy Egg, founded by Neil Patel and Hiten Shah in 2005, pioneered website heatmaps and has since expanded into A/B testing, session recordings, and surveys. It's a well-known tool for visual website optimization \u2014 understanding where visitors click, how far they scroll, and which page elements drive engagement. But Crazy Egg is web-only, proprietary, and focused on visual optimization rather than product analytics.",
+      "Crazy Egg, founded by Neil Patel and Hiten Shah in 2005, pioneered website heatmaps and has since expanded into A/B testing, session recordings, and surveys. It's a well-known tool for visual website optimization, understanding where visitors click, how far they scroll, and which page elements drive engagement. But Crazy Egg is web-only, proprietary, and focused on visual optimization rather than product analytics.",
       "OpenPanel serves a different but complementary need. Where Crazy Egg helps you optimize individual pages through visual feedback, OpenPanel helps you understand the entire user journey through event-based product analytics. Funnels show you where users drop off in multi-step flows, retention analysis reveals whether they come back, and user profiles let you track individual behavior across sessions.",
-      "The technical differences are significant for growing teams. Crazy Egg is cloud-only with no self-hosting option and charges based on pageviews. OpenPanel is open source under the AGPL-3.0 license, offers full self-hosting via Docker, and supports mobile apps through native SDKs for iOS, Android, React Native, and Flutter \u2014 capabilities Crazy Egg doesn't provide.",
+      "The technical differences are significant for growing teams. Crazy Egg is cloud-only with no self-hosting option and charges based on pageviews. OpenPanel is open source under the AGPL-3.0 license, offers full self-hosting via Docker, and supports mobile apps through native SDKs for iOS, Android and React Native, plus a community Flutter SDK, capabilities Crazy Egg doesn't provide.",
       "If you need to go beyond heatmaps and understand how users actually flow through your product, especially across both web and mobile platforms, OpenPanel provides the event-based analytics foundation that visual optimization tools like Crazy Egg can't match."
     ]
   },
@@ -68,7 +74,7 @@
       },
       {
         "label": "Mobile SDKs",
-        "openpanel": "iOS, Android, React Native, Flutter",
+        "openpanel": "iOS, Android, React Native (Flutter via community SDK)",
         "competitor": "Web only"
       },
       {
@@ -258,7 +264,7 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "~3 KB gzipped",
         "competitor": "Async script (minimal impact)",
         "notes": null
       },
@@ -269,11 +275,20 @@
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
+          "Astro",
+          "Remix",
+          "Express",
+          "Node.js",
           "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
-          "Node.js"
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Flutter (community)",
+          "PHP (community)"
         ],
         "competitor": ["JavaScript (web only)"],
         "notes": null
@@ -286,7 +301,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose, one-command install script",
         "competitor": "Not available",
         "notes": null
       },
@@ -306,15 +321,15 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Two different pricing models\u2014OpenPanel's transparent tiered event pricing (with a 30-day free trial or free self-hosting) vs Crazy Egg's pageview-based plans.",
+    "intro": "Two different pricing models, OpenPanel's transparent tiered event pricing (with a 30-day free trial or free self-hosting) vs Crazy Egg's pageview-based plans.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+      "description": "Flat monthly tiers from $2.50/month for 5,000 events after a 30-day trial. Self-host for free with unlimited events. All features included at every tier."
     },
     "competitor": {
       "model": "Pageview-based, annual billing",
-      "description": "Free plan with limited features. Starter: $29/month for 5,000 pageviews. Plus: $99/month for 150,000 pageviews with A/B testing. Enterprise: $599/month for 1M pageviews.",
-      "free_tier": "Yes (limited features)",
+      "description": "No free plan; every plan starts with a free trial and is billed annually. Starter: $29/month for 5,000 pageviews and 50 recordings. Plus: $99/month for 150,000 pageviews with unlimited A/B tests. Pro: $249/month for 500,000 pageviews. Enterprise: $599/month for 1M pageviews.",
+      "free_tier": "No (free trial on every plan)",
       "pricing_url": "https://www.crazyegg.com/pricing"
     }
   },
@@ -326,7 +341,7 @@
     "steps": [
       {
         "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your website. The SDK is lightweight and loads asynchronously."
+        "description": "Add the OpenPanel SDK to your website. The script is about 3 KB gzipped and loads asynchronously."
       },
       {
         "title": "Define event tracking strategy",
@@ -360,7 +375,7 @@
     "items": [
       {
         "title": "Mobile app analytics",
-        "description": "Crazy Egg is web-only. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter.",
+        "description": "Crazy Egg is web-only. OpenPanel offers native SDKs for iOS, Android and React Native, plus a community Flutter SDK.",
         "icon": "smartphone"
       },
       {
@@ -370,7 +385,7 @@
       },
       {
         "title": "Self-hosting requirements",
-        "description": "Crazy Egg is cloud-only. OpenPanel offers Docker Compose deployment for complete data control — a one-command `./setup` wizard walks you through configuration and brings the whole stack up in minutes.",
+        "description": "Crazy Egg is cloud-only. OpenPanel offers Docker Compose deployment for complete data control, One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes.",
         "icon": "server"
       },
       {
@@ -391,7 +406,7 @@
     "items": [
       {
         "question": "What will I lose switching from Crazy Egg to OpenPanel?",
-        "answer": "Crazy Egg's core features are heatmaps, A/B testing, on-site surveys, and popup CTAs. OpenPanel does not offer these features\u2014it focuses on product analytics instead."
+        "answer": "Crazy Egg's core features are heatmaps, A/B testing, on-site surveys, and popup CTAs. OpenPanel does not offer these features, it focuses on product analytics instead."
       },
       {
         "question": "Does OpenPanel have heatmaps like Crazy Egg?",
@@ -399,15 +414,15 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "Crazy Egg pricing starts at $29/month for 5,000 pageviews (annual billing). OpenPanel offers tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K events, with a 30-day free trial — or free self-hosting. For similar traffic, OpenPanel is typically more affordable."
+        "answer": "Crazy Egg has no free plan; pricing starts at $29/month for 5,000 pageviews, billed annually. OpenPanel offers tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K events, with a 30-day free trial, or free self-hosting. For similar traffic, OpenPanel is typically more affordable."
       },
       {
         "question": "Can I track mobile apps with Crazy Egg?",
-        "answer": "No. Crazy Egg is designed exclusively for website analytics. OpenPanel offers native SDKs for iOS, Android, React Native, and Flutter."
+        "answer": "No. Crazy Egg is designed exclusively for website analytics. OpenPanel offers native SDKs for iOS, Android and React Native, plus a community Flutter SDK."
       },
       {
         "question": "Does OpenPanel have A/B testing like Crazy Egg?",
-        "answer": "No. Crazy Egg includes a visual A/B testing editor as a core feature. OpenPanel focuses on analytics rather than experimentation."
+        "answer": "No. Crazy Egg includes a visual A/B testing editor as a core feature. OpenPanel breaks reports down by a variant property so you can read a test, but it does not run experiments."
       },
       {
         "question": "Is Crazy Egg open source?",

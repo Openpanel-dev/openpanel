@@ -1,13 +1,14 @@
 {
   "slug": "matomo-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
-    "title": "Best Matomo Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Matomo alternative? OpenPanel offers simpler setup, truly cookie-free tracking, and a modern UI \u2014 no premium plugin costs. Open source and free to self-host.",
+    "title": "OpenPanel vs Matomo: Cookie-Free, Simpler Self-Hosting, No Plugins",
+    "description": "Looking for a Matomo alternative? OpenPanel offers simpler setup, truly cookie-free tracking, and a modern UI, no premium plugin costs. Open source and free to self-host.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Matomo Alternative",
+    "heading": "OpenPanel vs Matomo",
     "subheading": "OpenPanel is a modern, open-source alternative to Matomo. Get powerful web and product analytics with a cleaner interface, truly cookie-free tracking by default, and no premium plugins required for essential features.",
     "badges": ["Open-source", "Cookie-free", "EU-only hosting", "Self-hostable"]
   },
@@ -19,13 +20,18 @@
     "founded": 2007,
     "headquarters": "Wellington, New Zealand"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Matomo?",
     "paragraphs": [
-      "Matomo is one of the most established open-source analytics platforms, used by over 1.4 million websites worldwide. It offers both self-hosted and cloud options with a strong focus on privacy and data ownership. However, Matomo's age shows in its interface, and many essential features like funnels, A/B testing, and heatmaps are locked behind premium plugins that cost $229 per year each.",
-      "OpenPanel is a modern, open-source alternative that includes all features at every tier \u2014 no premium plugins, no upsells. Funnels, cohorts, retention analysis, A/B testing, and user profiles are all available on every paid plan and when self-hosting. The interface is clean and modern, designed for today's product teams rather than as a legacy dashboard.",
-      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is truly cookie-free from the start, with no configuration needed. Self-hosting is also dramatically simpler \u2014 a one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes, versus Matomo's PHP, MySQL, and web server stack.",
-      "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, lighter tracking (2.3 KB vs 20 KB), and simpler deployment \u2014 OpenPanel delivers what Matomo promises, without the hidden costs."
+      "Matomo is one of the most established open-source analytics platforms, used by over 1.4 million websites worldwide. It offers both self-hosted and cloud options with a strong focus on privacy and data ownership. However, Matomo's age shows in its interface, and features like funnels, heatmaps, session recording and A/B testing are premium plugins, sold separately or in bundles that start at €275.",
+      "OpenPanel is a modern, open-source alternative that includes all features at every tier, with no premium plugins. Funnels, cohorts, retention, session replay and user profiles are available on every paid plan and when self-hosting. The interface is built for today's product teams rather than as a legacy dashboard.",
+      "A critical difference is cookie-free tracking. While Matomo can be configured for cookieless mode, it uses cookies by default and still requires a consent banner in most GDPR scenarios. OpenPanel is cookie-free from the start, with no configuration needed. Self-hosting is also simpler: one install script brings the Docker Compose stack up, versus Matomo's PHP, MySQL and web server stack.",
+      "For teams who value Matomo's open-source philosophy but want a modern experience with all features included, a lighter tracking script (about 3 KB vs 20 KB) and simpler deployment, OpenPanel delivers what Matomo promises without the plugin costs."
     ]
   },
   "summary_comparison": {
@@ -35,7 +41,7 @@
     "best_for_openpanel": [
       "Teams that want modern UI/UX without legacy complexity",
       "Developers who need truly cookie-free tracking without configuration",
-      "Companies that want funnels, cohorts, and retention without extra costs",
+      "Companies that want funnels, cohorts, retention and session replay without extra costs",
       "Startups and SMBs looking for lighter SDKs and faster setup"
     ],
     "best_for_competitor": [
@@ -52,7 +58,7 @@
       {
         "label": "Price",
         "openpanel": "From $2.50/month (or free self-hosted)",
-        "competitor": "Free self-hosted, Cloud from $19/month"
+        "competitor": "Free self-hosted core; Cloud from 29/month (50,000 hits); premium bundles from €275"
       },
       {
         "label": "Cookies required",
@@ -134,7 +140,7 @@
             "name": "Funnels",
             "openpanel": true,
             "competitor": "premium",
-            "notes": "Matomo Funnels is a paid plugin"
+            "notes": "Matomo Funnels is a premium plugin (Team bundle and up)"
           },
           {
             "name": "Retention analysis",
@@ -167,21 +173,21 @@
         "features": [
           {
             "name": "A/B testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns only",
             "competitor": "premium",
-            "notes": "Matomo A/B Testing is a paid plugin"
+            "notes": "Matomo A/B Testing is a premium plugin (Enterprise bundle). OpenPanel can break any report down by a variant property; it has no experiment engine or significance test."
           },
           {
             "name": "Heatmaps",
             "openpanel": false,
             "competitor": "premium",
-            "notes": "Matomo plugin costs extra"
+            "notes": "Matomo Heatmaps & Session Recording is a premium plugin"
           },
           {
             "name": "Session recordings",
             "openpanel": true,
             "competitor": "premium",
-            "notes": "OpenPanel has built-in session replay (rrweb, opt-in); Matomo's is a paid plugin"
+            "notes": "OpenPanel has opt-in session replay (masked by default, 30-day retention); Matomo's is a premium plugin"
           },
           {
             "name": "Custom dashboards",
@@ -193,7 +199,7 @@
             "name": "Form analytics",
             "openpanel": false,
             "competitor": "premium",
-            "notes": "Matomo Form Analytics is paid"
+            "notes": "Matomo Form Analytics is a premium plugin"
           },
           {
             "name": "Tag Manager",
@@ -267,9 +273,9 @@
           },
           {
             "name": "E-commerce platforms",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "Matomo: WooCommerce, Shopify, Magento, PrestaShop"
+            "notes": "Matomo: WooCommerce, Shopify, Magento, PrestaShop. OpenPanel tracks revenue through its SDKs and API, with no shop plugins."
           }
         ]
       }
@@ -281,27 +287,30 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only when enabled",
         "competitor": "~20 KB gzipped (60 KB uncompressed)",
-        "notes": "OpenPanel's SDK is significantly lighter"
+        "notes": "OpenPanel's script is lighter"
       },
       {
         "label": "Supported platforms",
         "openpanel": [
-          "JavaScript",
+          "Script tag",
+          "JavaScript / Web",
+          "Node.js",
           "React",
           "Next.js",
           "Vue",
-          "Node.js",
-          "Python",
-          "Swift",
-          "Kotlin",
-          "React Native",
-          "Flutter",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express",
-          "PHP"
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust"
         ],
         "competitor": [
           "JavaScript",
@@ -315,7 +324,7 @@
           "C#",
           "WordPress"
         ],
-        "notes": "Matomo has more native integrations for CMS platforms"
+        "notes": "Matomo has more native integrations for CMS platforms. Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter. There is no Go SDK."
       },
       {
         "label": "Open source",
@@ -325,7 +334,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "PHP/MySQL stack, more complex setup",
         "notes": "OpenPanel has simpler Docker-based deployment"
       },
@@ -337,7 +346,7 @@
       },
       {
         "label": "Data retention",
-        "openpanel": "Unlimited (self-hosted) or plan-based",
+        "openpanel": "Unlimited (self-hosted)",
         "competitor": "Unlimited (configurable), Cloud has plan-based raw data limits",
         "notes": "Both offer flexible retention policies"
       }
@@ -345,15 +354,15 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Both offer free self-hosted options. Cloud pricing differs, and Matomo's premium plugins add significant costs.",
+    "intro": "Both offer free self-hosted options. Matomo Cloud is priced by hits, and its premium plugins add significant costs on top. Prices from matomo.org on November 1, 2026.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Simple pricing starting at $2.50/month for 5,000 events. 100,000 events costs $20/month. Self-host for free with unlimited events. All features included in every plan."
+      "description": "Flat monthly tiers by event volume: $2.50 for 5,000 events, $20 for 100,000, $90 for 1M. 30-day trial, no free tier. Self-host for free with unlimited events. All features included in every plan."
     },
     "competitor": {
-      "model": "Hit-based (Cloud) plus premium plugins",
-      "description": "On-Premise: Free (core features), but premium plugins like Heatmaps ($229/year), A/B Testing ($229/year), Funnels ($229/year) add up. Cloud: Starts at $19/month for 50,000 hits, scaling to $16,900/month for 100M hits. Premium Bundle saves up to 45% on plugins.",
-      "free_tier": "Yes (On-Premise is free, limited features)",
+      "model": "Hit-based Cloud, plus premium plugins On-Premise",
+      "description": "On-Premise core is free. Premium features (Funnels, Heatmaps & Session Recording, Form Analytics, A/B Testing) are sold as plugins or in bundles: Team €275, Business €1,450, Enterprise €3,400, with A/B Testing only in Enterprise. Cloud starts at 29 per month for 50,000 hits and rises with traffic; above 10M hits you contact sales.",
+      "free_tier": "Yes (On-Premise core, without premium plugins)",
       "pricing_url": "https://matomo.org/pricing/"
     }
   },
@@ -365,7 +374,7 @@
     "steps": [
       {
         "title": "Install the OpenPanel SDK",
-        "description": "Add the lightweight OpenPanel SDK to your app. At 2.3 KB, it's much smaller than Matomo's 20 KB tracker."
+        "description": "Add the OpenPanel SDK to your app. At about 3 KB, it is much smaller than Matomo's 20 KB tracker."
       },
       {
         "title": "Map your tracked events",
@@ -377,7 +386,7 @@
       },
       {
         "title": "Set up your dashboards",
-        "description": "Create key reports in OpenPanel. You'll get funnels and cohorts included without needing premium plugins."
+        "description": "Create key reports in OpenPanel. Funnels, cohorts and session replay are included without premium plugins."
       },
       {
         "title": "Remove Matomo consent banner",
@@ -404,7 +413,7 @@
       },
       {
         "title": "All features without extra costs",
-        "description": "Funnels, cohorts, and A/B testing are included. With Matomo, these are premium plugins costing $229/year each.",
+        "description": "Funnels, cohorts, retention and session replay are included. With Matomo, these are premium plugins sold separately or in bundles from €275.",
         "icon": "package"
       },
       {
@@ -419,7 +428,7 @@
       },
       {
         "title": "Faster websites",
-        "description": "OpenPanel's 2.3 KB SDK vs Matomo's 20 KB tracker means better performance and improved Core Web Vitals.",
+        "description": "OpenPanel's 3 KB script vs Matomo's 20 KB tracker means less to download and better Core Web Vitals.",
         "icon": "zap"
       }
     ]
@@ -430,7 +439,7 @@
     "items": [
       {
         "question": "Is Matomo free?",
-        "answer": "Matomo On-Premise (self-hosted) is free and open-source. However, many important features like Heatmaps, Session Recordings, A/B Testing, Funnels, and Form Analytics require purchasing premium plugins ($33-549/year each). Matomo Cloud starts at $19/month for 50,000 hits."
+        "answer": "Matomo On-Premise (self-hosted) is free and open source. Heatmaps, Session Recordings, A/B Testing, Funnels and Form Analytics are premium plugins, sold separately or in bundles (Team €275, Business €1,450, Enterprise €3,400). Matomo Cloud starts at 29 per month for 50,000 hits."
       },
       {
         "question": "Why switch from Matomo?",
@@ -446,7 +455,7 @@
       },
       {
         "question": "What Matomo features will I lose?",
-        "answer": "OpenPanel doesn't have heatmaps, form analytics, or a tag manager. If you rely heavily on these tools, Matomo may still be the better fit. However, OpenPanel does include session replay, and you'll gain simpler setup with all core analytics features included."
+        "answer": "OpenPanel has no heatmaps, form analytics or tag manager. If you rely on those, Matomo may still be the better fit. OpenPanel does include session replay, and every analytics feature is included without plugins."
       },
       {
         "question": "Is Matomo GDPR compliant?",
@@ -454,11 +463,11 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "Matomo requires PHP 7.2.5+ and MySQL/MariaDB, with additional configuration for performance at scale. OpenPanel uses Docker Compose with ClickHouse for analytics queries, offering simpler deployment and better query performance for most use cases."
+        "answer": "Matomo requires PHP and MySQL/MariaDB, with extra tuning at scale. OpenPanel uses Docker Compose with ClickHouse, Postgres and Redis, set up by one install script, with releases arriving a month or two after Cloud."
       },
       {
         "question": "Is OpenPanel as mature as Matomo?",
-        "answer": "Matomo has been around since 2007 and is used by 1.4+ million websites. OpenPanel is newer but offers modern architecture, simpler setup, and all features included. For most analytics needs, OpenPanel provides equivalent or better functionality with less complexity."
+        "answer": "Matomo has been around since 2007 and is used by 1.4+ million websites. OpenPanel is newer, with a modern architecture, simpler setup and all features included. For most web and product analytics needs it covers the same ground with less complexity; Matomo has more plugins and CMS integrations."
       }
     ]
   },

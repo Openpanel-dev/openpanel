@@ -7,6 +7,7 @@ import type { MDXComponents } from 'mdx/types';
 import { ArticleCta } from '@/components/article-cta';
 import { FaqItem, Faqs } from '@/components/faq';
 import { Figure } from '@/components/figure';
+import { VisualMock } from '@/components/visual-mock';
 import { WindowImage } from '@/components/window-image';
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -22,6 +23,7 @@ export function getMDXComponents(components?: MDXComponents) {
     Faqs,
     FaqItem,
     WindowImage,
+    VisualMock,
     Figure,
   } satisfies MDXComponents;
 }

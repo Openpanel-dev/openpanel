@@ -3,10 +3,6 @@
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-openapi/css/preset.css";
 
-@custom-variant dark (&:is(.dark *));
-@custom-variant light (&:is(.light *));
-@custom-variant system (&:is(.system *));
-
 body {
   @apply m-0;
   -webkit-font-smoothing: antialiased;
@@ -19,6 +15,7 @@ code {
 }
 
 :root {
+  color-scheme: light;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -53,6 +50,32 @@ code {
   --sidebar-ring: oklch(0.708 0 0);
 
   --spacing-fd-container: 1000px;
+  --canvas: oklch(0.985 0.002 95);
+}
+
+/* Fumadocs on the site palette: warm canvas, white cards, black primary. */
+:root {
+  --color-fd-background: var(--canvas);
+  --color-fd-foreground: oklch(0.145 0 0);
+  --color-fd-card: oklch(1 0 0);
+  --color-fd-card-foreground: oklch(0.145 0 0);
+  --color-fd-popover: oklch(1 0 0);
+  --color-fd-popover-foreground: oklch(0.145 0 0);
+  --color-fd-muted: oklch(0.96 0.003 95);
+  --color-fd-muted-foreground: oklch(0.5 0.004 95);
+  --color-fd-secondary: oklch(0.975 0.002 95);
+  --color-fd-secondary-foreground: oklch(0.205 0 0);
+  --color-fd-accent: oklch(0.94 0.004 95);
+  --color-fd-accent-foreground: oklch(0.145 0 0);
+  --color-fd-border: oklch(0.145 0 0 / 0.08);
+  --color-fd-primary: oklch(0.205 0 0);
+  --color-fd-primary-foreground: oklch(0.985 0 0);
+  --color-fd-ring: oklch(0.708 0 0);
+}
+
+#nd-docs-layout,
+#nd-sidebar {
+  background-color: var(--canvas);
 }
 
 @utility container {
@@ -60,40 +83,6 @@ code {
   @media (width >= 40rem) {
     @apply max-w-[1000px];
   }
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.439 0 0);
 }
 
 @theme inline {
@@ -130,6 +119,7 @@ code {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-canvas: var(--canvas);
 
   /* Fonts */
   --font-family-mono:
@@ -143,6 +133,93 @@ code {
   @keyframes scroll {
     to {
       transform: translate(calc(-50% - 0.5rem));
+    }
+  }
+
+  --animate-draw-line: draw-line 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  --animate-rise: rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes draw-line {
+    from {
+      stroke-dashoffset: 1800;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/* Extend a block from the container edge to the viewport edge. */
+@layer components {
+  @media (width >= 48rem) {
+    .bleed-right {
+      width: calc(100% + max(1rem, (100vw - 1000px) / 2 + 1rem));
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .bleed-left {
+      width: calc(100% + max(1rem, (100vw - 1000px) / 2 + 1rem));
+      margin-left: calc(-1 * max(1rem, (100vw - 1000px) / 2 + 1rem));
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+  }
+}
+
+/* Surfaces: the one card recipe every marketing page uses. */
+@utility surface {
+  @apply rounded-2xl bg-white ring-1 ring-black/4;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 12px 32px -16px rgba(0, 0, 0, 0.12);
+}
+
+@utility surface-hover {
+  @apply transition-[transform,box-shadow] duration-300;
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 24px 48px -16px rgba(0, 0, 0, 0.2);
+  }
+}
+
+@utility window-shadow {
+  box-shadow:
+    0 30px 80px -20px rgba(0, 0, 0, 0.18),
+    0 8px 24px -12px rgba(0, 0, 0, 0.12);
+}
+
+/* Scroll reveal: hidden until the Reveal component sees the element. */
+@layer components {
+  .reveal {
+    opacity: 0;
+    transform: translateY(22px);
+    transition:
+      opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 }

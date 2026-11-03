@@ -1,13 +1,14 @@
 {
   "slug": "plausible-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
-    "title": "Plausible Alternative with Retention and User Profiles",
+    "title": "OpenPanel vs Plausible: Web Stats Plus Retention and Profiles",
     "description": "OpenPanel vs Plausible: both are cookieless and AGPL. OpenPanel adds retention, cohorts and user profiles. Prices at 10k to 10M pageviews, and when to stay put.",
     "noindex": false
   },
   "hero": {
-    "heading": "A Plausible alternative for when pageviews stop being enough",
+    "heading": "OpenPanel vs Plausible",
     "subheading": "Plausible tells you how many people came and where from. It can't tell you whether the people who signed up in March are still around in May, because it never knows who anyone is. OpenPanel keeps the cookieless web dashboard and adds retention, cohorts and user profiles on the same events.",
     "badges": [
       "AGPL-3.0, like Plausible",
@@ -25,7 +26,7 @@
   },
   "meta": {
     "author": "Carl-Gerhard Lindesvärd",
-    "updated": "2026-10-18",
+    "updated": "2026-11-03",
     "prices_checked": "2026-10-18"
   },
   "overview": {
@@ -288,13 +289,17 @@
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express / Node.js",
           "React Native",
           "Swift (iOS)",
           "Kotlin (Android)",
+          "Java",
           "Python",
+          "Ruby",
+          "Rust",
           "REST API"
         ],
         "competitor": [
@@ -303,7 +308,7 @@
           "WordPress plugin",
           "Events API"
         ],
-        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel), Ruby, Rust and Java."
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter."
       },
       {
         "label": "Self-hosting stack",
@@ -406,7 +411,7 @@
         "description": "\"Of the people who signed up in March, how many still use it?\" needs a stable user ID. Plausible doesn't keep one; OpenPanel builds the cohort table from your signup and return events.",
         "icon": "users",
         "screenshot": {
-          "src": "/features/feature-retention.webp",
+          "mock": "retention",
           "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
         }
       },
@@ -415,7 +420,7 @@
         "description": "At 100k pageviews, Plausible Business costs $39 a month for funnels and custom properties. OpenPanel's 100k tier costs $20 with funnels, retention and user flows included.",
         "icon": "trending-up",
         "screenshot": {
-          "src": "/features/feature-funnel-report.webp",
+          "mock": "funnel",
           "alt": "OpenPanel funnel report showing conversion between steps"
         }
       },
@@ -424,7 +429,7 @@
         "description": "OpenPanel user profiles list every event and session for one person, so you can answer a support ticket without guessing.",
         "icon": "user-check",
         "screenshot": {
-          "src": "/features/feature-profiles-details.webp",
+          "mock": "profile",
           "alt": "OpenPanel user profile with the person's properties and event history"
         }
       },

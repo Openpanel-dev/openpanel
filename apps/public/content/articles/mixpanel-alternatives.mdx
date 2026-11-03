@@ -1,8 +1,8 @@
 ---
 date: 2025-07-18
-title: "13 Best Product Analytics Tools in 2026 (Ranked & Compared)"
-description: "Compare the best product analytics tools in 2026. Side-by-side pricing, features, and privacy comparison of 13 platforms — including open source, self-hosted, and free options for every team size."
-updated: 2026-02-16
+title: "7 Best Mixpanel Alternatives in 2026 (Open Source and Cloud)"
+description: "The best Mixpanel alternatives in 2026, compared on price at 1M and 10M events, self-hosting, cookies and session replay. Open source and cloud options for every team size."
+updated: 2026-11-01
 tag: Comparison
 team: OpenPanel Team
 cover: /content/cover-alternatives.jpg
@@ -10,653 +10,397 @@ cover: /content/cover-alternatives.jpg
 import { Faqs, FaqItem } from '@/components/faq';
 import { Figure } from '@/components/figure'
 
-Mixpanel made it easy to track user behavior beyond pageviews. But many teams are looking for alternatives that fit their budget or privacy requirements better. Whether you want a free open source option you can self-host or an affordable cloud tool, there are good alternatives in 2026.
+Mixpanel is a good product analytics tool, and its free plan now covers 1 million events a month. The reasons people look for a Mixpanel alternative start after that: the Growth plan costs $259 a month at 2 million events and $1,176 at 10 million on monthly billing, session replay and feature flags are capped or sold as add-ons, the tracking script sets cookies, and there is no way to run it on your own servers.
 
-Teams switch away from Mixpanel for a few common reasons:
+This list compares seven alternatives on the things that decide the choice: what you pay at 1 million and 10 million events, whether you can self-host, whether the script needs a cookie banner, and what each tool does that Mixpanel does not. Six more tools get a short mention at the end.
 
-**Pricing shock**: [Mixpanel's pricing](/articles/mixpanel-pricing) climbs quickly as your user base grows. What starts at $28/month can reach thousands once you pass the free tier. That makes budgeting hard for startups and growing companies.
+If you only track website traffic (pageviews, referrers, countries) and never custom events, you do not need a Mixpanel alternative at all. Read the [best web analytics tools](/articles/best-web-analytics-tools) instead. If the requirement is to run the tool on your own servers, [self-hosted product analytics](/articles/self-hosted-product-analytics) covers only those options.
 
-**Data privacy**: With GDPR and CCPA, many companies need analytics tools that don't park user data on a third party's servers. Mixpanel's cloud-only model can be a compliance headache.
+## Quick comparison
 
-**Vendor lock-in**: Once you've invested in Mixpanel, your data, dashboards, and integrations make switching costly and slow.
-
-**Feature overload**: Mixpanel has a lot of features, and many teams pay for complexity they don't need. A simpler tool focused on core analytics is often enough.
-
-**Self-hosting**: Some organizations, especially in regulated industries, need analytics data on their own infrastructure. Mixpanel's cloud-only approach doesn't allow that.
-
-This guide covers 13 Mixpanel alternatives: 7 in-depth reviews plus 6 honorable mentions. If you're also looking at [web analytics](/features/web-analytics) tools, see our guide to [open-source web analytics](/articles/self-hosted-web-analytics).
-
-Here's a quick comparison of all 7 top alternatives:
-
-| Tool | Type | Open Source | Self-Host | Free Tier | Paid From | Best For |
+| Tool | Type | Open source | Self-host | Free plan | Paid from | Best for |
 |------|------|-------------|-----------|-----------|-----------|----------|
-| [**OpenPanel**](#1-openpanel---the-privacy-first-alternative) | Web + Product | Yes (AGPL-3.0) | Free | 30-day trial | $2.50/mo | Affordable, privacy-first product analytics |
-| [**PostHog**](#2-posthog---the-all-in-one-platform) | Product + More | Yes (MIT) | Free | 1M events/mo | Usage-based | All-in-one: analytics + replay + flags |
-| [**Heap**](#3-heap---the-autocapture-alternative) | Product | No | No | 10K sessions/mo | ~$3,600/yr | Autocapture and retroactive analysis |
-| [**Amplitude**](#4-amplitude---the-enterprise-alternative) | Product | No | No | 10M events/mo | Contact sales | Enterprise ML-powered analytics |
-| [**Pendo**](#5-pendo---the-product-experience-alternative) | Product + UX | No | No | 500 users | Contact sales | Analytics + in-app guides + feedback |
-| [**Matomo**](#6-matomo---the-privacy-focused-on-premise-alternative) | Web + Product | Yes (GPL-3.0) | Free | Self-hosted free | €23/mo (cloud) | Privacy-first, GDPR-compliant analytics |
-| [**GA4**](#7-google-analytics-4---the-free-enterprise-alternative) | Web + Product | No | No | 25M events/mo | ~$50K/yr (360) | Free analytics at scale, Google stack |
+| [OpenPanel](#1-openpanel) | Web + product | Yes (AGPL-3.0) | Yes, free | 30-day trial | $2.50/mo | Product and web analytics in one tool, cookie-free |
+| [PostHog](#2-posthog) | Product + platform | Yes (MIT) | Hobby only | 1M events/mo | Usage-based | Analytics plus feature flags, experiments and surveys |
+| [Heap](#3-heap) | Product | No | No | 10k sessions/mo | Sales quote | Autocapture and retroactive analysis |
+| [Amplitude](#4-amplitude) | Product | No | No | 2M events/mo | Usage-based | Large products that fit the free plan |
+| [Pendo](#5-pendo) | Product + in-app guides | No | No | 500 MAU | Sales quote | Analytics with onboarding guides and NPS |
+| [Matomo](#6-matomo) | Web + some product | Yes (GPL-3.0) | Yes, free | Self-hosted | From 29/mo (cloud) | GDPR-first web analytics with full data ownership |
+| [Google Analytics 4](#7-google-analytics-4) | Web + product | No | No | Free | $50k+/yr (360) | Free at any scale inside the Google stack |
 
-Here's what matters when choosing a Mixpanel alternative, then a deep look at each tool.
+Prices checked November 2026. Mixpanel itself: free to 1M events a month, then $259 a month at 2M and $1,176 at 10M (monthly billing), with volume discounts on yearly plans.
 
 <Figure
   src="/content/mixpanel.png"
   caption="Mixpanel's analytics interface"
 />
 
+## What to check before you switch
 
-## What makes a good Mixpanel alternative?
+Every tool on this list tracks custom events and builds funnels. The differences are in the details below, and they matter more than the feature lists.
 
-A few features are table stakes for any Mixpanel alternative:
+Pricing model. Mixpanel, OpenPanel, PostHog and Amplitude charge by events. Pendo charges by monthly active users, Heap by sessions. Event pricing is easy to predict from your current Mixpanel volume. MAU and session pricing can be cheaper for apps with few users who do a lot, and more expensive for consumer apps.
 
-### Core product analytics features
+Cookies and consent. Mixpanel's SDK stores a cookie, so in the EU you need a consent banner before it loads, and every visitor who declines is invisible. OpenPanel and Plausible run without cookies. PostHog uses localStorage plus a first-party cookie unless you change its persistence setting.
 
-**[Event tracking](/features/event-tracking)**: The base of product analytics. Track custom events like signups, purchases, and feature usage. The tool should support [event properties and user properties](/docs/api/track#tracking-events).
+Self-hosting. If you need the data on your own servers, the list shrinks to OpenPanel, PostHog and Matomo. PostHog's self-hosted version is a hobby deployment the company does not support in production. OpenPanel and Matomo are supported.
 
-**[Funnel analysis](/features/funnels)**: See where users drop off in multi-step flows like onboarding, checkout, or feature adoption, and where to fix [conversion rates](/features/conversion).
+Session replay. Mixpanel includes 10,000 replays a month on the free plan and 20,000 on Growth. OpenPanel includes replay with no cap (30-day retention). PostHog meters replay separately after 5,000 recordings a month. Heap and Pendo have replay on paid tiers.
 
-**Retention analytics**: Track how often users come back over time. Look for cohort analysis, retention curves, and segmentation by behavior.
+What you will not use. PostHog bundles feature flags, experiments, surveys and error tracking. Pendo bundles in-app guides. If you only need events, funnels, retention and profiles, you pay for scope you do not use, in money or in complexity.
 
-**User profiles**: Individual user timelines help you debug issues, understand power users, and support customers. You should see a full history of each user's actions.
+Data export. Check that you can get raw events out through an API or a database dump before you commit. OpenPanel, PostHog and Matomo all give you the raw data; the cloud-only tools vary.
 
-**Flexible dashboards**: Pre-built reports help, but you also need custom visualizations for your own questions.
-
-### Additional considerations
-
-When evaluating Mixpanel alternatives, also consider:
-
-- **Privacy Compliance**: Does it offer cookieless tracking? Is it GDPR/CCPA compliant by design?
-- **Pricing Model**: Is it usage-based, seat-based, or flat-rate? Can you predict costs as you scale?
-- **Self-hosting Options**: Can you run it on your own infrastructure for complete data control?
-- **SDK Coverage**: Does it support your tech stack (web, mobile, server-side)?
-- **Data Export**: Can you easily extract your data if you need to migrate later?
-- **Community Support**: Is there active development and a helpful user community?
-
-## 1. OpenPanel - the privacy-first alternative
+## 1. OpenPanel
 
 <Figure
   src="/content/tools/openpanel-realtime.png"
   caption="OpenPanel combines web and product analytics in a single platform"
 />
 
-### Overview
+Best for: teams that use Mixpanel for events, funnels, retention and profiles, want web analytics in the same dashboard, and would rather not pay per event at Mixpanel's rates.
 
-OpenPanel was built as a Mixpanel alternative for teams that want product analytics without the price tag or privacy concerns. It pairs Mixpanel-style event tracking with the simplicity of web analytics tools like Plausible or Umami.
+[OpenPanel](/) was built as a Mixpanel alternative. You get event tracking, funnels, retention, cohorts and user profiles, and the same dashboard shows pageviews, referrers and countries, so one tool replaces Mixpanel plus a web analytics tool. The web script is about 3 KB gzipped and sets no cookies, which means no consent banner for the analytics itself.
 
-You get both web analytics (pageviews, sessions, referrers) and product analytics (custom events, funnels, retention) in one platform, so you don't need separate tools for each.
-
-- **Homepage**: [openpanel.dev](https://openpanel.dev)
-- **GitHub**: [github.com/Openpanel-dev/openpanel](https://github.com/Openpanel-dev/openpanel)
-- **License**: AGPL-3.0 (fully open source)
-- **Free Trial**: 30 days, no credit card required
+It is open source under AGPL-3.0. You can run it on one server with Docker Compose (ClickHouse, Postgres and Redis, installed by a setup script), or use the cloud version hosted in the EU. The self-hosted version is the full product; releases reach it a month or two after Cloud.
 
 ### Pricing
 
-OpenPanel uses usage-based pricing that's much cheaper than Mixpanel:
+OpenPanel Cloud has no free plan. There is a 30-day trial, then you pick an event volume:
 
-| Events per Month | Price (Monthly) | Price (Annual) | Compared to Mixpanel |
-|-----------------|-----------------|----------------|---------------------|
-| Up to 5,000 | $2.50 | $25 | Free tier |
-| Up to 10,000 | $5 | $50 | ~$28/month |
-| Up to 100,000 | $20 | $200 | ~$89/month |
-| Up to 500,000 | $50 | $500 | ~$450/month |
-| Up to 1,000,000 | $90 | $900 | ~$779/month |
+| Events per month | Monthly | Mixpanel Growth, monthly billing |
+|------------------|---------|-----------------------------------|
+| 5,000 | $2.50 | Free |
+| 100,000 | $20 | Free |
+| 1,000,000 | $90 | Free |
+| 2,500,000 | $180 | about $300 |
+| 10,000,000 | $350 | $1,176 |
 
-All plans include unlimited websites, team members, and 5 years of data retention. Self-hosting is completely free with no limitations.
+Yearly billing is ten months for twelve. Every plan has unlimited websites, team members, dashboards and tracked profiles, and session replay is included. Self-hosting is free with no event limit.
+
+Under 1 million events Mixpanel is free and OpenPanel is not, so the saving only starts above that line. At 10 million events the difference is $826 a month.
 
 ### Key features
 
-**Real-time Analytics**: See events as they happen, no processing delays. Good for watching launches or debugging.
-
-**Custom Event Tracking**: Track any user action with properties and metadata. Full support for [event-based analytics](/docs/api/track#tracking-events) with automatic event detection.
-
-**Funnel Builder**: Build multi-step funnels to analyze conversion rates and see where users drop off.
-
-**[Retention Analysis](/features/retention)**: Measure user stickiness with cohort retention charts. Track daily, weekly, or monthly retention.
-
-**Individual User Profiles**: Drill into specific user journeys. See full event timelines for debugging or support.
-
-**Privacy by Design**: Cookieless tracking, no personal data collection, GDPR/CCPA compliant out of the box.
+- Funnels with steps from any event, a conversion window and breakdown by any property
+- Retention tables and curves, saved cohorts
+- User profiles with the full event timeline and session history
+- Session replay linked to the user's events, inputs masked by default
+- Real-time web analytics: pageviews, referrers, UTM, devices, countries
+- SDKs for the web, React, Next.js, Vue, React Native, Swift, Kotlin, Python and more, plus an [MCP server](/features/mcp) so you can ask questions from Claude or Cursor
 
 ### Pros
-- Cheapest Mixpanel alternative once you pass the free tiers
-- Combines web and product analytics, replacing multiple tools
-- Open source — self-host with no feature restrictions
-- Simple interface that non-technical users can navigate
-- Real-time data with no processing delays
+
+- Cheapest option on this list above 1 million events
+- Web and product analytics in one place
+- Cookie-free by default, data hosted in the EU
+- Open source, and self-hosting is supported, not a hobby build
 
 ### Cons
-- Newer platform with a smaller community compared to established tools
-- Fewer integrations than Mixpanel (though [SDK coverage](/docs) is comprehensive)
-- No advanced features like predictive analytics or machine learning
-- Self-hosting requires technical expertise and infrastructure management
+
+- No free cloud plan; the free option is to self-host
+- No feature flags, experiments with statistics, surveys or heatmaps
+- Younger project with a smaller community than Mixpanel, PostHog or Matomo
+- Self-hosting still means you run the servers and the backups
 
 <Faqs>
-<FaqItem question="How does OpenPanel compare to Mixpanel for pricing?">
-OpenPanel is typically 70-90% cheaper than Mixpanel at scale. For example, tracking 1 million events costs $90/month with OpenPanel vs $779/month with Mixpanel. The savings increase as your usage grows.
+<FaqItem question="How does OpenPanel compare to Mixpanel on price?">
+Below 1 million events Mixpanel is free and OpenPanel costs from $2.50 a month. Above that OpenPanel is cheaper: $90 a month at 1 million events against Mixpanel's $259 at 2 million, and $350 at 10 million against $1,176. Session replay is included at every OpenPanel tier.
 </FaqItem>
 <FaqItem question="Can I migrate from Mixpanel to OpenPanel?">
-Yes, OpenPanel provides migration guides and tools to help you transition. You can export your Mixpanel data and import historical events. The SDK APIs are similar, making code migration straightforward.
+Yes. Export your events from Mixpanel and import them through the API, then swap the SDK calls. The tracking methods (track, identify, set properties) map one to one. See the [migration guide](/guides/migrate-from-mixpanel).
 </FaqItem>
-<FaqItem question="What's included in the self-hosted version?">
-Everything! The self-hosted version has identical features to the cloud version - funnels, retention, user profiles, unlimited events, and all SDKs. There's no feature gating or paid add-ons.
+<FaqItem question="What is in the self-hosted version?">
+The full product: funnels, retention, profiles, session replay, all SDKs, unlimited events. There is no feature gating. Self-hosted releases arrive a month or two after the cloud version.
 </FaqItem>
 </Faqs>
 
-### Best for
-- Startups looking for affordable product analytics
-- Privacy-conscious companies needing GDPR compliance
-- Teams wanting both web and product analytics in one tool
-- Organizations requiring self-hosted analytics solutions
+<ArticleCta
+  id="mixpanel-alternatives-openpanel"
+  title="Try OpenPanel on your Mixpanel events"
+  description="Start a 30-day cloud trial, import your Mixpanel export and rebuild one funnel. If it does what you need, keep it in our EU cloud or move it to your own server with Docker Compose."
+  secondary={{ text: 'OpenPanel as a Mixpanel alternative, feature by feature', href: '/compare/mixpanel-alternative' }}
+/>
 
-## 2. PostHog - the all-in-one platform
+## 2. PostHog
 
 <Figure
   src="/content/tools/posthog.png"
   caption="PostHog offers product analytics plus session replay, feature flags, and more"
 />
 
-### Overview
+Best for: engineering teams that want analytics, feature flags, experiments, surveys and error tracking from one vendor, and products that fit inside the free 1 million events.
 
-PostHog is an all-in-one platform for product development. Beyond analytics, it includes session replay, feature flags, A/B testing, and surveys, so it can replace several tools in your stack.
+PostHog started as open-source product analytics and grew into a developer platform. The analytics part covers everything Mixpanel does: events, funnels, paths, retention, stickiness, plus SQL access to your events through HogQL. Around it sit session replay, feature flags, A/B experiments with significance testing, surveys, error tracking and a data warehouse.
 
-Originally built at Y Combinator, PostHog is now one of the most popular open-source analytics platforms. It has more features than Mixpanel, but that comes with more complexity and higher resource requirements.
-
-- **Homepage**: [posthog.com](https://posthog.com)
-- **GitHub**: [github.com/PostHog/posthog](https://github.com/PostHog/posthog)
-- **License**: MIT (with some enterprise features requiring a license)
-- **Free Tier**: 1 million events per month
+The main browser bundle is about 105 KB gzipped, against 3 KB for OpenPanel and under 1 KB for Plausible. It stores state in localStorage and a first-party cookie by default.
 
 ### Pricing
 
-PostHog uses a complex usage-based pricing model across different products:
+Every product is metered on its own. Product analytics is free for the first 1 million events a month, then $0.00005 per event up to 2 million and $0.0000343 per event from 2 to 15 million, which is about $324 at 10 million events. Session replay is free for 5,000 recordings a month and then billed per recording. Feature flags, surveys and error tracking each have their own free allowance and meter.
 
-| Product | Free Tier (Monthly) | Price Beyond Free Tier |
-|---------|-------------------|----------------------|
-| Product Analytics | 1 million events | $0.00005/event |
-| Session Replay | 5,000 recordings | $0.005/recording |
-| Feature Flags | 1 million requests | $0.0001/request |
-| A/B Testing | Included with flags | Same as flags |
-| Surveys | 250 responses | $0.20/response |
+Self-hosting is possible but PostHog calls it a hobby deployment and does not support it in production. The stack is ClickHouse, Kafka, ZooKeeper, Redis, Postgres and MinIO.
 
 ### Key features
 
-**Product Analytics**: Event tracking, funnels, paths, retention, and stickiness. Similar to Mixpanel's core offering.
-
-**Session Replay**: Watch real user sessions to understand behavior and debug. Includes console logs and network activity.
-
-**Feature Flags**: Roll out features gradually with targeting rules. Includes A/B testing.
-
-**Heatmaps**: See where users click and scroll on your pages (beta feature).
-
-**SQL Access**: Query your data directly with SQL.
+- Events, funnels, paths, retention and stickiness
+- Session replay with console logs and network requests
+- Feature flags and A/B experiments with statistics
+- Surveys, error tracking, heatmaps
+- SQL over your events in the dashboard (HogQL)
 
 ### Pros
-- The widest feature set among Mixpanel alternatives
-- 1M-event free tier (vs Mixpanel's 100k)
-- Active community and regular updates
-- Replaces multiple tools (analytics + replay + flags + surveys)
-- Open source with a self-hosting option
+
+- 1 million free events a month, so small products pay nothing
+- The widest feature set on this list
+- MIT licensed, active development, large community
+- Cheaper than Mixpanel at 10 million events if you only use analytics
 
 ### Cons
-- Complex pricing that's hard to predict across multiple products
-- Self-hosting requires significant resources (16GB RAM minimum)
-- Feature overload can overwhelm smaller teams
-- Some features only available in paid cloud version
-- Higher learning curve than simpler alternatives
+
+- Five meters make the bill hard to predict once you use more than one product
+- 105 KB script and cookies by default
+- Self-hosting is unsupported for production and needs a lot of infrastructure
+- More product than a small team needs
 
 <Faqs>
 <FaqItem question="How does PostHog's pricing compare to Mixpanel?">
-PostHog's free tier is 10x larger (1M vs 100k events), but costs can escalate quickly if you use multiple products. At scale, PostHog analytics alone costs ~$50 per million events vs Mixpanel's ~$779, but adding session replay and feature flags increases the total significantly.
+PostHog's free allowance is the same 1 million events as Mixpanel's. Above it PostHog is cheaper for analytics alone: about $324 at 10 million events against Mixpanel's $1,176. Adding session replay, flags and surveys adds separate meters, so compare your full usage, not one line.
 </FaqItem>
-<FaqItem question="Is PostHog truly open source?">
-The core platform is MIT licensed, but some enterprise features require a paid license. The self-hosted version has most features but lacks some cloud-only capabilities like advanced role management.
-</FaqItem>
-<FaqItem question="Can PostHog handle high-scale deployments?">
-Yes, but self-hosting at scale requires significant infrastructure. PostHog recommends their cloud version for anything over 10 million events per month due to the operational complexity.
+<FaqItem question="Is PostHog open source?">
+The core is MIT licensed. Some enterprise features need a paid licence, and the self-hosted build is a hobby deployment without production support.
 </FaqItem>
 </Faqs>
 
-### Best for
-- Teams wanting to consolidate multiple tools
-- Companies needing session replay alongside analytics
-- Organizations already using feature flags
-- Developers who prefer SQL access to data
-
-## 3. Heap - the autocapture alternative
+## 3. Heap
 
 <Figure
   src="/content/tools/heap.png"
   caption="Heap automatically captures all user interactions without manual tracking"
 />
 
-### Overview
+Best for: product teams that do not want to instrument events up front and will pay for retroactive analysis.
 
-Heap takes a different approach: instead of manually tracking specific events, it captures every user interaction automatically. With this autocapture model, you can analyze user behavior retroactively without instrumenting events first.
-
-That helps when you realize you should have been tracking something weeks ago. With traditional analytics, you're out of luck. With Heap, the data is already there. A visual labeling system lets non-technical team members define events by clicking on elements in your product.
-
-- **Homepage**: [heap.io](https://heap.io)
-- **Trial**: Free plan available
-- **License**: Proprietary
+Heap records every click, form submission and pageview automatically. You define events later by pointing at elements in your product, and Heap applies the definition to everything it already captured. That removes the "we should have tracked that" problem that manual tracking has. Heap is now part of Contentsquare.
 
 ### Pricing
 
-Heap offers a free tier and custom enterprise pricing:
-
-| Plan | Sessions/Month | Price | Features |
-|------|---------------|-------|----------|
-| Free | Up to 10,000 | $0 | Core analytics, 1 year retention |
-| Growth | Custom | Starting ~$3,600/year | Advanced features, longer retention |
-| Pro | Custom | Contact sales | Full platform, premium support |
-| Premier | Custom | Contact sales | Enterprise features, SLAs |
-
-*Note: Heap's paid pricing starts high and requires annual contracts. The free tier is generous but limited.*
+The free plan covers 10,000 sessions a month with six months of history. Growth, Pro and Premier are priced per session and Heap does not publish the numbers; Growth asks you to install the snippet for an estimate, Pro and Premier go through sales. Heap bills on sessions, not events, so a product with many short visits costs more than one with few long ones.
 
 ### Key features
 
-**Autocapture**: Automatically tracks all clicks, form submissions, page views, and interactions without manual instrumentation.
-
-**Visual Labeling**: Define events by clicking on elements in your product interface - no code required.
-
-**Retroactive Analysis**: Analyze historical data for events you define today, going back to when you first installed Heap.
-
-**Session Replay**: Watch user sessions to understand behavior and debug issues.
-
-**Advanced Funnels**: Build conversion funnels with the captured data to identify drop-off points.
+- Autocapture of every interaction, no event code
+- Visual event definition after the fact
+- Retroactive funnels on data captured before you defined the event
+- Session replay
+- Enrichment from other data sources
 
 ### Pros
-- No need to manually instrument events upfront
-- Non-technical users can define events visually
-- Retroactive analysis of historical data
-- Captures everything, so nothing is missed
-- Includes session replay
+
+- Nothing goes untracked because you forgot to add a call
+- Non-technical people can define events
+- Includes replay
 
 ### Cons
-- Expensive compared to alternatives (starts around $3,600/year)
-- Autocapture generates massive amounts of data
-- Can be overwhelming to navigate all the captured events
-- Privacy concerns with capturing everything
-- Free tier is limited to 10k sessions (not events)
 
-<Faqs>
-<FaqItem question="How does Heap's autocapture compare to manual event tracking?">
-Autocapture eliminates the need to decide what to track upfront, which is great for discovery. However, it generates more data than you need and can make it harder to focus on important metrics. Manual tracking (like Mixpanel or OpenPanel) requires more planning but gives you cleaner, more intentional data.
-</FaqItem>
-<FaqItem question="Is Heap worth the high price?">
-For large enterprises that value retroactive analysis and have non-technical teams defining events, Heap's pricing may be justified. For startups and mid-size companies, the cost is often prohibitive compared to alternatives like OpenPanel or PostHog that offer similar features at a fraction of the price.
-</FaqItem>
-<FaqItem question="What are Heap's data privacy implications?">
-Heap's autocapture can inadvertently collect sensitive data like passwords or credit card numbers if not properly configured. You need to carefully set up data exclusion rules and ensure compliance with GDPR/CCPA, which requires more setup than privacy-first alternatives.
-</FaqItem>
-</Faqs>
+- No public prices above the free plan
+- Autocapture stores far more data than you use, and can pick up sensitive input unless you configure exclusions
+- Cloud only, proprietary
+- Session-based pricing punishes high-traffic, low-engagement products
 
-### Best for
-- Large enterprises with complex analytics needs
-- Teams that need retroactive event analysis
-- Organizations with non-technical users defining events
-- Companies willing to pay premium prices for convenience
-
-## 4. Amplitude - the enterprise alternative
+## 4. Amplitude
 
 <Figure
   src="/content/tools/amplitude.png"
   caption="Amplitude offers advanced product analytics with machine learning features"
 />
 
-### Overview
+Best for: products with high event volume that fit inside the free 2 million events, and larger companies that want data governance and predictive features.
 
-Amplitude isn't open source, but it's Mixpanel's main competitor at the enterprise level. It has similar features, with stronger data governance and advanced analytics.
-
-Amplitude set the bar for large free tiers (10 million events/month) and focuses on behavioral analytics. Its platform includes predictive analytics and automated insights that go beyond standard product analytics.
-
-- **Homepage**: [amplitude.com](https://amplitude.com)
-- **Free Tier**: 10 million events per month
-- **License**: Proprietary
+Amplitude is Mixpanel's closest competitor at the enterprise end. It has the same core (events, funnels, retention, cohorts) and adds behavioral cohorting, predictive scores for churn and conversion, and taxonomy tools for keeping event names clean across teams. It is proprietary and cloud only.
 
 ### Pricing
 
-Amplitude's pricing isn't publicly available for paid tiers, but their free tier is notably generous:
-
-| Plan | Events/Month | Price | Features |
-|------|-------------|-------|----------|
-| Starter | 10 million | Free | Core analytics, 2 years retention |
-| Growth | Custom | Contact sales | Advanced features, governance |
-| Enterprise | Custom | Contact sales | Full platform, SLAs |
+The free plan now includes up to 2 million events a month with one year of data access, 10,000 session replays and one active experiment. Plus starts at $0 with the same 2 million free events and scales by event tier up to 70 million events; Amplitude does not publish the per-tier prices. Growth and Enterprise are custom.
 
 ### Key features
 
-**Behavioral Cohorting**: User segmentation based on actions, not just properties.
-
-**Predictive Analytics**: ML-powered predictions for conversion and churn.
-
-**Data Governance**: Better data quality tools and taxonomy management.
-
-**Cross-Platform Tracking**: Unified analytics across web, mobile, and offline.
+- Behavioral cohorts and user segmentation
+- Predictive metrics for churn and conversion
+- Data governance and event taxonomy management
+- Web, mobile and server SDKs
+- Session replay and experiments on all plans, with limits on Free
 
 ### Pros
-- Most generous free tier (10M events vs Mixpanel's 100k)
-- Advanced ML-powered insights
-- Better data governance tools
-- Strong mobile analytics capabilities
+
+- Free plan is twice Mixpanel's at 2 million events
+- Strong governance for large teams with many event sources
+- Mature mobile analytics
 
 ### Cons
-- Not open source - vendor lock-in concerns
-- Opaque pricing for paid tiers
-- Steep learning curve
-- Overkill for smaller teams
 
-### Best for
-- Large enterprises with complex analytics needs
-- Companies wanting ML-powered insights
-- Teams needing advanced data governance
-- Organizations with large free tier requirements
+- No public prices above the free tier
+- Cookies by default, so a consent banner in the EU
+- Proprietary and cloud only
+- More tool than a small team needs
 
-## 5. Pendo - the product experience alternative
+## 5. Pendo
 
-### Overview
+Best for: product managers who want analytics and in-app guides, tooltips and NPS surveys in the same tool, without engineers in the loop.
 
-Pendo combines behavioral tracking with in-app guidance, user feedback, and product planning. It's built for product managers who want to understand how users behave and then act on it inside the app.
-
-Where Mixpanel is analytics only, Pendo closes the loop: analyze behavior, then ship targeted in-app guides, tooltips, and announcements to improve adoption and onboarding without writing code.
-
-- **Homepage**: [pendo.io](https://pendo.io)
-- **Free Tier**: Up to 500 monthly active users
-- **License**: Proprietary
+Pendo pairs behavioral analytics with in-app guidance. You see where users drop off, then ship a walkthrough or announcement to that segment from the same interface, without a code change. Analytics alone is shallower than Mixpanel; the point is the loop from data to in-app action.
 
 ### Pricing
 
-Pendo's pricing is based on monthly active users (MAUs) rather than events:
-
-| Plan | MAUs | Price | Features |
-|------|------|-------|----------|
-| Free | Up to 500 | $0 | Core analytics, 1 guide |
-| Base | Custom | Contact sales | Analytics, guides, NPS |
-| Core | Custom | Contact sales | Full platform, roadmapping |
-| Pulse | Custom | Contact sales | Enterprise features, SLAs |
-
-*Note: Pendo's paid plans typically start at $7,000-12,000/year depending on MAU count and features.*
+Pendo Free covers 500 monthly active users with analytics, guides, Pendo-branded NPS surveys and roadmaps. Base, Core (adds session replay) and Ultimate (adds survey types, orchestration and data sync) are priced per MAU on request. Pendo does not publish paid prices.
 
 ### Key features
 
-**Product Analytics**: Event tracking, funnels, paths, and retention analysis similar to Mixpanel's core offering.
-
-**In-App Guides**: Create tooltips, walkthroughs, and onboarding flows without code. Target users based on behavior segments.
-
-**NPS & Surveys**: Collect user feedback directly within your product with built-in NPS, polls, and surveys.
-
-**Product Planning**: Roadmapping tools that connect user feedback and analytics data to product decisions.
-
-**Session Replay**: Watch user sessions to understand behavior in context (add-on feature).
+- Events, funnels, paths and retention
+- No-code in-app guides, tooltips and onboarding flows targeted by segment
+- NPS, polls and surveys inside the product
+- Roadmapping that links feedback and usage data
+- Session replay on Core and above
 
 ### Pros
-- Combines analytics with in-app guidance you can act on
-- No-code guide builder for product managers
-- Built-in NPS and user feedback collection
-- Good for onboarding optimization
-- Decent mobile analytics support
+
+- Closes the loop from analytics to in-app action
+- Product managers can run it without engineering time
+- Feedback and usage data in one place
 
 ### Cons
-- Expensive — paid plans start at $7,000+/year
-- Not open source — full vendor lock-in
-- Analytics are less deep than dedicated tools like Mixpanel
-- Heavier SDK can impact page performance
-- Free tier limited to 500 MAUs
 
-<Faqs>
-<FaqItem question="How does Pendo compare to Mixpanel for analytics?">
-Mixpanel is stronger for pure analytics — deeper funnels, more flexible queries, and better data exploration. Pendo's analytics are competent but simpler. The real value of Pendo is combining analytics with in-app guides and feedback, which Mixpanel doesn't offer at all.
-</FaqItem>
-<FaqItem question="Can Pendo replace Mixpanel entirely?">
-For teams that primarily need basic product analytics plus in-app guidance, yes. But if you rely heavily on advanced event analysis, custom queries, or detailed funnel breakdowns, you may find Pendo's analytics too limited and still need a dedicated tool alongside it.
-</FaqItem>
-<FaqItem question="Is Pendo worth the price?">
-Pendo is one of the most expensive options in this list. It's worth it if you actively use the in-app guide and feedback features — that's where the unique value lies. If you only need analytics, there are much more affordable alternatives like OpenPanel or PostHog.
-</FaqItem>
-</Faqs>
+- Paid plans are quoted by sales, with no public price
+- Analytics depth is below Mixpanel's
+- Heavier SDK than analytics-only tools
+- Proprietary and cloud only
 
-### Best for
-- Product managers who need analytics plus in-app guidance
-- Teams optimizing user onboarding without engineering resources
-- Companies that want to collect user feedback alongside behavioral data
-- Organizations willing to pay premium prices for an integrated product experience platform
+## 6. Matomo
 
-## 6. Matomo - the privacy-focused on-premise alternative
+Best for: organisations in regulated industries or the public sector that need GDPR compliance on paper and full data ownership, and already run PHP and MySQL.
 
-### Overview
-
-Matomo (formerly Piwik) is one of the oldest open-source analytics platforms, used by over 1 million websites. It was built with privacy at its core, which is why government agencies, universities, and regulated industries pick it for GDPR compliance without legal uncertainty.
-
-Matomo started as a web analytics tool and still does that best, but it has added product analytics: custom events, funnels, and cohort analysis. It's not as deep as Mixpanel on the product side, but if you need both web and product analytics with full data ownership, Matomo is a proven option. See our [OpenPanel vs Matomo comparison](/compare/matomo-alternative) for a feature-by-feature breakdown.
-
-- **Homepage**: [matomo.org](https://matomo.org)
-- **GitHub**: [github.com/matomo-org/matomo](https://github.com/matomo-org/matomo)
-- **License**: GPL-3.0 (fully open source)
-- **Free Tier**: Self-hosted is free forever
+Matomo (formerly Piwik) is the oldest open-source analytics platform on this list. It is first a web analytics tool and a Google Analytics replacement, with custom events, goals, funnels and cohorts added over the years. Government agencies and universities in the EU use it because the data never leaves their servers and the GDPR tooling (consent, anonymisation, data subject requests) is built in. See the [OpenPanel vs Matomo comparison](/compare/matomo-alternative) for a feature-by-feature view.
 
 ### Pricing
 
-| Plan | Price | Features |
-|------|-------|----------|
-| Self-hosted (On-Premise) | Free | Full platform, unlimited sites, community support |
-| Cloud - Essential | From €23/month | 50k hits, managed hosting, email support |
-| Cloud - Business | From €45/month | 50k hits, advanced features, phone support |
-| Cloud - Enterprise | Contact sales | Custom limits, SLAs, dedicated support |
+Self-hosting is free under GPL-3.0 with unlimited hits. Funnels, heatmaps, session recording and A/B testing are premium plugins sold separately. Matomo Cloud starts at 29 a month excluding tax (Matomo bills in euros or dollars depending on your country) for 50,000 hits and 30 websites, with tiers up to 5 million hits and custom pricing above 10 million.
 
 ### Key features
 
-**Web Analytics**: Comprehensive pageview tracking, referrers, campaigns, and real-time visitors — comparable to Google Analytics.
-
-**Custom Events & Goals**: Track custom events and define conversion goals with multi-step funnels.
-
-**Heatmaps & Session Recording**: Built-in heatmaps, scroll depth, and session replays (premium features on cloud, available as plugins on self-hosted).
-
-**Tag Manager**: Server-side tag manager included, reducing reliance on third-party scripts.
-
-**GDPR Manager**: Built-in tools for data subject access requests, consent management, and data anonymization.
+- Web analytics on par with Google Analytics: pages, referrers, campaigns, real time
+- Custom events, goals and funnels (funnels are a paid plugin on-premise)
+- Heatmaps and session recording as plugins
+- Built-in tag manager
+- GDPR tooling and Google Analytics import
 
 ### Pros
-- Mature open-source platform with 15+ years of development
-- 100% data ownership when self-hosted — no data sent to third parties
-- GDPR compliance built in, used by EU government agencies
-- Large plugin library for extending functionality
-- Can import Google Analytics data for easier migration
+
+- Fifteen years of development and a large plugin library
+- Complete data ownership when self-hosted
+- Trusted by EU public bodies for compliance
 
 ### Cons
-- Product analytics features are less mature than Mixpanel
-- Self-hosted version requires PHP/MySQL stack and ongoing maintenance
-- Cloud pricing can get expensive at scale (charged per hit)
-- Interface feels dated compared to modern analytics tools
-- Some advanced features (heatmaps, A/B testing) require paid plugins
 
-### Best for
-- Organizations in regulated industries (healthcare, government, finance)
-- Teams migrating from Google Analytics who want data ownership
-- Companies in the EU that need bulletproof GDPR compliance
-- Self-hosting teams already running PHP/MySQL infrastructure
+- Product analytics is shallower than Mixpanel's
+- Cookies by default; cookieless mode needs configuration
+- PHP and MySQL stack to maintain, and the interface looks its age
+- The features that make it a Mixpanel replacement are paid plugins
 
-## 7. Google Analytics 4 - the free enterprise alternative
+## 7. Google Analytics 4
 
-### Overview
+Best for: teams on a tight budget already inside Google's stack (Ads, Search Console, BigQuery) who need event tracking and basic funnels at any scale.
 
-Google Analytics 4 (GA4) runs on millions of websites and is usually the tool teams already have before they consider Mixpanel. GA4 has moved on from Universal Analytics with event-based tracking and product analytics features, but it still trails Mixpanel on user-level analysis, custom funnels, and real-time event debugging.
-
-GA4 is hard to ignore on price: free for up to 25 million events per month. For teams on a tight budget that need basic product analytics plus web analytics, GA4 covers a lot before you need a dedicated tool. For how OpenPanel compares, see our [Google Analytics alternative](/compare/google-analytics-alternative) page.
-
-- **Homepage**: [analytics.google.com](https://analytics.google.com)
-- **Free Tier**: 25 million events per month
-- **License**: Proprietary (Google)
+Most teams already have GA4 before they consider Mixpanel. GA4 is event based, has funnel and path explorations, cohort reports and a free BigQuery export, so it covers more of Mixpanel's ground than Universal Analytics did. It still trails Mixpanel on user-level analysis and real-time debugging, and explorations sample once a query touches more than 10 million events. See our [Google Analytics alternative](/compare/google-analytics-alternative) page for how OpenPanel compares.
 
 ### Pricing
 
-| Plan | Price | Features |
-|------|-------|----------|
-| GA4 (Standard) | Free | 25M events/month, 14 months retention, standard reports |
-| GA4 360 (Enterprise) | From ~$50,000/year | Unlimited events, 50 months retention, SLAs, BigQuery streaming |
+GA4 is free. Data retention on the standard property is 2 or 14 months, and explorations are sampled above 10 million events per query. GA4 360 removes those limits and starts around $50,000 a year.
 
 ### Key features
 
-**Event-Based Tracking**: GA4 uses an event-driven model similar to Mixpanel — every interaction is an event with parameters.
-
-**Exploration Reports**: Freeform analysis, funnel exploration, path exploration, and cohort analysis — closer to Mixpanel-style ad hoc querying.
-
-**BigQuery Integration**: Export raw event data to BigQuery for custom SQL analysis at no additional cost.
-
-**Predictive Metrics**: ML-powered predictions for purchase probability, churn probability, and revenue forecasts.
-
-**Cross-Platform Tracking**: Unified web and app analytics with Google's identity resolution.
+- Event model with parameters, like Mixpanel
+- Funnel, path and cohort explorations
+- Free raw export to BigQuery for SQL
+- Predictive metrics for purchase and churn probability
+- Deep integration with Google Ads and Search Console
 
 ### Pros
-- Free for most businesses (25M events/month)
-- Integrates with Google Ads, Search Console, and the rest of Google's products
-- Event-based model is a big improvement over Universal Analytics
-- BigQuery export enables custom analysis
-- The largest community and resource base of any analytics tool
+
+- Free at any volume
+- Ties analytics to ad spend better than any other tool
+- The largest community and the most tutorials
 
 ### Cons
-- Not open source — your data lives on Google's servers
-- Privacy concerns: data is used for Google's advertising products
-- Not GDPR-compliant by default (requires careful configuration)
-- Limited to 14 months of data retention on the free tier
-- User-level analysis is restricted compared to Mixpanel
-- Complex setup for accurate event tracking
 
-### Best for
-- Teams that need free analytics at scale
-- Companies already deep in Google's products (Ads, Search Console)
-- Organizations that need basic product analytics alongside web analytics
-- Businesses where privacy and data ownership are not primary concerns
+- Cookies and a consent banner in the EU, and data processed on Google's servers
+- 14 months of retention and sampled explorations on the free property
+- User-level analysis is limited compared to Mixpanel
+- Not open source; your data is part of Google's advertising business
 
-## Making the right choice
+## Which Mixpanel alternative should you pick?
 
-The right Mixpanel alternative depends on your needs:
+Choose OpenPanel if you want Mixpanel's core (events, funnels, retention, profiles, replay) plus web analytics, with a cookie-free script and a price that stays flat above 1 million events, and you may want to self-host.
 
-### Choose OpenPanel if:
-- You want affordable product analytics that scales with your business
-- Privacy and data ownership are top priorities
-- You need both web and product analytics in one tool
-- You prefer simple, intuitive interfaces over feature complexity
-- You're looking for the best price-to-value ratio
+Choose PostHog if you want feature flags, experiments, surveys and SQL from the same vendor, or your product fits inside the free 1 million events and you do not mind the 105 KB script.
 
-### Choose PostHog if:
-- You need session replay and feature flags alongside analytics
-- You have engineering resources for complex self-hosting
-- You want to consolidate multiple tools into one platform
-- You can afford unpredictable usage-based pricing across multiple products
+Choose Heap if you will not instrument events and want to define them after the fact, and you can live without public pricing.
 
-### Choose Heap if:
-- You want to analyze user behavior retroactively
-- You need autocapture to avoid manual event instrumentation
-- You have non-technical team members defining events
-- You have the budget for premium enterprise pricing
+Choose Amplitude if you have under 2 million events a month and want the free plan, or you are a large company that needs governance and predictive features.
 
-### Choose Amplitude if:
-- You need enterprise-grade features and support
-- You want ML-powered predictive analytics
-- You can work within a proprietary platform
-- You have high volume but fit within the free tier
+Choose Pendo if the in-app guides and NPS are the point and analytics is secondary.
 
-### Choose Pendo if:
-- You need analytics plus in-app user guidance in one platform
-- You want to improve onboarding without engineering resources
-- You need to collect user feedback and manage feature requests
-- You have the budget for a premium product experience platform
+Choose Matomo if you need an on-premise tool with GDPR tooling that auditors already know, and you have a PHP team.
 
-### Choose Matomo if:
-- You need bulletproof GDPR compliance for regulated industries
-- You're migrating from Google Analytics and want data ownership
-- You need a mature open-source platform with a large plugin library
-- Your team is comfortable with PHP/MySQL self-hosting
+Choose GA4 if you need free analytics tied to Google Ads and can accept cookies, sampling and 14 months of retention.
 
-### Choose GA4 if:
-- You need free analytics at massive scale (25M events/month)
-- You're already invested in Google's products (Ads, Search Console, BigQuery)
-- You need basic product analytics alongside comprehensive web analytics
-- Privacy and data ownership are not your primary concerns
+## Six more worth a look
 
-## Honorable mentions
+[Countly](/compare/countly-alternative) is open-source mobile and web analytics with push notifications and crash reporting built in, priced per MAU from $80 a month, with a self-hosted Lite edition for non-commercial use.
 
-A few other tools are worth a look depending on your use case:
+[Kissmetrics](https://www.kissmetrics.io/) ties events to revenue for SaaS and e-commerce. One of the original Mixpanel competitors, now a niche pick for teams that think in customer lifetime value.
 
-### [Countly](https://count.ly/)
+[FullStory](/compare/fullstory-alternative) is session replay and heatmaps first, with product analytics on top. Built for UX teams with enterprise budgets; no free analytics plan.
 
-An open-source mobile and web analytics platform focused on mobile apps. Offers self-hosting, push notifications, crash analytics, and user profiles. Good for mobile-first teams that want built-in engagement tools. The Community edition is free and open source (AGPL-3.0).
+[Statsig](https://www.statsig.com/) is an experimentation platform from ex-Facebook engineers with product analytics added later. Pick it when experiments matter more than reporting.
 
-### [Kissmetrics](https://www.kissmetrics.io/)
+[Plausible](/compare/plausible-alternative) is cookie-free web analytics with a one-page dashboard, from $9 a month. It does not replace Mixpanel's product analytics, but if pageviews and goals are all you need, it is the simplest tool here.
 
-One of the original Mixpanel competitors, Kissmetrics focuses on revenue analytics for SaaS and ecommerce. It ties user behavior directly to revenue, which suits teams that think in customer lifetime value rather than raw event counts. Pricing starts around $299/month.
+[Umami](/compare/umami-alternative) is MIT-licensed web analytics you can self-host for free. Same caveat as Plausible: web analytics only.
 
-### [FullStory](https://www.fullstory.com/)
+For a wider list of tools, including Mixpanel itself, see the [best product analytics tools](/articles/best-product-analytics-tools). If PostHog is the tool you are leaving, read the [best PostHog alternatives](/articles/posthog-alternatives).
 
-Combines product analytics with session replay and heatmaps. FullStory's auto-capture is similar to Heap's, with more focus on digital experience. Best for UX teams and enterprises with budget for premium tooling. No free tier for analytics.
+## Migrating off Mixpanel
 
-### [Statsig](https://www.statsig.com/)
+Export first. Mixpanel's export API gives you raw events as JSON; most tools on this list can import them, and OpenPanel has a [migration guide](/guides/migrate-from-mixpanel).
 
-Built by ex-Facebook engineers, Statsig combines product analytics with feature flags, A/B testing, and experimentation. The analytics layer is newer but the experimentation platform is mature. Free tier with 1 million events/month. Worth a look if experimentation matters to you as much as analytics.
+Map the SDK calls. Track, identify and set-property calls exist in every tool, usually with the same names. OpenPanel has SDKs for [Next.js](/docs/sdks/nextjs), [React](/docs/sdks/react), [Vue](/docs/sdks/vue), [Python](/docs/sdks/python) and [more](/docs/sdks).
 
-### [Plausible Analytics](https://plausible.io/)
+Check the features you use, not the ones you have. List the reports your team opened in the last month and confirm the new tool builds them. The [OpenPanel vs Mixpanel](/compare/mixpanel-alternative) page lists what is missing on each side.
 
-A lightweight, privacy-first [web analytics tool](/compare/plausible-alternative) and the opposite of Mixpanel: simple, no cookies, GDPR-compliant by default. It won't replace Mixpanel's product analytics, but if you only need web analytics (not custom events and funnels), Plausible is a clean option at $9/month. Also available as open source for self-hosting.
-
-### [Umami](https://umami.is/)
-
-Another lightweight open-source [web analytics alternative](/compare/umami-alternative) built around simplicity and privacy. Similar to Plausible but fully free and self-hostable. Good for developers who want basic analytics. Like Plausible, it's web analytics, not a product analytics replacement for Mixpanel.
-
-## Migration considerations
-
-When switching from Mixpanel to any alternative, consider:
-
-**Data migration**: Most tools let you export Mixpanel data and import historical events. Check for migration guides — we have a [migrate from Mixpanel](/guides/migrate-from-mixpanel) guide for OpenPanel.
-
-**SDK compatibility**: Review your current Mixpanel implementation and plan for code changes. OpenPanel supports [Next.js](/docs/sdks/nextjs), [React](/docs/sdks/react), [Vue](/docs/sdks/vue), [Python](/docs/sdks/python), and [many more frameworks](/docs/sdks).
-
-**Feature parity**: List your must-have Mixpanel features and check that your chosen alternative supports them. For a feature-by-feature comparison, see our [OpenPanel vs Mixpanel](/compare/mixpanel-alternative) page.
-
-**Team training**: Budget time for your team to learn the new tool. Simpler alternatives like OpenPanel take less training than complex platforms like PostHog.
-
-**Cost analysis**: Calculate total cost, including hosting, maintenance, and add-ons. Don't forget engineering time for [self-hosted solutions](/articles/self-hosted-web-analytics).
-
-## Conclusion
-
-The best Mixpanel alternative depends on your priorities and product type:
-
-- **[OpenPanel](/compare/mixpanel-alternative)** is the best balance of features, price, and privacy for most teams
-- **[PostHog](/compare/posthog-alternative)** fits if you need an all-in-one platform with session replay and feature flags
-- **[Heap](/compare/heap-alternative)** suits enterprises that value retroactive analysis and can afford premium pricing
-- **[Amplitude](/compare/amplitude-alternative)** works for high-volume products that fit within the free tier
-- **Pendo** fits teams that need analytics plus in-app guidance and onboarding
-- **[Matomo](/compare/matomo-alternative)** is the pick for GDPR compliance and regulated industries
-- **GA4** is unbeatable on price if you're already using Google's products
-
-Most teams pay for complex analytics platforms but use only the basics. Start from your real requirements and you'll land on the right Mixpanel alternative.
-
-**Also consider:** If you mostly track website traffic rather than product events, see our guide to [open-source web analytics tools](/articles/self-hosted-web-analytics) for simpler alternatives like [Plausible](/compare/plausible-alternative), [Umami](/compare/umami-alternative), and [Matomo](/compare/matomo-alternative).
-
-Ready to try a simpler, cheaper approach to product analytics? [Start your free trial of OpenPanel](https://dashboard.openpanel.dev/onboarding).
+Count the full cost. For self-hosted tools, add the server and the hours; for cloud tools, add the meters you will hit beyond events, such as replays and flags.
 
 ## Frequently asked questions
 
 <Faqs>
 <FaqItem question="What is the best free Mixpanel alternative?">
-For most teams, **OpenPanel** is the best free Mixpanel alternative because you can [self-host it](/articles/how-to-self-host-openpanel) with no feature limits. PostHog has a free tier of 1 million events per month on their cloud, and Amplitude gives you 10 million events free (though paid plans are opaque). If you only need web analytics, [Plausible](/compare/plausible-alternative) and Umami are free open-source options.
+Mixpanel's own free plan covers 1 million events, so a free alternative only makes sense if you need something Mixpanel does not have. Self-hosted [OpenPanel](/articles/how-to-self-host-openpanel) is free with no event limit and adds web analytics and cookie-free tracking. PostHog's cloud is free to 1 million events and Amplitude's to 2 million. For web analytics only, Plausible and Umami are free to self-host.
 </FaqItem>
 <FaqItem question="What is the best open source Mixpanel alternative?">
-**OpenPanel** (AGPL-3.0) and **PostHog** (MIT) are the two leading [open source analytics](/articles/self-hosted-web-analytics) alternatives to Mixpanel. OpenPanel is lighter-weight and more affordable, while PostHog offers more features (session replay, feature flags) at the cost of complexity and higher resource requirements.
+OpenPanel (AGPL-3.0) and PostHog (MIT) are the two open-source tools with product analytics on par with Mixpanel. OpenPanel is lighter, cookie-free and supported for self-hosting; PostHog has more products (flags, experiments, surveys) and a heavier stack. Matomo (GPL-3.0) is open source too but is a web analytics tool first.
 </FaqItem>
 <FaqItem question="How much does Mixpanel cost in 2026?">
-Mixpanel offers a free plan with 20 million events per month (increased from 100k). Paid Growth plans start at $28/month for additional features like unlimited saved reports and advanced analytics. At scale, costs grow quickly — tracking 1 million events on the Growth plan costs approximately $779/month. See our full [Mixpanel pricing breakdown](/articles/mixpanel-pricing) for details.
+Free up to 1 million events a month. The Growth plan costs $259 a month at 2 million events and $1,176 at 10 million on monthly billing, or $185 and $840 on yearly billing. Above 20 million events you talk to sales. See the full [Mixpanel pricing breakdown](/articles/mixpanel-pricing).
 </FaqItem>
 <FaqItem question="Can I self-host a Mixpanel alternative?">
-Yes. OpenPanel and PostHog both offer full [self-hosted deployments](/docs/self-hosting/self-hosting). OpenPanel can run on a single VPS with minimal resources, while PostHog requires more infrastructure (16GB+ RAM). Self-hosting gives you complete data ownership, GDPR compliance by design, and eliminates recurring SaaS costs.
+Yes. OpenPanel runs on one server with Docker Compose and is supported in production. Matomo runs on PHP and MySQL. PostHog can be self-hosted as a hobby deployment that the company does not support for production use.
 </FaqItem>
 <FaqItem question="Which Mixpanel alternative is best for startups?">
-**OpenPanel** is the best choice for most startups because of its low pricing ($2.50/mo starting) and the option to self-host for free. PostHog's free tier (1M events) is also attractive for early-stage startups. Amplitude's 10M event free tier works well if you don't need self-hosting. Avoid Heap and Pendo for startups — their pricing starts in the thousands per year.
+Under 1 million events, stay on Mixpanel's free plan or use PostHog's, unless cookies are a problem. Above that, OpenPanel is the cheapest at $90 a month for 1 million events and $350 for 10 million, with session replay included.
 </FaqItem>
-<FaqItem question="What's the easiest Mixpanel alternative to set up?">
-OpenPanel is the easiest to get started with — cloud setup takes under 5 minutes, and the SDK is lightweight. PostHog cloud is also quick to set up. Self-hosting adds complexity for both tools, but OpenPanel's single Docker Compose deployment is simpler than PostHog's multi-service architecture.
+<FaqItem question="Which Mixpanel alternative is easiest to set up?">
+The cloud versions of OpenPanel, PostHog and Amplitude take a few minutes: create a project, add the script or SDK, see events arrive. For self-hosting, OpenPanel's setup script installs the whole stack with Docker Compose; PostHog and Matomo take longer.
 </FaqItem>
-<FaqItem question="Do Mixpanel alternatives support mobile analytics?">
-Yes. OpenPanel has SDKs for [React Native](/docs/sdks/react-native), [Swift](/docs/sdks/swift) (iOS), and [Kotlin](/docs/sdks/kotlin) (Android). PostHog supports iOS, Android, React Native, and Flutter. Amplitude and Pendo also have strong mobile SDKs. Heap supports mobile via their autocapture SDK.
+<FaqItem question="Do Mixpanel alternatives support mobile apps?">
+Yes. OpenPanel has SDKs for [React Native](/docs/sdks/react-native), [Swift](/docs/sdks/swift) and [Kotlin](/docs/sdks/kotlin). PostHog supports iOS, Android, React Native and Flutter. Amplitude and Pendo have mature mobile SDKs. Heap covers mobile through its autocapture SDK.
 </FaqItem>
 </Faqs>

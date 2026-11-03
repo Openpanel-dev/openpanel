@@ -21,7 +21,7 @@ Open-source product analytics (a Mixpanel alternative). Bun monorepo.
 | `packages/db` | Prisma (Postgres) + ClickHouse client and the `sql` tag (`src/clickhouse/sql.ts`) | |
 | `packages/seed` | Deterministic seed data for Postgres + ClickHouse (`bun run seed`) | |
 | `packages/redis`, `packages/email`, `packages/payments`, `packages/sdks/*` | Redis client/locks/pubsub, React Email, billing, client SDKs | |
-| `apps/public` | Marketing + docs | Next.js, Fumadocs |
+| `apps/public` | Marketing + docs; the look and page recipe are in `apps/public/DESIGN.md` | Next.js, Fumadocs |
 
 Data flow: SDK → `POST /track` (`packages/core/src/modules/ingest`) → Kafka → the
 worker role → ClickHouse (`events`, `sessions`, `profiles`, materialized views).

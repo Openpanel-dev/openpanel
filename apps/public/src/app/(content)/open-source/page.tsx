@@ -1,32 +1,41 @@
-import {
-  BarChartIcon,
-  CheckIcon,
-  CodeIcon,
-  GlobeIcon,
-  HeartHandshakeIcon,
-  LinkIcon,
-  MailIcon,
-  MessageSquareIcon,
-  SparklesIcon,
-  UsersIcon,
-  ZapIcon,
-} from 'lucide-react';
+import { CheckIcon, MailIcon } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Script from 'next/script';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { HeroContainer } from '@/app/(home)/_sections/hero';
-import { FaqItem, Faqs } from '@/components/faq';
-import { FeatureCard } from '@/components/feature-card';
-import { Section, SectionHeader } from '@/components/section';
+import { Band } from '@/components/band';
+import { CountUp } from '@/components/count-up';
+import { type FaqEntry, FaqSection } from '@/components/faq';
+import { PageHero } from '@/components/page-hero';
+import { Reveal } from '@/components/reveal';
+import { SectionHeader, SectionLabel } from '@/components/section';
 import { Button } from '@/components/ui/button';
+import { VisualMock } from '@/components/visual-mock';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 
+const title = 'Free Analytics for Open Source Projects | OpenPanel OSS Program';
+const description =
+  "Get free web and product analytics for your open source project. Track up to 2.5M events/month. Apply to OpenPanel's open source program today.";
+
+const APPLICATION_BODY = [
+  'Project name:',
+  'Repository URL:',
+  'Website:',
+  'License:',
+  'What it does (one or two sentences):',
+  'Where you will link to OpenPanel (README, website footer, docs):',
+].join('\n');
+
+const APPLY_HREF = `mailto:oss@openpanel.dev?subject=${encodeURIComponent(
+  'Open Source Program Application'
+)}&body=${encodeURIComponent(APPLICATION_BODY)}`;
+
+const BACKLINK_SNIPPET = 'Analytics by [OpenPanel](https://openpanel.dev)';
+
 export const metadata: Metadata = getPageMetadata({
-  title: 'Free Analytics for Open Source Projects | OpenPanel OSS Program',
-  description:
-    "Get free web and product analytics for your open source project. Track up to 2.5M events/month. Apply to OpenPanel's open source program today.",
+  title,
+  description,
   url: url('/open-source'),
   image: getOgImageUrl('/open-source'),
 });
@@ -34,9 +43,8 @@ export const metadata: Metadata = getPageMetadata({
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'Free Analytics for Open Source Projects | OpenPanel OSS Program',
-  description:
-    "Get free web and product analytics for your open source project. Track up to 2.5M events/month. Apply to OpenPanel's open source program today.",
+  name: title,
+  description,
   url: url('/open-source'),
   publisher: {
     '@type': 'Organization',
@@ -56,353 +64,268 @@ const jsonLd = {
   },
 };
 
+const OFFER = [
+  { value: '2.5M', label: 'events a month, free' },
+  { value: '$0', label: 'for as long as you qualify' },
+  { value: 'All', label: 'Cloud features included' },
+  { value: '∞', label: 'maintainers and contributors' },
+];
+
+const ELIGIBILITY = [
+  {
+    title: 'An OSI-approved license',
+    text: 'MIT, Apache, GPL, BSD or any other license the OSI approves.',
+  },
+  {
+    title: 'A public repository',
+    text: 'The code is public on GitHub, GitLab, Codeberg or similar.',
+  },
+  {
+    title: 'Active development',
+    text: 'Recent commits and people using it. Small and new is fine.',
+  },
+  {
+    title: 'Open source first',
+    text: 'Commercial open source is welcome too, we look at those case by case.',
+  },
+];
+
+const STEPS = [
+  {
+    title: 'Email us',
+    text: 'Send the short form to oss@openpanel.dev. The button fills it in for you.',
+  },
+  {
+    title: 'We take a look',
+    text: 'We check the repository and license, and reply within a few working days.',
+  },
+  {
+    title: 'Start tracking',
+    text: 'Once approved, the free plan is on your organization. Add the script and the first events arrive within a minute.',
+  },
+];
+
+const FAQ: FaqEntry[] = [
+  {
+    question: 'What counts as an open source project?',
+    answer:
+      'A project with an OSI-approved license whose code is public and actively maintained. The main purpose should be non-commercial, but commercial open source projects can apply and we decide case by case.',
+  },
+  {
+    question: 'What happens if I go over 2.5M events a month?',
+    answer:
+      'Successful projects grow, and that is the point. If you go over regularly we get in touch and find something that works for both of us.',
+  },
+  {
+    question: 'How long does the free access last?',
+    answer:
+      'As long as the project stays open source and active. We review projects now and then, but the program is meant to be long term.',
+  },
+  {
+    question: 'Do I have to show the badge?',
+    answer:
+      'No. We ask for a link to OpenPanel in your README or on your website. The badge is optional, a nice way to show your numbers if you want to.',
+  },
+  {
+    question: 'My project is tiny. Can I still apply?',
+    answer:
+      'Yes. If it meets the criteria we would love to have it. Small projects often learn the most from seeing who uses them early on.',
+  },
+  {
+    question: 'Can I self-host instead?',
+    answer:
+      'Of course. OpenPanel is open source and [self-hosting is free](/docs/self-hosting/self-hosting) with no event limits. The program is for projects that would rather not run servers.',
+  },
+];
+
+function Offer() {
+  return (
+    <section className="container pb-8">
+      <Reveal className="surface grid grid-cols-2 divide-neutral-100 md:grid-cols-4 md:divide-x">
+        {OFFER.map((item) => (
+          <div className="col gap-1 p-6 md:p-8" key={item.label}>
+            <span className="font-semibold text-4xl tracking-[-0.03em]">
+              <CountUp value={item.value} />
+            </span>
+            <span className="text-neutral-500 text-sm">{item.label}</span>
+          </div>
+        ))}
+      </Reveal>
+    </section>
+  );
+}
+
+function WhatWeAsk() {
+  return (
+    <section className="container grid grid-cols-1 items-center gap-10 py-16 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-14 md:py-24">
+      <Reveal className="col gap-6">
+        <SectionLabel>What we ask in return</SectionLabel>
+        <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+          One link back. That is the whole deal.
+        </h2>
+        <p className="text-lg text-neutral-600">
+          Put a link to OpenPanel in your README or website footer, so other
+          maintainers can find us. No logos on your homepage, no case study, no
+          catch.
+        </p>
+        <dl className="col gap-4 border-neutral-200 border-t pt-5">
+          <div className="col gap-0.5">
+            <dt className="font-medium">Required: a backlink</dt>
+            <dd className="text-neutral-600 text-sm">
+              A line in your README, docs or website footer.
+            </dd>
+          </div>
+          <div className="col gap-0.5">
+            <dt className="font-medium">Optional: the visitor badge</dt>
+            <dd className="text-neutral-600 text-sm">
+              A live counter from your own OpenPanel, if you like showing
+              numbers.
+            </dd>
+          </div>
+        </dl>
+      </Reveal>
+      <Reveal className="col min-w-0 gap-4" delay={120}>
+        <div className="overflow-hidden rounded-2xl bg-neutral-900 text-neutral-200 shadow-[0_30px_60px_-24px_rgba(0,0,0,0.35)]">
+          <div className="row items-center gap-4 border-white/10 border-b px-5 py-3 text-[12px]">
+            <span className="font-medium text-white">README.md</span>
+          </div>
+          <pre className="overflow-x-auto p-5 font-mono text-[12.5px] leading-relaxed">
+            <div className="text-neutral-500">## Analytics</div>
+            <div> </div>
+            <div className="text-emerald-300">{BACKLINK_SNIPPET}</div>
+          </pre>
+        </div>
+        <div className="surface col items-start gap-3 p-5">
+          <span className="text-neutral-500 text-xs">
+            The optional badge, live from openpanel.dev
+          </span>
+          <iframe
+            className="h-12 w-[250px] overflow-hidden rounded-lg"
+            src="https://dashboard.openpanel.dev/widget/badge?shareId=ancygl&color=%231F1F1F"
+            style={{ border: 'none', pointerEvents: 'none' }}
+            title="OpenPanel analytics badge"
+          />
+        </div>
+      </Reveal>
+    </section>
+  );
+}
+
+function Eligibility() {
+  return (
+    <Band
+      id="eligibility"
+      innerClassName="grid grid-cols-1 gap-12 md:grid-cols-[5fr_7fr] md:gap-20"
+      tone="grey"
+    >
+      <Reveal className="col gap-6">
+        <SectionLabel>Who can apply</SectionLabel>
+        <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+          Real open source, actively built
+        </h2>
+        <p className="text-lg text-neutral-600">
+          We built OpenPanel in the open and know how thin the budget for tools
+          is. If your project fits, the analytics are on us.
+        </p>
+      </Reveal>
+      <ul className="grid grid-cols-1 gap-x-10 gap-y-10 sm:grid-cols-2">
+        {ELIGIBILITY.map((item, index) => (
+          <Reveal
+            as="li"
+            className="col gap-3"
+            delay={index * 80}
+            key={item.title}
+          >
+            <span className="center-center size-10 rounded-xl bg-white shadow-sm ring-1 ring-black/5">
+              <CheckIcon className="size-4 text-emerald-600" />
+            </span>
+            <span className="font-medium text-lg">{item.title}</span>
+            <span className="text-neutral-600 leading-relaxed">
+              {item.text}
+            </span>
+          </Reveal>
+        ))}
+      </ul>
+    </Band>
+  );
+}
+
+function HowToApply() {
+  return (
+    <section className="container py-16 md:py-24">
+      <SectionHeader
+        align="center"
+        description="No forms, no calls. One email and a few days."
+        title="How to apply"
+        variant="sm"
+      />
+      <ol className="mt-12 grid grid-cols-1 gap-4 md:grid-cols-3">
+        {STEPS.map((step, index) => (
+          <Reveal
+            as="li"
+            className="surface col gap-4 p-6 md:p-8"
+            delay={index * 80}
+            key={step.title}
+          >
+            <span className="center-center size-8 rounded-full bg-neutral-900 font-medium text-sm text-white">
+              {index + 1}
+            </span>
+            <h3 className="font-semibold text-lg tracking-tight">
+              {step.title}
+            </h3>
+            <p className="text-neutral-600">{step.text}</p>
+          </Reveal>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
 export default function OpenSourcePage() {
   return (
-    <div>
+    <>
       <Script
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         id="open-source-schema"
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <HeroContainer>
-        <div className="col center-center flex-1">
-          <SectionHeader
-            align="center"
-            as="h1"
-            className="flex-1"
-            description="Track your users, understand adoption, and grow your project - all without cost. Get free analytics for your open source project with up to 2.5M events per month."
-            title={
-              <>
-                Free Analytics for
-                <br />
-                Open Source Projects
-              </>
-            }
-          />
-          <div className="col mt-8 items-center justify-center gap-4">
-            <Button asChild size="lg">
-              <Link href="mailto:oss@openpanel.dev">
-                Apply for Free Access
+      <PageHero
+        actions={
+          <>
+            <Button asChild className="group" size="lg">
+              <a href={APPLY_HREF}>
+                Apply for free access
                 <MailIcon className="size-4" />
-              </Link>
+              </a>
             </Button>
-            <p className="text-muted-foreground text-sm">
-              Up to 2.5M events/month • No credit card required
-            </p>
-          </div>
-        </div>
-      </HeroContainer>
-
-      <div className="container">
-        <div className="col gap-16">
-          {/* What You Get Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="Everything you need to understand your users and grow your open source project."
-              title="What you get"
-            />
-            <div className="mt-8 grid gap-6 md:grid-cols-2">
-              <FeatureCard
-                description="More than enough for most open source projects. Track page views, user actions, and custom events without worrying about limits."
-                icon={BarChartIcon}
-                title="2.5 Million Events/Month"
-              />
-              <FeatureCard
-                description="Same powerful capabilities as paid plans. Funnels, retention analysis, custom dashboards, and real-time analytics."
-                icon={ZapIcon}
-                title="Full Feature Access"
-              />
-              <FeatureCard
-                description="Invite your entire contributor team. Collaborate with maintainers and core contributors on understanding your project's growth."
-                icon={UsersIcon}
-                title="Unlimited Team Members"
-              />
-              <FeatureCard
-                description="Dedicated help for open source maintainers. Get faster responses and priority assistance when you need it."
-                icon={MessageSquareIcon}
-                title="Priority Support"
-              />
-            </div>
-          </Section>
-
-          {/* Why We Do This Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="OpenPanel is built by and for the open source community. We believe in giving back."
-              title="Why we do this"
-            />
-            <div className="col mt-8 gap-6">
-              <p className="text-muted-foreground">
-                We started OpenPanel because we believed analytics tools
-                shouldn't be complicated or locked behind expensive enterprise
-                subscriptions. As an open source project ourselves, we
-                understand the challenges of building and growing a project
-                without the resources of big corporations.
-              </p>
-              <div className="grid gap-4 md:grid-cols-3">
-                <FeatureCard
-                  description="OpenPanel is open source. We know what it's like to build in the open."
-                  icon={CodeIcon}
-                  title="Built for OSS"
-                />
-                <FeatureCard
-                  description="Analytics shouldn't be a barrier to understanding your users. We're removing that barrier."
-                  icon={HeartHandshakeIcon}
-                  title="No Barriers"
-                />
-                <FeatureCard
-                  description="We're giving back to the projects that inspire us and the community that supports us."
-                  icon={SparklesIcon}
-                  title="Giving Back"
-                />
-              </div>
-            </div>
-          </Section>
-
-          {/* What We Ask In Return Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="We keep it simple. Just a small way to help us grow and support more projects."
-              title="What we ask in return"
-            />
-            <div className="row mt-8 gap-6">
-              <div className="col gap-6">
-                <FeatureCard
-                  description="A simple link on your website or README helps others discover OpenPanel. It's a win-win for the community."
-                  icon={LinkIcon}
-                  title="Backlink to OpenPanel"
-                >
-                  <p className="mt-2 text-muted-foreground text-sm">
-                    Example: "Analytics powered by{' '}
-                    <Link
-                      className="text-primary hover:underline"
-                      href="https://openpanel.dev"
-                    >
-                      OpenPanel
-                    </Link>
-                    "
-                  </p>
-                </FeatureCard>
-                <FeatureCard
-                  description="Showcase your visitor count with our real-time analytics widget. It's completely optional but helps spread the word."
-                  icon={GlobeIcon}
-                  title="Display a Widget"
-                >
-                  <a
-                    href="https://openpanel.dev"
-                    style={{
-                      display: 'inline-block',
-                      overflow: 'hidden',
-                      borderRadius: '8px',
-                      width: '250px',
-                      height: '48px',
-                    }}
-                  >
-                    <iframe
-                      height="48"
-                      src="https://dashboard.openpanel.dev/widget/badge?shareId=ancygl&color=%231F1F1F"
-                      style={{
-                        border: 'none',
-                        overflow: 'hidden',
-                        pointerEvents: 'none',
-                      }}
-                      title="OpenPanel Analytics Badge"
-                      width="100%"
-                    />
-                  </a>
-                </FeatureCard>
-                <p className="text-muted-foreground">
-                  That's it. No complicated requirements, no hidden fees, no
-                  catch. We just want to help open source projects succeed.
-                </p>
-              </div>
-              <div>
-                <div className="text-center text-muted-foreground text-xs">
-                  <iframe
-                    className="mb-2 rounded-xl border"
-                    height="400"
-                    src="https://dashboard.openpanel.dev/widget/realtime?shareId=26wVGY"
-                    title="Realtime Widget"
-                    width="300"
-                  />
-                  Analytics from{' '}
-                  <a className="underline" href="https://openpanel.dev">
-                    OpenPanel.dev
-                  </a>
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          {/* Eligibility Criteria Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="We want to support legitimate open source projects that are making a difference."
-              title="Eligibility criteria"
-            />
-            <div className="col mt-8 gap-4">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex gap-3">
-                  <CheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                  <div>
-                    <h3 className="mb-1 font-semibold">OSI-Approved License</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Your project must use an OSI-approved open source license
-                      (MIT, Apache, GPL, etc.)
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                  <div>
-                    <h3 className="mb-1 font-semibold">Public Repository</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Your code must be publicly available on GitHub, GitLab, or
-                      similar platforms
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                  <div>
-                    <h3 className="mb-1 font-semibold">Active Development</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Show evidence of active development and a growing
-                      community
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <CheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-                  <div>
-                    <h3 className="mb-1 font-semibold">
-                      Non-Commercial Primary Purpose
-                    </h3>
-                    <p className="text-muted-foreground text-sm">
-                      The primary purpose should be non-commercial, though
-                      commercial OSS projects may be considered
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Section>
-
-          {/* How to Apply Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="Getting started is simple. Just send us an email with a few details about your project."
-              title="How to apply"
-            />
-            <div className="col mt-8 gap-6">
-              <div className="grid gap-6 md:grid-cols-3">
-                <div className="col gap-3">
-                  <div className="center-center size-10 rounded-full bg-primary/10 font-semibold text-primary">
-                    1
-                  </div>
-                  <h3 className="font-semibold">Send us an email</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Reach out to{' '}
-                    <Link
-                      className="text-primary hover:underline"
-                      href="mailto:oss@openpanel.dev"
-                    >
-                      oss@openpanel.dev
-                    </Link>{' '}
-                    with your project details
-                  </p>
-                </div>
-                <div className="col gap-3">
-                  <div className="center-center size-10 rounded-full bg-primary/10 font-semibold text-primary">
-                    2
-                  </div>
-                  <h3 className="font-semibold">Include project info</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Share your project URL, license type, and a brief
-                    description of what you're building
-                  </p>
-                </div>
-                <div className="col gap-3">
-                  <div className="center-center size-10 rounded-full bg-primary/10 font-semibold text-primary">
-                    3
-                  </div>
-                  <h3 className="font-semibold">We'll review</h3>
-                  <p className="text-muted-foreground text-sm">
-                    We'll evaluate your project and respond within a few
-                    business days
-                  </p>
-                </div>
-              </div>
-              <div className="mt-4">
-                <Button asChild size="lg">
-                  <Link href="mailto:oss@openpanel.dev?subject=Open Source Program Application">
-                    Apply Now
-                    <MailIcon className="size-4" />
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </Section>
-
-          {/* FAQ Section */}
-          <Section className="my-0">
-            <SectionHeader
-              description="Everything you need to know about our open source program."
-              title="Frequently asked questions"
-            />
-            <div className="mt-8">
-              <Faqs>
-                <FaqItem question="What counts as an open-source project?">
-                  We consider any project with an OSI-approved open source
-                  license (MIT, Apache, GPL, BSD, etc.) that is publicly
-                  available and actively maintained. The project should have a
-                  non-commercial primary purpose, though we may consider
-                  commercial open source projects on a case-by-case basis.
-                </FaqItem>
-                <FaqItem question="What happens if I exceed 2.5M events per month?">
-                  We understand that successful projects grow. If you
-                  consistently exceed 2.5M events, we'll reach out to discuss
-                  options. We're flexible and want to support your success. In
-                  most cases, we can work out a solution that works for both of
-                  us.
-                </FaqItem>
-                <FaqItem question="Can commercial open source projects apply?">
-                  Yes, we consider commercial open source projects on a
-                  case-by-case basis. If your project is open source but has
-                  commercial offerings, please mention this in your application
-                  and we'll evaluate accordingly.
-                </FaqItem>
-                <FaqItem question="How long does the free access last?">
-                  As long as your project remains eligible and active, your free
-                  access continues. We review projects periodically to ensure
-                  they still meet our criteria, but we're committed to
-                  supporting projects long-term.
-                </FaqItem>
-                <FaqItem question="Do I need to display the widget?">
-                  No, displaying the widget is completely optional. We only
-                  require a backlink to OpenPanel on your website or README. The
-                  widget is just a nice way to showcase your analytics if you
-                  want to.
-                </FaqItem>
-                <FaqItem question="What if my project is very small or just starting?">
-                  We welcome projects of all sizes! Whether you're just getting
-                  started or have a large community, if you meet our eligibility
-                  criteria, we'd love to help. Small projects often benefit the
-                  most from understanding their users early on.
-                </FaqItem>
-              </Faqs>
-            </div>
-          </Section>
-
-          <CtaBanner
-            ctaLink="mailto:oss@openpanel.dev?subject=Open Source Program Application"
-            ctaText="Apply for Free Access"
-            description="Join other open source projects using OpenPanel to understand their users and grow their communities. Apply today and get started in minutes."
-            title="Ready to get free analytics for your open source project?"
-          />
-        </div>
-      </div>
-    </div>
+            <Button asChild className="px-6" size="lg" variant="outline">
+              <Link href="#eligibility">Check if you qualify</Link>
+            </Button>
+          </>
+        }
+        description="See who uses your project, where they come from and which docs they read. Free web and product analytics for open source projects, up to 2.5M events a month."
+        title="Free analytics for open source projects"
+      >
+        <VisualMock name="web-overview" />
+      </PageHero>
+      <Offer />
+      <WhatWeAsk />
+      <Eligibility />
+      <HowToApply />
+      <FaqSection
+        description="Anything else? Email oss@openpanel.dev."
+        items={FAQ}
+        title="Program questions"
+      />
+      <CtaBanner
+        ctaLink={APPLY_HREF}
+        ctaText="Apply for free access"
+        description="One email with your repository and license. We reply within a few working days, and you can track your first events the same day."
+        footnote={false}
+        secondary={{ href: '/pricing', text: 'See Cloud pricing' }}
+        title="Get free analytics for your project"
+      />
+    </>
   );
 }

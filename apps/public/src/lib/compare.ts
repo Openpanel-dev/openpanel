@@ -119,7 +119,9 @@ export interface CompareTrustCompliance {
 }
 
 export interface CompareScreenshot {
-  src: string;
+  // Name of a VisualMock (src/components/visual-mock.tsx); preferred over images.
+  mock?: string;
+  src?: string;
   alt: string;
 }
 
@@ -198,10 +200,15 @@ export interface CompareOverview {
   paragraphs: string[];
 }
 
+// Which part of OpenPanel the competitor is closest to; picks the replicas
+// a page shows.
+export type CompareCategory = 'product' | 'web' | 'replay' | 'attribution';
+
 export interface CompareData {
   url: string;
   slug: string;
   page_type: 'alternative' | 'vs';
+  category: CompareCategory;
   seo: CompareSeo;
   hero: CompareHero;
   competitor: CompareCompetitor;

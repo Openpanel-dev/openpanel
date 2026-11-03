@@ -26,7 +26,7 @@ export function ConversionsIllustration() {
         </div>
         <div className="col flex-1 gap-1 rounded-xl border border-emerald-500/30 bg-card p-3 transition-all delay-75 duration-300 group-hover:-translate-y-0.5">
           <div className="row items-center gap-1.5">
-            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] text-emerald-600 dark:text-emerald-400">
+            <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[9px] text-emerald-600">
               Variant B ↑
             </span>
           </div>

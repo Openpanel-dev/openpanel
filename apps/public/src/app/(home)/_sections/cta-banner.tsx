@@ -1,78 +1,84 @@
+import Link from 'next/link';
+import { Band } from '@/components/band';
+import { type CodeLine, CodeSnippet } from '@/components/blocks/code-snippet';
 import { GetStartedButton } from '@/components/get-started-button';
-import { cn } from '@/lib/utils';
+import { GrowthLine } from '@/components/growth-line';
+import { Reveal } from '@/components/reveal';
+import { Button } from '@/components/ui/button';
 
-function Svg({ className }: { className?: string }) {
-  return (
-    <svg
-      className={cn('text-foreground', className)}
-      fill="none"
-      height="539"
-      viewBox="0 0 409 539"
-      width="409"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M222.146 483.444C332.361 429.581 378.043 296.569 324.18 186.354C270.317 76.1395 137.306 30.4572 27.0911 84.3201"
-        stroke="url(#paint0_linear_552_3808)"
-        strokeWidth="123.399"
-      />
-      <defs>
-        <linearGradient
-          gradientUnits="userSpaceOnUse"
-          id="paint0_linear_552_3808"
-          x1="324.18"
-          x2="161.365"
-          y1="186.354"
-          y2="265.924"
-        >
-          <stop stopColor="currentColor" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
+const SDK_TABS = [
+  'Web',
+  'Script tag',
+  'React',
+  'Next.js',
+  'Vue',
+  'React Native',
+  'iOS',
+];
+
+const SNIPPET_LINES: CodeLine[] = [
+  { text: 'npm install @openpanel/web', tone: 'muted' },
+  { text: '' },
+  { text: "import { OpenPanel } from '@openpanel/web';" },
+  { text: '' },
+  { text: 'const op = new OpenPanel({' },
+  { text: "  clientId: 'YOUR_CLIENT_ID',", tone: 'string' },
+  { text: '  trackScreenViews: true,' },
+  { text: '  trackOutgoingLinks: true,' },
+  { text: '});' },
+];
 
 export function CtaBanner({
-  title = (
-    <>
-      Ready to understand your users better?
-      <br />
-      Start tracking in minutes
-    </>
-  ),
-  description = 'Join thousands of companies using OpenPanel. Free 30-day trial, no credit card required. Self-host for free or use our cloud.',
+  title = 'Start understanding your users today',
+  description = 'One script on your site, or one SDK call in your app, and the first events show up within a minute. 30-day free trial, no credit card.',
   ctaText,
   ctaLink,
+  secondary = { href: '/pricing', text: 'See pricing' },
+  footnote = true,
 }: {
   title?: string | React.ReactNode;
   description?: string;
   ctaText?: string;
   ctaLink?: string;
+  secondary?: { href: string; text: string };
+  footnote?: boolean;
 }) {
   return (
-    <div className="container">
-      <section
-        className={cn(
-          'relative overflow-hidden rounded-3xl border px-4 py-16 md:px-16'
-        )}
-      >
-        <div className="absolute bottom-12 left-12 size-px rounded-full shadow-[0_0_250px_80px_var(--color-foreground)]" />
-        <div className="absolute top-12 right-12 size-px rounded-full shadow-[0_0_250px_80px_var(--color-foreground)]" />
-        <Svg className="absolute bottom-0 left-0 -translate-x-1/2 translate-y-1/2 opacity-50 max-md:scale-50" />
-        <Svg className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 rotate-105 scale-75 opacity-50 max-md:scale-50" />
-
-        <div className="absolute inset-0 bg-linear-to-br from-foreground/5 via-transparent to-foreground/5" />
-        <div className="col center-center container relative z-10 max-w-3xl gap-6">
-          <h2 className="text-center font-semibold text-4xl md:text-4xl">
-            {title}
-          </h2>
-          <p className="max-w-md text-center text-muted-foreground">
-            {description}
-          </p>
-          <GetStartedButton className="mt-4" href={ctaLink} text={ctaText} />
+    <Band
+      backdrop={
+        <GrowthLine className="absolute inset-x-0 bottom-0 h-[62%] w-full" />
+      }
+      className="overflow-hidden"
+      innerClassName="pointer-events-none grid grid-cols-1 items-center gap-12 md:grid-cols-[6fr_6fr] md:gap-16"
+      tone="fade"
+    >
+      <div className="col pointer-events-auto gap-6">
+        <h2 className="text-balance font-semibold text-3xl leading-[1.1] tracking-[-0.02em] md:text-4xl">
+          {title}
+        </h2>
+        <p className="text-lg text-neutral-600">{description}</p>
+        <div className="row flex-wrap items-center gap-3">
+          <GetStartedButton href={ctaLink} text={ctaText} />
+          <Button asChild className="px-6" size="lg" variant="outline">
+            <Link href={secondary.href}>{secondary.text}</Link>
+          </Button>
         </div>
-      </section>
-    </div>
+        {footnote && (
+          <p className="text-neutral-500 text-sm">
+            Cloud from $2.50 a month, or{' '}
+            <Link
+              className="font-medium text-neutral-900 underline-offset-4 hover:underline"
+              href="/docs/self-hosting/self-hosting"
+            >
+              self-host for free
+            </Link>
+            .
+          </p>
+        )}
+      </div>
+      <Reveal delay={120}>
+        <CodeSnippet lines={SNIPPET_LINES} tabs={SDK_TABS} />
+      </Reveal>
+    </Band>
   );
 }
