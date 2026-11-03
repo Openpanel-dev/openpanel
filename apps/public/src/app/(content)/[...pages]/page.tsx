@@ -37,12 +37,16 @@ export async function generateMetadata({
     };
   }
 
-  return getPageMetadata({
+  const metadata = getPageMetadata({
     title: page.data.title,
     url: url(page.url),
     description: page.data.description,
     image: getOgImageUrl(page.url),
   });
+  if (page.data.noindex) {
+    return { ...metadata, robots: { index: false, follow: true } };
+  }
+  return metadata;
 }
 
 export async function generateStaticParams() {

@@ -70,6 +70,7 @@ export default async function Page({
     .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
     .slice(0, RELATED_LIMIT);
 
+  const cover = resolveArticleCover(article.data.cover);
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Article',
@@ -93,10 +94,7 @@ export default async function Page({
       '@type': 'WebPage',
       '@id': url(article.url),
     },
-    image: {
-      '@type': 'ImageObject',
-      url: url(article.data.cover),
-    },
+    ...(cover ? { image: { '@type': 'ImageObject', url: url(cover) } } : {}),
   };
 
   return (

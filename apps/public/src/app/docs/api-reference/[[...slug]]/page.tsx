@@ -5,9 +5,12 @@ import {
   DocsPage,
   DocsTitle,
 } from 'fumadocs-ui/layouts/docs/page';
+import type { Metadata } from 'next';
 import { notFound, redirect } from 'next/navigation';
 import type React from 'react';
 import { OpenAPIPage } from '@/components/docs/openapi-page';
+import { url } from '@/lib/layout.shared';
+import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { getApiReferenceSource } from '@/lib/openapi';
 import { getMDXComponents } from '@/mdx-components';
 
@@ -72,6 +75,26 @@ export default async function Page(props: PageProps) {
       </DocsBody>
     </DocsPage>
   );
+}
+
+// Without this the reference pages inherit the root metadata and canonicalise
+// to the homepage.
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const params = await props.params;
+  if (!params.slug) {
+    return {};
+  }
+  const source = await getApiReferenceSource();
+  const page = source.getPage(params.slug);
+  if (!page) {
+    return {};
+  }
+  return getPageMetadata({
+    title: page.data.title ?? 'API reference',
+    url: url(page.url),
+    description: page.data.description ?? '',
+    image: getOgImageUrl(page.url),
+  });
 }
 
 export async function generateStaticParams() {

@@ -34,6 +34,7 @@ const zArticle = z.object({
 const zPage = z.object({
   title: z.string().min(1),
   description: z.string(),
+  noindex: z.boolean().optional(),
 });
 
 const zGuide = z.object({
