@@ -3,12 +3,12 @@
   "page_type": "alternative",
   "category": "web",
   "seo": {
-    "title": "Plausible Alternative with Retention and User Profiles",
+    "title": "OpenPanel vs Plausible: Web Stats Plus Retention and Profiles",
     "description": "OpenPanel vs Plausible: both are cookieless and AGPL. OpenPanel adds retention, cohorts and user profiles. Prices at 10k to 10M pageviews, and when to stay put.",
     "noindex": false
   },
   "hero": {
-    "heading": "A Plausible alternative for when pageviews stop being enough",
+    "heading": "OpenPanel vs Plausible",
     "subheading": "Plausible tells you how many people came and where from. It can't tell you whether the people who signed up in March are still around in May, because it never knows who anyone is. OpenPanel keeps the cookieless web dashboard and adds retention, cohorts and user profiles on the same events.",
     "badges": [
       "AGPL-3.0, like Plausible",
@@ -26,7 +26,7 @@
   },
   "meta": {
     "author": "Carl-Gerhard Lindesvärd",
-    "updated": "2026-11-01",
+    "updated": "2026-11-03",
     "prices_checked": "2026-10-18"
   },
   "overview": {
