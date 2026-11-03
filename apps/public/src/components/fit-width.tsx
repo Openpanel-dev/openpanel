@@ -41,19 +41,29 @@ export function FitWidth({
   }, [width]);
 
   const isMeasured = zoom !== undefined;
-  const isZoomed = typeof zoom === 'number';
+  // Unmeasured, the replica keeps its desktop layout and the edge crops it.
+  const innerStyle = (): React.CSSProperties | undefined => {
+    if (!isMeasured) {
+      return { minWidth: width };
+    }
+    if (typeof zoom === 'number') {
+      return { width, zoom };
+    }
+    return undefined;
+  };
 
   return (
     <div
       className={cn(
         'overflow-hidden',
-        // Phones would otherwise flash the squashed layout before hydration
-        !isMeasured && 'max-md:invisible',
+        // Phones would otherwise flash the squashed layout before hydration;
+        // without scripts nothing measures, so the replica stays visible.
+        !isMeasured && 'noscript:visible max-md:invisible',
         className
       )}
       ref={ref}
     >
-      <div style={isZoomed ? { width, zoom } : undefined}>{children}</div>
+      <div style={innerStyle()}>{children}</div>
     </div>
   );
 }
