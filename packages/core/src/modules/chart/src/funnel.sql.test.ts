@@ -395,7 +395,7 @@ describe('funnel.sql / buildFunnelBase — group funnel', () => {
     expect(sql).toContain('ARRAY JOIN groups AS _group_id');
     expect(sql).toContain('LEFT ANY JOIN _g ON _g.id = _group_id');
     expect(sql).toMatch(/SELECT _group_id, windowFunnel\(/);
-    expect(sql).toMatch(/GROUP BY _group_id/);
+    expect(sql).toMatch(/GROUP BY _group_id\)/);
     expect(sql).toContain('argMax(profile_id, created_at) AS profile_id');
     await explain(statement);
   });

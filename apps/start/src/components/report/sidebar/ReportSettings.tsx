@@ -201,10 +201,11 @@ export function ReportSettings() {
                   label: 'Profile',
                   value: 'profile_id',
                 },
-                {
-                  label: 'Group',
-                  value: 'group',
-                },
+                // Only the funnel query keys on a group; conversion stays
+                // session or profile.
+                ...(chartType === 'funnel'
+                  ? [{ label: 'Group', value: 'group' }]
+                  : []),
               ]}
               onChange={(val) => {
                 dispatch(
