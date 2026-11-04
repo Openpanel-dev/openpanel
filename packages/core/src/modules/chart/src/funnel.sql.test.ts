@@ -388,6 +388,26 @@ describe('funnel.sql / funnel CTE — windowFunnel ordering', () => {
   });
 });
 
+describe('funnel.sql / buildFunnelBase — group funnel', () => {
+  it('keys windowFunnel on the group array join alias', async () => {
+    const statement = await profilesStatement({ funnelGroup: 'group' });
+    const { sql } = render(statement);
+    expect(sql).toContain('ARRAY JOIN groups AS _group_id');
+    expect(sql).toContain('LEFT ANY JOIN _g ON _g.id = _group_id');
+    expect(sql).toMatch(/SELECT _group_id, windowFunnel\(/);
+    expect(sql).toMatch(/GROUP BY _group_id/);
+    expect(sql).toContain('argMax(profile_id, created_at) AS profile_id');
+    await explain(statement);
+  });
+
+  it('keeps the profile key when the option is not group', async () => {
+    const statement = await profilesStatement({ funnelGroup: 'profile_id' });
+    const { sql } = render(statement);
+    expect(sql).toMatch(/SELECT profile_id, windowFunnel\(/);
+    expect(sql).not.toContain('ARRAY JOIN groups');
+  });
+});
+
 describe('funnel.sql / buildFunnelBase — group breakdowns', () => {
   it('adds the group array join for a group breakdown', async () => {
     const statement = await profilesStatement({

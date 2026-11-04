@@ -201,6 +201,10 @@ export function ReportSettings() {
                   label: 'Profile',
                   value: 'profile_id',
                 },
+                {
+                  label: 'Group',
+                  value: 'group',
+                },
               ]}
               onChange={(val) => {
                 dispatch(

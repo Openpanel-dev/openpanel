@@ -73,11 +73,12 @@ function normalizeBreakdownValue(value: unknown): string {
 
 /**
  * Returns the grouping strategy for the funnel: whether windowFunnel is
- * computed per session_id or per profile_id. profile_id correctly handles
- * cross-session funnel completions.
+ * computed per session_id, per profile_id or per group. profile_id handles
+ * cross-session completions; group handles completions by different profiles
+ * of the same group (events with no group are left out).
  */
 export function getFunnelGroup(group?: string): FunnelGroup {
-  return group === 'profile_id' ? 'profile_id' : 'session_id';
+  return group === 'profile_id' || group === 'group' ? group : 'session_id';
 }
 
 export interface BuildFunnelBaseInput {

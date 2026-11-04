@@ -38,8 +38,8 @@ import {
   getEventFiltersWhereClause,
 } from './filter-where';
 
-/** The two keys windowFunnel may be computed per — a closed set. */
-const FUNNEL_GROUPS = ['session_id', 'profile_id'] as const;
+/** The keys windowFunnel may be computed per — a closed set. `group` keys on the ARRAY JOIN alias. */
+const FUNNEL_GROUPS = ['session_id', 'profile_id', 'group'] as const;
 export type FunnelGroup = (typeof FUNNEL_GROUPS)[number];
 
 /** Display label for null/empty breakdown values (e.g. property not set). */
@@ -374,13 +374,18 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   );
   const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
-  const primaryKey = sql.id(group, FUNNEL_GROUPS);
+  // A group funnel keys on `_group_id`, the alias the ARRAY JOIN below binds,
+  // so every account is one funnel row whoever performed each step.
+  const primaryKey =
+    group === 'group'
+      ? compiledText('_group_id')
+      : sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
     sql`windowFunnel(${sql.uint64(input.funnelWindowMilliseconds)})(toUInt64(toUnixTimestamp64Milli(created_at)), ${sql.join(conditions)}) AS level`,
   ];
-  if (group === 'session_id') {
-    // Resolves identity changes mid-session.
+  if (group !== 'profile_id') {
+    // session: resolves identity changes mid-session. group: the last actor.
     cteSelects.push(sql`argMax(profile_id, created_at) AS profile_id`);
   }
   cteSelects.push(...selects);
