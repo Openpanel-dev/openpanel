@@ -96,7 +96,11 @@ function hintSection(hint?: ChatLaunchHint): string {
     return '';
   }
   const lines: string[] = [];
-  if (hint.page) {
+  if (hint.page === 'onboarding') {
+    lines.push(
+      'The user came from the onboarding install step, right after creating this project, and probably has no events yet. If they ask why events are missing: for a project with a domain run diagnose_tracking on it; otherwise check what has reached the project with the data tools and walk through the client id, the secret for server and app SDKs, and allowed origins. Name the one or two findings that matter and what to change.'
+    );
+  } else if (hint.page) {
     lines.push(`The user opened the chat from the ${hint.page} page.`);
   }
   if (hint.startDate && hint.endDate) {

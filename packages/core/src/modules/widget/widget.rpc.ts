@@ -33,19 +33,26 @@ const REALTIME_TOP_LIST_LIMIT = 10;
 const EVENTS_TABLE = sql.id(TABLE_NAMES.events);
 const REALTIME_WINDOW = sql`created_at >= (now() - INTERVAL 30 MINUTE)`;
 
-async function findWidgetByType(
-  db: Ctx['db'],
-  projectId: string,
-  type: string
-) {
-  const widgets = await db.shareWidget.findMany({
-    where: { projectId },
-  });
-  return widgets.find((w) => w.options.type === type);
+// The type lives in the `options` JSON, so nothing stops two concurrent
+// enables from each creating a row; reads take the oldest, writes hit all.
+function widgetsOfType(projectId: string, type: z.infer<typeof zWidgetType>) {
+  return { projectId, options: { path: ['type'], equals: type } };
 }
 
-// Shared by toggle/updateOptions: same find-then-update-or-create shape,
-// differing only in which field is written and the create-time default.
+function findWidgetByType(
+  db: Ctx['db'],
+  projectId: string,
+  type: z.infer<typeof zWidgetType>
+) {
+  return db.shareWidget.findFirst({
+    where: widgetsOfType(projectId, type),
+    orderBy: { createdAt: 'asc' },
+  });
+}
+
+// Shared by toggle/updateOptions: same update-or-create shape, differing only
+// in which field is written and the create-time default. The update covers
+// every row of the type, so disabling a widget revokes duplicate links too.
 async function upsertWidgetByType(
   db: Ctx['db'],
   params: {
@@ -56,13 +63,16 @@ async function upsertWidgetByType(
     create: { public: boolean; options: z.infer<typeof zWidgetOptions> };
   }
 ) {
-  const existing = await findWidgetByType(db, params.projectId, params.type);
-
+  const { count } = await db.shareWidget.updateMany({
+    where: widgetsOfType(params.projectId, params.type),
+    data: params.update,
+  });
+  const existing =
+    count > 0
+      ? await findWidgetByType(db, params.projectId, params.type)
+      : null;
   if (existing) {
-    return db.shareWidget.update({
-      where: { id: existing.id },
-      data: params.update,
-    });
+    return existing;
   }
 
   return db.shareWidget.create({

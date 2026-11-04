@@ -149,7 +149,7 @@ async function sendUsageAlerts(
     const admins = await db.member.findMany({
       where: {
         organizationId: organization.id,
-        role: { in: [...STORED_ADMIN_ROLES] },
+        role: { in: STORED_ADMIN_ROLES },
         user: { deletedAt: null },
       },
       include: { user: { select: { email: true, firstName: true } } },

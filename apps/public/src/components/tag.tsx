@@ -6,9 +6,8 @@ const tagVariants = cva(
   {
     variants: {
       variant: {
-        light:
-          'bg-background-light text-muted-foreground dark:bg-background-dark',
-        dark: 'border-background/10 bg-foreground-light text-muted shadow-background/5 dark:bg-foreground-dark',
+        light: 'bg-background-light text-muted-foreground',
+        dark: 'border-background/10 bg-foreground-light text-muted shadow-background/5',
       },
     },
     defaultVariants: {

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import {
-  LayoutPanelTopIcon,
+  ChartLineIcon,
   MoreHorizontal,
   PlusIcon,
   RotateCcw,
@@ -18,7 +18,7 @@ import {
   TILE_MIN_SIZE,
   useDashboardLayout,
 } from '@/components/dashboard-grid';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewInterval } from '@/components/overview/overview-interval';
 import { OverviewRange } from '@/components/overview/overview-range';
@@ -356,10 +356,12 @@ function Component() {
       />
 
       {reports.length === 0 ? (
-        <FullPageEmptyState icon={LayoutPanelTopIcon} title="No reports">
-          <p>You can visualize your data with a report</p>
+        <EmptyState
+          description="Reports you save to this dashboard show up here as tiles you can move and resize."
+          icon={ChartLineIcon}
+          title="No reports on this dashboard yet"
+        >
           <LinkButton
-            className="mt-14"
             from={Route.fullPath}
             icon={PlusIcon}
             search={{ dashboardId }}
@@ -367,7 +369,7 @@ function Component() {
           >
             Create report
           </LinkButton>
-        </FullPageEmptyState>
+        </EmptyState>
       ) : reportsQuery.isLoading ? (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ReportItemSkeleton />
@@ -378,9 +380,15 @@ function Component() {
           <ReportItemSkeleton />
         </div>
       ) : filteredReports.length === 0 ? (
-        <FullPageEmptyState icon={SearchIcon} title="No matching reports">
-          <p>No reports match "{search}". Try a different search.</p>
-        </FullPageEmptyState>
+        <EmptyState
+          description={`Nothing on this dashboard matches “${search}”.`}
+          icon={SearchIcon}
+          title="No matching reports"
+        >
+          <Button onClick={() => setSearch('')} variant="outline">
+            Clear search
+          </Button>
+        </EmptyState>
       ) : (
         <DashboardGrid
           isEditable={!search}

@@ -31,15 +31,9 @@ describe('rate limit escalation', () => {
   });
 });
 
+// Sign-in, sign-up, reset and two-factor are better-auth's and throttled there.
 const AUTH_LIMITS: Record<string, { max: number; windowMs: number }> = {
-  signUpEmail: { max: 5, windowMs: 60_000 },
-  signInEmail: { max: 3, windowMs: 30_000 },
-  signInTotp: { max: 5, windowMs: 60_000 },
-  totpEnable: { max: 5, windowMs: 60_000 },
-  totpDisable: { max: 5, windowMs: 60_000 },
-  totpRegenerateRecoveryCodes: { max: 3, windowMs: 60_000 },
-  resetPassword: { max: 3, windowMs: 60_000 },
-  requestResetPassword: { max: 3, windowMs: 60_000 },
+  signInDev: { max: 10, windowMs: 60_000 },
   signInShare: { max: 3, windowMs: 30_000 },
 };
 

@@ -1,11 +1,12 @@
 import { zEditOrganization } from '@openpanel/core/modules/organization/organization.constants';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { Building2Icon } from 'lucide-react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
+import { EmptyState } from '@/components/empty-state';
 import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import DeleteOrganization from '@/components/settings/delete-organization';
@@ -50,7 +51,14 @@ function Component() {
   }
 
   if (!organization) {
-    return <FullPageEmptyState title="Organization not found" />;
+    return (
+      <EmptyState
+        description="This workspace doesn't exist or you don't have access to it."
+        icon={Building2Icon}
+        title="Workspace not found"
+        variant="page"
+      />
+    );
   }
 
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({

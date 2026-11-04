@@ -1,11 +1,17 @@
 import { cn } from '@/utils/cn';
 
-export function Or({ className }: { className?: string }) {
+export function Or({
+  className,
+  children = 'or',
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <div className={cn('row items-center gap-4', className)}>
-      <div className="h-px w-full bg-def-300" />
-      <span className="px-2 font-medium text-muted-foreground text-sm">OR</span>
-      <div className="h-px w-full bg-def-300" />
+    <div className={cn('row items-center gap-4', className)} role="separator">
+      <div className="h-px flex-1 bg-border" />
+      <span className="text-muted-foreground text-sm">{children}</span>
+      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }

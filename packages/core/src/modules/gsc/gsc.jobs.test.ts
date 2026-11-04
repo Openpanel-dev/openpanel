@@ -66,8 +66,10 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    ai: {} as Services['ai'],
   };
   return {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -147,6 +149,7 @@ test('gscProjectBackfill delegates to runProjectBackfill', async () => {
 test('gscSync fans out one gscProjectSync enqueue per connected project', async () => {
   const producers = createRecordingProducers(queues);
   const ctx: JobCtx = {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -199,6 +202,7 @@ test('gscSync fans out one gscProjectSync enqueue per connected project', async 
       conversation: {} as Services['conversation'],
       assistant: {} as Services['assistant'],
       mcp: {} as Services['mcp'],
+      ai: {} as Services['ai'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'gscSync' },

@@ -2,11 +2,10 @@
 // client rather than the scope: its L1 LRU has to survive across calls, and the
 // ingest hot path passes the scope it holds on each call.
 
-import crypto from 'node:crypto';
 import type { Client, Prisma } from '@openpanel/db/src/prisma-client';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import type { ServiceDeps, Services } from '../../services';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 
 export type IServiceClient = Client;
 
@@ -154,7 +153,7 @@ export function createClientService(
       }
     }
 
-    const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    const secret = newClientSecret();
     const client = await deps.db.client.create({
       data: {
         organizationId,

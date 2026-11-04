@@ -151,9 +151,17 @@ const validateAuthorizationCode = mock(async () => ({
 // other code path that imports this same module for an export this file's
 // chain doesn't happen to need.
 const actualAuthService = await import('../auth/auth.service');
+const requireProjectAccess = mock(
+  async ({ userId }: { userId: string; projectId: string; level: string }) => {
+    if (userId !== 'u_writer') {
+      throw new Error('forbidden');
+    }
+  }
+);
 mock.module('../auth/auth.service', () => ({
   ...actualAuthService,
   googleGscClient: () => ({ validateAuthorizationCode }),
+  getAccessChecks: async () => ({ requireProjectAccess }),
 }));
 
 const getSettingsForProject = mock(
@@ -326,9 +334,32 @@ test('completeGscOAuthCallback rejects a state mismatch before calling Google', 
       storedState: 'b',
       codeVerifier: 'verifier',
       projectId: 'p1',
+      userId: 'u_writer',
     })
   ).rejects.toThrow('GSC OAuth state mismatch');
   expect(validateAuthorizationCode).not.toHaveBeenCalled();
+});
+
+test('completeGscOAuthCallback refuses a user who cannot write the cookie-named project', async () => {
+  validateAuthorizationCode.mockClear();
+  gscConnectionStore.clear();
+  await expect(
+    subject.completeGscOAuthCallback(deps, {
+      code: 'code',
+      state: 'a',
+      storedState: 'a',
+      codeVerifier: 'verifier',
+      projectId: 'p1',
+      userId: 'u_reader',
+    })
+  ).rejects.toThrow('forbidden');
+  expect(requireProjectAccess).toHaveBeenLastCalledWith({
+    userId: 'u_reader',
+    projectId: 'p1',
+    level: 'write',
+  });
+  expect(validateAuthorizationCode).not.toHaveBeenCalled();
+  expect(gscConnectionStore.has('p1')).toBe(false);
 });
 
 test('completeGscOAuthCallback rejects an unknown project', async () => {
@@ -339,6 +370,7 @@ test('completeGscOAuthCallback rejects an unknown project', async () => {
       storedState: 'a',
       codeVerifier: 'verifier',
       projectId: 'proj_missing',
+      userId: 'u_writer',
     })
   ).rejects.toThrow('Project not found for GSC connection');
 });
@@ -351,6 +383,7 @@ test('completeGscOAuthCallback upserts the connection and returns the organizati
     storedState: 'a',
     codeVerifier: 'verifier',
     projectId: 'p1',
+    userId: 'u_writer',
   });
 
   expect(result).toEqual({ organizationId: 'org_1' });

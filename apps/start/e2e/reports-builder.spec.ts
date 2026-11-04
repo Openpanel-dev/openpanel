@@ -47,9 +47,9 @@ test('linear report: build, compare with the API, save, reload, edit, update', a
   try {
     await page.goto(`/acme/${SHOP}/reports?dashboardId=${dashboard.id}`);
     await page.waitForLoadState('networkidle');
-    await expect(
-      page.getByText('Pick at least one event to start visualising')
-    ).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: 'Pick events' })).toBeVisible(
+      { timeout: 30_000 }
+    );
     await addEvent(page, 'purchase');
     await addEvent(page, 'add_to_cart');
     const sheet = await openSidebar(page);

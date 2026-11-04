@@ -69,12 +69,12 @@ function makeOrg(
     windDownStartedAt: null,
     windDownStep: null,
     deleteAt: null,
-    createdBy: {
-      id: 'user-1',
-      email: 'user@example.com',
-      firstName: 'Alex',
-      deletedAt: null,
-    },
+    createdByUserId: 'user-1',
+    members: [
+      {
+        user: { id: 'user-1', email: 'user@example.com', firstName: 'Alex' },
+      },
+    ],
     projects: [{ id: 'project-1', name: 'acme-web' }],
     ...overrides,
   } as WindDownOrganization;
@@ -247,22 +247,38 @@ describe('runWindDownCron', () => {
 
   it('skips organizations with no one to warn', async () => {
     organizationFindMany.mockResolvedValue([
-      makeOrg({ createdBy: null }),
-      makeOrg({
-        id: 'org-2',
-        createdBy: {
-          id: 'user-2',
-          email: 'gone@example.com',
-          firstName: null,
-          deletedAt: new Date(),
-        },
-      }),
+      makeOrg({ createdByUserId: null, members: [] }),
+      makeOrg({ id: 'org-2', members: [] }),
     ]);
 
     const result = await runWindDownCron(deps());
 
     expect(result).toMatchObject({ entering: 0, emailsSent: 0 });
     expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('warns a current admin, not a creator who was removed', async () => {
+    organizationFindMany.mockResolvedValue([
+      makeOrg({
+        createdByUserId: 'user-removed',
+        members: [
+          {
+            user: {
+              id: 'user-2',
+              email: 'admin@example.com',
+              firstName: 'Sam',
+            },
+          },
+        ],
+      }),
+    ]);
+
+    await runWindDownCron(deps());
+
+    expect(sendEmail).toHaveBeenCalled();
+    for (const [, options] of sendEmail.mock.calls) {
+      expect(options).toMatchObject({ to: 'admin@example.com' });
+    }
   });
 
   describe('still-tracking organizations', () => {

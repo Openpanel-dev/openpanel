@@ -121,6 +121,7 @@ export async function buildFunnelBase(
   );
   const cohortMetadata = await fetchCohortsMetadata(
     deps,
+    projectId,
     collectBreakdownCohortIds(breakdowns)
   );
 

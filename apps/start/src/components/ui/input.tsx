@@ -18,6 +18,7 @@ const inputVariant = cva(
         sm: 'h-8 rounded-md px-2.5',
         default: 'h-9 px-3',
         large: 'h-10 px-3.5',
+        xl: 'h-11 px-4 text-base',
       },
     },
     defaultVariants: {

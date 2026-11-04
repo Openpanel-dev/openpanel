@@ -22,7 +22,7 @@ import TagInput from '@/components/forms/tag-input';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
-import { ONBOARDING_SECRET_KEY } from '@/hooks/use-client-secret';
+import { rememberOnboardingKeys } from '@/hooks/use-client-secret';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = zOnboardingProject;
@@ -119,17 +119,11 @@ export default function AddProject() {
             <Button asChild className="flex-1">
               <a
                 href={`/onboarding/${mutation.data.id}/connect`}
-                onClick={() => {
-                  const secret = mutation.data.client?.secret;
-                  if (secret) {
-                    try {
-                      sessionStorage.setItem(ONBOARDING_SECRET_KEY, secret);
-                    } catch {
-                      // Storage unavailable — connect falls back to its
-                      // secret-already-shown notice.
-                    }
-                  }
-                }}
+                onClick={() =>
+                  rememberOnboardingKeys(mutation.data.id, {
+                    clientSecret: mutation.data.client?.secret,
+                  })
+                }
               >
                 Set up tracking
               </a>

@@ -1,15 +1,16 @@
 import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
+import { TagIcon } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
-import { FullPageEmptyState } from '../full-page-empty-state';
+import { EmptyState } from '../empty-state';
 import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 
-type Props = {
+interface Props {
   profile: IServiceProfile;
-};
+}
 
 export const ProfileProperties = ({ profile }: Props) => {
   const [tab, setTab] = useQueryState(
@@ -20,7 +21,7 @@ export const ProfileProperties = ({ profile }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Profile Information</div>
+        <div className="title">Profile</div>
         <WidgetButtons>
           {[
             {
@@ -47,7 +48,7 @@ export const ProfileProperties = ({ profile }: Props) => {
       {tab === 'profile' && profile && (
         <KeyValueGrid
           className="border-0"
-          columns={3}
+          columns={1}
           copyable
           data={[
             { name: 'id', value: profile.id },
@@ -99,7 +100,7 @@ export const ProfileProperties = ({ profile }: Props) => {
       {tab === 'properties' && profile && (
         <KeyValueGrid
           className="border-0"
-          columns={3}
+          columns={1}
           copyable
           data={Object.entries(profile.properties)
             .filter(([, value]) => value !== undefined && value !== '')
@@ -113,8 +114,13 @@ export const ProfileProperties = ({ profile }: Props) => {
             }))}
         />
       )}
-      {!(profile && profile.properties) && (
-        <FullPageEmptyState title="No properties found" />
+      {!profile?.properties && (
+        <EmptyState
+          description="Properties you pass to identify show up here."
+          icon={TagIcon}
+          title="No properties yet"
+          variant="inline"
+        />
       )}
     </Widget>
   );

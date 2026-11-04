@@ -1,13 +1,22 @@
 import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@openpanel/core/modules/insight/insight.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  ArrowDownWideNarrowIcon,
+  ArrowUpDownIcon,
+  CalendarRangeIcon,
+  GaugeIcon,
+  SearchIcon,
+  SparklesIcon,
+} from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import { InsightCard } from '@/components/insights/insight-card';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Carousel,
   CarouselContent,
@@ -15,15 +24,9 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
 import { TableButtons } from '@/components/ui/table';
+import { ToolbarSelect } from '@/components/ui/toolbar-select';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
@@ -51,6 +54,37 @@ type SortOption =
   | 'severity-desc'
   | 'severity-asc'
   | 'recent';
+
+const WINDOW_OPTIONS = [
+  { value: 'all', label: 'All windows' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'rolling_7d', label: '7 days' },
+  { value: 'rolling_30d', label: '30 days' },
+] as const;
+
+const SEVERITY_OPTIONS = [
+  { value: 'all', label: 'All severities' },
+  { value: 'severe', label: 'Severe' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'low', label: 'Low' },
+  { value: 'none', label: 'No severity' },
+] as const;
+
+const DIRECTION_OPTIONS = [
+  { value: 'all', label: 'All directions' },
+  { value: 'up', label: 'Increasing' },
+  { value: 'down', label: 'Decreasing' },
+  { value: 'flat', label: 'Flat' },
+] as const;
+
+const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Relevance (AI)' },
+  { value: 'impact-desc', label: 'Impact (high → low)' },
+  { value: 'impact-asc', label: 'Impact (low → high)' },
+  { value: 'severity-desc', label: 'Severity (high → low)' },
+  { value: 'severity-asc', label: 'Severity (low → high)' },
+  { value: 'recent', label: 'Most recent' },
+] as const satisfies readonly { value: SortOption; label: string }[];
 
 function getModuleDisplayName(moduleKey: string): string {
   const displayNames: Record<string, string> = {
@@ -299,6 +333,20 @@ function Component() {
     );
   }
 
+  const isFiltered =
+    search !== '' ||
+    moduleFilter !== 'all' ||
+    windowKindFilter !== 'all' ||
+    severityFilter !== 'all' ||
+    directionFilter !== 'all';
+  const clearFilters = () => {
+    setSearch(null);
+    setModuleFilter(null);
+    setWindowKindFilter(null);
+    setSeverityFilter(null);
+    setDirectionFilter(null);
+  };
+
   return (
     <PageContainer>
       <PageHeader
@@ -307,87 +355,45 @@ function Component() {
         title="Insights"
       />
       <TableButtons className="mb-8">
-        <Input
-          className="max-w-xs"
-          onChange={(e) => void setSearch(e.target.value || null)}
-          placeholder="Search insights..."
+        <AnimatedSearchInput
+          onChange={(value) => setSearch(value || null)}
+          placeholder="Search insights"
           value={search ?? ''}
         />
-        <Select
-          onValueChange={(v) =>
-            void setWindowKindFilter(v as typeof windowKindFilter)
-          }
+        <ToolbarSelect
+          icon={CalendarRangeIcon}
+          label="Time window"
+          onChange={setWindowKindFilter}
+          options={WINDOW_OPTIONS}
           value={windowKindFilter ?? 'all'}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Time Window" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Windows</SelectItem>
-            <SelectItem value="yesterday">Yesterday</SelectItem>
-            <SelectItem value="rolling_7d">7 Days</SelectItem>
-            <SelectItem value="rolling_30d">30 Days</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={(v) =>
-            void setSeverityFilter(v as typeof severityFilter)
-          }
+        />
+        <ToolbarSelect
+          icon={GaugeIcon}
+          label="Severity"
+          onChange={setSeverityFilter}
+          options={SEVERITY_OPTIONS}
           value={severityFilter ?? 'all'}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Severity" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Severity</SelectItem>
-            <SelectItem value="severe">Severe</SelectItem>
-            <SelectItem value="moderate">Moderate</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="none">No Severity</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={(v) =>
-            void setDirectionFilter(v as typeof directionFilter)
-          }
+        />
+        <ToolbarSelect
+          icon={ArrowUpDownIcon}
+          label="Direction"
+          onChange={setDirectionFilter}
+          options={DIRECTION_OPTIONS}
           value={directionFilter ?? 'all'}
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Direction" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Directions</SelectItem>
-            <SelectItem value="up">Increasing</SelectItem>
-            <SelectItem value="down">Decreasing</SelectItem>
-            <SelectItem value="flat">Flat</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          onValueChange={(v) => void setSortBy(v as SortOption)}
-          value={sortBy ?? 'impact-desc'}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="relevance">Relevance (AI)</SelectItem>
-            <SelectItem value="impact-desc">Impact (High → Low)</SelectItem>
-            <SelectItem value="impact-asc">Impact (Low → High)</SelectItem>
-            <SelectItem value="severity-desc">Severity (High → Low)</SelectItem>
-            <SelectItem value="severity-asc">Severity (Low → High)</SelectItem>
-            <SelectItem value="recent">Most Recent</SelectItem>
-          </SelectContent>
-        </Select>
+        />
+        <ToolbarSelect
+          icon={ArrowDownWideNarrowIcon}
+          label="Sort by"
+          onChange={setSortBy}
+          options={SORT_OPTIONS}
+          value={sortBy ?? 'relevance'}
+        />
       </TableButtons>
 
       {filteredAndSorted.length === 0 && !isLoading && (
-        <FullPageEmptyState
-          description={
-            search || moduleFilter !== 'all' || windowKindFilter !== 'all'
-              ? 'Try adjusting your filters to see more insights.'
-              : 'Insights will appear here as trends are detected in your analytics.'
-          }
-          title="No insights found"
+        <InsightsEmptyState
+          isFiltered={isFiltered}
+          onClearFilters={clearFilters}
         />
       )}
 
@@ -458,5 +464,34 @@ function Component() {
         </div>
       )}
     </PageContainer>
+  );
+}
+
+function InsightsEmptyState({
+  isFiltered,
+  onClearFilters,
+}: {
+  isFiltered: boolean;
+  onClearFilters: () => void;
+}) {
+  if (isFiltered) {
+    return (
+      <EmptyState
+        description="Nothing matches the current search and filters."
+        icon={SearchIcon}
+        title="No matching insights"
+      >
+        <Button onClick={onClearFilters} variant="outline">
+          Clear filters
+        </Button>
+      </EmptyState>
+    );
+  }
+  return (
+    <EmptyState
+      description="Insights are detected automatically from your traffic. Give it a few days of data and check back."
+      icon={SparklesIcon}
+      title="No insights yet"
+    />
   );
 }

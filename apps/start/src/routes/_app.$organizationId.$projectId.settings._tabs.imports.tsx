@@ -5,12 +5,13 @@ import { formatDistanceToNow } from 'date-fns';
 import {
   CheckCircleIcon,
   Download,
+  ImportIcon,
   InfoIcon,
   Loader2Icon,
   XCircleIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import {
   IntegrationCard,
   IntegrationCardFooter,
@@ -171,9 +172,11 @@ function ImportsSettings() {
               {!importsQuery.isLoading && imports.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6}>
-                    <FullPageEmptyState
-                      description="Your import history will appear here."
+                    <EmptyState
+                      description="Imports from other analytics tools show up here with their progress."
+                      icon={ImportIcon}
                       title="No imports yet"
+                      variant="inline"
                     />
                   </TableCell>
                 </TableRow>

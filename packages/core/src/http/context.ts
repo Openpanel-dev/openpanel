@@ -59,7 +59,11 @@ export function requestContext(deps: AppDeps) {
             ip: clientIp,
             cookies,
             session: () =>
-              (session ??= resolveSession(ctx, cookies, request.headers)),
+              (session ??= resolveSession(ctx, {
+                cookies,
+                headers: request.headers,
+                setCookie: ctx.setCookie,
+              })),
             setCookie: (name: string, value: string, options?: CookieOptions) =>
               writeCookie(cookie, name, value, options),
             cancellation,

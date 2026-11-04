@@ -1,8 +1,8 @@
 import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { BoxSelectIcon } from 'lucide-react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { Building2Icon } from 'lucide-react';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import Billing from '@/components/organization/billing';
 import { PageHeader } from '@/components/page-header';
@@ -62,7 +62,12 @@ function OrganizationPage() {
 
   if (!organization) {
     return (
-      <FullPageEmptyState icon={BoxSelectIcon} title="Organization not found" />
+      <EmptyState
+        description="This workspace doesn't exist or you don't have access to it."
+        icon={Building2Icon}
+        title="Workspace not found"
+        variant="page"
+      />
     );
   }
 

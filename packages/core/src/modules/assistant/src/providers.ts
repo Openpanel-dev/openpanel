@@ -3,10 +3,13 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import type { LanguageModel, streamText } from 'ai';
 import type { CoreConfig } from '../../../config';
-import type {
-  ChatModelEntry,
-  ChatProvider,
-  ConfiguredProviders,
+import { instrumentLanguageModel } from '../../ai/ai.service';
+import {
+  CHAT_MODELS,
+  type ChatModelEntry,
+  type ChatProvider,
+  type ConfiguredProviders,
+  getDefaultChatModelId,
 } from '../assistant.constants';
 
 /** Cheap models for titles and the one-shot filter command. */
@@ -65,9 +68,11 @@ function modelFor(
   provider: ChatProvider,
   modelId: string
 ): LanguageModel {
-  return provider === 'openai'
-    ? openai(config)(modelId)
-    : anthropic(config)(modelId);
+  const model =
+    provider === 'openai'
+      ? openai(config)(modelId)
+      : anthropic(config)(modelId);
+  return instrumentLanguageModel(config, model);
 }
 
 export function resolveChatModel(
@@ -75,6 +80,19 @@ export function resolveChatModel(
   entry: ChatModelEntry
 ): LanguageModel {
   return modelFor(config, entry.provider, entry.modelId);
+}
+
+/** The model the chat runs by default; for one-shot work that needs the chat's judgement, like drafting a report. */
+export function resolveDefaultChatModel(config: CoreConfig): {
+  model: LanguageModel;
+  entry: ChatModelEntry;
+} | null {
+  const id = getDefaultChatModelId(configuredProviders(config));
+  const entry = CHAT_MODELS.find((model) => model.id === id);
+  if (!entry) {
+    return null;
+  }
+  return { model: resolveChatModel(config, entry), entry };
 }
 
 /** The cheapest configured model, for titles and the filter command. */
@@ -93,7 +111,14 @@ type ProviderOptions = NonNullable<
   Parameters<typeof streamText>[0]['providerOptions']
 >;
 
-/** Reasoning summaries are off by default on both providers; the chat shows them. */
+/**
+ * Reasoning summaries are off by default on both providers; the chat shows them.
+ *
+ * Anthropic binds each thinking block to the conversation prefix that produced
+ * it and rejects the whole request when that prefix changed (the system prompt
+ * carries today's date and the launch hint, so it can). `drop_block` makes the
+ * API drop the stale blocks instead of failing the turn.
+ */
 export function reasoningProviderOptions(
   entry: ChatModelEntry
 ): ProviderOptions {
@@ -102,7 +127,11 @@ export function reasoningProviderOptions(
   }
   return {
     anthropic: {
-      thinking: { type: 'adaptive' as const, display: 'summarized' as const },
+      thinking: {
+        type: 'adaptive' as const,
+        display: 'summarized' as const,
+        blockBinding: { prefixMismatchBehavior: 'drop_block' as const },
+      },
     },
   };
 }

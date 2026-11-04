@@ -15,13 +15,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { Table } from '@tanstack/react-table';
-import {
-  Check,
-  ChevronsUpDown,
-  GripVertical,
-  RotateCcw,
-  Settings2Icon,
-} from 'lucide-react';
+import { Check, GripVertical, RotateCcw, Settings2Icon } from 'lucide-react';
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -174,14 +168,12 @@ export function DataTableViewOptions<TData>({
       <PopoverTrigger asChild>
         <Button
           aria-label="Toggle columns"
-          className="ml-auto hidden h-8 lg:flex"
+          className="ml-auto hidden lg:flex"
+          icon={Settings2Icon}
           role="combobox"
-          size="sm"
           variant="outline"
         >
-          <Settings2Icon className="mr-2 size-4" />
           View
-          <ChevronsUpDown className="ml-2 size-4 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-0">

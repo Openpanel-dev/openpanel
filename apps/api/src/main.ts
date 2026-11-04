@@ -17,6 +17,7 @@ import {
   checkNotificationRulesForEvent,
   cookieOptions,
   corsDelegator,
+  createAuth,
   createBuffers,
   createClients,
   createIncomingEventHandler,
@@ -186,6 +187,12 @@ function buildDeps(): AppDeps {
     producers,
     logger,
     config: config.core,
+    auth: createAuth({
+      db,
+      config: config.core,
+      logger,
+      redis: getRedisCache(),
+    }),
   };
 }
 
@@ -491,8 +498,8 @@ async function main() {
     );
   });
 
-  // Right after listening, so the api serves from the start and the fast
-  // blocking migrations land within seconds; see AGENTS.md → Migrations.
+  // Right after listening, so the api serves while pending migrations run;
+  // see AGENTS.md → Migrations.
   const codeMigrations = config.AUTOMATIC_MIGRATIONS
     ? startCodeMigrations({
         redis: deps.redis,

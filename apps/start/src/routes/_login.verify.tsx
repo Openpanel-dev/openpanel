@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { AuthHeading } from '@/components/auth/auth-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -9,7 +10,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
-import { useTRPC } from '@/integrations/trpc/react';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/verify')({
@@ -23,22 +24,26 @@ export const Route = createFileRoute('/_login/verify')({
 });
 
 function VerifyPage() {
-  const trpc = useTRPC();
+  const authClient = useAuthClient();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
   const [code, setCode] = useState('');
 
-  const mutation = useMutation(
-    trpc.auth.signInTotp.mutationOptions({
-      onSuccess() {
-        toast.success('Signed in');
-        window.location.href = '/';
-      },
-      onError(error) {
-        toast.error(error.message);
-        setCode('');
-      },
-    })
-  );
+  const mutation = useMutation({
+    mutationFn: ({ code: value }: { code: string }) =>
+      unwrap(
+        mode === 'totp'
+          ? authClient.twoFactor.verifyTotp({ code: value })
+          : authClient.twoFactor.verifyBackupCode({ code: value.trim() })
+      ),
+    onSuccess() {
+      toast.success('Signed in');
+      window.location.href = '/';
+    },
+    onError(error) {
+      toast.error(error.message);
+      setCode('');
+    },
+  });
 
   const canSubmit =
     mode === 'totp' ? code.length === 6 : code.trim().length > 0;
@@ -52,17 +57,15 @@ function VerifyPage() {
   };
 
   return (
-    <form className="col w-full gap-8 text-left" onSubmit={handleSubmit}>
-      <div>
-        <h1 className="mb-2 font-bold text-3xl text-foreground">
-          Two-factor authentication
-        </h1>
-        <p className="text-muted-foreground">
-          {mode === 'totp'
+    <form className="col w-full gap-8" onSubmit={handleSubmit}>
+      <AuthHeading
+        description={
+          mode === 'totp'
             ? 'Enter the 6-digit code from your authenticator app.'
-            : 'Enter one of your recovery codes. Each code can be used only once.'}
-        </p>
-      </div>
+            : 'Enter one of your recovery codes. Each code can be used only once.'
+        }
+        title="Two-factor authentication"
+      />
 
       {mode === 'totp' ? (
         <div className="col items-center gap-4">
@@ -90,11 +93,13 @@ function VerifyPage() {
         </div>
       ) : (
         <Input
-          autoCapitalize="characters"
+          aria-label="Recovery code"
+          autoCapitalize="off"
           autoFocus
           disabled={mutation.isPending}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="ABCDE-FGHIJ"
+          placeholder="AbCdE-fGhIj"
+          size="xl"
           value={code}
         />
       )}
@@ -102,14 +107,14 @@ function VerifyPage() {
       <Button
         disabled={!canSubmit}
         loading={mutation.isPending}
-        size="lg"
+        size="xl"
         type="submit"
       >
         Verify
       </Button>
 
       <button
-        className="text-center text-muted-foreground text-sm transition-colors duration-200 hover:text-highlight hover:underline"
+        className="text-center text-muted-foreground text-sm transition-colors hover:text-foreground hover:underline"
         onClick={() => {
           setMode(mode === 'totp' ? 'recovery' : 'totp');
           setCode('');
@@ -121,7 +126,7 @@ function VerifyPage() {
           : 'Use authenticator app instead'}
       </button>
       <a
-        className="text-center text-muted-foreground text-xs hover:underline"
+        className="text-center text-muted-foreground text-sm hover:text-foreground hover:underline"
         href="/login"
       >
         Sign in with a different account

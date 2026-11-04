@@ -5,14 +5,14 @@ import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
-import { Loader2Icon, RotateCwIcon } from 'lucide-react';
+import { Loader2Icon, RotateCwIcon, UsersIcon } from 'lucide-react';
 import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 import { useLocalStorage } from 'usehooks-ts';
 import { useColumns } from './columns';
+import { EmptyState } from '@/components/empty-state';
 import { TableFilterPills } from '@/components/filters/TableFilterPills';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
@@ -224,9 +224,12 @@ const VirtualizedSessionsTable = ({
       </div>
 
       {!isLoading && data.length === 0 && (
-        <FullPageEmptyState
-          description="Looks like you haven't inserted any events yet."
-          title="No sessions found"
+        <EmptyState
+          className="py-16"
+          description="Nothing matches this date range and filters. Sessions appear as soon as your site or app sends events."
+          icon={UsersIcon}
+          title="No sessions"
+          variant="inline"
         />
       )}
 
@@ -338,6 +341,7 @@ export const SessionsTable = ({ query }: Props) => {
         <FullPageErrorState
           description="We could not load this data. Try again in a moment."
           title="Something went wrong"
+          variant="inline"
         >
           <Button
             icon={RotateCwIcon}

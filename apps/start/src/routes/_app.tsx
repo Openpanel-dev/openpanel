@@ -7,8 +7,8 @@ import {
 import { ConstructionIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { useChatLaunch } from '@/components/chat/chat-launch';
+import { EmptyState } from '@/components/empty-state';
 import { EventDrawer } from '@/components/events/event-drawer';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
@@ -30,11 +30,11 @@ function AppLayout() {
 
   if (isMaintenance) {
     return (
-      <FullPageEmptyState
-        className="min-h-screen"
-        description="We are currently performing maintenance on the system. Please check back later."
+      <EmptyState
+        description="We're doing maintenance right now. Check back in a little while."
         icon={ConstructionIcon}
         title="Maintenance mode"
+        variant="page"
       >
         <a
           className={cn(buttonVariants())}
@@ -44,7 +44,7 @@ function AppLayout() {
         >
           Check out our status page
         </a>
-      </FullPageEmptyState>
+      </EmptyState>
     );
   }
 

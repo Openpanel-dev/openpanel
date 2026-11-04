@@ -70,8 +70,10 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    ai: {} as Services['ai'],
   };
   return {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -134,6 +136,7 @@ test('insightsProject delegates to runProjectInsights', async () => {
 test('insightsDaily fans out one insightsProject enqueue per candidate, jobId deduped by day+project', async () => {
   const producers = createRecordingProducers(queues);
   const ctx: JobCtx = {
+    auth: null,
     db: {} as AppDeps['db'],
     prisma: {} as AppDeps['prisma'],
     ch: {} as AppDeps['ch'],
@@ -186,6 +189,7 @@ test('insightsDaily fans out one insightsProject enqueue per candidate, jobId de
       conversation: {} as Services['conversation'],
       assistant: {} as Services['assistant'],
       mcp: {} as Services['mcp'],
+      ai: {} as Services['ai'],
     },
     requestId: 'req_1',
     job: { id: 'job_1', attempt: 0, queue: 'cron', name: 'insightsDaily' },

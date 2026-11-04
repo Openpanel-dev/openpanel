@@ -7,7 +7,11 @@ import { ClickHouseLogLevel, createClient } from '@clickhouse/client';
 import type { NodeClickHouseClientConfigOptions } from '@clickhouse/client/dist/config';
 import { getSafeJson } from '@openpanel/shared';
 import { createLogger } from '../logger';
-import { RoundRobinPicker, withRoundRobinRetry } from './round-robin';
+import {
+  nodeLabel,
+  RoundRobinPicker,
+  withRoundRobinRetry,
+} from './round-robin';
 import { type SqlFragment, toStatement } from './sql';
 
 export { createClient } from '@clickhouse/client';
@@ -64,6 +68,7 @@ export const TABLE_NAMES = {
   groups: 'groups',
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
+  ai_events: 'ai_events',
   // Dropped in migration 24; kept because migrations 13, 14 and 15 still name them.
   profile_event_summary_mv: 'profile_event_summary_mv',
   // Keyed for the cohort criteria (event + window first, profile last) rather than by profile.
@@ -100,6 +105,9 @@ function getClickhouseSettings(): ClickHouseSettings {
   return {
     distributed_product_mode: 'allow',
     date_time_input_format: 'best_effort',
+    // ClickHouse 26.3+ defaults async_insert to 1. The buffers already batch
+    // client-side, so inserts stay synchronous; a buffer can still opt in per query.
+    async_insert: 0,
     ...(process.env.CLICKHOUSE_SETTINGS_REMOVE_CONVERT_ANY_JOIN
       ? {}
       : {
@@ -191,30 +199,10 @@ const clients: ClickHouseClient[] = clickhouseUrls.map((url) =>
 
 const picker = new RoundRobinPicker(clients, clickhouseUrls, unhealthyMarkMs);
 
-function maskUrlCredentials(url: string): string {
-  if (!url) {
-    return '<unset>';
-  }
-  try {
-    const u = new URL(url);
-    if (u.username) {
-      u.username = u.username.slice(0, 2) + '*'.repeat(u.username.length - 2);
-    }
-    if (u.password) {
-      u.password = '***';
-    }
-    return u.toString();
-  } catch {
-    // Malformed URL — fall back to the original; better than crashing module
-    // load in test envs where CLICKHOUSE_URL may be empty/garbage.
-    return url;
-  }
-}
-
 logger.info(
   {
     nodeCount: clients.length,
-    urls: clickhouseUrls.map(maskUrlCredentials),
+    nodes: clickhouseUrls.map(nodeLabel),
     requestTimeoutMs,
     unhealthyMarkMs,
     options: { ...CLICKHOUSE_OPTIONS, log: undefined },

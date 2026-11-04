@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PencilRulerIcon, PlusIcon } from 'lucide-react';
+import { BellRingIcon, PlusIcon } from 'lucide-react';
 import { useMemo } from 'react';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { IntegrationCardSkeleton } from '@/components/integrations/integration-card';
 import { RuleCard } from '@/components/notifications/rule-card';
@@ -39,41 +39,27 @@ function Component() {
 
   const isLoading = query.isLoading;
 
+  const addRule = () => pushModal('AddNotificationRule', { rule: undefined });
+
   if (!isLoading && data.length === 0) {
     return (
-      <FullPageEmptyState icon={PencilRulerIcon} title="No rules yet">
-        <p>
-          You have not created any rules yet. Create a rule to start getting
-          notifications.
-        </p>
-        <Button
-          className="mt-8"
-          onClick={() =>
-            pushModal('AddNotificationRule', {
-              rule: undefined,
-            })
-          }
-          variant="outline"
-        >
-          Add Rule
+      <EmptyState
+        description="Get a message when an event fires or a funnel is completed, in Slack, Discord, email or a webhook."
+        icon={BellRingIcon}
+        title="No notification rules yet"
+      >
+        <Button icon={PlusIcon} onClick={addRule}>
+          Add rule
         </Button>
-      </FullPageEmptyState>
+      </EmptyState>
     );
   }
 
   return (
     <div>
       <div className="mb-2">
-        <Button
-          icon={PlusIcon}
-          onClick={() =>
-            pushModal('AddNotificationRule', {
-              rule: undefined,
-            })
-          }
-          variant="outline"
-        >
-          Add Rule
+        <Button icon={PlusIcon} onClick={addRule} variant="outline">
+          Add rule
         </Button>
       </div>
       <div className="col grid w-full gap-4 md:grid-cols-2">

@@ -17,6 +17,8 @@ import {
 
 const DEFAULT_PAGE_LIMIT = 25;
 const MAX_PAGE_LIMIT = 500;
+const ENTRY_EXIT_PAGEVIEWS =
+  'Pageviews across the entire sessions that entered or exited on this path, including views of other pages. This is not the number of views of the path itself; use get_top_pages or get_page_performance for per-path pageviews.';
 
 type PageRow = {
   origin: string;
@@ -49,13 +51,14 @@ function pageTable(rows: PageRow[], limit: number) {
   });
 }
 
+/** Explain entry/exit pageviews without changing the shared table schema. */
 export function registerPageTools(
   server: McpServer,
   { context, deps }: McpToolDeps
 ) {
   server.tool(
     'get_top_pages',
-    `Get the most visited pages ranked by sessions, with pageview counts. Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
+    `Get the most visited pages ranked by sessions, with pageview counts for each path. Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
@@ -78,7 +81,7 @@ export function registerPageTools(
 
   server.tool(
     'get_entry_exit_pages',
-    `Get the most common entry pages (first page in a session) or exit pages (last page in a session). Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
+    `Get the most common entry pages (first page in a session) or exit pages (last page in a session). ${ENTRY_EXIT_PAGEVIEWS} Defaults to the top ${DEFAULT_PAGE_LIMIT} pages.`,
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
@@ -107,7 +110,11 @@ export function registerPageTools(
           mode,
           limit: take + 1,
         });
-        return { mode, ...pageTable(rows as PageRow[], take) };
+        return {
+          mode,
+          metric_definitions: { pageviews: ENTRY_EXIT_PAGEVIEWS },
+          ...pageTable(rows as PageRow[], take),
+        };
       })
   );
 }

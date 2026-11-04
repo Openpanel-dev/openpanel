@@ -1,16 +1,36 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
+import { useEffect } from 'react';
 import { z } from 'zod';
+import { AuthHeading } from '@/components/auth/auth-shell';
 import { Or } from '@/components/auth/or';
 import { SignInDev } from '@/components/auth/sign-in-dev';
 import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
-import { SignInGithub } from '@/components/auth/sign-in-github';
-import { SignInGoogle } from '@/components/auth/sign-in-google';
+import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCookieStore } from '@/hooks/use-cookie-store';
 import { useTRPC } from '@/integrations/trpc/react';
+import { trackFunnel } from '@/utils/funnel-tracking';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
+
+// Codes better-auth puts in `?error=` after a Google/GitHub sign-in, when it
+// sends no description of its own.
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  account_not_linked:
+    'Please sign in using your original authentication method',
+  state_mismatch:
+    'The sign-in took too long or was opened in another tab. Try again.',
+  email_not_found: 'Your provider did not share a verified email address',
+  unable_to_get_user_info:
+    'We could not get a verified email address from your provider. Verify your email with Google or GitHub and try again.',
+};
+
+function signInErrorMessage(error: string, description?: string): string {
+  return (
+    description || OAUTH_ERROR_MESSAGES[error] || error.replaceAll('_', ' ')
+  );
+}
 
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
@@ -22,6 +42,7 @@ export const Route = createFileRoute('/_login/login')({
   }),
   validateSearch: z.object({
     error: z.string().optional(),
+    error_description: z.string().optional(),
     correlationId: z.string().optional(),
     inviteId: z.string().optional(),
   }),
@@ -33,7 +54,12 @@ export const Route = createFileRoute('/_login/login')({
 });
 
 function LoginPage() {
-  const { error, correlationId, inviteId } = Route.useSearch();
+  const {
+    error,
+    error_description: errorDescription,
+    correlationId,
+    inviteId,
+  } = Route.useSearch();
   const trpc = useTRPC();
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
@@ -43,43 +69,45 @@ function LoginPage() {
     'last-auth-provider',
     null
   );
+  useEffect(() => {
+    trackFunnel('auth_page_viewed', {
+      page: 'login',
+      hasInvite: Boolean(inviteId),
+      hadError: Boolean(error),
+      google: providers.google,
+      github: providers.github,
+      lastProvider,
+    });
+  }, [inviteId, error, providers.google, providers.github, lastProvider]);
+
+  const signUpHref = inviteId
+    ? `/onboarding?inviteId=${encodeURIComponent(inviteId)}`
+    : '/onboarding';
 
   return (
-    <div className="col w-full gap-8 text-left">
-      <div>
-        <h1 className="mb-2 font-bold text-3xl text-foreground">Sign in</h1>
-        <p className="text-muted-foreground">
-          Don't have an account?{' '}
-          <a
-            className="font-medium text-foreground underline"
-            href="/onboarding"
-          >
-            Create one today
-          </a>
-        </p>
-      </div>
+    <div className="col w-full gap-8">
+      <AuthHeading
+        description="Sign in to your OpenPanel account."
+        title="Welcome back"
+      />
+
       {error && (
-        <Alert
-          className="mb-6 border-destructive/20 bg-destructive/10 text-left"
-          variant="destructive"
-        >
+        <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Could not sign you in</AlertTitle>
           <AlertDescription>
-            <p>{error}</p>
+            <p>{signInErrorMessage(error, errorDescription)}</p>
             {correlationId && (
-              <>
-                <p>Correlation ID: {correlationId}</p>
-                <p className="mt-2">
-                  Contact us if you have any issues.{' '}
-                  <a
-                    className="font-medium underline"
-                    href={`mailto:hello@openpanel.dev?subject=Login%20Issue%20-%20Correlation%20ID%3A%20${correlationId}`}
-                  >
-                    hello[at]openpanel.dev
-                  </a>
-                </p>
-              </>
+              <p className="mt-2">
+                Reference: {correlationId}.{' '}
+                <a
+                  className="font-medium underline"
+                  href={`mailto:hello@openpanel.dev?subject=${encodeURIComponent(`Login Issue - Correlation ID: ${correlationId}`)}`}
+                >
+                  Email us
+                </a>{' '}
+                and we will sort it out.
+              </p>
             )}
           </AlertDescription>
         </Alert>
@@ -87,35 +115,46 @@ function LoginPage() {
 
       {hasOAuthProviders && (
         <>
-          <div className="space-y-4">
+          <div className="col gap-3">
             {providers.google && (
-              <SignInGoogle
+              <SignInOAuth
                 inviteId={inviteId}
                 isLastUsed={lastProvider === 'google'}
+                provider="google"
                 type="sign-in"
               />
             )}
             {providers.github && (
-              <SignInGithub
+              <SignInOAuth
                 inviteId={inviteId}
                 isLastUsed={lastProvider === 'github'}
+                provider="github"
                 type="sign-in"
               />
             )}
           </div>
-          <Or />
+          <Or>or continue with email</Or>
         </>
       )}
+
       <SignInEmailForm
         inviteId={inviteId}
         isLastUsed={lastProvider === 'email'}
       />
+
       {providers.devLogin && (
         <>
-          <Or />
+          <Or>local development</Or>
           <SignInDev inviteId={inviteId} />
         </>
       )}
+
+      <p className="text-center text-muted-foreground text-sm">
+        New to OpenPanel?{' '}
+        <a className="font-medium text-foreground underline" href={signUpHref}>
+          Create an account
+        </a>
+      </p>
     </div>
   );
 }

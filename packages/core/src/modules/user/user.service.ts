@@ -84,7 +84,7 @@ export async function listUserDeletionBlockers(
 
 /**
  * Hard delete the user. Cascades clean up sessions, accounts, totp,
- * twoFactorChallenges, members, projectAccess, invites and conversations.
+ * twoFactorChallenges, members, invites and conversations.
  * Organizations the user created have `createdByUserId`/`subscriptionCreatedByUserId`
  * set to null (SetNull); any org left without an admin member is then
  * removed by the organization module's `delete` cron.
@@ -106,6 +106,14 @@ export async function deleteUserAccount(
   await deps.db.user.delete({ where: { id: userId } });
 }
 
+/** better-auth's `name`, kept in step with the first and last name. */
+export function toDisplayName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined
+): string {
+  return [firstName?.trim(), lastName?.trim()].filter(Boolean).join(' ');
+}
+
 export async function updateUserProfile(
   deps: ServiceDeps,
   input: {
@@ -121,6 +129,7 @@ export async function updateUserProfile(
     data: {
       firstName: input.firstName,
       lastName: input.lastName,
+      name: toDisplayName(input.firstName, input.lastName),
     },
   });
 }

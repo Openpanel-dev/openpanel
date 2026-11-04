@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { isRealClientSecret } from '@/hooks/use-client-secret';
 import { clipboard } from '@/utils/clipboard';
 
-type Props = { id: string; secret: string; type?: 'read' | 'write' | 'root' };
+// `type` is required on purpose: MCP rejects write clients, so a caller that
+// forgets it must not get a token rendered by accident.
+type Props = { id: string; secret: string; type: 'read' | 'write' | 'root' };
 
 export function CreateClientSuccess({ id, secret, type }: Props) {
   // Only derive credentials from a real secret — the '[CLIENT_SECRET]'
@@ -50,6 +52,12 @@ export function CreateClientSuccess({ id, secret, type }: Props) {
             client ID and secret).
           </p>
         </div>
+      )}
+      {type === 'write' && (
+        <p className="text-muted-foreground text-sm">
+          Write clients cannot be used with MCP. For an AI assistant, create a
+          read client under Settings → MCP.
+        </p>
       )}
       <div className="row gap-2 [&>*]:flex-1">
         <Button

@@ -42,10 +42,12 @@ const createWorkspace = async (
   if (await createNew.isVisible()) {
     await createNew.click();
   }
+  await page.getByLabel('Project name').fill(project);
+  // The workspace name follows the project name until it is edited.
+  await page.getByRole('button', { name: 'Change' }).click();
   await page.getByLabel('Workspace name').fill(workspace);
-  await page.getByLabel('Your first project name').fill(project);
-  await page.getByRole('button', { name: 'Backend / API' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: /^Backend \/ API/ }).click();
+  await page.getByRole('button', { name: 'Create project' }).click();
   await page.waitForURL(/\/onboarding\/.+\/connect/, {
     timeout: NAVIGATION_TIMEOUT_MS,
   });
@@ -82,7 +84,6 @@ test('a user with two organizations can switch between them and delete one', asy
   await page.getByLabel('Last name').fill('OrgOwner');
   await page.getByLabel('Email').fill(`e2e-org-owner-${stamp}@example.com`);
   await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-  await page.getByLabel('Confirm password').fill(PASSWORD);
   await page.getByRole('button', { name: 'Create account' }).click();
   await page.waitForURL(/\/onboarding\/project/, {
     timeout: NAVIGATION_TIMEOUT_MS,

@@ -12,6 +12,8 @@ interface ProjectAccessGrantsProps {
   value: IProjectAccessGrant[];
   onChange: (value: IProjectAccessGrant[]) => void;
   projects: { id: string; name: string }[];
+  /** A viewer reads every project in scope, so the per-project level is moot. */
+  isReadOnly?: boolean;
 }
 
 /**
@@ -22,6 +24,7 @@ export function ProjectAccessGrants({
   value,
   onChange,
   projects,
+  isReadOnly = false,
 }: ProjectAccessGrantsProps) {
   const selectedIds = value.map((grant) => grant.projectId);
 
@@ -69,20 +72,29 @@ export function ProjectAccessGrants({
                 {projects.find((project) => project.id === grant.projectId)
                   ?.name ?? grant.projectId}
               </span>
-              <Select
-                onValueChange={(level) =>
-                  handleLevelChange(grant.projectId, level as 'read' | 'write')
-                }
-                value={grant.level}
-              >
-                <SelectTrigger className="w-36 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="write">Can edit</SelectItem>
-                  <SelectItem value="read">Read-only</SelectItem>
-                </SelectContent>
-              </Select>
+              {isReadOnly ? (
+                <span className="shrink-0 text-muted-foreground text-sm">
+                  Read-only
+                </span>
+              ) : (
+                <Select
+                  onValueChange={(level) =>
+                    handleLevelChange(
+                      grant.projectId,
+                      level as 'read' | 'write'
+                    )
+                  }
+                  value={grant.level}
+                >
+                  <SelectTrigger className="w-36 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="write">Can edit</SelectItem>
+                    <SelectItem value="read">Read-only</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           ))}
         </div>

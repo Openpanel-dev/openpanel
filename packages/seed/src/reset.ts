@@ -4,7 +4,12 @@
 
 import { ch } from '@openpanel/db';
 
-const TABLES_WITH_PROJECT_ROWS = ['events', 'sessions', 'profiles'] as const;
+const TABLES_WITH_PROJECT_ROWS = [
+  'events',
+  'ai_events',
+  'sessions',
+  'profiles',
+] as const;
 
 const MATERIALIZED_VIEWS_WITH_PROJECT_ROWS = [
   'dau_mv',

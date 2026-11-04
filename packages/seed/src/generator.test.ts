@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import { createHash } from 'node:crypto';
 import { ARCHETYPES } from './archetypes';
 import type {
+  ClickhouseAiEventRow,
   ClickhouseEventRow,
   ClickhouseProfileRow,
   ClickhouseSessionRow,
@@ -12,11 +13,15 @@ import type { RowSink, SinkCounts } from './sink';
 
 class MemorySink implements RowSink {
   events: ClickhouseEventRow[] = [];
+  aiEvents: ClickhouseAiEventRow[] = [];
   sessions: ClickhouseSessionRow[] = [];
   profiles: ClickhouseProfileRow[] = [];
 
   addEvents(rows: readonly ClickhouseEventRow[]): void {
     this.events.push(...rows);
+  }
+  addAiEvents(rows: readonly ClickhouseAiEventRow[]): void {
+    this.aiEvents.push(...rows);
   }
   addSession(row: ClickhouseSessionRow): void {
     this.sessions.push(row);
@@ -33,6 +38,7 @@ class MemorySink implements RowSink {
   counts(): SinkCounts {
     return {
       events: this.events.length,
+      aiEvents: this.aiEvents.length,
       sessions: this.sessions.length,
       profiles: this.profiles.length,
     };
@@ -104,7 +110,7 @@ describe('generate', () => {
   test('every session has one session_start, one session_end and a matching sessions row', async () => {
     const sink = await run();
     const bySession = new Map<string, ClickhouseEventRow[]>();
-    for (const event of sink.events) {
+    for (const event of sessionEvents(sink)) {
       const list = bySession.get(event.session_id) ?? [];
       list.push(event);
       bySession.set(event.session_id, list);
@@ -137,6 +143,21 @@ describe('generate', () => {
     }
   });
 
+  test('background events carry no session or device, and stay in the past', async () => {
+    const sink = await run();
+    const background = sink.events.filter((event) => event.session_id === '');
+    expect(background.length).toBeGreaterThan(0);
+    const backgroundIds = new Set(background.map((event) => event.id));
+    expect(sink.aiEvents.some((row) => backgroundIds.has(row.id))).toBe(true);
+    for (const event of background) {
+      expect(event.device_id).toBe('');
+      expect(event.device).toBe('server');
+      expect(new Date(`${event.created_at}Z`).getTime()).toBeLessThanOrEqual(
+        NOW.getTime()
+      );
+    }
+  });
+
   test('events are ordered within a session and never in the future', async () => {
     const sink = await run();
     for (const event of sink.events) {
@@ -149,7 +170,9 @@ describe('generate', () => {
   test('profiles cover every profile_id the events reference, once each', async () => {
     const sink = await run();
     const referenced = new Set(
-      sink.events.map((event) => `${event.project_id}/${event.profile_id}`)
+      sessionEvents(sink).map(
+        (event) => `${event.project_id}/${event.profile_id}`
+      )
     );
     const written = sink.profiles.map(
       (profile) => `${profile.project_id}/${profile.id}`
@@ -167,7 +190,7 @@ describe('generate', () => {
 
   test('device and referrer fields come from the real parsers', async () => {
     const sink = await run();
-    const devices = new Set(sink.events.map((event) => event.device));
+    const devices = new Set(sessionEvents(sink).map((event) => event.device));
     expect(
       [...devices].every((device) =>
         ['desktop', 'mobile', 'tablet'].includes(device)
@@ -186,6 +209,11 @@ describe('generate', () => {
 });
 
 const MS_PER_DAY = 86_400_000;
+
+/** Background jobs write events with no session, device or visitor behind them. */
+function sessionEvents(sink: MemorySink): ClickhouseEventRow[] {
+  return sink.events.filter((event) => event.session_id !== '');
+}
 
 function dayOf(event: ClickhouseEventRow): string {
   return event.created_at.slice(0, 10);

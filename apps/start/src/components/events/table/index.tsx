@@ -5,7 +5,7 @@ import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2Icon } from 'lucide-react';
+import { CalendarIcon, Loader2Icon, ZapIcon } from 'lucide-react';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
@@ -13,7 +13,7 @@ import { useInViewport } from 'react-in-viewport';
 import EventListener from '../event-listener';
 import { useEventDrawer } from '../use-event-drawer';
 import { useColumns } from './columns';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -193,9 +193,12 @@ const VirtualizedEventsTable = ({
       </div>
 
       {!isLoading && data.length === 0 && (
-        <FullPageEmptyState
-          description={"Start sending events and you'll see them here"}
+        <EmptyState
+          className="py-16"
+          description="Nothing matches this date range and filters. Events appear within seconds of your site or app sending them."
+          icon={ZapIcon}
           title="No events"
+          variant="inline"
         />
       )}
 

@@ -460,7 +460,7 @@ export const encryptionKey: Check = (install) => {
       severity: 'error',
       title: 'ENCRYPTION_KEY is not 64 hex characters',
       detail:
-        'It guards stored credentials (2FA, Search Console, exports), so doctor will not replace an existing value.',
+        'It guards stored credentials (Search Console, exports), so doctor will not replace an existing value.',
       manual:
         'Generate a replacement with `openssl rand -hex 32` only if you have nothing encrypted yet.',
     };
@@ -470,7 +470,7 @@ export const encryptionKey: Check = (install) => {
     severity: 'error',
     title: 'ENCRYPTION_KEY is not set',
     detail:
-      'Needed for 2FA, Google Search Console and export credentials; must match on api and worker.',
+      'Needed for Google Search Console and export credentials; must match on api and worker.',
     fix: (target) => target.env.set('ENCRYPTION_KEY', randomHex(32)),
   };
 };
@@ -483,8 +483,25 @@ export const cookieSecret: Check = (install) => {
     id: 'env/cookie-secret',
     severity: 'error',
     title: 'COOKIE_SECRET is not set',
-    detail: 'Signs unsubscribe links and unlocks password-protected shares.',
+    detail:
+      'Without it (and without AUTH_SECRET) nobody can sign in. Also signs unsubscribe links and unlocks password-protected shares.',
     fix: (target) => target.env.set('COOKIE_SECRET', randomHex(16)),
+  };
+};
+
+export const authSecret: Check = (install) => {
+  const cookie = install.env.get('COOKIE_SECRET');
+  if (install.env.get('AUTH_SECRET') || !cookie) {
+    return null;
+  }
+  return {
+    id: 'env/auth-secret',
+    severity: 'warn',
+    title: 'AUTH_SECRET is not set',
+    detail:
+      'Sign-in sessions are signed with COOKIE_SECRET until it is. Set it so rotating COOKIE_SECRET does not sign everyone out.',
+    // The current value, so nobody signed in under the fallback is signed out.
+    fix: (target) => target.env.set('AUTH_SECRET', cookie),
   };
 };
 
@@ -734,6 +751,7 @@ export const checks: Check[] = [
   kafkaPartitions,
   encryptionKey,
   cookieSecret,
+  authSecret,
   renamedEnvVars,
   dashboardUrl,
   apiUrl,

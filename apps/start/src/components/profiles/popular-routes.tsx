@@ -1,10 +1,11 @@
 import { RouteIcon } from 'lucide-react';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
-import { Widget, WidgetEmptyState } from '@/components/widget';
+import { EmptyState } from '@/components/empty-state';
+import { Widget } from '@/components/widget';
 
-type Props = {
+interface Props {
   data: { count: number; path: string }[];
-};
+}
 
 export const PopularRoutes = ({ data }: Props) => {
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
@@ -14,7 +15,11 @@ export const PopularRoutes = ({ data }: Props) => {
         <WidgetTitle>Most visited pages</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
-        <WidgetEmptyState icon={RouteIcon} text="No pages visited yet" />
+        <EmptyState
+          icon={RouteIcon}
+          title="No pages visited yet"
+          variant="inline"
+        />
       ) : (
         <div className="flex flex-col gap-1 p-1">
           {data.slice(0, 5).map((item) => (

@@ -27,39 +27,24 @@ describe('zTimezone', () => {
   });
 });
 
-// The previous image reads no project_access rows as every project.
+// A selection of no projects means no project access, which is a valid choice.
 describe('an empty selected scope', () => {
-  const invite = {
-    email: 'a@example.com',
-    organizationId: 'org_1',
-    role: 'member' as const,
-  };
-
-  it('is rejected for invites and access updates', () => {
+  it('is accepted for invites and access updates', () => {
     expect(
-      zInviteUser.safeParse({ ...invite, projectScope: 'selected', access: [] })
-        .success
-    ).toBe(false);
+      zInviteUser.safeParse({
+        email: 'a@example.com',
+        organizationId: 'org_1',
+        role: 'member',
+        projectScope: 'selected',
+        access: [],
+      }).success
+    ).toBe(true);
     expect(
       zUpdateMemberAccess.safeParse({
         userId: 'user_1',
         organizationId: 'org_1',
         projectScope: 'selected',
         access: [],
-      }).success
-    ).toBe(false);
-  });
-
-  it('allows all projects, or a selection with at least one project', () => {
-    expect(
-      zInviteUser.safeParse({ ...invite, projectScope: 'all', access: [] })
-        .success
-    ).toBe(true);
-    expect(
-      zInviteUser.safeParse({
-        ...invite,
-        projectScope: 'selected',
-        access: [{ projectId: 'proj_1', level: 'read' }],
       }).success
     ).toBe(true);
   });

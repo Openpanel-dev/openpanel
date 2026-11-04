@@ -15,14 +15,13 @@ import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { LockIcon } from 'lucide-react';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
-import { useSessionExtension } from '@/hooks/use-session-extension';
 import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
@@ -72,13 +71,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     // hard-redirects them to /login.
     if (error instanceof TRPCClientError && error.data?.httpStatus === 403) {
       return (
-        <FullPageEmptyState
+        <EmptyState
           description={error.message}
           icon={LockIcon}
           title="No access"
+          variant="page"
         >
           <LinkButton href="/">Go back to home</LinkButton>
-        </FullPageEmptyState>
+        </EmptyState>
       );
     }
     return (
@@ -114,8 +114,6 @@ function OpIdentify() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  useSessionExtension();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>

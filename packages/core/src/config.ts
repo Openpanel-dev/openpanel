@@ -26,6 +26,13 @@ export interface OAuthClientConfig {
 
 export interface AuthConfig {
   /**
+   * AUTH_SECRET, else COOKIE_SECRET. Signs better-auth's session cookie;
+   * changing it signs everyone out. Unset leaves only legacy sessions.
+   */
+  secret: string | undefined;
+  /** DASHBOARD_URL plus API_CORS_ORIGINS: who may call `/api/auth`. */
+  trustedOrigins: string[];
+  /**
    * `undefined` means the variable is unset, which is what cloud runs and what
    * makes registration unconditionally open — distinct from an explicit
    * `ALLOW_REGISTRATION=false`.
@@ -74,6 +81,16 @@ export interface AnthropicConfig {
 export interface AiConfig {
   openai: OpenAiConfig;
   anthropic: AnthropicConfig;
+}
+
+/**
+ * OP_CLIENT_ID / OP_CLIENT_SECRET / OP_API_URL: the OpenPanel project this
+ * deployment reports its own AI calls to. Unset means no self-tracking.
+ */
+export interface SelfTrackingConfig {
+  clientId: string | undefined;
+  clientSecret: string | undefined;
+  apiUrl: string | undefined;
 }
 
 export interface SlackConfig {
@@ -170,6 +187,7 @@ export interface BuffersConfig {
     microBatchSize: number | undefined;
   };
   group: BufferSizing;
+  aiEvent: BufferSizing;
   profile: BufferSizing;
   profileBackfill: BufferSizing;
   replay: BufferSizing;
@@ -246,6 +264,7 @@ export interface CoreConfig {
   auth: AuthConfig;
   cookies: CookieConfig;
   ai: AiConfig;
+  selfTracking: SelfTrackingConfig;
   slack: SlackConfig;
   polar: PolarConfig;
   kafka: KafkaConfig;

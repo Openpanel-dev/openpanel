@@ -68,6 +68,7 @@ export default function EditMember(member: EditMemberProps) {
       <div className="col gap-4">
         <ProjectScopePicker
           access={access}
+          isReadOnly={member.role === 'viewer'}
           onAccessChange={setAccess}
           onScopeChange={setProjectScope}
           projectScope={projectScope}

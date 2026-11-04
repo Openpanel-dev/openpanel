@@ -28,6 +28,8 @@ export function testCoreConfig(
       interceptProcessOutput: false,
     },
     auth: {
+      secret: undefined,
+      trustedOrigins: [],
       allowRegistration: undefined,
       allowInvitation: undefined,
       github: { clientId: '', clientSecret: '', redirectUri: '' },
@@ -53,6 +55,11 @@ export function testCoreConfig(
         authToken: undefined,
         version: undefined,
       },
+    },
+    selfTracking: {
+      clientId: undefined,
+      clientSecret: undefined,
+      apiUrl: undefined,
     },
     slack: {
       clientId: undefined,
@@ -105,6 +112,7 @@ export function testCoreConfig(
         microBatchMs: undefined,
         microBatchSize: undefined,
       },
+      aiEvent: { batchSize: undefined, chunkSize: undefined },
       group: {
         batchSize: undefined,
         chunkSize: undefined,

@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
+import { toStatement } from '@openpanel/db/src/clickhouse/sql';
 import { getRedisCache } from '@openpanel/redis';
 import { bufferDepsWithCh } from '../../test/buffer-fixtures';
 import { testCoreConfig } from '../../test/config-fixture';
@@ -9,11 +10,13 @@ import type { IClickhouseProfile } from '../modules/profile/profile.service';
 const realChQuery = { ...(await import('../ch-query')) };
 
 const chInsert = mock(async (_options: unknown): Promise<unknown> => undefined);
-const chQuery = mock(async (_sql: string): Promise<IClickhouseProfile[]> => []);
+const chQuery = mock(
+  async (_sql: unknown): Promise<IClickhouseProfile[]> => []
+);
 
 mock.module('../ch-query', () => ({
   ...realChQuery,
-  chQuery: (_scope: unknown, sql: string) => chQuery(sql),
+  chQuery: (_scope: unknown, sql: unknown) => chQuery(sql),
 }));
 
 const { ProfileBuffer } = await import('./profile-buffer');
@@ -190,6 +193,40 @@ describe('ProfileBuffer', () => {
     expect(cached?.email).toBe('jane@example.com');
     expect(cached?.groups).toContain('existing-group');
     expect(cached?.groups).toContain('new-group');
+  });
+
+  it('finds an anonymous profile last seen days ago and keeps its created_at', async () => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .replace('T', ' ')
+      .replace('Z', '');
+    const existingInClickhouse = makeProfile({
+      id: 'device-uuid',
+      is_external: false,
+      created_at: weekAgo,
+      last_seen_at: weekAgo,
+      properties: { os: 'iOS', first_referrer: 'google' },
+    });
+    chQuery.mockResolvedValue([existingInClickhouse]);
+
+    await profileBuffer.add(
+      makeProfile({
+        id: 'device-uuid',
+        is_external: false,
+        properties: { os: 'iOS' },
+      })
+    );
+    await profileBuffer.processBuffer();
+
+    // A recency window on the lookup would hide this profile and make it new.
+    const lookup = toStatement(chQuery.mock.calls[0]?.[0] as never).query;
+    expect(lookup).not.toContain('INTERVAL');
+    const cached = await profileBuffer.fetchFromCache(
+      'device-uuid',
+      'project-1'
+    );
+    expect(cached?.created_at).toBe(weekAgo);
+    expect(cached?.properties.first_referrer).toBe('google');
   });
 
   it('buffer is empty after flush', async () => {

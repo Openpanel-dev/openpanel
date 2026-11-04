@@ -4,6 +4,7 @@
 
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
 import { toRangeBoundaryLiteral } from '../../../shared/ch-dates';
+import { AI_INTERNAL_EVENT_NAMES } from '../../ai/ai.constants';
 import {
   type CompiledFilterClauses,
   compiledFilterFragments,
@@ -14,6 +15,8 @@ const TABLE = {
   events: 'events',
   sessions: 'sessions',
 } as const;
+
+const NOT_AI_INTERNAL = sql`name NOT IN ${sql.array('String', AI_INTERNAL_EVENT_NAMES)}`;
 
 export const PROFILE_COLUMNS = [
   'id',
@@ -148,7 +151,7 @@ export function profileMetricsQuery(query: {
         countIf(name NOT IN ('screen_view', 'session_start', 'session_end')) as conversionEvents,
         sumIf(revenue, name = 'revenue') as revenue
       FROM ${sql.id(TABLE.events)}
-      WHERE profile_id = ${profileId} AND project_id = ${projectId}
+      WHERE profile_id = ${profileId} AND project_id = ${projectId} AND ${NOT_AI_INTERNAL}
     ),
     sessionStats AS (
       SELECT
@@ -529,14 +532,14 @@ export function profileActivityQuery(query: {
   projectId: string;
   profileId: string;
 }): SqlFragment {
-  return sql`SELECT count(*) as count, toStartOfDay(created_at) as date FROM ${sql.id(TABLE.events)} WHERE project_id = ${sql.string(query.projectId)} and profile_id = ${sql.string(query.profileId)} GROUP BY date ORDER BY date DESC`;
+  return sql`SELECT count(*) as count, toStartOfDay(created_at) as date FROM ${sql.id(TABLE.events)} WHERE project_id = ${sql.string(query.projectId)} and profile_id = ${sql.string(query.profileId)} AND ${NOT_AI_INTERNAL} GROUP BY date ORDER BY date DESC`;
 }
 
 export function profileMostEventsQuery(query: {
   projectId: string;
   profileId: string;
 }): SqlFragment {
-  return sql`SELECT count(*) as count, name FROM ${sql.id(TABLE.events)} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND project_id = ${sql.string(query.projectId)} and profile_id = ${sql.string(query.profileId)} GROUP BY name ORDER BY count DESC`;
+  return sql`SELECT count(*) as count, name FROM ${sql.id(TABLE.events)} WHERE name NOT IN ('screen_view', 'session_start', 'session_end') AND project_id = ${sql.string(query.projectId)} and profile_id = ${sql.string(query.profileId)} AND ${NOT_AI_INTERNAL} GROUP BY name ORDER BY count DESC`;
 }
 
 const POPULAR_ROUTES_LIMIT = 10;

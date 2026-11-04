@@ -135,6 +135,7 @@ export const CHAT_HINT_PAGES = [
   'events',
   'insights',
   'realtime',
+  'onboarding',
 ] as const;
 
 const MAX_ID_LENGTH = 128;
@@ -160,11 +161,19 @@ export const CHAT_TRIGGERS = ['submit-message', 'regenerate-message'] as const;
 
 const MAX_MESSAGE_ID_LENGTH = 64;
 
+// The AI SDK downloads a file part's URL from the API's network before the
+// model sees it, and the chat has no attachments, so a file part is refused.
+const zChatRequestPart = z
+  .record(z.string(), z.unknown())
+  .refine((part) => part.type !== 'file', {
+    message: 'File attachments are not supported',
+  });
+
 /** The one message the client sends per turn: the new user message, or the assistant message it responded to (tool approvals, client tool results). */
 export const zChatRequestMessage = z.object({
   id: z.string().min(1).max(MAX_MESSAGE_ID_LENGTH),
   role: z.enum(CHAT_MESSAGE_ROLES),
-  parts: z.array(z.record(z.string(), z.unknown())),
+  parts: z.array(zChatRequestPart),
   metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -180,6 +189,16 @@ export const zChatRequest = z.object({
 });
 
 export type ChatRequest = z.infer<typeof zChatRequest>;
+
+const MAX_REPORT_PROMPT_LENGTH = 1000;
+
+/** The report editor's prompt box: a description of the chart the user wants. */
+export const zReportDraftRequest = z.object({
+  projectId: z.string().min(1),
+  prompt: z.string().trim().min(1).max(MAX_REPORT_PROMPT_LENGTH),
+});
+
+export type ReportDraftRequest = z.infer<typeof zReportDraftRequest>;
 
 export const zChatMessageMetadata = z.object({
   modelId: z.string().optional(),
@@ -266,7 +285,7 @@ export const CHAT_ROUTES = {
     path: '/reports',
     label: 'Report editor',
     description:
-      'Build a new chart by hand: pick events, breakdowns, chart type.',
+      'Build a new chart: describe it in words, or pick events, breakdowns and chart type by hand.',
   },
   report: {
     path: '/reports/:reportId',

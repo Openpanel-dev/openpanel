@@ -3,17 +3,21 @@ import { Label } from '../ui/label';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 
-type Props = {
+interface Props {
   label: React.ReactNode;
   value: string;
   className?: string;
-};
+  onCopy?: () => void;
+}
 
-const CopyInput = ({ label, value, className }: Props) => {
+const CopyInput = ({ label, value, className, onCopy }: Props) => {
   return (
     <button
       className={cn('w-full min-w-0 text-left', className)}
-      onClick={() => clipboard(value)}
+      onClick={() => {
+        clipboard(value);
+        onCopy?.();
+      }}
       type="button"
     >
       {!!label && <Label>{label}</Label>}

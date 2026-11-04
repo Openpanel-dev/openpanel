@@ -15,6 +15,8 @@ interface WithLabel {
   /** Shown under the field; replaced by the error while there is one. */
   hint?: React.ReactNode;
   info?: React.ReactNode;
+  /** Rendered at the right end of the label row, e.g. a "Forgot password?" link. */
+  action?: React.ReactNode;
   className?: string;
 }
 type InputWithLabelProps = InputProps & Omit<WithLabel, 'children'>;
@@ -31,20 +33,31 @@ export const WithLabel = ({
   id,
   hint,
   info,
+  action,
   error,
 }: WithLabel) => {
   const message = error ?? hint;
   const fieldId = id ?? label;
+  const labelElement = (
+    <Label className="mb-0 flex items-center gap-1" htmlFor={fieldId}>
+      {label}
+      {info && (
+        <Tooltiper content={info}>
+          <InfoIcon className="text-muted-foreground" size={14} />
+        </Tooltiper>
+      )}
+    </Label>
+  );
   return (
     <div className={cn('flex flex-col gap-1.5', className)}>
-      <Label className="mb-0 flex items-center gap-1" htmlFor={fieldId}>
-        {label}
-        {info && (
-          <Tooltiper content={info}>
-            <InfoIcon className="text-muted-foreground" size={14} />
-          </Tooltiper>
-        )}
-      </Label>
+      {action ? (
+        <div className="flex items-center justify-between gap-2">
+          {labelElement}
+          {action}
+        </div>
+      ) : (
+        labelElement
+      )}
       {children}
       {message && (
         <p
@@ -64,7 +77,7 @@ export const WithLabel = ({
 };
 
 export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
-  ({ className, label, hint, info, error, ...inputProps }, ref) => {
+  ({ className, label, hint, info, action, error, ...inputProps }, ref) => {
     const hasMessage = Boolean(error ?? hint);
     const generatedId = useId();
     // A caller's own id and description are kept; the message is added to them.
@@ -75,6 +88,7 @@ export const InputWithLabel = forwardRef<HTMLInputElement, InputWithLabelProps>(
         .join(' ') || undefined;
     return (
       <WithLabel
+        action={action}
         className={className}
         error={error}
         hint={hint}

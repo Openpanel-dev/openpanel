@@ -1,4 +1,3 @@
-import crypto from 'node:crypto';
 import { sql } from '@openpanel/db/src/clickhouse/sql';
 import type {
   Prisma,
@@ -13,7 +12,7 @@ import type { ServiceDeps, Services } from '../../services';
 import { getMemberProjectGrants } from '../../shared/access-lookups';
 import { convertClickhouseDateToJs } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
 import { getId } from '../../slug-id';
 import { getClientByIdCached } from '../client/client.service';
 import type { IProjectFilters } from './project.constants';
@@ -48,11 +47,32 @@ export async function getProjectById(deps: DbScope, id: string) {
   return res;
 }
 
-/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. Empty cache name, so the Redis key is `cachable::<id>`. */
+/**
+ * L1 LRU (60s) + L2 Redis, one instance per Postgres client. Named so its keys
+ * never meet `getClientByIdCached`'s `cachable::<id>`: a project id is a slug
+ * of a user-chosen name and can spell out a client id.
+ */
 export const getProjectByIdCached = cacheablePerDb(
-  '',
+  'getProjectById',
   getProjectById,
   DAY_IN_SECONDS
+);
+
+/**
+ * Whether a project keeps AI prompts and completions. Redis only, no
+ * in-process copy: an opt-out must reach every ingest process at once.
+ */
+export const getProjectAiStoreContentCached = cacheablePerDb(
+  'getProjectAiStoreContent',
+  async (deps: DbScope, id: string): Promise<boolean | null> => {
+    const project = await deps.db.project.findUnique({
+      where: { id },
+      select: { aiStoreContent: true },
+    });
+    return project?.aiStoreContent ?? null;
+  },
+  DAY_IN_SECONDS,
+  { localCache: false }
 );
 
 export async function getProjectWithClients(deps: ServiceDeps, id: string) {
@@ -257,6 +277,8 @@ export async function getProjectActivationStatus(
 export interface CreatedProjectClient {
   id: string;
   secret: string;
+  /** Always a write client: the dashboard shows an MCP token only for read and root. */
+  type: 'write';
 }
 
 export async function listProjectsForOrganization(
@@ -307,7 +329,7 @@ export function createProjectService(
     project: IServiceProject;
     client: CreatedProjectClient | null;
   }> {
-    const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
+    const secret = newClientSecret();
     const project = await deps.db.project.create({
       data: {
         id: await getId(deps, 'project', input.name),
@@ -346,7 +368,9 @@ export function createProjectService(
 
     return {
       project,
-      client: project.clients[0] ? { id: project.clients[0].id, secret } : null,
+      client: project.clients[0]
+        ? { id: project.clients[0].id, secret, type: 'write' }
+        : null,
     };
   }
 
@@ -359,6 +383,7 @@ export function createProjectService(
       cors?: string[];
       crossDomain?: boolean;
       allowUnsafeRevenueTracking?: boolean;
+      aiStoreContent?: boolean;
       filters?: IProjectFilters[];
     }
   ): Promise<IServiceProject | null> {
@@ -389,6 +414,9 @@ export function createProjectService(
     if (input.allowUnsafeRevenueTracking !== undefined) {
       updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
     }
+    if (input.aiStoreContent !== undefined) {
+      updateData.aiStoreContent = input.aiStoreContent;
+    }
     if (input.filters !== undefined) {
       updateData.filters = input.filters;
     }
@@ -400,6 +428,7 @@ export function createProjectService(
 
     await Promise.all([
       getProjectByIdCached.clear(deps, project.id),
+      getProjectAiStoreContentCached.clear(deps, project.id),
       ...existing.clients.map((client) =>
         getClientByIdCached.clear(deps, client.id)
       ),

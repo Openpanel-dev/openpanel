@@ -6,6 +6,8 @@ import { KotlinIcon } from './icons/kotlin-icon';
 import { LaravelIcon } from './icons/laravel-icon';
 import { NextjsIcon } from './icons/nextjs-icon';
 import { NodeIcon } from './icons/node-icon';
+import { NuxtIcon } from './icons/nuxt-icon';
+import { PythonIcon } from './icons/python-icon';
 import { ReactIcon } from './icons/react-icon';
 import { RemixIcon } from './icons/remix-icon';
 import { RestIcon } from './icons/rest-icon';
@@ -14,13 +16,13 @@ import { RustIcon } from './icons/rust-icon';
 import { SwiftIcon } from './icons/swift-icon';
 import { VueIcon } from './icons/vue-icon';
 
-export type Framework = {
+export interface Framework {
   key: string;
   IconComponent: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   name: string;
   href: string;
   type: ('website' | 'app' | 'backend')[];
-};
+}
 
 export const frameworks: Framework[] = [
   {
@@ -31,13 +33,6 @@ export const frameworks: Framework[] = [
     type: ['website'],
   },
   {
-    key: 'react',
-    IconComponent: ReactIcon,
-    name: 'React',
-    href: 'https://openpanel.dev/docs/sdks/react',
-    type: ['website'],
-  },
-  {
     key: 'nextjs',
     IconComponent: NextjsIcon,
     name: 'Next.js',
@@ -45,10 +40,10 @@ export const frameworks: Framework[] = [
     type: ['website'],
   },
   {
-    key: 'remix',
-    IconComponent: RemixIcon,
-    name: 'Remix',
-    href: 'https://openpanel.dev/docs/sdks/remix',
+    key: 'react',
+    IconComponent: ReactIcon,
+    name: 'React',
+    href: 'https://openpanel.dev/docs/sdks/react',
     type: ['website'],
   },
   {
@@ -59,10 +54,24 @@ export const frameworks: Framework[] = [
     type: ['website'],
   },
   {
+    key: 'nuxt',
+    IconComponent: NuxtIcon,
+    name: 'Nuxt',
+    href: 'https://openpanel.dev/docs/sdks/nuxt',
+    type: ['website'],
+  },
+  {
     key: 'astro',
     IconComponent: AstroIcon,
     name: 'Astro',
     href: 'https://openpanel.dev/docs/sdks/astro',
+    type: ['website'],
+  },
+  {
+    key: 'remix',
+    IconComponent: RemixIcon,
+    name: 'Remix',
+    href: 'https://openpanel.dev/docs/sdks/remix',
     type: ['website'],
   },
   {
@@ -91,6 +100,13 @@ export const frameworks: Framework[] = [
     IconComponent: ExpressIcon,
     name: 'Express',
     href: 'https://openpanel.dev/docs/sdks/express',
+    type: ['backend'],
+  },
+  {
+    key: 'python',
+    IconComponent: PythonIcon,
+    name: 'Python',
+    href: 'https://openpanel.dev/docs/sdks/python',
     type: ['backend'],
   },
   {

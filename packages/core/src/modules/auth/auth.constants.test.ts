@@ -1,6 +1,5 @@
 // The ceilings exist so an input cannot choose how much work the server does:
-// a password reaches argon2, a recovery code reaches it ten times, and an
-// inviteId is written into a Set-Cookie header. These assert the bound fires
+// a password reaches argon2. These assert the bound fires
 // and, just as importantly, that an ordinary value still passes.
 
 import { describe, expect, test } from 'bun:test';
@@ -13,7 +12,6 @@ import {
   zSignInShare,
   zSignUpEmail,
   zTotpCode,
-  zTotpOrRecoveryCode,
 } from './auth.constants';
 
 const long = (n: number) => 'a'.repeat(n);
@@ -43,7 +41,6 @@ describe('passwords are bounded before argon2 sees them', () => {
         lastName: 'B',
         email: 'a@b.co',
         password: huge,
-        confirmPassword: huge,
       }).success
     ).toBe(false);
     expect(
@@ -58,14 +55,6 @@ describe('passwords are bounded before argon2 sees them', () => {
 describe('the TOTP inputs are bounded', () => {
   test('a six-digit code still passes, with spaces stripped', () => {
     expect(zTotpCode.parse('123 456')).toBe('123456');
-  });
-
-  // This one decides ten sequential argon2 verifies in consumeRecoveryCode.
-  test('a recovery code is capped', () => {
-    expect(zTotpOrRecoveryCode.safeParse('abcd-efgh').success).toBe(true);
-    expect(zTotpOrRecoveryCode.safeParse(long(MAX_TOKEN + 1)).success).toBe(
-      false
-    );
   });
 
   test('a huge TOTP code is refused before the regex runs over it', () => {
@@ -88,7 +77,6 @@ describe('emails and names', () => {
     const base = {
       email: 'a@b.co',
       password: 'longenough',
-      confirmPassword: 'longenough',
     };
     expect(
       zSignUpEmail.safeParse({ ...base, firstName: '   ', lastName: 'B' })

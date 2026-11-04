@@ -153,6 +153,9 @@ function makeDeps() {
   const enqueueSessionEnd = mock<IncomingEventDeps['enqueueSessionEnd']>(
     async () => undefined
   );
+  const addAiEvent = mock<IncomingEventDeps['aiEvents']['add']>(
+    async () => undefined
+  );
   const deps: IncomingEventDeps = {
     logger: noopLogger,
     sessions: { getExistingSession, ingest },
@@ -161,12 +164,14 @@ function makeDeps() {
     projects: {
       getCached: mock(async () => ({ firstEventAt: new Date(), filters: [] })),
       markFirstEvent: mock(async () => undefined),
+      getAiStoreContent: mock(async () => true),
     },
     enqueueSessionEnd,
     metrics: {
       sessionStarted: mock(() => undefined),
       sessionEndEnqueued: mock(() => undefined),
     },
+    aiEvents: { add: addAiEvent },
   };
   return {
     deps,
@@ -174,6 +179,7 @@ function makeDeps() {
     getExistingSession,
     ingest,
     enqueueSessionEnd,
+    addAiEvent,
   };
 }
 
@@ -301,6 +307,33 @@ describe('incomingEvent', () => {
     });
     const query = (event!.properties as { __query: object }).__query;
     expect(Object.keys(query)).toHaveLength(3);
+  });
+
+  test('keeps a client-sent __query and lets the URL query win over it', async () => {
+    const { deps, createEvent, ingest } = ctx;
+    ingest.mockResolvedValueOnce({ kind: 'extend', current: makeSession() });
+
+    await incomingEvent(
+      buildJobData({
+        event: {
+          name: 'screen_view',
+          timestamp: new Date().toISOString(),
+          isTimestampFromThePast: false,
+          properties: {
+            __path: 'https://example.com/?utm_source=google',
+            __query: { utm_source: 'meta', utm_campaign: 'first_touch' },
+          },
+        },
+      }),
+      deps
+    );
+
+    const event = createdEvents(createEvent).find(
+      (a) => a.name === 'screen_view'
+    );
+    expect(event!.properties).toMatchObject({
+      __query: { utm_source: 'google', utm_campaign: 'first_touch' },
+    });
   });
 
   test("keeps the event's own utm over the session's", async () => {
@@ -559,5 +592,156 @@ describe('incomingEvent', () => {
     );
     expect(sessionStartCalls).toHaveLength(1);
     expect(enqueueSessionEnd).not.toHaveBeenCalled();
+  });
+});
+
+describe('incomingEvent with an ai row', () => {
+  const aiDraft = {
+    type: 'generation' as const,
+    trace_id: 'trace_1',
+    span_id: '',
+    parent_id: '',
+    conversation_id: '',
+    name: 'summarize',
+    model: 'gpt-5-mini',
+    provider: 'openai',
+    input_tokens: 10,
+    output_tokens: 5,
+    cache_read_tokens: 0,
+    cache_write_tokens: 0,
+    reasoning_tokens: 0,
+    input_cost: 0.1,
+    output_cost: 0.2,
+    total_cost: 0.3,
+    cost_source: 'catalog' as const,
+    latency_ms: 100,
+    time_to_first_token_ms: 0,
+    is_error: false,
+    http_status: 0,
+    stop_reason: 'stop',
+    is_stream: false,
+    model_parameters: '',
+    input: '[{"role":"user"}]',
+    output: '[{"role":"assistant"}]',
+    tools: '[]',
+    error: '',
+    properties: {},
+  };
+  const storedDocument = {
+    id: producedEventId,
+    project_id: projectId,
+    profile_id: 'usr_1',
+    device_id: deviceId,
+    session_id: 'session-from-profile',
+    groups: ['acme'],
+    created_at: '2026-10-26 10:00:00.000',
+  };
+
+  function aiJob(): IncomingEventPayload {
+    return buildJobData({
+      id: producedEventId,
+      uaInfo: uaInfoServer,
+      event: {
+        name: 'ai_generation',
+        profileId: 'usr_1',
+        groups: ['acme'],
+        properties: { ai_model: 'gpt-5-mini' },
+        timestamp: Date.now(),
+        isTimestampFromThePast: false,
+      },
+      ai: aiDraft,
+    });
+  }
+
+  test('writes the ai row with the identity the events row resolved to', async () => {
+    const { deps, createEvent, addAiEvent } = ctx;
+    createEvent.mockResolvedValueOnce({ document: storedDocument });
+
+    await incomingEvent(aiJob(), deps);
+
+    expect(createEvent).toHaveBeenCalledTimes(1);
+    expect(addAiEvent).toHaveBeenCalledTimes(1);
+    expect(addAiEvent.mock.calls[0]![0]).toMatchObject({
+      ...storedDocument,
+      span_id: producedEventId,
+      model: 'gpt-5-mini',
+      input: '[{"role":"user"}]',
+    });
+  });
+
+  test('the project privacy setting blanks the content', async () => {
+    const { deps, createEvent, addAiEvent } = ctx;
+    createEvent.mockResolvedValueOnce({ document: storedDocument });
+    (
+      deps.projects.getAiStoreContent as ReturnType<typeof mock>
+    ).mockResolvedValue(false);
+
+    await incomingEvent(aiJob(), deps);
+
+    expect(addAiEvent).toHaveBeenCalledTimes(1);
+    expect(addAiEvent.mock.calls[0]![0]).toMatchObject({
+      input: '',
+      output: '',
+      tools: '',
+      input_tokens: 10,
+    });
+  });
+
+  test('an anonymous ai event opens no session and keeps no device id, even with a browser user-agent', async () => {
+    const { deps, createEvent, addAiEvent, ingest, getExistingSession } = ctx;
+    const anonymousDocument = {
+      ...storedDocument,
+      profile_id: '',
+      device_id: '',
+      session_id: '',
+    };
+    createEvent.mockResolvedValueOnce({ document: anonymousDocument });
+
+    await incomingEvent(
+      buildJobData({
+        uaInfo,
+        deviceId: '',
+        sessionId: '',
+        event: {
+          name: 'ai_generation',
+          properties: {},
+          timestamp: Date.now(),
+          isTimestampFromThePast: false,
+        },
+        ai: aiDraft,
+      }),
+      deps
+    );
+
+    expect(ingest).not.toHaveBeenCalled();
+    expect(getExistingSession).not.toHaveBeenCalled();
+    expect(createdEvents(createEvent)).toEqual([
+      expect.objectContaining({
+        name: 'ai_generation',
+        deviceId: '',
+        sessionId: '',
+        profileId: '',
+      }),
+    ]);
+    expect(addAiEvent.mock.calls[0]![0]).toMatchObject({
+      profile_id: '',
+      device_id: '',
+      session_id: '',
+    });
+  });
+
+  test('an event the project filter excludes leaves no ai row', async () => {
+    const { deps, createEvent, addAiEvent } = ctx;
+    (deps.projects.getCached as ReturnType<typeof mock>).mockResolvedValue({
+      firstEventAt: new Date(),
+      filters: [
+        { type: 'event', name: 'ai_generation', segment: 'event', filters: [] },
+      ],
+    });
+
+    await incomingEvent(aiJob(), deps);
+
+    expect(createEvent).not.toHaveBeenCalled();
+    expect(addAiEvent).not.toHaveBeenCalled();
   });
 });

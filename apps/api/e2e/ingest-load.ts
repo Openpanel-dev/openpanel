@@ -21,13 +21,20 @@
  *   --project acme-shop   project id, for the ClickHouse counts
  *   --client / --secret   write client; defaults to the seeded project's
  *   --label run           prefix for the output files in --out
- *   --out /tmp/openpanel-ingest-load
+ *   --out <dir>           default: a fresh private directory under $TMPDIR
  * Env: API_URL (or E2E_API_URL), REDIS_URL, CLICKHOUSE_URL, and the Kafka
  * topic and group from the api's own config loader.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { createKafkaAdmin, sampleConsumerGroupLag } from '@openpanel/core';
 import { getRedisCache } from '@openpanel/redis';
@@ -59,7 +66,7 @@ const { values } = parseArgs({
     client: { type: 'string' },
     secret: { type: 'string' },
     label: { type: 'string', default: 'run' },
-    out: { type: 'string', default: '/tmp/openpanel-ingest-load' },
+    out: { type: 'string' },
     timeout: { type: 'string', default: String(DEFAULT_TIMEOUT_S) },
   },
 });
@@ -80,8 +87,13 @@ const timeoutS = integerOption('timeout', values.timeout, 1);
 const total = devices * perDevice;
 const projectId = values.project;
 const runId = `${values.label}_${Date.now().toString(36)}`;
-const outPrefix = resolve(values.out, runId);
-mkdirSync(values.out, { recursive: true });
+// A fixed name under /tmp could be pre-created by another local user, who would
+// then decide where the samples are appended.
+const outDir =
+  values.out ?? mkdtempSync(join(tmpdir(), 'openpanel-ingest-load-'));
+mkdirSync(outDir, { recursive: true });
+const outPrefix = resolve(outDir, runId);
+console.log(`Writing ${outPrefix}.samples and ${outPrefix}.json`);
 
 const apiUrl = process.env.E2E_API_URL ?? process.env.API_URL;
 if (!apiUrl) {

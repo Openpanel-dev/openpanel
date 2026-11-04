@@ -1,4 +1,5 @@
 import { expect, test } from 'bun:test';
+import { TEST_CLICKHOUSE_URL } from '../../../test/databases';
 
 // The exports map is the only structural barrier between apps/start and a
 // service. Widening it is silent, so it is asserted here.
@@ -13,7 +14,8 @@ test('a non-exported internal path does not resolve', async () => {
 });
 
 test('preload pins infrastructure at local addresses', () => {
-  expect(process.env.CLICKHOUSE_URL).toBe(
+  expect(process.env.CLICKHOUSE_URL).toBe(TEST_CLICKHOUSE_URL);
+  expect(process.env.CLICKHOUSE_URL).toStartWith(
     'http://localhost:23123/openpanel_test'
   );
   expect(process.env.SELF_HOSTED).toBe('true');

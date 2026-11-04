@@ -26,7 +26,16 @@ export const NotificationsTable = ({ query }: Props) => {
   return (
     <>
       <DataTableToolbar table={table} />
-      <DataTable error={isError} loading={isLoading} table={table} />
+      <DataTable
+        empty={{
+          title: 'No notifications yet',
+          description:
+            'Alerts from your rules land here, and in the channels they send to.',
+        }}
+        error={isError}
+        loading={isLoading}
+        table={table}
+      />
     </>
   );
 };

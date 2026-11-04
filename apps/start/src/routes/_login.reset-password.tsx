@@ -24,7 +24,7 @@ function Component() {
   const { token } = Route.useSearch();
 
   return (
-    <div className="col w-full gap-8 text-left">
+    <div className="col w-full gap-8">
       <ResetPasswordForm token={token} />
     </div>
   );

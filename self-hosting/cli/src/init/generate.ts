@@ -16,7 +16,12 @@ const OPENPANEL_IMAGE_SERVICES = [
 ] as const;
 
 const BCRYPT_COST = 10;
-const SECRET_BYTES = { cookie: 16, encryption: 32, admin: 12 } as const;
+const SECRET_BYTES = {
+  cookie: 16,
+  auth: 32,
+  encryption: 32,
+  admin: 12,
+} as const;
 
 export const BUNDLED_URLS = {
   clickhouse: 'http://op-ch:8123/openpanel',
@@ -47,6 +52,7 @@ export interface InitAnswers {
 
 export interface Secrets {
   cookieSecret: string;
+  authSecret: string;
   encryptionKey: string;
   adminPassword: string;
 }
@@ -56,6 +62,10 @@ export const generateSecrets = (existing: EnvFile | null = null): Secrets => ({
   cookieSecret:
     existing?.get('COOKIE_SECRET') ??
     randomBytes(SECRET_BYTES.cookie).toString('hex'),
+  authSecret:
+    existing?.get('AUTH_SECRET') ??
+    existing?.get('COOKIE_SECRET') ??
+    randomBytes(SECRET_BYTES.auth).toString('hex'),
   encryptionKey:
     existing?.get('ENCRYPTION_KEY') ??
     randomBytes(SECRET_BYTES.encryption).toString('hex'),
@@ -67,19 +77,23 @@ export const generateSecrets = (existing: EnvFile | null = null): Secrets => ({
 export const hostOf = (domain: string): string =>
   domain.replace(/^https?:\/\//, '');
 
-// Values can contain `$` (bcrypt hashes do), so never pass them as the
-// replacement string, where `$&` and friends are special.
-const fill = (text: string, values: Record<string, string>): string =>
-  Object.entries(values).reduce(
-    (result, [name, value]) => result.replaceAll(`$${name}`, () => value),
-    text
+// One pass over the template: an inserted value (an external URL, a bcrypt
+// hash) may itself contain `$NAME`, and must not be expanded into another
+// secret. Longest names first, so `$DATABASE_URL_DIRECT` is not read as
+// `$DATABASE_URL` followed by `_DIRECT`.
+const fill = (text: string, values: Record<string, string>): string => {
+  const names = Object.keys(values).sort((a, b) => b.length - a.length);
+  const placeholder = new RegExp(`\\$(${names.join('|')})`, 'g');
+  return text.replace(
+    placeholder,
+    (_match, name: string) => values[name] ?? ''
   );
+};
 
 const renderEnv = (answers: InitAnswers, secrets: Secrets): string => {
   const urlFor = (service: DataService) =>
     answers.external[service] ?? BUNDLED_URLS[service];
   const filled = fill(templates.env, {
-    // Longest names first: `$DATABASE_URL_DIRECT` must not be eaten by `$DATABASE_URL`.
     DATABASE_URL_DIRECT: urlFor('postgres'),
     DATABASE_URL: urlFor('postgres'),
     CLICKHOUSE_URL: urlFor('clickhouse'),
@@ -87,6 +101,7 @@ const renderEnv = (answers: InitAnswers, secrets: Secrets): string => {
     DASHBOARD_URL: answers.domain,
     API_URL: `${answers.domain}/api`,
     COOKIE_SECRET: secrets.cookieSecret,
+    AUTH_SECRET: secrets.authSecret,
     ADMIN_USERNAME: 'admin',
     ADMIN_PASSWORD: secrets.adminPassword,
     ENCRYPTION_KEY: secrets.encryptionKey,

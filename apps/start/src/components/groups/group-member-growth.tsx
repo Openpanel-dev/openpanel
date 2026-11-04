@@ -6,6 +6,7 @@ import { Grid } from '@/components/charts/grid';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { XAxis } from '@/components/charts/x-axis';
 import { YAxis } from '@/components/charts/y-axis';
+import { EmptyState } from '@/components/empty-state';
 import { Widget, WidgetBody } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
@@ -47,9 +48,13 @@ export function GroupMemberGrowth({ data }: Props) {
       </WidgetHead>
       <WidgetBody>
         {data.length === 0 ? (
-          <p className="py-4 text-center text-muted-foreground text-sm">
-            No data yet
-          </p>
+          <EmptyState
+            className="h-[200px]"
+            description="New members in the last 30 days will be charted here."
+            icon={TrendingUpIcon}
+            title="No new members yet"
+            variant="inline"
+          />
         ) : (
           <AreaChart
             animationDuration={0}

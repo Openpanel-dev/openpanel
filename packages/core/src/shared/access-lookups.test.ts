@@ -5,13 +5,12 @@
 import { expect, test } from 'bun:test';
 import type { Db } from '../context';
 import {
-  effectiveProjectGrants,
   listProjectMemberEmails,
   resolveProjectAccess,
 } from './access-lookups';
 
 test('scope all follows the role: write for members and admins, read for viewers', () => {
-  for (const role of ['org:admin', 'org:member', 'admin', 'member', 'owner']) {
+  for (const role of ['admin', 'member', 'owner']) {
     expect(
       resolveProjectAccess({ role, projectScope: 'all', grant: null })
     ).toEqual({ level: 'write' });
@@ -22,7 +21,7 @@ test('scope all follows the role: write for members and admins, read for viewers
 });
 
 test('scope selected without a row is no access, whatever the role', () => {
-  for (const role of ['org:admin', 'owner', 'member', 'viewer']) {
+  for (const role of ['admin', 'owner', 'member', 'viewer']) {
     expect(
       resolveProjectAccess({ role, projectScope: 'selected', grant: null })
     ).toBeNull();
@@ -32,14 +31,14 @@ test('scope selected without a row is no access, whatever the role', () => {
 test('a selected row derives write from the role unless it restricts to read', () => {
   expect(
     resolveProjectAccess({
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       grant: { level: null },
     })
   ).toEqual({ level: 'write' });
   expect(
     resolveProjectAccess({
-      role: 'org:member',
+      role: 'member',
       projectScope: 'selected',
       grant: { level: 'read' },
     })
@@ -76,7 +75,7 @@ function migrated(
 ) {
   const grant = rows.find((item) => item.projectId === projectId);
   return resolveProjectAccess({
-    role: 'org:member',
+    role: 'member',
     projectScope: rows.length === 0 ? 'all' : 'selected',
     grant: grant ? { level: grant.level === 'read' ? 'read' : null } : null,
   });
@@ -106,66 +105,11 @@ test('the migrated shape gives the same verdict as the legacy rule for every row
   }
 });
 
-test('legacy rows written by the previous image override a stale all scope', () => {
-  expect(
-    effectiveProjectGrants({
-      projectScope: 'all',
-      projects: [],
-      legacyGrants: [
-        { projectId: 'a', level: 'read' },
-        { projectId: 'b', level: 'write' },
-      ],
-    })
-  ).toEqual({
-    projectScope: 'selected',
-    projects: [
-      { projectId: 'a', level: 'read' },
-      { projectId: 'b', level: null },
-    ],
-  });
-});
-
-test('without legacy rows the member scope and rows apply as stored', () => {
-  const member = {
-    projectScope: 'selected' as const,
-    projects: [{ projectId: 'a', level: null }],
-    legacyGrants: [],
-  };
-  expect(effectiveProjectGrants(member)).toEqual({
-    projectScope: 'selected',
-    projects: [{ projectId: 'a', level: null }],
-  });
-});
-
-test('duplicate legacy rows for one project keep the read restriction', () => {
-  for (const legacyGrants of [
-    [
-      { projectId: 'a', level: 'write' as const },
-      { projectId: 'a', level: 'read' as const },
-    ],
-    [
-      { projectId: 'a', level: 'read' as const },
-      { projectId: 'a', level: 'admin' as const },
-    ],
-  ]) {
-    expect(
-      effectiveProjectGrants({
-        projectScope: 'all',
-        projects: [],
-        legacyGrants,
-      })
-    ).toEqual({
-      projectScope: 'selected',
-      projects: [{ projectId: 'a', level: 'read' }],
-    });
-  }
-});
-
 test('listProjectMemberEmails mails all-scope members and selected members with a row, nobody else', async () => {
   const members = [
     {
       userId: 'u_all',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'all',
       projects: [],
       user: { email: 'all@example.com' },
@@ -179,29 +123,18 @@ test('listProjectMemberEmails mails all-scope members and selected members with 
     },
     {
       userId: 'u_other',
-      role: 'org:admin',
+      role: 'admin',
       projectScope: 'selected',
       projects: [{ projectId: 'p2', level: null }],
       user: { email: 'other@example.com' },
     },
     {
-      userId: 'u_legacy',
-      role: 'org:member',
-      projectScope: 'all',
-      projects: [],
-      user: { email: 'legacy@example.com' },
-    },
-    {
       userId: 'u_dup',
-      role: 'org:member',
+      role: 'member',
       projectScope: 'all',
       projects: [],
       user: { email: 'all@example.com' },
     },
-  ];
-  // A project_access row written by the previous image restricts u_legacy to p2.
-  const legacyGrants = [
-    { userId: 'u_legacy', projectId: 'p2', level: 'write' },
   ];
   const memberWhere: unknown[] = [];
   const db = {
@@ -211,7 +144,6 @@ test('listProjectMemberEmails mails all-scope members and selected members with 
         return members;
       },
     },
-    projectAccess: { findMany: async () => legacyGrants },
   } as unknown as Db;
 
   const emails = await listProjectMemberEmails(db, {

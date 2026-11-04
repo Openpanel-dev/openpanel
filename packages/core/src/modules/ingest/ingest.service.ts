@@ -18,6 +18,8 @@ import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
 import { headerValue, type IngestHeaders } from '../../shared/headers';
 import { generateDeviceId } from '../../shared/profileId';
+import type { IAiPayload } from '../ai/ai.constants';
+import { normalizeAiPayload } from '../ai/ai.service';
 import { createBotEvent } from '../event/event.service';
 import { getOrganizationByProjectIdCached } from '../organization/organization.service';
 import {
@@ -27,16 +29,17 @@ import {
 } from '../profile/profile.service';
 import { getSalts } from '../salt/salt.service';
 import { convertClickhouseDateToJs } from '../session/src/dates';
-import type {
-  DeprecatedPostEventPayload,
-  IAssignGroupPayload,
-  IDecrementPayload,
-  IGroupPayload,
-  IIdentifyPayload,
-  IIncrementPayload,
-  IReplayPayload,
-  ITrackHandlerPayload,
-  ITrackPayload,
+import {
+  type DeprecatedPostEventPayload,
+  type IAssignGroupPayload,
+  type IDecrementPayload,
+  type IGroupPayload,
+  type IIdentifyPayload,
+  type IIncrementPayload,
+  type IReplayPayload,
+  type ITrackHandlerPayload,
+  type ITrackPayload,
+  zLooseIdentifyPayload,
 } from './ingest.constants';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
@@ -103,6 +106,7 @@ const FIFTEEN_MINUTES_MS = 15 * ONE_MINUTE_MS;
  */
 const EARLIEST_ACCEPTED_TIMESTAMP_MS = Date.UTC(2000, 0, 1);
 const FALLBACK_USER_AGENT = 'unknown/1.0';
+const NO_DEVICE = { deviceId: '', sessionId: '' } as const;
 
 /** The whitelisted subset that ships with the queue payload. */
 export function getStringHeaders(
@@ -119,14 +123,20 @@ export function getStringHeaders(
 
 function getIdentity(body: ITrackHandlerPayload): IIdentifyPayload | undefined {
   if (body.type === 'track') {
-    const identity = body.payload.properties?.__identify as
-      | IIdentifyPayload
-      | undefined;
-
-    if (identity) {
-      return identity;
+    const submitted = body.payload.properties?.__identify;
+    if (submitted !== undefined) {
+      const identity = zLooseIdentifyPayload.safeParse(submitted);
+      if (identity.success) {
+        return identity.data;
+      }
     }
 
+    return body.payload.profileId
+      ? { profileId: String(body.payload.profileId) }
+      : undefined;
+  }
+
+  if (body.type === 'ai') {
     return body.payload.profileId
       ? { profileId: String(body.payload.profileId) }
       : undefined;
@@ -150,25 +160,48 @@ function sanitizeOverrideDeviceId(raw: unknown): string | undefined {
 export function getOverrideDeviceId(
   body: ITrackHandlerPayload
 ): string | undefined {
+  if (body.type === 'ai') {
+    return sanitizeOverrideDeviceId(body.payload.deviceId);
+  }
   if (body.type !== 'track') {
     return undefined;
   }
   return sanitizeOverrideDeviceId(body.payload?.properties?.__deviceId);
 }
 
+/**
+ * `properties.__timestamp` off whatever arrived: `/event` has no body schema,
+ * so `payload` can be a string or null, and `'properties' in payload` throws
+ * on a primitive.
+ */
+export function getPropertyTimestamp(payload: unknown): unknown {
+  if (typeof payload !== 'object' || payload === null) {
+    return undefined;
+  }
+  if (!('properties' in payload)) {
+    return undefined;
+  }
+  const { properties } = payload as { properties?: { __timestamp?: unknown } };
+  return properties?.__timestamp;
+}
+
+/** The back-date a validated `/track` body carries, by its declared type. */
+export function getUserDefinedTimestamp(body: ITrackHandlerPayload): unknown {
+  if (body.type === 'ai') {
+    return body.payload.timestamp;
+  }
+  return getPropertyTimestamp(body.payload);
+}
+
 export function getTimestamp(
   timestamp: number | undefined,
-  payload: ITrackHandlerPayload['payload']
+  userDefinedTimestamp: unknown
 ): { timestamp: number; isTimestampFromThePast: boolean } {
   const safeTimestamp = timestamp || Date.now();
-  // `/event` has no body schema, so `payload` can be a string or null;
-  // `'properties' in payload` throws on a primitive.
-  const userDefinedTimestamp =
-    typeof payload === 'object' && payload !== null && 'properties' in payload
-      ? (payload?.properties?.__timestamp as string | undefined)
-      : undefined;
-
-  if (!userDefinedTimestamp) {
+  const isUsable =
+    typeof userDefinedTimestamp === 'string' ||
+    typeof userDefinedTimestamp === 'number';
+  if (!(isUsable && userDefinedTimestamp)) {
     return { timestamp: safeTimestamp, isTimestampFromThePast: false };
   }
 
@@ -234,7 +267,10 @@ async function buildContext(
 ): Promise<TrackContext> {
   const sessionTimeoutMs = resolveSessionTimeoutMs(deps.config);
   const projectId = request.projectId as string;
-  const timestamp = getTimestamp(request.timestamp, request.body.payload);
+  const timestamp = getTimestamp(
+    request.timestamp,
+    getUserDefinedTimestamp(request.body)
+  );
   const ip =
     request.body.type === 'track' && request.body.payload.properties?.__ip
       ? (request.body.payload.properties.__ip as string)
@@ -260,17 +296,22 @@ async function buildContext(
     getSalts(deps),
   ]);
 
-  const deviceIdResult = await getDeviceId({
-    projectId,
-    ip,
-    ua,
-    salts,
-    overrideDeviceId,
-    eventTimeMs: timestamp.timestamp,
-    sessionBuffer: buffers.session,
-    sessionTimeoutMs,
-    logger: deps.logger,
-  });
+  // The ip + user-agent hash identifies a browser; for an AI call it would
+  // only name the backend that made it, and show up as an anonymous user.
+  const isDeviceless = request.body.type === 'ai' && !overrideDeviceId;
+  const deviceIdResult = isDeviceless
+    ? NO_DEVICE
+    : await getDeviceId({
+        projectId,
+        ip,
+        ua,
+        salts,
+        overrideDeviceId,
+        eventTimeMs: timestamp.timestamp,
+        sessionBuffer: buffers.session,
+        sessionTimeoutMs,
+        logger: deps.logger,
+      });
 
   return {
     projectId,
@@ -340,6 +381,47 @@ async function handleTrack(
   promises.push(transport.produceIncomingEvent(queueData, partitionKey));
 
   await Promise.all(promises);
+}
+
+/**
+ * An AI event is a server event in all but name: no bot scoring, no session
+ * of its own. It keys the partition on the profile so one user's trace stays
+ * ordered, and ships the typed row draft next to the slim `events` payload.
+ */
+async function handleAi(
+  payload: IAiPayload,
+  context: TrackContext,
+  transport: IngestTransport
+): Promise<void> {
+  const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
+  const normalized = normalizeAiPayload(payload);
+  const uaInfo = parseUserAgent(headers['user-agent'], undefined);
+  const profileId =
+    payload.profileId === undefined ? undefined : String(payload.profileId);
+
+  const queueData: IncomingEventPayload = {
+    id: uuid(),
+    projectId,
+    headers,
+    event: {
+      name: normalized.name,
+      properties: normalized.properties,
+      profileId,
+      groups: payload.groups ?? [],
+      timestamp: timestamp.value,
+      isTimestampFromThePast: timestamp.isFromPast,
+    },
+    uaInfo,
+    geo,
+    deviceId,
+    sessionId,
+    ai: normalized.draft,
+  };
+
+  const partitionKey = profileId
+    ? `${projectId}:${profileId}`
+    : deviceId || generateId();
+  await transport.produceIncomingEvent(queueData, partitionKey);
 }
 
 async function handleIdentify(
@@ -525,6 +607,9 @@ export async function ingestTrack(
     case 'assign_group':
       await handleAssignGroup(transport.deps, body.payload, context);
       break;
+    case 'ai':
+      await handleAi(body.payload, context, transport);
+      break;
     default:
       return { status: 'invalid-type' };
   }
@@ -613,6 +698,12 @@ export type LegacyEventOutcome =
   | { status: 'ok' }
   | { status: 'missing-project-id' };
 
+function legacyProfileId(raw: unknown): string | undefined {
+  return typeof raw === 'string' || typeof raw === 'number'
+    ? String(raw)
+    : undefined;
+}
+
 export async function ingestLegacyEvent(
   request: {
     projectId: string | null | undefined;
@@ -639,11 +730,9 @@ export async function ingestLegacyEvent(
     return { status: 'ok' };
   }
 
-  // `/event` has no body schema, so `getTimestamp` reads `properties` off
-  // whatever arrived.
   const { timestamp, isTimestampFromThePast } = getTimestamp(
     request.timestamp,
-    request.body as ITrackHandlerPayload['payload']
+    getPropertyTimestamp(request.body)
   );
   const ip = request.clientIp;
   const ua = headerValue(request.headers, 'user-agent') ?? FALLBACK_USER_AGENT;
@@ -686,8 +775,14 @@ export async function ingestLegacyEvent(
       id: uuid(),
       projectId,
       headers,
+      // Picked, not spread: this route has no body schema, and a stray field
+      // (`groups` as an object, the body's `clientSecret`) would otherwise
+      // ride into Kafka and onto the shared buffers' insert batches.
       event: {
-        ...request.body,
+        name,
+        profileId: legacyProfileId(request.body?.profileId),
+        properties: request.body?.properties,
+        groups: [],
         timestamp,
         isTimestampFromThePast,
       },

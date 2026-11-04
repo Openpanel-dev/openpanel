@@ -2,6 +2,7 @@ import type { IServiceEvent } from '@openpanel/core';
 import { isToday } from 'date-fns';
 import { CopyIcon } from 'lucide-react';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { EmptyState } from '@/components/empty-state';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { countries } from '@/translations/countries';
 import { camelCaseToWords } from '@/utils/casing';
@@ -159,9 +160,11 @@ export function KeyValueGrid({
       })}
 
       {data.length === 0 && (
-        <div className="col-span-full py-8 text-center text-muted-foreground">
-          No data available
-        </div>
+        <EmptyState
+          className="col-span-full py-6"
+          title="Nothing to show"
+          variant="inline"
+        />
       )}
     </div>
   );

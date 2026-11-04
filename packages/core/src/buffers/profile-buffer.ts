@@ -42,6 +42,8 @@ const DEFAULT_BATCH_SIZE = 200;
 const DEFAULT_CHUNK_SIZE = 1000;
 const DEFAULT_TTL_IN_SECONDS = 60 * 60;
 const DEFAULT_FETCH_CHUNK_SIZE = 50;
+// Matches the two lookups (identified, anonymous) that used to run side by side.
+const FETCH_CONCURRENCY = 2;
 
 export class ProfileBuffer extends BaseBuffer {
   private readonly batchSize =
@@ -175,16 +177,14 @@ export class ProfileBuffer extends BaseBuffer {
   ): Promise<Map<string, IClickhouseProfile>> {
     const result = new Map<string, IClickhouseProfile>();
 
-    // Non-external (anonymous/device) profiles get a 2-day recency filter to
-    // avoid pulling stale anonymous sessions from far back.
-    const external = profiles.filter((p) => p.is_external !== false);
-    const nonExternal = profiles.filter((p) => p.is_external === false);
-
-    const fetchGroup = async (
-      group: IClickhouseProfile[],
-      withDateFilter: boolean
-    ) => {
-      for (const chunk of this.chunks(group, this.fetchChunkSize)) {
+    // No recency window. SDKs that send their own device id keep an anonymous
+    // profile for weeks; one that comes back and is not found is written as
+    // new, with a new created_at, so its rows split across monthly partitions
+    // and its earlier properties are lost. The window pruned nothing: the
+    // table is partitioned by created_at, not last_seen_at.
+    await this.parallelLimit(
+      this.chunks(profiles, this.fetchChunkSize),
+      async (chunk) => {
         const tuples = sql.join(
           chunk.map(
             (p) =>
@@ -193,13 +193,10 @@ export class ProfileBuffer extends BaseBuffer {
           ', '
         );
         try {
-          // Qualify with `p.`: a bare `last_seen_at` resolves to the aggregate
-          // alias and is illegal in WHERE (ILLEGAL_AGGREGATION).
           const rows = await this.chQuery<IClickhouseProfile>(
             sql`SELECT ${PROFILE_LATEST_AGGREGATE_COLUMNS}
             FROM ${sql.id(TABLE_NAMES.profiles)} AS p
             WHERE (p.id, p.project_id) IN (${tuples})
-            ${withDateFilter ? sql`AND p.last_seen_at > now() - INTERVAL 2 DAY` : sql.empty}
             GROUP BY p.id, p.project_id`
           );
           for (const row of rows) {
@@ -211,13 +208,9 @@ export class ProfileBuffer extends BaseBuffer {
             'Failed to batch fetch profiles from Clickhouse, proceeding without existing data'
           );
         }
-      }
-    };
-
-    await Promise.all([
-      fetchGroup(external, false),
-      fetchGroup(nonExternal, true),
-    ]);
+      },
+      FETCH_CONCURRENCY
+    );
 
     return result;
   }

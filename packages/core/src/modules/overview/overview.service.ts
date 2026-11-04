@@ -908,12 +908,23 @@ export async function getUserJourney(
 
   const getNodeId = (path: string, step: number) => `${path}::step${step}`;
 
-  const transitionsByStep = new Map<number, typeof transitions>();
+  // Keyed by step, then source, so each active node reads only its own edges.
+  const transitionsByStepAndSource = new Map<
+    number,
+    Map<string, typeof transitions>
+  >();
   for (const t of transitions) {
-    if (!transitionsByStep.has(t.step)) {
-      transitionsByStep.set(t.step, []);
+    let bySource = transitionsByStepAndSource.get(t.step);
+    if (!bySource) {
+      bySource = new Map();
+      transitionsByStepAndSource.set(t.step, bySource);
     }
-    transitionsByStep.get(t.step)!.push(t);
+    const fromSource = bySource.get(t.source);
+    if (fromSource) {
+      fromSource.push(t);
+    } else {
+      bySource.set(t.source, [t]);
+    }
   }
 
   const activeNodes = new Map<string, string>(); // path -> nodeId
@@ -929,12 +940,11 @@ export async function getUserJourney(
   });
 
   for (let step = 1; step < steps; step++) {
-    const stepTransitions = transitionsByStep.get(step) || [];
+    const stepTransitions = transitionsByStepAndSource.get(step);
     const nextActiveNodes = new Map<string, string>();
 
     for (const [sourcePath, sourceNodeId] of activeNodes) {
-      const fromSource = stepTransitions
-        .filter((t) => t.source === sourcePath)
+      const fromSource = (stepTransitions?.get(sourcePath) ?? [])
         .sort((a, b) => b.value - a.value)
         .slice(0, TOP_DESTINATIONS_PER_NODE);
 

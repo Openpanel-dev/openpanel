@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+/**
+ * Group ids an event or AI payload may carry. Membership is copied onto every
+ * session write, so both the count and the id length are bounded.
+ */
+export const MAX_GROUPS_PER_EVENT = 100;
+export const MAX_GROUP_ID_LENGTH = 256;
+export const zEventGroupId = z.string().min(1).max(MAX_GROUP_ID_LENGTH);
+export const zEventGroupIds = z.array(zEventGroupId).max(MAX_GROUPS_PER_EVENT);
+
 export const zGroupId = z
   .string()
   .min(1)

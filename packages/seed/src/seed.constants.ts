@@ -11,7 +11,8 @@ export const SEED_USER = {
 
 export const SEED_ORGANIZATION = { id: 'acme', name: 'Acme' } as const;
 
-export const ORGANIZATION_ADMIN_ROLE = 'org:admin';
+/** The seeded user created the organization, so they own it. */
+export const ORGANIZATION_OWNER_ROLE = 'owner';
 
 /**
  * The organization is on an active paid subscription, not a trial: a branch seeded weeks ago

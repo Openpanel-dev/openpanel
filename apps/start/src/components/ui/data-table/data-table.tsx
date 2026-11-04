@@ -9,7 +9,7 @@ import {
   TableRow,
 } from '../table';
 import { getCommonPinningStyles } from './data-table-helpers';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import { FloatingPagination } from '@/components/pagination-floating';
 import { Skeleton } from '@/components/skeleton';
@@ -46,8 +46,8 @@ export function DataTable<TData>({
   className,
   onRowClick,
   empty = {
-    title: 'No data',
-    description: 'We could not find any data here yet',
+    title: 'Nothing here yet',
+    description: 'Rows show up here as soon as there is data to list.',
   },
   ...props
 }: DataTableProps<TData>) {
@@ -85,13 +85,11 @@ export function DataTable<TData>({
           <TableBody>
             {error ? (
               <TableRow>
-                <TableCell
-                  className="h-24 text-center"
-                  colSpan={table.getAllColumns().length}
-                >
+                <TableCell colSpan={table.getAllColumns().length}>
                   <FullPageErrorState
                     description="We could not load this data. Try again in a moment."
                     title="Something went wrong"
+                    variant="inline"
                   />
                 </TableCell>
               </TableRow>
@@ -129,13 +127,11 @@ export function DataTable<TData>({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  className="h-24 text-center"
-                  colSpan={table.getAllColumns().length}
-                >
-                  <FullPageEmptyState
+                <TableCell colSpan={table.getAllColumns().length}>
+                  <EmptyState
                     description={empty.description}
                     title={empty.title}
+                    variant="inline"
                   />
                 </TableCell>
               </TableRow>

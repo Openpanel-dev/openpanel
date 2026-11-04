@@ -3,9 +3,11 @@
 
 import {
   apiUrl,
+  authPost,
   FRESH_CONTEXT,
   gotoHydrated,
   SHOTS_DIR,
+  signUpWithEmail,
   submitSignIn,
   waitForSignInSlot,
 } from './auth-helpers';
@@ -16,6 +18,7 @@ test.use({ storageState: FRESH_CONTEXT });
 test.describe.configure({ timeout: 90_000 });
 
 const STALE_SESSION_TOKEN = 'stalestalestalestalestalestale12';
+const BETTER_AUTH_COOKIE = 'openpanel.session_token';
 
 test('an invalid session cookie is treated as signed out, not as an error', async ({
   page,
@@ -29,7 +32,9 @@ test('an invalid session cookie is treated as signed out, not as an error', asyn
   ]);
   await page.goto(`/${seed.organizationId}`);
   await expect(page).toHaveURL(/\/login$/);
-  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back' })
+  ).toBeVisible();
 
   const session = await request.get(`${apiUrl()}/trpc/auth.session`, {
     headers: { cookie: 'session=not-a-session' },
@@ -71,22 +76,13 @@ test('a password with a trailing space signs in after signing up with it', async
 }) => {
   const email = `e2e-auth-space-${Date.now()}@example.com`;
   const password = 'spaced-password-1 ';
-  const signUp = await request.post(`${apiUrl()}/trpc/auth.signUpEmail`, {
-    data: {
-      json: {
-        firstName: 'E2E',
-        lastName: 'Auth',
-        email,
-        password,
-        confirmPassword: password,
-      },
-    },
-  });
+  const signUp = await signUpWithEmail(request, { email, password });
   expect(signUp.status()).toBe(200);
   try {
     await waitForSignInSlot();
-    const signIn = await request.post(`${apiUrl()}/trpc/auth.signInEmail`, {
-      data: { json: { email, password } },
+    const signIn = await authPost(request, '/sign-in/email', {
+      email,
+      password,
     });
     expect(signIn.status()).toBe(200);
   } finally {
@@ -96,4 +92,40 @@ test('a password with a trailing space signs in after signing up with it', async
     });
     expect(cleanup.status()).toBe(200);
   }
+});
+
+test("a signed-in browser gets better-auth's cookie and stays signed in on it alone", async ({
+  page,
+  context,
+  seed,
+}) => {
+  await gotoHydrated(page, '/login');
+  const response = await submitSignIn(page, seed.user);
+  expect(response.status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`), {
+    timeout: 15_000,
+  });
+
+  await expect
+    .poll(async () =>
+      (await context.cookies()).some(
+        (cookie) => cookie.name === BETTER_AUTH_COOKIE
+      )
+    )
+    .toBe(true);
+  const upgraded = (await context.cookies()).find(
+    (cookie) => cookie.name === BETTER_AUTH_COOKIE
+  );
+  expect(upgraded?.httpOnly).toBe(true);
+
+  await context.clearCookies({ name: 'session' });
+  await gotoHydrated(page, `/${seed.organizationId}`);
+  await expect(page).toHaveURL(new RegExp(`/${seed.organizationId}$`));
+  await expect(page.getByText('Acme Web').first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS_DIR}/session-better-auth-only.png` });
+
+  const session = await page.request.get(`${apiUrl()}/trpc/auth.session`);
+  const body = await session.json();
+  expect(body.result.data.json.user.email).toBe(seed.user.email);
+  expect(body.result.data.json.session.token).toBeUndefined();
 });

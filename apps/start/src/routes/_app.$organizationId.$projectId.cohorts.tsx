@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardActions, CardActionsItem } from '@/components/card';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { ProjectLink } from '@/components/links';
 import { PageContainer } from '@/components/page-container';
@@ -86,21 +86,6 @@ function Component() {
     }
   }
 
-  if (cohorts.length === 0) {
-    return (
-      <FullPageEmptyState icon={UsersIcon} title="No cohorts">
-        <p>You have not created any cohorts for this project yet</p>
-        <Button
-          className="mt-14"
-          icon={PlusIcon}
-          onClick={() => pushModal('AddCohort')}
-        >
-          Create cohort
-        </Button>
-      </FullPageEmptyState>
-    );
-  }
-
   return (
     <PageContainer>
       <PageHeader
@@ -114,109 +99,122 @@ function Component() {
         description="Create and manage user segments based on events and properties"
         title="Cohorts"
       />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-        {cohorts.map((cohort) => {
-          const count =
-            'currentCount' in cohort
-              ? cohort.currentCount
-              : cohort.profileCount;
-          const displayCount = count ?? 0;
-          return (
-            <Card hover key={cohort.id}>
-              <ProjectLink
-                className="flex flex-col p-4 outline-none"
-                params={{ cohortId: cohort.id }}
-                to="/cohorts/$cohortId"
-              >
-                <div className="col gap-2">
-                  <div className="font-medium">{cohort.name}</div>
-                  {cohort.description && (
-                    <div className="line-clamp-2 text-muted-foreground text-sm">
-                      {cohort.description}
+      {cohorts.length === 0 ? (
+        <EmptyState
+          description="Group people by what they did or who they are, then filter any report or funnel by that group."
+          icon={UsersIcon}
+          title="No cohorts yet"
+        >
+          <Button icon={PlusIcon} onClick={() => pushModal('AddCohort')}>
+            Create cohort
+          </Button>
+        </EmptyState>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {cohorts.map((cohort) => {
+            const count =
+              'currentCount' in cohort
+                ? cohort.currentCount
+                : cohort.profileCount;
+            const displayCount = count ?? 0;
+            return (
+              <Card hover key={cohort.id}>
+                <ProjectLink
+                  className="flex flex-col p-4 outline-none"
+                  params={{ cohortId: cohort.id }}
+                  to="/cohorts/$cohortId"
+                >
+                  <div className="col gap-2">
+                    <div className="font-medium">{cohort.name}</div>
+                    {cohort.description && (
+                      <div className="line-clamp-2 text-muted-foreground text-sm">
+                        {cohort.description}
+                      </div>
+                    )}
+                    <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
+                      <div className="flex items-center gap-1">
+                        <UsersIcon size={14} />
+                        <span>
+                          {displayCount.toLocaleString()}{' '}
+                          {displayCount === 1 ? 'member' : 'members'}
+                        </span>
+                      </div>
+                      {cohort.lastComputedAt && (
+                        <div className={cn('text-xs')}>
+                          Updated{' '}
+                          {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <div className="mt-2 flex items-center gap-4 text-muted-foreground text-sm">
-                    <div className="flex items-center gap-1">
-                      <UsersIcon size={14} />
-                      <span>
-                        {displayCount.toLocaleString()}{' '}
-                        {displayCount === 1 ? 'member' : 'members'}
-                      </span>
-                    </div>
-                    {cohort.lastComputedAt && (
-                      <div className={cn('text-xs')}>
-                        Updated {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
+                    {cohort.isStatic && (
+                      <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
+                        Static
                       </div>
                     )}
                   </div>
-                  {cohort.isStatic && (
-                    <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
-                      Static
-                    </div>
-                  )}
-                </div>
-              </ProjectLink>
+                </ProjectLink>
 
-              <CardActions>
-                <CardActionsItem asChild className="w-full">
-                  <button
-                    onClick={() => handleDownload(cohort.id, cohort.name)}
-                    type="button"
-                  >
-                    <DownloadIcon size={16} />
-                    Download
-                  </button>
-                </CardActionsItem>
-                {!cohort.isStatic && (
+                <CardActions>
+                  <CardActionsItem asChild className="w-full">
+                    <button
+                      onClick={() => handleDownload(cohort.id, cohort.name)}
+                      type="button"
+                    >
+                      <DownloadIcon size={16} />
+                      Download
+                    </button>
+                  </CardActionsItem>
+                  {!cohort.isStatic && (
+                    <CardActionsItem asChild className="w-full">
+                      <button
+                        onClick={() => {
+                          refresh.mutate({ cohortId: cohort.id });
+                        }}
+                        type="button"
+                      >
+                        <RefreshCwIcon size={16} />
+                        Refresh
+                      </button>
+                    </CardActionsItem>
+                  )}
                   <CardActionsItem asChild className="w-full">
                     <button
                       onClick={() => {
-                        refresh.mutate({ cohortId: cohort.id });
+                        pushModal('EditCohort', {
+                          id: cohort.id,
+                          name: cohort.name,
+                          description: cohort.description,
+                          definition: cohort.definition as never,
+                          isStatic: cohort.isStatic,
+                        });
                       }}
                       type="button"
                     >
-                      <RefreshCwIcon size={16} />
-                      Refresh
+                      <PencilIcon size={16} />
+                      Edit
                     </button>
                   </CardActionsItem>
-                )}
-                <CardActionsItem asChild className="w-full">
-                  <button
-                    onClick={() => {
-                      pushModal('EditCohort', {
-                        id: cohort.id,
-                        name: cohort.name,
-                        description: cohort.description,
-                        definition: cohort.definition as never,
-                        isStatic: cohort.isStatic,
-                      });
-                    }}
-                    type="button"
-                  >
-                    <PencilIcon size={16} />
-                    Edit
-                  </button>
-                </CardActionsItem>
-                <CardActionsItem asChild className="w-full text-destructive">
-                  <button
-                    onClick={() => {
-                      showConfirm({
-                        title: 'Delete cohort',
-                        text: 'Are you sure you want to delete this cohort? This action cannot be undone.',
-                        onConfirm: () => deletion.mutate({ id: cohort.id }),
-                      });
-                    }}
-                    type="button"
-                  >
-                    <TrashIcon size={16} />
-                    Delete
-                  </button>
-                </CardActionsItem>
-              </CardActions>
-            </Card>
-          );
-        })}
-      </div>
+                  <CardActionsItem asChild className="w-full text-destructive">
+                    <button
+                      onClick={() => {
+                        showConfirm({
+                          title: 'Delete cohort',
+                          text: 'Are you sure you want to delete this cohort? This action cannot be undone.',
+                          onConfirm: () => deletion.mutate({ id: cohort.id }),
+                        });
+                      }}
+                      type="button"
+                    >
+                      <TrashIcon size={16} />
+                      Delete
+                    </button>
+                  </CardActionsItem>
+                </CardActions>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </PageContainer>
   );
 }

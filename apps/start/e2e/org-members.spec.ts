@@ -118,12 +118,11 @@ const signUpThroughInvite = async (
   const guest = await context.newPage();
   await dismissFeedbackPrompt(guest);
   await gotoHydrated(guest, `/onboarding?inviteId=${inviteId}`);
-  await expect(guest.getByText('Invitation to Acme')).toBeVisible();
+  await expect(guest.getByText('You are invited to Acme')).toBeVisible();
   await guest.getByLabel('First name').fill('E2E');
   await guest.getByLabel('Last name').fill('OrgMember');
   await guest.getByLabel('Email').fill(email);
   await guest.getByLabel('Password', { exact: true }).fill(GUEST_PASSWORD);
-  await guest.getByLabel('Confirm password').fill(GUEST_PASSWORD);
   await guest.getByRole('button', { name: 'Create account' }).click();
   await guest.waitForURL(/\/acme$/, { timeout: 60_000 });
   return { context, guest };
@@ -427,6 +426,88 @@ test.describe('an invited member', () => {
       await expect(
         page.getByRole('row', { name: new RegExp(email) })
       ).toHaveCount(0);
+      await context.close();
+    }
+  });
+
+  test('a viewer reads the selected projects and cannot change them', async ({
+    page,
+    seed,
+    browser,
+  }) => {
+    const email = uniqueEmail();
+    await gotoHydrated(page, `/${seed.organizationId}/members/invitations`);
+    const sheet = await openInviteSheet(page);
+    await sheet.getByLabel('Email').fill(email);
+    await sheet.getByRole('radio', { name: 'Viewer' }).click();
+    await pickProjects(page, sheet, ['Acme Shop']);
+    // A viewer reads every project in scope; there is no level to pick.
+    await expect(sheet.getByRole('combobox')).toHaveCount(0);
+    await expect(sheet.getByText('Read-only', { exact: true })).toBeVisible();
+    await shot(page, 'invite-sheet-viewer');
+    await sendInvite(sheet);
+    await expect(
+      sheet.getByRole('heading', { name: 'User has been invited' })
+    ).toBeVisible();
+    await sheet.getByRole('button', { name: 'Close' }).first().click();
+    await expect(
+      page.getByRole('row', { name: new RegExp(email) })
+    ).toContainText('viewer');
+    const invite = (await listInvites(page, seed.organizationId)).find(
+      (candidate) => candidate.email === email
+    );
+    if (!invite) {
+      throw new Error('Invite was not created');
+    }
+    expect(invite.role).toBe('viewer');
+
+    const { context, guest } = await signUpThroughInvite(
+      browser,
+      invite.id,
+      email
+    );
+    try {
+      const member = (await listMembers(page, seed.organizationId)).find(
+        (candidate) => candidate.email === email
+      );
+      expect(member?.role).toBe('viewer');
+      expect(member?.projectScope).toBe('selected');
+      expect(member?.projects.map((grant) => grant.projectId)).toEqual([
+        'acme-shop',
+      ]);
+
+      await expect(guest.locator('.card')).toHaveCount(1);
+      await expect(
+        guest.locator('.card', { hasText: 'Acme Shop' })
+      ).toBeVisible();
+      await guest.screenshot({
+        path: 'test-results/org/shots/viewer-projects.png',
+      });
+      expect(
+        await guestStatus(guest, 'project.getProjectWithClients', {
+          projectId: 'acme-shop',
+        })
+      ).toBe(HTTP_OK);
+      const update = await trpcMutation(guest, 'project.update', {
+        id: 'acme-shop',
+        name: 'Acme Shop',
+      });
+      expect(update.status).toBe(HTTP_FORBIDDEN);
+      expect(update.error).toBe('You have read-only access to this project');
+      expect(
+        await guestStatus(guest, 'project.getProjectWithClients', {
+          projectId: 'acme-web',
+        })
+      ).toBe(HTTP_FORBIDDEN);
+
+      await gotoHydrated(page, `/${seed.organizationId}/members`);
+      await expect(
+        page.getByRole('row', { name: new RegExp(email) })
+      ).toContainText('viewer');
+      await shot(page, 'members-with-viewer');
+    } finally {
+      await gotoHydrated(page, `/${seed.organizationId}/members`);
+      await removeMember(page, email);
       await context.close();
     }
   });

@@ -1,10 +1,13 @@
-import crypto from 'node:crypto';
 import { getRecommendedPlan } from '@openpanel/payments';
 import { stripTrailingSlash } from '@openpanel/shared';
 import { format } from 'date-fns';
 import type { Logger } from '../../logger';
 import type { ServiceDeps, Services } from '../../services';
-import { hashClientSecret } from '../../shared/client-secret';
+import { hashClientSecret, newClientSecret } from '../../shared/client-secret';
+import {
+  getReferrerWithQuery,
+  parseReferrer,
+} from '../../shared/parse-referrer';
 import { getId } from '../../slug-id';
 import {
   runSequence,
@@ -12,13 +15,22 @@ import {
   type SequenceSubject,
   step,
 } from '../email/src/sequence';
-import { toStoredOrganizationRole } from '../organization/organization.constants';
 import {
   getOrganizationById,
   getOrganizationEventsCount,
 } from '../organization/organization.service';
+import {
+  getOrganizationContact,
+  ORGANIZATION_ADMINS_INCLUDE,
+  type OrganizationContact,
+  type OrganizationWithAdmins,
+} from '../organization/src/contact';
 import { getUserById } from '../user/user.service';
-import type { IOnboardingProject } from './onboarding.constants';
+import type {
+  IOnboardingProject,
+  IOrganizationAttribution,
+  IOrganizationAttributionStored,
+} from './onboarding.constants';
 
 const TRIAL_DURATION_IN_DAYS = 30;
 // Generous trial allowance so trialing orgs never get flagged as
@@ -33,18 +45,39 @@ export async function canSkipOnboarding(
     return { canSkip: false };
   }
 
-  // Sequential, not Promise.all: the early return below skips the projectAccess query
-  // for any user with a membership, which a parallel fetch would give up.
-  const db = deps.db;
-  const members = await db.member.count({ where: { userId } });
-  if (members > 0) {
-    return { canSkip: true };
+  const members = await deps.db.member.count({ where: { userId } });
+  return { canSkip: members > 0 };
+}
+
+export function toStoredAttribution(
+  attribution: IOrganizationAttribution | undefined
+): IOrganizationAttributionStored | undefined {
+  if (!attribution) {
+    return undefined;
+  }
+  const hasAnyValue = Object.values(attribution).some(Boolean);
+  if (!hasAnyValue) {
+    return undefined;
   }
 
-  // Rows without a membership never granted access, but they did let the user
-  // past onboarding; kept until `project_access` is dropped.
-  const projectAccess = await db.projectAccess.count({ where: { userId } });
-  return { canSkip: projectAccess > 0 };
+  const fromReferrer = parseReferrer(attribution.referrer);
+  const fromUtm = getReferrerWithQuery(
+    attribution.utmSource ? { utm_source: attribution.utmSource } : undefined
+  );
+  const resolved = fromReferrer.name ? fromReferrer : fromUtm;
+
+  return {
+    referrer: attribution.referrer || null,
+    referrerName: resolved?.name || null,
+    referrerType: resolved?.type || null,
+    landingPage: attribution.landingPage || null,
+    utmSource: attribution.utmSource || null,
+    utmMedium: attribution.utmMedium || null,
+    utmCampaign: attribution.utmCampaign || null,
+    utmContent: attribution.utmContent || null,
+    utmTerm: attribution.utmTerm || null,
+    firstSeenAt: attribution.firstSeenAt || null,
+  };
 }
 
 async function createOrGetOnboardingOrganization(
@@ -78,6 +111,7 @@ async function createOrGetOnboardingOrganization(
         subscriptionStatus: 'trialing',
         subscriptionPeriodEventsLimit: TRIAL_EVENTS_LIMIT,
         timezone: input.timezone,
+        attribution: toStoredAttribution(input.attribution),
         onboarding: '',
         // Equal to the id so it is unique; see code migration 26.
         slug: organizationId,
@@ -87,7 +121,7 @@ async function createOrGetOnboardingOrganization(
       data: {
         email: (await getUserById(deps, userId)).email,
         organizationId,
-        role: toStoredOrganizationRole('owner'),
+        role: 'owner',
         userId,
       },
     }),
@@ -103,7 +137,12 @@ export interface CreateOnboardingProjectResult {
   projectId: string | null;
   type: string;
   secret: string;
+  /** Token for the read-only MCP client created alongside; only ever returned here. */
+  mcpToken: string;
 }
+
+const toMcpToken = (clientId: string, secret: string) =>
+  Buffer.from(`${clientId}:${secret}`).toString('base64');
 
 export async function createOnboardingProject(
   deps: ServiceDeps,
@@ -140,29 +179,52 @@ export async function createOnboardingProject(
 
   const db = deps.db;
 
-  const project = await db.project.create({
-    data: {
-      id: await getId(deps, 'project', input.project),
-      name: input.project,
-      organizationId: organization.id,
-      types,
-      domain: input.domain ? stripTrailingSlash(input.domain) : null,
-      cors: cors.map((c) => stripTrailingSlash(c)),
-    },
+  const projectId = await getId(deps, 'project', input.project);
+  const secret = newClientSecret();
+  // MCP only accepts read and root clients, so the write client's token
+  // would never work. A read client scoped to this project is created up
+  // front; the dashboard shows its token once and never its id or secret.
+  const mcpSecret = newClientSecret();
+  const [hashedSecret, hashedMcpSecret] = await Promise.all([
+    hashClientSecret(secret),
+    hashClientSecret(mcpSecret),
+  ]);
+
+  // One transaction: a project without its clients would leave the user
+  // with an error and no credentials to retry with.
+  const { client, mcpClient } = await db.$transaction(async (tx) => {
+    const project = await tx.project.create({
+      data: {
+        id: projectId,
+        name: input.project,
+        organizationId: organization.id,
+        types,
+        domain: input.domain ? stripTrailingSlash(input.domain) : null,
+        cors: cors.map((c) => stripTrailingSlash(c)),
+      },
+    });
+    const createdClient = await tx.client.create({
+      data: {
+        name: `${project.name} Client`,
+        organizationId: organization.id,
+        projectId: project.id,
+        type: 'write',
+        secret: hashedSecret,
+      },
+    });
+    const createdMcpClient = await tx.client.create({
+      data: {
+        name: `${project.name} MCP client`,
+        organizationId: organization.id,
+        projectId: project.id,
+        type: 'read',
+        secret: hashedMcpSecret,
+      },
+    });
+    return { client: createdClient, mcpClient: createdMcpClient };
   });
 
-  const secret = `sec_${crypto.randomBytes(10).toString('hex')}`;
-  const client = await db.client.create({
-    data: {
-      name: `${project.name} Client`,
-      organizationId: organization.id,
-      projectId: project.id,
-      type: 'write',
-      secret: await hashClientSecret(secret),
-    },
-  });
-
-  return { ...client, secret };
+  return { ...client, secret, mcpToken: toMcpToken(mcpClient.id, mcpSecret) };
 }
 
 // The onboarding email drip cron. The `organization.onboarding` column
@@ -179,24 +241,18 @@ interface OnboardingUsage {
   hasData: boolean;
 }
 
-interface OnboardingCronOrg {
+interface OnboardingCronOrg extends OrganizationWithAdmins {
   id: string;
   createdAt: Date;
   onboarding: string | null;
   subscriptionStatus: string | null;
   subscriptionEndsAt: Date | null;
-  createdBy: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    deletedAt: Date | null;
-  } | null;
   projects: { id: string }[];
 }
 
 interface OnboardingContext {
   org: OnboardingCronOrg;
-  user: NonNullable<OnboardingCronOrg['createdBy']>;
+  user: OrganizationContact;
   dashboardUrl: string;
   // Lazy + memoized: only emails past the day gate pay for the ClickHouse count.
   getUsage: () => Promise<OnboardingUsage>;
@@ -340,40 +396,33 @@ export async function runOnboardingCron(
     where: {
       OR: [{ onboarding: null }, { onboarding: { notIn: ['completed'] } }],
       deleteAt: null,
-      createdBy: { deletedAt: null },
     },
     include: {
-      createdBy: {
-        select: { id: true, email: true, firstName: true, deletedAt: true },
-      },
+      ...ORGANIZATION_ADMINS_INCLUDE,
       projects: { select: { id: true } },
     },
   });
 
   logger.info(`Found ${orgs.length} organizations in onboarding`);
 
-  const contactable = orgs.filter(
-    (org) => org.createdBy && !org.createdBy.deletedAt
-  );
-  const withoutCreator = orgs.length - contactable.length;
-
-  const subjects: SequenceSubject<OnboardingContext>[] = contactable.map(
-    (org) => {
-      const user = org.createdBy as NonNullable<OnboardingCronOrg['createdBy']>;
-      return {
-        id: org.id,
-        email: user.email,
-        anchor: org.createdAt,
-        pointer: org.onboarding,
-        ctx: {
-          org,
-          user,
-          dashboardUrl: deps.config.dashboardUrl,
-          getUsage: createUsageGetter(deps, org),
-        },
-      };
+  const subjects: SequenceSubject<OnboardingContext>[] = orgs.flatMap((org) => {
+    const user = getOrganizationContact(org);
+    if (!user) {
+      return [];
     }
-  );
+    return {
+      id: org.id,
+      email: user.email,
+      anchor: org.createdAt,
+      pointer: org.onboarding,
+      ctx: {
+        org,
+        user,
+        dashboardUrl: deps.config.dashboardUrl,
+        getUsage: createUsageGetter(deps, org),
+      },
+    };
+  });
 
   const result = await runSequence({
     name: 'onboarding',
@@ -398,7 +447,8 @@ export async function runOnboardingCron(
     totalOrgs: orgs.length,
     emailsSent: result.emailsSent,
     orgsCompleted: result.completed,
-    orgsSkipped: result.deferred + result.stepsSkipped + withoutCreator,
+    orgsSkipped:
+      result.deferred + result.stepsSkipped + orgs.length - subjects.length,
   };
 
   logger.info({ ...summary }, 'Completed onboarding email job');
