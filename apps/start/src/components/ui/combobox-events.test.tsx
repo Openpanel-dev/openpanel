@@ -6,8 +6,20 @@
 // can be toggled off again.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, test, vi } from 'vitest';
-import { ComboboxEvents, getEventRows } from './combobox-events';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  test,
+  vi,
+} from 'vitest';
+import {
+  ComboboxEvents,
+  getEventRows,
+  toCommandValue,
+} from './combobox-events';
 
 const items: Parameters<typeof getEventRows>[0]['items'] = [
   { name: 'checkout_started', count: 120, meta: undefined },
@@ -116,7 +128,43 @@ describe('getEventRows', () => {
   });
 });
 
+describe('toCommandValue', () => {
+  const asCmdkStoresIt = (value: string) => value.trim().toLowerCase();
+
+  test('stays distinct for names differing by case or outer spaces', () => {
+    const keys = [
+      'event:Add_To_Cart',
+      'event:add_to_cart',
+      'event:add_to_cart ',
+    ];
+    const values = keys.map((key) => asCmdkStoresIt(toCommandValue(key)));
+    expect(new Set(values).size).toBe(keys.length);
+  });
+
+  test('survives cmdk unchanged, so a row keeps it when rows reorder', () => {
+    const value = toCommandValue('event:Add_To_Cart');
+    expect(asCmdkStoresIt(value)).toBe(value);
+  });
+});
+
 describe('ComboboxEvents', () => {
+  // floating-ui asks these on every position update, and jsdom's selector engine
+  // takes seconds per answer, enough to stall the vitest worker.
+  const topLayerSelectors = [':popover-open', ':modal'];
+  const nativeMatches = Element.prototype.matches;
+  beforeAll(() => {
+    // jsdom has no layout, and cmdk scrolls the highlighted row into view.
+    Element.prototype.scrollIntoView = vi.fn();
+    Element.prototype.matches = function matches(selector: string) {
+      return (
+        !topLayerSelectors.includes(selector) &&
+        nativeMatches.call(this, selector)
+      );
+    };
+  });
+  afterAll(() => {
+    Element.prototype.matches = nativeMatches;
+  });
   afterEach(cleanup);
 
   test('shows an unseen name with its own casing when closed', () => {
@@ -156,8 +204,6 @@ describe('ComboboxEvents', () => {
   });
 
   test('keyboard reaches events that differ only by case', () => {
-    // jsdom has no layout, and cmdk scrolls the highlighted row into view.
-    Element.prototype.scrollIntoView = vi.fn();
     const onChange = vi.fn();
     render(
       <ComboboxEvents
@@ -176,6 +222,30 @@ describe('ComboboxEvents', () => {
     const input = screen.getByPlaceholderText('Search event...');
     expect(document.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
     fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('add_to_cart');
+  });
+
+  test('highlight follows the event when rows reorder', () => {
+    const onChange = vi.fn();
+    const first = { name: 'Add_To_Cart', count: 2, meta: undefined };
+    const second = { name: 'add_to_cart', count: 1, meta: undefined };
+    const picker = (eventRows: typeof items) => (
+      <ComboboxEvents
+        items={eventRows}
+        onChange={onChange}
+        placeholder="Select event"
+        searchable
+        value=""
+      />
+    );
+    const { rerender } = render(picker([first, second]));
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const input = screen.getByPlaceholderText('Search event...');
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    rerender(picker([second, first]));
     fireEvent.keyDown(input, { key: 'Enter' });
 
     expect(onChange).toHaveBeenCalledWith('add_to_cart');

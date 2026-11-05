@@ -150,6 +150,11 @@ export function getEventRows({
   return rows;
 }
 
+/** cmdk trims and lowercases values, so a raw key would lose its casing. */
+export function toCommandValue(key: string): string {
+  return Array.from(key, (char) => char.codePointAt(0)?.toString(16)).join('-');
+}
+
 export function ComboboxEvents<
   T extends string,
   TMultiple extends boolean = false,
@@ -308,9 +313,8 @@ export function ComboboxEvents<
               itemHeight={32}
               itemKey="key"
             >
-              {(row, index) => {
-                // cmdk lowercases values, so names differing by case would share one.
-                const commandValue = `${index}:${row.key}`;
+              {(row) => {
+                const commandValue = toCommandValue(row.key);
                 if (row.kind === 'custom') {
                   const isSelected =
                     row.customEvent.id === selectedCustomEventId;
