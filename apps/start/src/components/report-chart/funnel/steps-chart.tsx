@@ -15,7 +15,7 @@ import {
   type OPTooltipRow,
 } from '@/components/charts/op-tooltip';
 import { YAxis } from '@/components/charts/y-axis';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
@@ -165,7 +165,17 @@ function BreakdownBars({
         label: <SerieName name={breakdown.names} />,
         value: step?.percent ?? 0,
         format: (value) => number.formatWithUnit(value / 100, '%'),
-        sub: [{ label: 'Count', value: step?.count ?? 0 }],
+        sub: [
+          { label: 'Count', value: step?.count ?? 0 },
+          ...(step?.timeToConvert == null
+            ? []
+            : [
+                {
+                  label: 'Time to convert',
+                  value: fancyMinutes(step.timeToConvert),
+                },
+              ]),
+        ],
       };
     });
 

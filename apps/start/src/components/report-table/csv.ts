@@ -1,8 +1,5 @@
 import type { ReportColumn, ReportRowIdentity } from './columns';
-
-function escapeCell(cell: string) {
-  return /[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
-}
+import { escapeCsvValue } from '@/utils/csv-download';
 
 /** Raw values, not the formatted ones, so the file can be summed in a spreadsheet. */
 export function buildCsv<Row>(
@@ -18,10 +15,10 @@ export function buildCsv<Row>(
   ];
   const lines = rows.map((row) => [
     identity.searchText(row),
-    ...dataColumns.map((column) => String(column.value(row) ?? '')),
+    ...dataColumns.map((column) => column.value(row)),
   ]);
   return [header, ...lines]
-    .map((line) => line.map(escapeCell).join(','))
+    .map((line) => line.map(escapeCsvValue).join(','))
     .join('\n');
 }
 

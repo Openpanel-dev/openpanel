@@ -14,6 +14,24 @@ import { useTRPC } from '@/integrations/trpc/react';
 import { trackFunnel } from '@/utils/funnel-tracking';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
+// Codes better-auth puts in `?error=` after a Google/GitHub sign-in, when it
+// sends no description of its own.
+const OAUTH_ERROR_MESSAGES: Record<string, string> = {
+  account_not_linked:
+    'Please sign in using your original authentication method',
+  state_mismatch:
+    'The sign-in took too long or was opened in another tab. Try again.',
+  email_not_found: 'Your provider did not share a verified email address',
+  unable_to_get_user_info:
+    'We could not get a verified email address from your provider. Verify your email with Google or GitHub and try again.',
+};
+
+function signInErrorMessage(error: string, description?: string): string {
+  return (
+    description || OAUTH_ERROR_MESSAGES[error] || error.replaceAll('_', ' ')
+  );
+}
+
 export const Route = createFileRoute('/_login/login')({
   component: LoginPage,
   head: () => ({
@@ -24,21 +42,38 @@ export const Route = createFileRoute('/_login/login')({
   }),
   validateSearch: z.object({
     error: z.string().optional(),
+    error_description: z.string().optional(),
     correlationId: z.string().optional(),
     inviteId: z.string().optional(),
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      context.trpc.auth.providers.queryOptions()
-    );
+  loaderDeps: ({ search }) => ({ inviteId: search.inviteId }),
+  loader: async ({ context, deps }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.providers.queryOptions()
+      ),
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.registrationAllowed.queryOptions({
+          inviteId: deps.inviteId,
+        })
+      ),
+    ]);
   },
 });
 
 function LoginPage() {
-  const { error, correlationId, inviteId } = Route.useSearch();
+  const {
+    error,
+    error_description: errorDescription,
+    correlationId,
+    inviteId,
+  } = Route.useSearch();
   const trpc = useTRPC();
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
+  );
+  const { data: registrationAllowed } = useSuspenseQuery(
+    trpc.auth.registrationAllowed.queryOptions({ inviteId })
   );
   const hasOAuthProviders = providers.google || providers.github;
   const [lastProvider] = useCookieStore<null | string>(
@@ -72,7 +107,7 @@ function LoginPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Could not sign you in</AlertTitle>
           <AlertDescription>
-            <p>{error}</p>
+            <p>{signInErrorMessage(error, errorDescription)}</p>
             {correlationId && (
               <p className="mt-2">
                 Reference: {correlationId}.{' '}
@@ -125,12 +160,17 @@ function LoginPage() {
         </>
       )}
 
-      <p className="text-center text-muted-foreground text-sm">
-        New to OpenPanel?{' '}
-        <a className="font-medium text-foreground underline" href={signUpHref}>
-          Create an account
-        </a>
-      </p>
+      {registrationAllowed && (
+        <p className="text-center text-muted-foreground text-sm">
+          New to OpenPanel?{' '}
+          <a
+            className="font-medium text-foreground underline"
+            href={signUpHref}
+          >
+            Create an account
+          </a>
+        </p>
+      )}
     </div>
   );
 }

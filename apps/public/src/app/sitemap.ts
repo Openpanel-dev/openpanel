@@ -100,11 +100,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly' as const,
       priority: 0.3,
     })),
-    ...pages.map((item) => ({
-      url: url(item.url),
-      changeFrequency: 'monthly' as const,
-      priority: 0.3,
-    })),
+    ...pages
+      .filter((item) => !item.data.noindex)
+      .map((item) => ({
+        url: url(item.url),
+        changeFrequency: 'monthly' as const,
+        priority: 0.3,
+      })),
     ...compareSource.map((item) => ({
       url: url(item.url),
       changeFrequency: 'monthly' as const,

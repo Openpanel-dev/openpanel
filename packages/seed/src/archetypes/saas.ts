@@ -9,6 +9,7 @@ import { REFERRERS } from '../data/referrers';
 import type { Person, Visitor } from '../model';
 import type { Rng, Weighted } from '../rng';
 import type { Archetype, Journey } from './archetype';
+import { aiVisitChance, assistantConversation, insightJobs } from './saas-ai';
 
 interface Plan {
   name: string;
@@ -21,6 +22,7 @@ const PLANS: readonly Weighted<Plan>[] = [
   { weight: 9, value: { name: 'team', price: 99 } },
   { weight: 3, value: { name: 'enterprise', price: 299 } },
 ];
+const SAAS_DWELL_MEDIAN_SECONDS = 45;
 const PAID_PLANS = PLANS.filter((plan) => plan.value.price > 0);
 const ROLES = ['founder', 'engineer', 'product', 'marketing', 'data'] as const;
 const COMPANY_SIZES = [
@@ -238,6 +240,10 @@ function usage(rng: Rng, journey: Journey, state: SaasState): void {
       });
       journey.event('feature_used', { feature, project: projectId });
     }
+    const plan = state.plan?.name ?? 'free';
+    if (rng.chance(aiVisitChance(plan))) {
+      assistantConversation(rng, journey, plan, projectId);
+    }
     if (rng.chance(0.6)) {
       journey.event('report_viewed', {
         report_type: rng.one(REPORT_TYPES),
@@ -319,7 +325,7 @@ export const saasArchetype: Archetype = {
     { weight: 3, value: REFERRERS.linkedIn },
   ],
   campaignChance: 0.03,
-  dwellMedianSeconds: 45,
+  dwellMedianSeconds: SAAS_DWELL_MEDIAN_SECONDS,
   utcOffsetHours: -2,
   newPerson(rng) {
     const person = newPerson(rng, { business: true });
@@ -351,6 +357,9 @@ export const saasArchetype: Archetype = {
       breakdowns: ['plan', 'interval', 'company_size'],
     },
   ],
+  background(rng, day) {
+    return insightJobs(rng, day, SAAS_DWELL_MEDIAN_SECONDS);
+  },
   journey(rng, journey, visitor) {
     const state = stateOf(visitor);
     const person = visitor.person;

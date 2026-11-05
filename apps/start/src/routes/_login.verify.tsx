@@ -10,7 +10,7 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
-import { useTRPC } from '@/integrations/trpc/react';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_login/verify')({
@@ -24,22 +24,26 @@ export const Route = createFileRoute('/_login/verify')({
 });
 
 function VerifyPage() {
-  const trpc = useTRPC();
+  const authClient = useAuthClient();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
   const [code, setCode] = useState('');
 
-  const mutation = useMutation(
-    trpc.auth.signInTotp.mutationOptions({
-      onSuccess() {
-        toast.success('Signed in');
-        window.location.href = '/';
-      },
-      onError(error) {
-        toast.error(error.message);
-        setCode('');
-      },
-    })
-  );
+  const mutation = useMutation({
+    mutationFn: ({ code: value }: { code: string }) =>
+      unwrap(
+        mode === 'totp'
+          ? authClient.twoFactor.verifyTotp({ code: value })
+          : authClient.twoFactor.verifyBackupCode({ code: value.trim() })
+      ),
+    onSuccess() {
+      toast.success('Signed in');
+      window.location.href = '/';
+    },
+    onError(error) {
+      toast.error(error.message);
+      setCode('');
+    },
+  });
 
   const canSubmit =
     mode === 'totp' ? code.length === 6 : code.trim().length > 0;
@@ -90,11 +94,11 @@ function VerifyPage() {
       ) : (
         <Input
           aria-label="Recovery code"
-          autoCapitalize="characters"
+          autoCapitalize="off"
           autoFocus
           disabled={mutation.isPending}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="ABCDE-FGHIJ"
+          placeholder="AbCdE-fGhIj"
           size="xl"
           value={code}
         />

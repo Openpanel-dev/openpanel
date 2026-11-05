@@ -21,17 +21,25 @@ export const clientRouter = createTRPCRouter({
     .input(z.object({ id: z.string(), name: z.string() }))
     .mutation(async ({ input, ctx }) => {
       const userId = ctx.session.userId;
-      const access = await ctx.services.auth.getClientAccess({
-        userId,
-        clientId: input.id,
-      });
-      if (!access) {
+      const client = await ctx.services.client.getClientById(input.id);
+      if (!client?.organizationId) {
         throw new TRPCForbiddenError('You do not have access to this client');
       }
 
-      const client = await ctx.services.client.getClientById(input.id);
-      if (!client) {
-        throw new TRPCForbiddenError('Client not found');
+      // A project's client is renamed by whoever may write that project; an
+      // organization-wide one only by the admins who create and delete them.
+      if (client.projectId) {
+        await ctx.services.auth.requireProjectAccess({
+          userId,
+          projectId: client.projectId,
+          level: 'write',
+        });
+      } else {
+        await ctx.services.auth.requireOrganizationAdmin({
+          userId,
+          organizationId: client.organizationId,
+          message: 'Only organization admins can rename API clients',
+        });
       }
 
       return ctx.services.client.updateClientForOrganization(

@@ -2,13 +2,13 @@
   "slug": "shopify",
   "audience": "shopify",
   "seo": {
-    "title": "Shopify Analytics — Cookie-Free Tracking Without Consent Banners",
-    "description": "Add product analytics to your Shopify store without GDPR consent banners. OpenPanel is cookieless by default — track events, funnels, and revenue from $2.50/month or free to self-host.",
+    "title": "Shopify Analytics, Cookie-Free Tracking Without Consent Banners",
+    "description": "Add product analytics to your Shopify store without GDPR consent banners. OpenPanel is cookieless by default, track events, funnels, and revenue from $2.50/month or free to self-host.",
     "noindex": false
   },
   "hero": {
     "heading": "Shopify analytics that actually works",
-    "subheading": "Most analytics tools break on Shopify: cookie consent blocks tracking, GA4 loses attribution, and Shopify's built-in reports can't answer the questions that matter. OpenPanel tracks every event without cookies, so your data is complete and your checkout conversion doesn't suffer from a consent banner.",
+    "subheading": "Most analytics tools break on Shopify: cookie consent blocks tracking, GA4 loses attribution, and Shopify's built-in reports cannot answer the questions that matter. OpenPanel tracks every event without cookies, so your data is complete and the checkout keeps its conversion rate.",
     "badges": [
       "Cookie-free tracking",
       "No consent banner needed",
@@ -22,7 +22,7 @@
     "items": [
       {
         "title": "GA4 consent mode destroys your data",
-        "description": "Cookie consent requirements mean 30-50% of visitors opt out. GA4's \"consent mode\" fills gaps with modeled data — you're making decisions on estimates, not reality."
+        "description": "Cookie consent requirements mean 30-50% of visitors opt out. GA4's \"consent mode\" fills gaps with modeled data, you're making decisions on estimates, not reality."
       },
       {
         "title": "Shopify's built-in analytics is shallow",
@@ -40,39 +40,39 @@
   },
   "features": {
     "title": "Everything you need to understand your Shopify store",
-    "intro": "OpenPanel is designed to give you complete visibility into your store's performance — without the privacy headaches.",
+    "intro": "OpenPanel is designed to give you complete visibility into your store's performance, without the privacy headaches.",
     "items": [
       {
-        "title": "Script tag install — no developer needed",
-        "description": "Add one script tag in Shopify's theme settings. Automatic page view tracking starts immediately. No Shopify app or coding required."
+        "title": "Script tag install, no developer needed",
+        "description": "Add one script tag in the Shopify theme editor. Page views and outgoing links track immediately. No Shopify app, no coding."
       },
       {
         "title": "Cookieless tracking by default",
-        "description": "No cookies means no consent banner. Your analytics data is 100% complete — not modeled, not estimated, not filtered by opt-outs."
+        "description": "No cookies means no consent banner. Your analytics data is complete, not modeled, not estimated, not filtered by opt-outs."
       },
       {
         "title": "Purchase and revenue tracking",
-        "description": "Track add-to-cart, checkout started, and purchase events with revenue values. See exactly which campaigns and pages drive revenue, not just clicks."
+        "description": "Track add-to-cart, checkout started and purchase events, with the order total as revenue. Revenue shows on the overview next to sources, campaigns and pages, and on every customer profile."
       },
       {
         "title": "Funnel analysis",
-        "description": "Build funnels from product page → add to cart → checkout → purchase. See exactly where you're losing customers and fix it."
+        "description": "Build product page to add to cart to checkout to purchase. See which step loses customers and break it down by product, campaign or country."
       },
       {
         "title": "UTM campaign attribution",
-        "description": "Track every paid ad, email campaign, and influencer link. See which traffic source actually converts to buyers, not just visitors."
+        "description": "Source, medium, campaign, term and content on every session. See which traffic source converts to buyers, not just visitors."
       },
       {
         "title": "User profiles",
-        "description": "See the complete journey of any customer — pages visited, products viewed, purchase history. Identify high-value customer behavior patterns."
+        "description": "The complete journey of any customer: pages visited, products viewed, purchases and lifetime revenue. Turn on session replay to watch a session next to its events."
       },
       {
-        "title": "Real-time dashboard",
+        "title": "Realtime dashboard",
         "description": "Watch your store live. Launch a sale or send an email and see the traffic surge in real time."
       },
       {
         "title": "EU data residency",
-        "description": "All data stored in the EU. No transfers to US servers. GDPR compliance without the legal complexity."
+        "description": "Cloud data is stored on Hetzner in Germany, with a GDPR data processing agreement included. GDPR compliance without the legal complexity."
       }
     ]
   },
@@ -86,11 +86,11 @@
       },
       {
         "title": "Cheaper than Shopify analytics apps",
-        "description": "Most Shopify analytics apps charge $50–200/month. OpenPanel starts at $2.50/month with all features included."
+        "description": "Most Shopify analytics apps charge $50 to $200 a month. OpenPanel starts at $2.50 a month with every feature included."
       },
       {
         "title": "Replace GA4 and your analytics app",
-        "description": "One tool covers web analytics (traffic, referrers, UTM) and product analytics (funnels, retention, revenue). Cancel two subscriptions."
+        "description": "One tool covers web analytics (traffic, referrers, UTM) and product analytics (funnels, retention, revenue, replay). Cancel two subscriptions."
       },
       {
         "title": "Privacy-first out of the box",
@@ -98,7 +98,7 @@
       },
       {
         "title": "Self-host for free",
-        "description": "For high-volume stores, self-hosting eliminates per-event costs entirely. One Docker deployment, unlimited events."
+        "description": "For high-volume stores, self-hosting removes per-event costs entirely. Docker Compose, one install script, unlimited events."
       }
     ]
   },
@@ -108,23 +108,23 @@
     "items": [
       {
         "question": "How do I install OpenPanel on Shopify?",
-        "answer": "Add the OpenPanel script tag via Shopify Admin → Online Store → Themes → Edit Code → theme.liquid. Paste the snippet before </head>. Automatic page views track immediately. For purchase events, add a few lines to your order confirmation page."
+        "answer": "Add the OpenPanel script tag via Shopify Admin, Online Store, Themes, Edit code, theme.liquid, before </head>. Page views track immediately. For purchases, enable client-side revenue in your project settings and call op.revenue(amount, { orderId }) on the order confirmation page."
       },
       {
         "question": "Does OpenPanel work without a cookie consent banner?",
-        "answer": "Yes. OpenPanel is cookieless by default and doesn't collect personal data. No consent banner is required under GDPR or CCPA for analytics-only use."
+        "answer": "Yes. OpenPanel sets no cookies and stores no raw IP, so no consent banner is required under GDPR or CCPA for analytics-only use."
       },
       {
         "question": "Can I track Shopify purchase events?",
-        "answer": "Yes. Use a simple script on your order confirmation page to send purchase amount, order ID, and product data to OpenPanel. No Shopify app required."
+        "answer": "Yes. A few lines on the order confirmation page send the order total, order id and products to OpenPanel as a revenue event. Enable client-side revenue in project settings first, or send it from your backend with the client secret. No Shopify app required."
       },
       {
         "question": "How does OpenPanel compare to Lucky Orange or Hotjar for Shopify?",
-        "answer": "Lucky Orange and Hotjar focus on heatmaps and session replay. OpenPanel focuses on event analytics, funnels, and retention — understanding what users do, not watching recordings. If you need both, they complement each other."
+        "answer": "Lucky Orange and Hotjar are built around heatmaps and recordings. OpenPanel has session replay too, next to the events, funnels and retention that explain what users do, but no heatmaps. If heatmaps matter to you, the tools complement each other."
       },
       {
         "question": "Will OpenPanel affect my Shopify store's page speed?",
-        "answer": "OpenPanel's JavaScript SDK is 2.3 KB gzipped — one of the lightest analytics trackers available. GA4 is 50+ KB. The performance impact is negligible."
+        "answer": "The tracker is about 3 KB gzipped and loads async, one of the lightest available; GA4 is many times larger. The performance impact is negligible."
       },
       {
         "question": "Does OpenPanel work with Shopify Plus?",

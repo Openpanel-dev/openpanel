@@ -1,6 +1,6 @@
 import { PopoverPortal } from '@radix-ui/react-popover';
 import type { LucideIcon } from 'lucide-react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronDown } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import type { ButtonProps } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export function Combobox<T extends string>({
   searchable,
   icon: Icon,
   size,
-  variant = 'outline',
+  variant = 'input',
   align = 'start',
   portal,
   error,
@@ -108,7 +108,7 @@ export function Combobox<T extends string>({
                 {value ? (find(value)?.label ?? 'No match') : placeholder}
               </span>
             </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>
         )}
       </PopoverTrigger>

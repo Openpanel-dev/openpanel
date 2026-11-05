@@ -294,6 +294,7 @@ export async function createOrUpdateSlackIntegration(
     integrationId: res.id,
     organizationId,
     projectId,
+    userId,
   });
   if (!installUrl) {
     throw new TRPCBadRequestError(
@@ -378,6 +379,9 @@ const slackOAuthMetadataSchema = z.object({
   // Optional for back-compat with install URLs generated before integrations
   // became project-scoped; the post-install redirect falls back to the org page.
   projectId: z.string().optional(),
+  // The signed state proves the install URL is ours, not that the browser
+  // completing it belongs to whoever generated it.
+  userId: z.string(),
 });
 
 export class SlackOAuthCallbackError extends Error {}
@@ -392,6 +396,7 @@ export async function completeSlackOAuthCallback(
   params: {
     code: string;
     state: string;
+    userId: string;
   }
 ): Promise<CompleteSlackOAuthCallbackResult> {
   const verifiedState = await slackInstaller(
@@ -404,6 +409,22 @@ export async function completeSlackOAuthCallback(
   if (!parsedMetadata.success) {
     throw new SlackOAuthCallbackError('Invalid metadata');
   }
+
+  const { organizationId, integrationId, projectId, userId } =
+    parsedMetadata.data;
+
+  if (userId !== params.userId) {
+    throw new SlackOAuthCallbackError(
+      'This Slack installation was started by another user'
+    );
+  }
+
+  const db = deps.db;
+  const integration = await db.integration.findUniqueOrThrow({
+    where: { id: integrationId },
+    select: { projectId: true, organizationId: true },
+  });
+  await assertIntegrationAccess(params.userId, integration, 'write');
 
   const slack = deps.config.slack;
   const slackOauthAccessUrl = [
@@ -429,9 +450,6 @@ export async function completeSlackOAuthCallback(
       '👋 Hello. You have successfully connected OpenPanel.dev to your Slack workspace.',
   });
 
-  const { organizationId, integrationId, projectId } = parsedMetadata.data;
-
-  const db = deps.db;
   await db.integration.update({
     where: {
       id: integrationId,

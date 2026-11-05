@@ -21,8 +21,8 @@ export function GithubButton() {
     });
   }, []);
   return (
-    <Button asChild variant={'secondary'}>
-      <Link className="hidden md:flex" href="https://git.new/openpanel">
+    <Button asChild className="max-md:hidden" variant="secondary">
+      <Link href="https://git.new/openpanel">
         <svg
           aria-hidden="true"
           className="h-5 w-5"

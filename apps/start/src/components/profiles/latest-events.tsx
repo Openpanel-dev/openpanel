@@ -1,3 +1,4 @@
+import { AI_INTERNAL_EVENT_NAMES } from '@openpanel/core/modules/ai/ai.constants';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { ActivityIcon } from 'lucide-react';
@@ -13,11 +14,11 @@ import { Button } from '@/components/ui/button';
 import { Widget } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 
-type Props = {
+interface Props {
   profileId: string;
   projectId: string;
   organizationId: string;
-};
+}
 
 export const LatestEvents = ({
   profileId,
@@ -30,6 +31,13 @@ export const LatestEvents = ({
     trpc.event.events.queryOptions({
       projectId,
       profileId,
+      filters: [
+        {
+          name: 'name',
+          operator: 'isNot',
+          value: [...AI_INTERNAL_EVENT_NAMES],
+        },
+      ],
     })
   );
 
@@ -66,7 +74,7 @@ export const LatestEvents = ({
       <ScrollArea className="h-0 p-4" ref={scrollRef}>
         {query.data?.data?.map((event) => (
           <div className="mb-4" key={event.id}>
-            <EventListItem {...event} />
+            <EventListItem {...event} hideProfile />
           </div>
         ))}
       </ScrollArea>

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { Footer } from '@/components/footer';
-import Navbar from '@/components/navbar';
+import { MarketingShell } from '@/components/marketing-shell';
 
 export default function Layout({
   children,
@@ -8,10 +7,6 @@ export default function Layout({
   children: ReactNode;
 }): React.ReactElement {
   return (
-    <>
-      <Navbar />
-      <main className="overflow-hidden">{children}</main>
-      <Footer />
-    </>
+    <MarketingShell mainClassName="overflow-hidden">{children}</MarketingShell>
   );
 }

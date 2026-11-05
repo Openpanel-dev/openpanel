@@ -9,6 +9,12 @@ import {
 
 export const zProvider = z.enum(['email', 'google', 'github']);
 
+/** A password hash we no longer verify (Clerk's bcrypt); only a reset fixes it. */
+export const PASSWORD_RESET_REQUIRED = 'PASSWORD_RESET_REQUIRED';
+
+/** Carries an invite through an email sign-in or sign-up to `/api/auth`. */
+export const INVITE_HEADER = 'x-openpanel-invite';
+
 /**
  * `hashPassword` hands this straight to argon2, so the ceiling is what stops a
  * caller choosing how much work the server does. 128 is far above any password
@@ -32,18 +38,21 @@ const zPersonName = z.string().trim().min(1).max(MAX_NAME);
 export const zSignInEmail = z.object({
   email: zEmail.min(1),
   password: zPassword,
-  inviteId: zShortId.nullish(),
 });
 export type ISignInEmail = z.infer<typeof zSignInEmail>;
 
 export const zSignInDev = z.object({ inviteId: zShortId.nullish() });
+
+/** Unbounded: a mangled invite link is a "no", it must not break the login page. */
+export const zRegistrationAllowed = z.object({
+  inviteId: z.string().optional(),
+});
 
 export const zSignUpEmail = z.object({
   firstName: zPersonName,
   lastName: zPersonName,
   email: zEmail,
   password: zPassword,
-  inviteId: zShortId.nullish(),
 });
 export type ISignUpEmail = z.infer<typeof zSignUpEmail>;
 
@@ -58,23 +67,12 @@ export const zRequestResetPassword = z.object({
 });
 export type IRequestResetPassword = z.infer<typeof zRequestResetPassword>;
 
-// Bounded before the transform: the strip and the regex below both run over
-// whatever arrives.
 export const zTotpCode = z
   .string()
   .max(MAX_TOKEN)
   .transform((v) => v.replace(/\s+/g, ''))
   .refine((v) => /^\d{6}$/.test(v), { message: 'Enter a 6-digit code' });
 export type ITotpCode = z.infer<typeof zTotpCode>;
-
-// A recovery code is checked against all ten stored hashes in turn, so this one
-// input decides ten argon2 verifies.
-export const zTotpOrRecoveryCode = z
-  .string()
-  .min(1)
-  .max(MAX_TOKEN)
-  .transform((v) => v.trim());
-export type ITotpOrRecoveryCode = z.infer<typeof zTotpOrRecoveryCode>;
 
 export const zSignInShare = z.object({
   password: z.string().min(1).max(MAX_PASSWORD),

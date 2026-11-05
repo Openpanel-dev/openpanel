@@ -85,7 +85,7 @@ describe('seed against real databases', () => {
     expect(
       user?.accounts.some(
         (account) =>
-          account.provider === 'email' &&
+          account.provider === 'credential' &&
           account.password?.startsWith('$argon2')
       )
     ).toBe(true);
@@ -113,7 +113,7 @@ describe('seed against real databases', () => {
       `SELECT count() AS value FROM sessions FINAL WHERE project_id IN (${inList()})`
     );
     const distinct = await count(
-      `SELECT uniqExact(session_id) AS value FROM events WHERE project_id IN (${inList()})`
+      `SELECT uniqExact(session_id) AS value FROM events WHERE session_id != '' AND project_id IN (${inList()})`
     );
     const starts = await count(
       `SELECT count() AS value FROM events WHERE name = 'session_start' AND project_id IN (${inList()})`

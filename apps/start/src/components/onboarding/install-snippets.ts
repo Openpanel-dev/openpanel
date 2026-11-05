@@ -25,7 +25,7 @@ const apiUrlLine = (context: SnippetContext, indent: string) =>
 
 export function scriptTagSnippet(context: SnippetContext): string {
   return `<script>
-  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
+  window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:"call"===r||"apply"===r||"bind"===r?t[r]:function(){n.push([r].concat([].slice.call(arguments)))}} ,has:function(t,r){return"q"===r}}) }();
   window.op('init', {${apiUrlLine(context, '    ')}
     clientId: '${context.clientId}',
     trackScreenViews: true,

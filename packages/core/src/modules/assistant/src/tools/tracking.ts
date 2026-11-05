@@ -69,6 +69,35 @@ function normalizeUrl(input: string): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
+/**
+ * What the model reads (event properties, page HTML) can steer it, and a URL's
+ * path and query can carry what it has read to whoever runs that server. Only
+ * the project's own site is loaded without the user confirming the address.
+ */
+export function isProjectSite(projectDomain: string | null, url: string) {
+  if (!projectDomain) {
+    return false;
+  }
+  const siteOrigin = originOf(normalizeUrl(projectDomain));
+  return siteOrigin !== null && siteOrigin === originOf(normalizeUrl(url));
+}
+
+function diagnoseTrackingApproval(ctx: ChatToolContext) {
+  return async ({ url }: { url?: string }) => {
+    const target = url?.trim();
+    if (!target) {
+      return 'not-applicable' as const;
+    }
+    const project = await ctx.deps.db.project.findUniqueOrThrow({
+      where: { id: ctx.projectId },
+      select: { domain: true },
+    });
+    return isProjectSite(project.domain, target)
+      ? ('not-applicable' as const)
+      : ('user-approval' as const);
+  };
+}
+
 /** Turns the gathered facts into the checklist the user sees and the model explains. */
 export function assessTracking(facts: TrackingFacts): Finding[] {
   const findings: Finding[] = [];
@@ -158,7 +187,7 @@ export function assessTracking(facts: TrackingFacts): Finding[] {
         check: 'clientId',
         message: foreign
           ? `Client id ${id} belongs to another project${foreign.projectId ? ` (${foreign.projectId})` : ''}, so its events land there, not here.`
-          : `Client id ${id} does not exist. Events sent with it are rejected.`,
+          : `Client id ${id} is not a client of this project or of any project you can open, so its events do not land here.`,
       });
     }
   }
@@ -329,9 +358,10 @@ async function lastEventAt(ctx: ChatToolContext): Promise<string | null> {
 }
 
 /**
- * Client ids found on the page that are not this project's. The owning
- * project is named only when the user may open it: a `selected`-scope
- * member must not learn sibling projects from a client id on a web page.
+ * Client ids found on the page that belong to another project the user may
+ * open. One in a project they cannot open is left out, so it reads the same as
+ * an unknown id: a `selected`-scope member must not learn sibling projects
+ * from a client id on a web page.
  */
 async function findForeignClients(
   ctx: ChatToolContext,
@@ -353,10 +383,7 @@ async function findForeignClients(
   const canOpen = (projectId: string | null) =>
     grants?.projectScope === 'all' ||
     (grants?.projects.some((grant) => grant.projectId === projectId) ?? false);
-  return clients.map((client) => ({
-    id: client.id,
-    projectId: canOpen(client.projectId) ? client.projectId : null,
-  }));
+  return clients.filter((client) => canOpen(client.projectId));
 }
 
 export async function gatherTrackingFacts(
@@ -412,11 +439,15 @@ export async function gatherTrackingFacts(
   };
 }
 
+export function trackingToolApproval(ctx: ChatToolContext) {
+  return { diagnose_tracking: diagnoseTrackingApproval(ctx) };
+}
+
 export function trackingTools(ctx: ChatToolContext) {
   return {
     diagnose_tracking: tool({
       description:
-        "Check why events from a website are not showing up. Loads the page, looks for the OpenPanel snippet and client id, and checks them against this project's clients, allowed origins (CORS), event filters and the page views that actually arrived. Pass the URL the user mentions; without one it uses the project's configured domain, so confirm that domain with the user first when it is unclear.",
+        "Check why events from a website are not showing up. Loads the page, looks for the OpenPanel snippet and client id, and checks them against this project's clients, allowed origins (CORS), event filters and the page views that actually arrived. Pass the URL the user mentions; without one it uses the project's configured domain, so confirm that domain with the user first when it is unclear. A URL on another site waits for the user to confirm it.",
       inputSchema: z.object({
         url: z
           .string()

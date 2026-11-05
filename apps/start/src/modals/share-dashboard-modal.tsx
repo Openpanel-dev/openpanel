@@ -51,7 +51,12 @@ export default function ShareDashboardModal({
     ? `${window.location.origin}/share/dashboard/${existingShare.id}`
     : '';
 
-  const { register, handleSubmit, watch } = useForm<IForm>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { dirtyFields },
+  } = useForm<IForm>({
     resolver: zodResolver(validator),
     // `values` rather than `defaultValues`: the share settings arrive after
     // the first render, and the field must then show the stored password.
@@ -173,7 +178,10 @@ export default function ShareDashboardModal({
         onSubmit={handleSubmit((values) => {
           mutation.mutate({
             ...values,
-            password: getSharePasswordToSubmit(values.password),
+            password: getSharePasswordToSubmit(
+              values.password,
+              !!dirtyFields.password
+            ),
           });
         })}
       >

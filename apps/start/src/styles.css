@@ -531,26 +531,19 @@ button {
 }
 
 @theme inline {
-  --color-chart-1: var(----chart-1);
-  --color-chart-2: var(----chart-2);
-  --color-chart-3: var(----chart-3);
-  --color-chart-4: var(----chart-4);
-  --color-chart-5: var(----chart-5);
-  --color-chart-background: var(----chart-background);
-  --color-chart-foreground: var(----chart-foreground);
-  --color-chart-foreground-muted: var(----chart-foreground-muted);
-  --chart-line-primary: var(----chart-line-primary);
-  --chart-line-secondary: var(----chart-line-secondary);
-  --color-chart-crosshair: var(----chart-crosshair);
-  --color-chart-grid: var(----chart-grid);
+  --color-chart-background: var(--chart-background);
+  --color-chart-foreground: var(--chart-foreground);
+  --color-chart-foreground-muted: var(--chart-foreground-muted);
+  --color-chart-crosshair: var(--chart-crosshair);
+  --color-chart-grid: var(--chart-grid);
   --color-chart-tooltip-background: var(--chart-tooltip-background);
   --color-chart-tooltip-foreground: var(--chart-tooltip-foreground);
   --color-chart-tooltip-muted: var(--chart-tooltip-muted);
-  --color-chart-marker-background: var(----chart-marker-background);
-  --color-chart-marker-border: var(----chart-marker-border);
-  --color-chart-marker-foreground: var(----chart-marker-foreground);
-  --color-chart-ring-background: var(----chart-ring-background);
-  --color-chart-label: var(----chart-label);
+  --color-chart-marker-background: var(--chart-marker-background);
+  --color-chart-marker-border: var(--chart-marker-border);
+  --color-chart-marker-foreground: var(--chart-marker-foreground);
+  --color-chart-ring-background: var(--chart-ring-background);
+  --color-chart-label: var(--chart-label);
 }
 
 /* Dashboard grid: only tiles making room animate; the one under the pointer

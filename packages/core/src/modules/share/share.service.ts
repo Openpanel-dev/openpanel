@@ -1,10 +1,16 @@
 import ShortUniqueId from 'short-unique-id';
+import { z } from 'zod';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getProjectAccess } from '../../shared/access-lookups';
 import { hasShareAccess, type ShareType } from '../../shared/share-access';
 import { hashPassword } from '../auth/auth.service';
+import { parseDashboardFilters } from '../dashboard/dashboard.constants';
 import { getDashboardById } from '../dashboard/dashboard.service';
+import {
+  getCohortIds,
+  type IChartEventFilter,
+} from '../report/report.constants';
 import {
   getReportById,
   getReportsByDashboardId,
@@ -115,6 +121,13 @@ export async function validateReportAccess(
   return share;
 }
 
+export interface ShareAccess {
+  projectId: string;
+  isValid: boolean;
+  /** Saved filters of the shared dashboard; a report share has none. */
+  dashboardFilters: IChartEventFilter[];
+}
+
 export async function validateShareAccess(
   deps: ServiceDeps,
   shareId: string,
@@ -123,7 +136,7 @@ export async function validateShareAccess(
     cookies: CookieReader;
     session?: { userId?: string | null };
   }
-): Promise<{ projectId: string; isValid: boolean }> {
+): Promise<ShareAccess> {
   const db = deps.db;
 
   const dashboardShare = await db.shareDashboard.findUnique({
@@ -146,9 +159,12 @@ export async function validateShareAccess(
     }
 
     const projectId = dashboardShare.projectId;
+    const dashboardFilters = parseDashboardFilters(
+      dashboardShare.dashboard.filters
+    );
 
     if (!dashboardShare.password) {
-      return { projectId, isValid: true };
+      return { projectId, isValid: true, dashboardFilters };
     }
 
     const hasCookie = hasShareAccess(deps.config.cookies.secret, ctx.cookies, {
@@ -160,7 +176,11 @@ export async function validateShareAccess(
       ctx.session?.userId &&
       (await getProjectAccess({ userId: ctx.session.userId, projectId }));
 
-    return { projectId, isValid: hasCookie || !!hasMemberAccess };
+    return {
+      projectId,
+      isValid: hasCookie || !!hasMemberAccess,
+      dashboardFilters,
+    };
   }
 
   const reportShare = await db.shareReport.findUnique({
@@ -176,7 +196,7 @@ export async function validateShareAccess(
     const projectId = reportShare.projectId;
 
     if (!reportShare.password) {
-      return { projectId, isValid: true };
+      return { projectId, isValid: true, dashboardFilters: [] };
     }
 
     const hasCookie = hasShareAccess(deps.config.cookies.secret, ctx.cookies, {
@@ -188,7 +208,11 @@ export async function validateShareAccess(
       ctx.session?.userId &&
       (await getProjectAccess({ userId: ctx.session.userId, projectId }));
 
-    return { projectId, isValid: hasCookie || !!hasMemberAccess };
+    return {
+      projectId,
+      isValid: hasCookie || !!hasMemberAccess,
+      dashboardFilters: [],
+    };
   }
 
   throw new TRPCNotFoundError('Share not found');
@@ -315,6 +339,38 @@ export async function hasAnonymousShareAccessToProject(
   );
 }
 
+/**
+ * Whether `shareId` lets an anonymous viewer watch a project's live visitor
+ * count: a public widget of that project, or a public overview share of it
+ * that is not locked behind a password the viewer has not entered.
+ */
+export async function canShareViewLiveVisitors(
+  deps: ServiceDeps,
+  { projectId, shareId }: { projectId: string; shareId: string },
+  cookies: CookieReader
+): Promise<boolean> {
+  const db = deps.db;
+  const [widget, overview] = await Promise.all([
+    db.shareWidget.findUnique({
+      where: { id: shareId },
+      select: { projectId: true, public: true },
+    }),
+    db.shareOverview.findUnique({
+      where: { id: shareId },
+      select: { id: true, projectId: true, public: true, password: true },
+    }),
+  ]);
+
+  if (widget?.public && widget.projectId === projectId) {
+    return true;
+  }
+  return (
+    !!overview?.public &&
+    overview.projectId === projectId &&
+    isUnlocked(deps, cookies, 'overview', overview)
+  );
+}
+
 /** Shape returned to a viewer who has not unlocked a password-protected share. */
 function lockedShare(
   id: string,
@@ -425,6 +481,26 @@ export async function createShareOverview(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
+/** Anonymous viewers cannot list cohorts, so the share carries the names its
+ *  pills show. The column is a uuid: any other saved id would fail the query. */
+async function getFilterCohortNames(
+  deps: ServiceDeps,
+  projectId: string,
+  filters: IChartEventFilter[]
+): Promise<Record<string, string>> {
+  const ids = filters
+    .flatMap(getCohortIds)
+    .filter((id) => z.string().uuid().safeParse(id).success);
+  if (ids.length === 0) {
+    return {};
+  }
+  const cohorts = await deps.db.cohort.findMany({
+    where: { id: { in: ids }, projectId },
+    select: { id: true, name: true },
+  });
+  return Object.fromEntries(cohorts.map(({ id, name }) => [id, name]));
+}
+
 export async function getShareDashboard(
   deps: ServiceDeps,
   shareId: string,
@@ -435,11 +511,12 @@ export async function getShareDashboard(
     where: { id: shareId },
     select: {
       id: true,
+      projectId: true,
       public: true,
       password: true,
       organization: { select: { name: true } },
       project: { select: { name: true } },
-      dashboard: { select: { name: true } },
+      dashboard: { select: { name: true, filters: true } },
     },
   });
 
@@ -451,12 +528,17 @@ export async function getShareDashboard(
     return lockedShare(share.id, share.organization, share.project);
   }
 
+  const filters = parseDashboardFilters(share.dashboard.filters);
   return {
     id: share.id,
     requiresPassword: false as const,
     organization: share.organization,
     project: share.project,
-    dashboard: share.dashboard,
+    dashboard: {
+      name: share.dashboard.name,
+      filters,
+      cohortNames: await getFilterCohortNames(deps, share.projectId, filters),
+    },
   };
 }
 
@@ -681,7 +763,7 @@ export function createShareService(
       shareId: string,
       reportId: string,
       accessContext: ShareAccessContext
-    ): Promise<{ projectId: string; isValid: boolean }> =>
+    ): Promise<ShareAccess> =>
       validateShareAccess(deps, shareId, reportId, accessContext),
     validateOverviewShareAccess: (
       shareId: string | undefined,
@@ -695,6 +777,10 @@ export function createShareService(
       kinds?: ShareType[]
     ): Promise<boolean> =>
       hasAnonymousShareAccessToProject(deps, projectId, cookies, kinds),
+    canShareViewLiveVisitors: (
+      input: { projectId: string; shareId: string },
+      cookies: CookieReader
+    ): Promise<boolean> => canShareViewLiveVisitors(deps, input, cookies),
     getShareOverview: (
       shareId: string,
       cookies: CookieReader

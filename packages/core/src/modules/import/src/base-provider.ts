@@ -1,4 +1,5 @@
 import type { IClickhouseEvent } from '../../event/event.service';
+import { getImportRangeDays, MAX_IMPORT_RANGE_DAYS } from '../import.constants';
 import type { BaseRawEvent } from './types';
 
 export abstract class BaseImportProvider<
@@ -45,6 +46,13 @@ export abstract class BaseImportProvider<
       chunkSizeDays?: number;
     }
   ): [string, string][] {
+    // Imports stored before the range was validated still reach this on retry.
+    if (getImportRangeDays(from, to) > MAX_IMPORT_RANGE_DAYS) {
+      throw new Error(
+        `Import range exceeds ${MAX_IMPORT_RANGE_DAYS} days (${from} to ${to})`
+      );
+    }
+
     const chunks: [string, string][] = [];
 
     const startDate = new Date(from);

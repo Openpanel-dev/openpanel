@@ -1,33 +1,29 @@
 'use client';
 import { ResponsiveFunnel } from '@nivo/funnel';
-import { useTheme } from 'next-themes';
 
-function useFunnelSteps() {
-  const { resolvedTheme } = useTheme();
-  return [
-    {
-      id: 'Visitors',
-      label: 'Visitors',
-      value: 10_000,
-      percentage: 100,
-      color: resolvedTheme === 'dark' ? '#333' : '#888',
-    },
-    {
-      id: 'Add to cart',
-      label: 'Add to cart',
-      value: 7000,
-      percentage: 32,
-      color: resolvedTheme === 'dark' ? '#222' : '#999',
-    },
-    {
-      id: 'Checkout',
-      label: 'Checkout',
-      value: 5000,
-      percentage: 8.9,
-      color: resolvedTheme === 'dark' ? '#111' : '#e1e1e1',
-    },
-  ];
-}
+const FUNNEL_STEPS = [
+  {
+    id: 'Visitors',
+    label: 'Visitors',
+    value: 10_000,
+    percentage: 100,
+    color: '#888',
+  },
+  {
+    id: 'Add to cart',
+    label: 'Add to cart',
+    value: 7000,
+    percentage: 32,
+    color: '#999',
+  },
+  {
+    id: 'Checkout',
+    label: 'Checkout',
+    value: 5000,
+    percentage: 8.9,
+    color: '#e1e1e1',
+  },
+];
 
 export function ProductAnalyticsIllustration() {
   return (
@@ -38,13 +34,12 @@ export function ProductAnalyticsIllustration() {
 }
 
 export const PartLabel = ({ part }: { part: any }) => {
-  const { resolvedTheme } = useTheme();
   return (
     <g transform={`translate(${part.x}, ${part.y})`}>
       <text
         dominantBaseline="central"
         style={{
-          fill: resolvedTheme === 'dark' ? '#fff' : '#000',
+          fill: '#000',
           pointerEvents: 'none',
           fontSize: 12,
           fontWeight: 500,
@@ -64,7 +59,7 @@ function Labels(props: any) {
 }
 
 function FunnelVisualization() {
-  const funnelSteps = useFunnelSteps();
+  const funnelSteps = FUNNEL_STEPS;
   const colors = funnelSteps.map((stage) => stage.color);
   const nivoData = funnelSteps.map((stage) => ({
     id: stage.id,

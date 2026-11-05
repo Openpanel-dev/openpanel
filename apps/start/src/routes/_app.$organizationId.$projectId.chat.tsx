@@ -14,7 +14,7 @@ import { createProjectTitle } from '@/utils/title';
 const searchSchema = z.object({
   /** Conversation id. Absent means a new chat. */
   c: z.string().optional(),
-  /** A question to send on arrival. */
+  /** A question to prefill the composer with; the user sends it. */
   q: z.string().optional(),
   hint: zChatLaunchHint.optional(),
 });

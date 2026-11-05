@@ -82,6 +82,7 @@ function SortableReportSeriesItem({
   showSegment,
   showAddFilter,
   showPerUser,
+  showFirstTime,
   isSelectManyEvents,
   ...props
 }: Omit<ReportSeriesItemProps, 'renderDragHandle'>) {
@@ -111,6 +112,7 @@ function SortableReportSeriesItem({
           </button>
         )}
         showAddFilter={showAddFilter}
+        showFirstTime={showFirstTime}
         showPerUser={showPerUser}
         showSegment={showSegment}
         {...props}
@@ -135,6 +137,8 @@ export function ReportSeries() {
     'distribution',
   ].includes(chartType);
   const showPerUser = chartType === 'distribution';
+  // Retention and user flow build their own event queries.
+  const showFirstTime = !['retention', 'sankey'].includes(chartType);
   // Retention supports property + cohort filters (hybrid cohort_events_mv /
   // raw-events engine), so the filter UI is enabled for it.
   const showAddFilter = !['sankey'].includes(chartType);
@@ -235,6 +239,7 @@ export function ReportSeries() {
                   isSelectManyEvents={isSelectManyEvents}
                   key={event.id}
                   showAddFilter={showAddFilter}
+                  showFirstTime={showFirstTime}
                   showPerUser={showPerUser}
                   showSegment={showSegment}
                 >
@@ -315,6 +320,7 @@ export function ReportSeries() {
                   ) : (
                     <>
                       <ComboboxEvents
+                        allowUnseenEvents
                         className="min-w-0 flex-1"
                         customEvents={customEvents}
                         items={eventNames}
@@ -409,6 +415,7 @@ export function ReportSeries() {
 
             <div className="flex flex-wrap items-center gap-1 p-2">
               <ComboboxEvents
+                allowUnseenEvents
                 className="text-muted-foreground hover:text-foreground"
                 customEvents={customEvents}
                 disabled={isAddEventDisabled || isSankeyEventLimitReached}

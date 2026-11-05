@@ -57,6 +57,8 @@ export interface Archetype {
   /** The funnels this project's data is built to show, for `.seed.json` and whoever builds reports. */
   funnels: readonly SeedFunnel[];
   journey(rng: Rng, journey: Journey, visitor: Visitor): void;
+  /** Work the product's backend does on its own during `day` (UTC midnight), outside any session. */
+  background?(rng: Rng, day: Date): Journey[];
 }
 
 const CUSTOM_EVENT_GAP_MEDIAN_SECONDS = 3;
@@ -75,6 +77,41 @@ export interface JourneyEvent {
   revenue?: number;
   /** Who the event belongs to once identified; null while anonymous. */
   person: Person | null;
+  /** The `ai_events` row an AI event also writes. */
+  ai?: SeedAiEvent;
+}
+
+/** The `ai_events` columns that are not shared with the `events` row. */
+export interface SeedAiEvent {
+  type: 'generation' | 'embedding' | 'span' | 'trace';
+  trace_id: string;
+  span_id: string;
+  parent_id: string;
+  conversation_id: string;
+  name: string;
+  model: string;
+  provider: string;
+  input_tokens: number;
+  output_tokens: number;
+  cache_read_tokens: number;
+  cache_write_tokens: number;
+  reasoning_tokens: number;
+  input_cost: number;
+  output_cost: number;
+  total_cost: number;
+  cost_source: 'passthrough' | 'catalog' | 'none';
+  latency_ms: number;
+  time_to_first_token_ms: number;
+  is_error: boolean;
+  http_status: number;
+  stop_reason: string;
+  is_stream: boolean;
+  model_parameters: string;
+  input: string;
+  output: string;
+  tools: string;
+  error: string;
+  properties: Record<string, string>;
 }
 
 /** Appends events while advancing a clock, so timestamps read like a person browsing. */
@@ -91,6 +128,10 @@ export class Journey {
   ) {
     this.cursor = start;
     this.person = person;
+  }
+
+  get now(): Date {
+    return this.cursor;
   }
 
   get identified(): Person | null {
@@ -134,6 +175,29 @@ export class Journey {
       properties,
       person: this.person,
     });
+  }
+
+  /**
+   * An AI event: `name` is the `events` name (`ai_generation`, `ai_span`, …),
+   * `properties` the flat `ai_*` keys the worker would store, `ai` the typed
+   * row. The clock advances by `advanceSeconds`: a call's latency, or 0 for a
+   * parent span that its children run inside.
+   */
+  ai(
+    name: string,
+    properties: Record<string, unknown>,
+    ai: SeedAiEvent,
+    advanceSeconds: number
+  ): void {
+    this.events.push({
+      name,
+      ...this.currentScreen(),
+      at: this.cursor,
+      properties,
+      person: this.person,
+      ai,
+    });
+    this.advance(advanceSeconds);
   }
 
   /** Amount in whole currency units, integer: `events.revenue` is UInt64. */

@@ -24,9 +24,27 @@ export const Route = createFileRoute('/_public/onboarding')({
       { name: 'robots', content: 'noindex, follow' },
     ],
   }),
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async ({ context, search }) => {
     if (await isSignedIn(context)) {
+      // A signed-in user opening an invite link accepts it explicitly there.
+      if (search.inviteId) {
+        throw redirect({
+          to: '/invite/$inviteId',
+          params: { inviteId: search.inviteId },
+        });
+      }
       throw redirect({ to: '/' });
+    }
+    // Always fresh: a cached answer outlives an invite that has since expired.
+    const registrationAllowed = await context.queryClient.fetchQuery({
+      ...context.trpc.auth.registrationAllowed.queryOptions({
+        inviteId: search.inviteId,
+      }),
+      staleTime: 0,
+    });
+    if (!registrationAllowed) {
+      // Keeps the invite: an existing user accepts it by signing in.
+      throw redirect({ to: '/login', search: { inviteId: search.inviteId } });
     }
   },
   component: Component,

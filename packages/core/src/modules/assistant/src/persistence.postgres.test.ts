@@ -8,6 +8,8 @@ const ORGANIZATION_ID = 'chat-persistence-org';
 const PROJECT_ID = 'chat-persistence-project';
 const USER_ID = 'chat-persistence-user';
 const CONVERSATION_ID = 'chat-persistence-conversation';
+const OTHER_USER_ID = 'chat-persistence-other-user';
+const CLAIMED_CONVERSATION_ID = 'chat-persistence-claimed-conversation';
 
 let deps: ServiceDeps;
 
@@ -28,13 +30,25 @@ beforeAll(async () => {
     create: { id: USER_ID, email: 'chat-persistence@openpanel.test' },
     update: {},
   });
+  await deps.db.user.upsert({
+    where: { id: OTHER_USER_ID },
+    create: {
+      id: OTHER_USER_ID,
+      email: 'chat-persistence-other@openpanel.test',
+    },
+    update: {},
+  });
 });
 
 afterAll(async () => {
-  await deps.db.conversation.deleteMany({ where: { id: CONVERSATION_ID } });
+  await deps.db.conversation.deleteMany({
+    where: { id: { in: [CONVERSATION_ID, CLAIMED_CONVERSATION_ID] } },
+  });
   await deps.db.project.deleteMany({ where: { id: PROJECT_ID } });
   await deps.db.organization.deleteMany({ where: { id: ORGANIZATION_ID } });
-  await deps.db.user.deleteMany({ where: { id: USER_ID } });
+  await deps.db.user.deleteMany({
+    where: { id: { in: [USER_ID, OTHER_USER_ID] } },
+  });
 });
 
 // Anthropic binds a thinking block to the bytes of the conversation before
@@ -74,4 +88,34 @@ test('message parts survive storage byte for byte, including key order', async (
   const [loaded] = await loadMessages(deps, CONVERSATION_ID);
 
   expect(JSON.stringify(loaded?.parts)).toBe(JSON.stringify(message.parts));
+});
+
+// The route checks ownership before the model runs; a conversation created
+// with the same id while it runs must not receive this turn.
+test('messages are not saved into a conversation someone else owns', async () => {
+  await deps.db.conversation.create({
+    data: {
+      id: CLAIMED_CONVERSATION_ID,
+      projectId: PROJECT_ID,
+      organizationId: ORGANIZATION_ID,
+      userId: OTHER_USER_ID,
+    },
+  });
+
+  await expect(
+    saveMessages(deps, {
+      conversationId: CLAIMED_CONVERSATION_ID,
+      projectId: PROJECT_ID,
+      organizationId: ORGANIZATION_ID,
+      userId: USER_ID,
+      messages: [
+        {
+          id: 'chat-persistence-claimed-message',
+          role: 'user',
+          parts: [{ type: 'text', text: 'private question' }],
+        },
+      ],
+    })
+  ).rejects.toThrow('belongs to another user');
+  expect(await loadMessages(deps, CLAIMED_CONVERSATION_ID)).toEqual([]);
 });

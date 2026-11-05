@@ -160,6 +160,7 @@ function queryEvent(event: EventDefinition): IGetChartDataInput['event'] {
     property: event.property,
     anyOf: event.anyOf,
     perUser: event.perUser,
+    firstTime: event.firstTime,
   };
 }
 

@@ -8,6 +8,24 @@ import type { ILogger } from '../logger';
  * unbounded tail latency.
  */
 
+const UNSET_NODE_LABEL = '<unset>';
+const UNPARSEABLE_NODE_LABEL = '<unparseable>';
+
+/**
+ * `host:port` of a node URL, for logs. Connection URLs carry credentials, so
+ * nothing else of the URL is kept, and an unparseable one is not logged at all.
+ */
+export function nodeLabel(url: string): string {
+  if (!url) {
+    return UNSET_NODE_LABEL;
+  }
+  try {
+    return new URL(url).host;
+  } catch {
+    return UNPARSEABLE_NODE_LABEL;
+  }
+}
+
 export interface ClientSlot {
   client: ClickHouseClient;
   url: string;
@@ -302,7 +320,7 @@ export async function withRoundRobinRetry<T>(
       if (attempt > 0) {
         picker.markHealthy(slot);
         logger.info(
-          { url: slot.url, attempt: attempt + 1 },
+          { node: nodeLabel(slot.url), attempt: attempt + 1 },
           'CH operation succeeded after retry'
         );
       }
@@ -337,7 +355,7 @@ export async function withRoundRobinRetry<T>(
           code: (error as { code?: string })?.code,
           errClass,
           markedUnhealthy: errClass === 'node-down',
-          url: slot.url,
+          node: nodeLabel(slot.url),
           attempt: attempt + 1,
           maxAttempts,
           nextDelayMs: delay,

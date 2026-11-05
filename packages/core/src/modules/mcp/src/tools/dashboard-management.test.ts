@@ -581,6 +581,20 @@ describe('dashboard management behavior', () => {
         layout: { x: -1, y: 0, w: 4, h: 3 },
       })
     ).rejects.toThrow();
+    await expect(
+      server.invoke('update_report_layout', {
+        projectId: 'project-1',
+        reportId: '11111111-1111-4111-8111-111111111111',
+        layout: { x: 0, y: 1_000_000, w: 4, h: 3 },
+      })
+    ).rejects.toThrow();
+    await expect(
+      server.invoke('update_report_layout', {
+        projectId: 'project-1',
+        reportId: '11111111-1111-4111-8111-111111111111',
+        layout: { x: 0, y: 0, w: 4, h: 1_000_000 },
+      })
+    ).rejects.toThrow();
     expect(mockDb.reportLayout.upsert).not.toHaveBeenCalled();
 
     await server.invoke('update_report_layout', {

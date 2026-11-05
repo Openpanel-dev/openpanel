@@ -16,8 +16,15 @@ import {
 } from '../../cacheable-per-deps';
 import { chQuery } from '../../ch-query';
 import { sendEmail } from '../../clients/email';
-import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
+import {
+  TRPCBadRequestError,
+  TRPCForbiddenError,
+  TRPCNotFoundError,
+} from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
+
+type MembershipDeps = Pick<ServiceDeps, 'db' | 'config'>;
+
 import {
   getOrganizationAccess,
   getProjectAccess,
@@ -191,7 +198,7 @@ export async function getMembers(
 }
 
 function writeMemberProjects(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   memberId: string,
   projectScope: ProjectScope,
   grants: IProjectAccessGrant[]
@@ -223,7 +230,7 @@ function writeMemberProjects(
  * concurrent request can cache the old answer again.
  */
 async function clearMemberAccessCache(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   { userId, organizationId }: { userId: string; organizationId: string }
 ): Promise<void> {
   const projects = await deps.db.project.findMany({
@@ -239,12 +246,12 @@ async function clearMemberAccessCache(
 }
 
 export async function connectUserToOrganization(
-  deps: ServiceDeps,
+  deps: MembershipDeps,
   {
     user,
     inviteId,
   }: {
-    user: User;
+    user: Pick<User, 'id' | 'email'>;
     inviteId: string;
   }
 ) {
@@ -315,13 +322,47 @@ export async function connectUserToOrganization(
     organizationId: invite.organizationId,
   });
 
-  await db.invite.delete({
+  // deleteMany: a concurrent acceptance may already have consumed it.
+  await db.invite.deleteMany({
     where: {
       id: inviteId,
     },
   });
 
   return member;
+}
+
+/**
+ * Join an organization from an invite while signed in. The session's email must
+ * be the invited address, so an account that merely registered that address
+ * without proving it still cannot take the invite without the link.
+ */
+export async function acceptInvite(
+  deps: ServiceDeps,
+  { userId, inviteId }: { userId: string; inviteId: string }
+): Promise<{ organizationId: string }> {
+  const [user, invite] = await Promise.all([
+    deps.db.user.findUniqueOrThrow({ where: { id: userId } }),
+    deps.db.invite.findUnique({ where: { id: inviteId } }),
+  ]);
+
+  if (!invite) {
+    throw new TRPCNotFoundError('Invite not found');
+  }
+  if (invite.email.toLowerCase() !== user.email.toLowerCase()) {
+    throw new TRPCForbiddenError(
+      'This invitation was sent to a different email address'
+    );
+  }
+  if (deps.config.auth.allowInvitation === false) {
+    throw new TRPCForbiddenError('Invitations are not allowed');
+  }
+  if (invite.expiresAt < new Date()) {
+    throw new TRPCBadRequestError('This invitation has expired');
+  }
+
+  await connectUserToOrganization(deps, { user, inviteId });
+  return { organizationId: invite.organizationId };
 }
 
 export async function getOrganizationBillingEventsCount(
@@ -914,7 +955,9 @@ export async function inviteUserToOrganization(
     },
   });
 
-  if (userExists) {
+  // Only a verified address may join without the link: anyone can register
+  // an unverified account under someone else's email.
+  if (userExists?.emailVerified) {
     const member = await connectUserToOrganization(deps, {
       user: userExists,
       inviteId: invite.id,
@@ -1098,6 +1141,10 @@ export function createOrganizationService(
       getInvites(deps, organizationId),
     getInvite: (inviteId: string): ReturnType<typeof getInviteById> =>
       getInviteById(deps, inviteId),
+    acceptInvite: (input: {
+      userId: string;
+      inviteId: string;
+    }): Promise<{ organizationId: string }> => acceptInvite(deps, input),
     runDeleteCron: (): Promise<DeleteCronResult> => runDeleteCron(deps),
   };
 }

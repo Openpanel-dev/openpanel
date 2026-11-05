@@ -5,6 +5,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -180,6 +181,17 @@ describe('runExport', () => {
     expect(paged).toContain("project_id IN ('a','b')");
     expect(paged).toContain("created_at >= toDateTime64('2026-08-01', 3)");
     expect(paged).toContain("created_at < toDateTime64('2026-09-01 12:00', 3)");
+  });
+
+  test('refuses a directory that already holds files', async () => {
+    const out = outDir();
+    writeFileSync(join(out, 'manifest.jsonl'), '');
+    const { client, sql } = fakeClickHouse(['{"id":"1"}']);
+
+    await expect(runExport(client, options(out), NO_PROGRESS)).rejects.toThrow(
+      'is not empty'
+    );
+    expect(sql).toEqual([]);
   });
 
   test('a failed query removes its partial file instead of leaving it for the importer', async () => {

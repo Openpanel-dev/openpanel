@@ -1,5 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { countTimeBuckets } from '../../../../../shared/time-buckets';
 import { getAnalyticsOverviewCore } from '../../../../overview/overview.service';
 import {
   MAX_SERIES_POINTS,
@@ -16,13 +17,6 @@ type Interval = 'hour' | 'day' | 'week' | 'month';
 
 /** Coarsest-to-finest, so we can step down when a request is too fine-grained. */
 const INTERVAL_ORDER: Interval[] = ['hour', 'day', 'week', 'month'];
-
-const POINTS_PER_DAY: Record<Interval, number> = {
-  hour: 24,
-  day: 1,
-  week: 1 / 7,
-  month: 1 / 30,
-};
 
 const SERIES_COLUMNS = [
   'date',
@@ -48,12 +42,8 @@ function fitInterval(
   startDate: string,
   endDate: string
 ): { interval: Interval; note?: string } {
-  const days =
-    Math.max(
-      0,
-      (new Date(endDate).getTime() - new Date(startDate).getTime()) / 86_400_000
-    ) + 1;
-  const points = (i: Interval) => Math.ceil(days * POINTS_PER_DAY[i]);
+  const points = (interval: Interval) =>
+    countTimeBuckets({ startDate, endDate, interval });
 
   if (points(requested) <= MAX_SERIES_POINTS) {
     return { interval: requested };
@@ -69,7 +59,7 @@ function fitInterval(
     }
   }
 
-  const coarsest = INTERVAL_ORDER[INTERVAL_ORDER.length - 1] as Interval;
+  const coarsest = INTERVAL_ORDER.at(-1) as Interval;
   return {
     interval: coarsest,
     note: `Requested interval "${requested}" is far too fine for this range; coarsened to "${coarsest}". Narrow the date range for finer resolution.`,

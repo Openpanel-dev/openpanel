@@ -1,54 +1,30 @@
 import type { IServiceEvent } from '@openpanel/core';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Maximize2, Minimize2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BrowserChrome } from './browser-chrome';
-import { ReplayTime } from './replay-controls';
-import { ReplayTimeline } from './replay-timeline';
-import { getEventOffsetMs } from './replay-utils';
+import { FastForwardIcon, VideoOffIcon } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ReplayProvider,
   useCurrentTime,
   useReplayContext,
-} from '@/components/sessions/replay/replay-context';
-import { ReplayEventFeed } from '@/components/sessions/replay/replay-event-feed';
-import { ReplayPlayer } from '@/components/sessions/replay/replay-player';
+} from './replay-context';
+import { ReplayControls, ReplayPlayPauseButton } from './replay-controls';
+import { ReplayEventFeed } from './replay-event-feed';
+import { getStageFitHeight, ReplayPlayer } from './replay-player';
+import { ReplayTimeline } from './replay-timeline';
+import {
+  type EventWithOffset,
+  findLastIndexAtTime,
+  getPageSegments,
+  type PageSegment,
+  type ReplayRecordEvent,
+  sortEventsByOffset,
+} from './replay-utils';
 import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 
-function BrowserUrlBar({ events }: { events: IServiceEvent[] }) {
-  const { startTime } = useReplayContext();
-  const currentTime = useCurrentTime(250);
+const FEED_TICK_MS = 100;
 
-  const currentUrl = useMemo(() => {
-    if (startTime == null || !events.length) {
-      return '';
-    }
-
-    const withOffset = events
-      .map((ev) => ({
-        event: ev,
-        offsetMs: getEventOffsetMs(ev, startTime),
-      }))
-      .filter(({ offsetMs }) => offsetMs >= -10_000 && offsetMs <= currentTime)
-      .sort((a, b) => a.offsetMs - b.offsetMs);
-
-    const latest = withOffset.at(-1);
-    if (!latest) {
-      return '';
-    }
-
-    const { origin = '', path = '/' } = latest.event;
-    return `${origin}${path}`;
-  }, [events, currentTime, startTime]);
-
-  return <span className="truncate text-muted-foreground">{currentUrl}</span>;
-}
-
-/**
- * Feeds remaining chunks into the player after it's ready.
- * Receives already-fetched chunks from the initial batch, then pages
- * through the rest using replayChunksFrom.
- */
+/** Pages through the chunks after the first batch and feeds them to the player. */
 function ReplayChunkLoader({
   sessionId,
   projectId,
@@ -60,101 +36,251 @@ function ReplayChunkLoader({
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
-  const { addEvent, refreshDuration } = useReplayContext();
+  const { addEvent, refreshDuration, isReady } = useReplayContext();
 
   useEffect(() => {
-    function recursive(fromIndex: number) {
+    if (!isReady) {
+      return;
+    }
+    let cancelled = false;
+
+    function loadFrom(index: number) {
       queryClient
         .fetchQuery(
           trpc.session.replayChunksFrom.queryOptions({
             sessionId,
             projectId,
-            fromIndex,
+            fromIndex: index,
           })
         )
         .then((res) => {
-          res.data.forEach((row) => {
-            row?.events?.forEach((event) => {
+          if (cancelled) {
+            return;
+          }
+          for (const row of res.data) {
+            for (const event of row?.events ?? []) {
               addEvent(event);
-            });
-          });
+            }
+          }
           refreshDuration();
-          if (res.hasMore) {
-            recursive(fromIndex + res.data.length);
+          if (res.hasMore && res.nextIndex > index) {
+            loadFrom(res.nextIndex);
           }
         })
         .catch(() => {
-          // chunk loading failed — replay may be incomplete
+          // A failed page leaves the replay shorter, not broken.
         });
     }
 
-    recursive(fromIndex);
-  }, []);
+    loadFrom(fromIndex);
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isReady,
+    queryClient,
+    trpc,
+    sessionId,
+    projectId,
+    fromIndex,
+    addEvent,
+    refreshDuration,
+  ]);
 
   return null;
 }
 
-function FullscreenButton({
-  containerRef,
-}: {
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-
-  useEffect(() => {
-    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener('fullscreenchange', onChange);
-    return () => document.removeEventListener('fullscreenchange', onChange);
-  }, []);
-
-  const toggle = useCallback(() => {
-    if (!containerRef.current) {
-      return;
-    }
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      containerRef.current.requestFullscreen();
-    }
-  }, [containerRef]);
-
+function CurrentUrl({ segment }: { segment: PageSegment | undefined }) {
+  if (!segment) {
+    return <span className="truncate text-muted-foreground">about:blank</span>;
+  }
+  const host = segment.origin.replace(/^https?:\/\//, '');
   return (
-    <button
-      aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-      className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:text-foreground"
-      onClick={toggle}
-      type="button"
+    <span
+      className="fade-in-0 slide-in-from-bottom-1 min-w-0 animate-in truncate duration-300"
+      key={segment.id}
     >
-      {isFullscreen ? (
-        <Minimize2 className="h-3.5 w-3.5" />
-      ) : (
-        <Maximize2 className="h-3.5 w-3.5" />
-      )}
-    </button>
+      <span className="text-muted-foreground">{host}</span>
+      <span className="text-foreground">{segment.path}</span>
+    </span>
   );
 }
 
-function ReplayContent({
+/** A big play button until the viewer starts the replay for the first time. */
+function StartOverlay() {
+  const { isPlaying, isReady } = useReplayContext();
+  const [hasStarted, setHasStarted] = useState(false);
+
+  useEffect(() => {
+    if (isPlaying) {
+      setHasStarted(true);
+    }
+  }, [isPlaying]);
+
+  if (!isReady || hasStarted) {
+    return null;
+  }
+
+  return (
+    <div className="fade-in-0 absolute inset-0 z-10 grid animate-in place-items-center bg-background/20 backdrop-blur-[1.5px]">
+      <ReplayPlayPauseButton size="lg" />
+    </div>
+  );
+}
+
+function SkippingBadge() {
+  const { isSkipping, isPlaying } = useReplayContext();
+  if (!(isSkipping && isPlaying)) {
+    return null;
+  }
+  return (
+    <div className="fade-in-0 zoom-in-95 row absolute top-4 left-1/2 z-20 -translate-x-1/2 animate-in items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1.5 font-medium text-background text-xs shadow-lg backdrop-blur">
+      <FastForwardIcon className="size-3.5 animate-pulse" fill="currentColor" />
+      Skipping idle time
+    </div>
+  );
+}
+
+type StageStatus = 'loading' | 'error' | 'empty';
+
+function StagePlaceholder({ status }: { status: StageStatus }) {
+  if (status === 'loading') {
+    return (
+      <div className="absolute inset-0 grid place-items-center p-6">
+        <div className="col aspect-video w-full max-w-3xl overflow-hidden rounded-xl bg-card shadow-[0_0_0_1px_var(--border)]">
+          <div className="h-9 border-b bg-def-100" />
+          <div className="relative flex-1 overflow-hidden">
+            <div className="absolute inset-0 animate-pulse bg-def-100" />
+            <div className="absolute inset-0 grid place-items-center text-muted-foreground text-sm">
+              Loading recording…
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="col absolute inset-0 items-center justify-center gap-3 text-muted-foreground">
+      <VideoOffIcon className="size-8" />
+      <span className="text-sm">
+        {status === 'error'
+          ? 'The recording could not be loaded. Reload the page to try again.'
+          : 'No recording was captured for this session.'}
+      </span>
+    </div>
+  );
+}
+
+function getStageStatus(isLoading: boolean, isError: boolean): StageStatus {
+  if (isLoading) {
+    return 'loading';
+  }
+  return isError ? 'error' : 'empty';
+}
+
+function ReplayStage({
+  events,
+  playerEvents,
+  isLoading,
+  isError,
+  fullscreenTarget,
+}: {
+  events: IServiceEvent[];
+  playerEvents: ReplayRecordEvent[];
+  isLoading: boolean;
+  isError: boolean;
+  fullscreenTarget: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { startTime, duration } = useReplayContext();
+  const currentTime = useCurrentTime(FEED_TICK_MS);
+
+  // Until the duration is known every event is kept; after that, only what
+  // the recording covers can be seeked to.
+  const sorted = useMemo<EventWithOffset[]>(() => {
+    if (startTime == null) {
+      return [];
+    }
+    const all = sortEventsByOffset(events, startTime);
+    return duration > 0
+      ? all.filter(({ offsetMs }) => offsetMs <= duration)
+      : all;
+  }, [events, startTime, duration]);
+  const segments = useMemo(
+    () => getPageSegments(sorted, duration),
+    [sorted, duration]
+  );
+  const currentIndex = findLastIndexAtTime(sorted, currentTime);
+  const currentSegment =
+    segments.filter((segment) => segment.startMs <= currentTime).at(-1) ??
+    segments[0];
+  const hasRecording = playerEvents.length > 0;
+  const stageFitHeight = useMemo(
+    () => getStageFitHeight(playerEvents),
+    [playerEvents]
+  );
+
+  return (
+    <div className="grid in-[:fullscreen]:h-full min-h-0 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="@container col min-w-0">
+        <div
+          className={cn(
+            'relative h-[max(360px,min(clamp(420px,64vh,760px),var(--stage-fit)))] in-[:fullscreen]:h-auto in-[:fullscreen]:flex-1 overflow-hidden bg-def-100',
+            'bg-[radial-gradient(var(--def-300)_1px,transparent_1px)] [background-size:18px_18px]'
+          )}
+          style={{ '--stage-fit': stageFitHeight } as React.CSSProperties}
+        >
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,color-mix(in_oklab,var(--highlight)_14%,transparent),transparent)]" />
+          {hasRecording ? (
+            <ReplayPlayer
+              events={playerEvents}
+              overlay={<StartOverlay />}
+              url={<CurrentUrl segment={currentSegment} />}
+            />
+          ) : (
+            <StagePlaceholder status={getStageStatus(isLoading, isError)} />
+          )}
+          <SkippingBadge />
+        </div>
+        <div className="col gap-3 border-t bg-card px-4 pt-2 pb-3">
+          <ReplayTimeline
+            currentSegmentId={currentSegment?.id ?? null}
+            events={sorted}
+            segments={segments}
+          />
+          <ReplayControls events={sorted} fullscreenTarget={fullscreenTarget} />
+        </div>
+      </div>
+      <aside className="relative hidden border-l bg-card lg:block">
+        <div className="absolute inset-0">
+          <ReplayEventFeed
+            currentIndex={currentIndex}
+            events={sorted}
+            isLoading={isLoading || (hasRecording && startTime == null)}
+          />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+export function ReplayShell({
   sessionId,
   projectId,
+  events,
 }: {
   sessionId: string;
   projectId: string;
+  events: IServiceEvent[];
 }) {
   const trpc = useTRPC();
-  const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
 
-  const { data: eventsData } = useQuery(
-    trpc.event.events.queryOptions({
-      projectId,
-      sessionId,
-      filters: [],
-      columnVisibility: {},
-    })
-  );
-
-  // Fetch first batch of chunks (includes chunk 0 for player init + more)
-  const { data: firstBatch, isLoading: replayLoading } = useQuery(
+  // The first batch carries the full snapshot the player needs to start.
+  const {
+    data: firstBatch,
+    isLoading,
+    isError,
+  } = useQuery(
     trpc.session.replayChunksFrom.queryOptions({
       sessionId,
       projectId,
@@ -162,81 +288,34 @@ function ReplayContent({
     })
   );
 
-  const events = eventsData?.data ?? [];
-  const playerEvents =
-    firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [];
-  const hasMore = firstBatch?.hasMore ?? false;
-  const hasReplay = playerEvents.length !== 0;
-
-  function renderReplay() {
-    if (replayLoading) {
-      return (
-        <div className="col h-[320px] items-center justify-center gap-4 bg-background">
-          <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
-          <div>Loading session replay</div>
-        </div>
-      );
-    }
-    if (hasReplay) {
-      return <ReplayPlayer events={playerEvents} />;
-    }
-    return (
-      <div className="flex h-[320px] items-center justify-center bg-background text-muted-foreground text-sm">
-        No replay data available for this session.
-      </div>
-    );
-  }
+  const playerEvents = useMemo(
+    () => firstBatch?.data.flatMap((row) => row?.events ?? []) ?? [],
+    [firstBatch]
+  );
 
   return (
-    <ReplayProvider>
+    // Keyed so playback state (e.g. the start overlay) resets per session.
+    <ReplayProvider key={sessionId}>
       <div
-        className="grid gap-4 lg:grid-cols-[1fr_380px] [&:fullscreen]:flex [&:fullscreen]:flex-col [&:fullscreen]:bg-background [&:fullscreen]:p-4"
+        className="card overflow-hidden [&:fullscreen]:rounded-none [&:fullscreen]:border-0"
         id="replay"
-        ref={containerRef}
+        ref={rootRef}
       >
-        <div className="flex min-w-0 flex-col overflow-hidden">
-          <BrowserChrome
-            right={
-              <div className="flex items-center gap-2">
-                {hasReplay && <ReplayTime />}
-                <FullscreenButton containerRef={containerRef} />
-              </div>
-            }
-            url={
-              hasReplay ? (
-                <BrowserUrlBar events={events} />
-              ) : (
-                <span className="text-muted-foreground">about:blank</span>
-              )
-            }
-          >
-            {renderReplay()}
-            {hasReplay && <ReplayTimeline events={events} />}
-          </BrowserChrome>
-        </div>
-        <div className="relative hidden lg:block">
-          <div className="absolute inset-0">
-            <ReplayEventFeed events={events} replayLoading={replayLoading} />
-          </div>
-        </div>
+        <ReplayStage
+          events={events}
+          fullscreenTarget={rootRef}
+          isError={isError}
+          isLoading={isLoading}
+          playerEvents={playerEvents}
+        />
       </div>
-      {hasReplay && hasMore && (
+      {firstBatch?.hasMore && (
         <ReplayChunkLoader
-          fromIndex={firstBatch?.data?.length ?? 0}
+          fromIndex={firstBatch.nextIndex}
           projectId={projectId}
           sessionId={sessionId}
         />
       )}
     </ReplayProvider>
   );
-}
-
-export function ReplayShell({
-  sessionId,
-  projectId,
-}: {
-  sessionId: string;
-  projectId: string;
-}) {
-  return <ReplayContent projectId={projectId} sessionId={sessionId} />;
 }

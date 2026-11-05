@@ -35,7 +35,9 @@ export function useLiveCounter({
   }, [query.data]);
 
   useWS<number>(
-    `/live/visitors/${projectId}`,
+    shareId
+      ? `/live/visitors/${projectId}?shareId=${shareId}`
+      : `/live/visitors/${projectId}`,
     (value) => {
       if (!Number.isNaN(value)) {
         counter.set(value);

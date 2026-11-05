@@ -1,7 +1,6 @@
-// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
-// anything resolved from another id needs its own explicit check in the handler.
+// Sign-in, sign-up, password reset and two-factor are better-auth's
+// (`/api/auth/*`); what stays here reads the session or is not a sign-in.
 
-import { z } from 'zod';
 import type { Session } from '../../context';
 import {
   createRateLimitMiddleware,
@@ -11,34 +10,18 @@ import {
 } from '../../rpc/base';
 import { enforceRateLimit } from '../../rpc/rate-limit';
 import {
-  zProvider,
-  zRequestResetPassword,
-  zResetPassword,
+  zRegistrationAllowed,
   zSignInDev,
-  zSignInEmail,
   zSignInShare,
-  zSignUpEmail,
-  zTotpCode,
-  zTotpOrRecoveryCode,
 } from './auth.constants';
 import {
-  disableTotp,
-  enableTotp,
-  extendSessionCookie,
   getConfiguredProviders,
-  getTotpStatus,
-  regenerateTotpRecoveryCodes,
-  requestPasswordReset,
-  resetPasswordWithToken,
-  setupTotp,
+  getTwoFactorStatus,
   signInToShare,
   signInWithDevLogin,
-  signInWithEmail,
-  signInWithTotp,
   signOutUser,
-  signUpWithEmail,
-  startOAuthSignIn,
 } from './auth.service';
+import { getIsRegistrationAllowed } from './src/registration';
 
 const rateLimit = createRateLimitMiddleware(enforceRateLimit);
 
@@ -61,90 +44,32 @@ export const authRouter = createTRPCRouter({
     getConfiguredProviders(ctx.config)
   ),
 
+  /**
+   * Whether the dashboard should offer sign-up to this visitor. The same rule
+   * the sign-up itself is held to, so an invite that can register sees the form.
+   */
+  registrationAllowed: publicProcedure
+    .input(zRegistrationAllowed)
+    .query(({ input, ctx }) => getIsRegistrationAllowed(ctx, input.inviteId)),
+
+  /** Ends either kind of session and clears both cookies. */
   signOut: publicProcedure.mutation(async ({ ctx }) => {
     await signOutUser(ctx, ctx.setCookie, ctx.session?.session?.id);
   }),
-
-  signInOAuth: publicProcedure
-    .input(z.object({ provider: zProvider, inviteId: z.string().nullish() }))
-    .mutation(({ input, ctx }) => startOAuthSignIn(ctx, input, ctx.setCookie)),
-
-  signUpEmail: publicProcedure
-    .use(rateLimit({ max: 5, windowMs: 60_000 }))
-    .input(zSignUpEmail)
-    .mutation(({ input, ctx }) => signUpWithEmail(ctx, input, ctx.setCookie)),
-
-  signInEmail: publicProcedure
-    .use(rateLimit({ max: 3, windowMs: 30_000 }))
-    .input(zSignInEmail)
-    .mutation(({ input, ctx }) =>
-      signInWithEmail(ctx, input, ctx.setCookie, ctx.logger)
-    ),
 
   /** One click on a local box; `DEV_LOGIN` cannot be set in production. */
   signInDev: publicProcedure
     .use(rateLimit({ max: 10, windowMs: 60_000 }))
     .input(zSignInDev)
     .mutation(({ input, ctx }) =>
-      signInWithDevLogin(ctx, input, ctx.setCookie, ctx.logger)
+      signInWithDevLogin(ctx, input, ctx.headers, ctx.setCookie)
     ),
 
-  signInTotp: publicProcedure
-    .use(rateLimit({ max: 5, windowMs: 60_000 }))
-    .input(z.object({ code: zTotpOrRecoveryCode }))
-    .mutation(({ input, ctx }) =>
-      signInWithTotp(ctx, input, ctx.cookies, ctx.setCookie, ctx.logger)
-    ),
-
-  totpStatus: protectedProcedure.query(({ ctx }) =>
-    getTotpStatus(ctx, ctx.session.userId)
+  twoFactorStatus: protectedProcedure.query(({ ctx }) =>
+    getTwoFactorStatus(ctx, ctx.session.userId)
   ),
-
-  totpSetup: protectedProcedure.mutation(({ ctx }) =>
-    setupTotp(ctx, ctx.session.userId)
-  ),
-
-  totpEnable: protectedProcedure
-    .use(rateLimit({ max: 5, windowMs: 60_000 }))
-    .input(z.object({ code: zTotpCode }))
-    .mutation(({ input, ctx }) =>
-      enableTotp(ctx, ctx.session.userId, input.code)
-    ),
-
-  totpDisable: protectedProcedure
-    .use(rateLimit({ max: 5, windowMs: 60_000 }))
-    .input(z.object({ code: zTotpOrRecoveryCode }))
-    .mutation(({ input, ctx }) =>
-      disableTotp(ctx, ctx.session.userId, input.code)
-    ),
-
-  totpRegenerateRecoveryCodes: protectedProcedure
-    .use(rateLimit({ max: 3, windowMs: 60_000 }))
-    .input(z.object({ code: zTotpCode }))
-    .mutation(({ input, ctx }) =>
-      regenerateTotpRecoveryCodes(ctx, ctx.session.userId, input.code)
-    ),
-
-  resetPassword: publicProcedure
-    .use(rateLimit({ max: 3, windowMs: 60_000 }))
-    .input(zResetPassword)
-    .mutation(({ input, ctx }) => resetPasswordWithToken(ctx, input)),
-
-  requestResetPassword: publicProcedure
-    .use(rateLimit({ max: 3, windowMs: 60_000 }))
-    .input(zRequestResetPassword)
-    .mutation(({ input, ctx }) => requestPasswordReset(ctx, input)),
 
   session: publicProcedure.query(({ ctx }) => withoutSessionToken(ctx.session)),
-
-  extendSession: publicProcedure.mutation(({ ctx }) =>
-    extendSessionCookie(
-      ctx,
-      ctx.cookies,
-      Boolean(ctx.session.session),
-      ctx.setCookie
-    )
-  ),
 
   signInShare: publicProcedure
     .use(rateLimit({ max: 3, windowMs: 30_000 }))

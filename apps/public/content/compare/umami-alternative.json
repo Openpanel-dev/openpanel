@@ -1,18 +1,19 @@
 {
   "slug": "umami-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
-    "title": "Best Umami Alternative 2026 - Open Source & Free",
+    "title": "OpenPanel vs Umami: Product Analytics on Top of Web Stats",
     "description": "Looking for an Umami alternative? OpenPanel offers deeper product analytics, user identification, and mobile SDKs while staying open source and privacy-first. Free to self-host.",
     "noindex": false
   },
   "hero": {
-    "heading": "Best Umami Alternative",
-    "subheading": "Love Umami's simplicity and privacy focus? OpenPanel adds deeper product analytics - user identification, mobile SDKs, A/B testing, and detailed user profiles - while staying open source and cookie-free.",
+    "heading": "OpenPanel vs Umami",
+    "subheading": "Love Umami's simplicity and privacy focus? OpenPanel adds user identification, mobile SDKs, session replay and detailed user profiles, while staying open source and cookie-free.",
     "badges": [
       "Open-source",
       "Privacy-first",
-      "User Identification",
+      "User identification",
       "Mobile SDKs"
     ]
   },
@@ -24,29 +25,34 @@
     "founded": 2020,
     "headquarters": "San Francisco Bay Area, USA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Umami?",
     "paragraphs": [
       "Umami Analytics is a popular open-source web analytics tool known for its clean interface, lightweight script, and privacy-friendly design. It's a great option for developers who want simple, anonymous website metrics. But as your product grows beyond a simple website, Umami's anonymous-only model and lack of product analytics features become limiting.",
-      "OpenPanel builds on the same open-source, privacy-first foundation but adds the product analytics layer that Umami doesn't have. User identification lets you track logged-in users across sessions, while funnels, retention analysis, and cohort breakdowns help you understand how people actually use your product \u2014 not just that they visited your site.",
-      "Mobile app analytics is another area where OpenPanel pulls ahead. Umami is web-only with no native mobile SDKs, while OpenPanel offers first-party SDKs for iOS, Android, React Native, and Flutter. OpenPanel also includes built-in A/B testing for experimentation, which Umami doesn't offer at all.",
-      "OpenPanel is AGPL-3.0 licensed and Umami is MIT — both are open source and support self-hosting, so you won't sacrifice the open-source values that made Umami appealing. If you need to go beyond anonymous pageview counting and actually understand your users, OpenPanel is the natural upgrade from Umami."
+      "OpenPanel builds on the same open-source, privacy-first foundation but adds the product analytics layer that Umami doesn't have. User identification lets you track logged-in users across sessions, while funnels, retention analysis, and cohort breakdowns help you understand how people actually use your product, not just that they visited your site.",
+      "Mobile app analytics is another area where OpenPanel pulls ahead. Umami is web-only with no native mobile SDKs, while OpenPanel has Swift (iOS), Kotlin (Android) and React Native SDKs. OpenPanel also has opt-in session replay and lets you compare variants by breaking any report down by a property.",
+      "OpenPanel is AGPL-3.0 licensed and Umami is MIT, both are open source and support self-hosting, so you won't sacrifice the open-source values that made Umami appealing. If you need to go beyond anonymous pageview counting and actually understand your users, OpenPanel is the natural upgrade from Umami."
     ]
   },
   "summary_comparison": {
     "title": "OpenPanel vs Umami: Which is right for you?",
     "intro": "Both are open-source, privacy-focused analytics tools. Umami focuses on anonymous web analytics. OpenPanel adds user identification and product analytics.",
-    "one_liner": "Umami excels at anonymous web analytics; OpenPanel adds user identification, product analytics, and mobile SDKs.",
+    "one_liner": "Umami excels at anonymous web analytics; OpenPanel adds user identification, product analytics, session replay and mobile SDKs.",
     "best_for_openpanel": [
       "SaaS products needing user identification and retention tracking",
-      "Mobile app developers needing native iOS, Android, React Native, Flutter SDKs",
-      "Teams needing A/B testing and experimentation capabilities",
+      "Mobile app developers needing iOS, Android and React Native SDKs",
+      "Teams that want session replay next to their events",
       "Products requiring session-level analysis and user behavior tracking"
     ],
     "best_for_competitor": [
       "Simple content sites and blogs wanting anonymous traffic stats",
       "Developers prioritizing PostgreSQL over ClickHouse",
-      "Teams valuing extremely generous free tier (1M events/month)",
+      "Hobby sites that fit the free Hobby plan (100K events a month)",
       "Projects wanting the lightest possible tracking script"
     ]
   },
@@ -62,27 +68,27 @@
       },
       {
         "label": "Mobile SDKs",
-        "openpanel": "iOS, Android, React Native, Flutter",
+        "openpanel": "iOS, Android, React Native",
         "competitor": "Web only (API for backend)",
-        "notes": "OpenPanel offers mobile SDKs for iOS, Android, React Native, and Flutter. Umami is designed for web analytics and requires API calls for any server-side tracking."
+        "notes": "OpenPanel offers Swift, Kotlin and React Native SDKs. Umami is designed for web analytics and requires API calls for any server-side tracking."
       },
       {
-        "label": "A/B Testing",
-        "openpanel": "Built-in experimentation",
+        "label": "Session replay",
+        "openpanel": "Opt-in, masked by default",
         "competitor": "Not available",
-        "notes": "OpenPanel includes A/B testing capabilities. Umami focuses purely on analytics and doesn't offer experimentation features."
+        "notes": "OpenPanel records sessions when you enable it in the SDK config and keeps them 30 days. Umami has no session replay."
       },
       {
-        "label": "Free self-hosting",
-        "openpanel": "Yes - unlimited events, self-host free",
-        "competitor": "1 million events/month (cloud)",
-        "notes": "Umami Cloud offers a very generous free tier of 1 million events per month. OpenPanel Cloud has a 30-day free trial then plans from $2.50/month, but self-hosting is free with unlimited events."
+        "label": "Free option",
+        "openpanel": "Self-hosting, unlimited events",
+        "competitor": "Hobby plan: 100K events/month, 1 website",
+        "notes": "Umami Cloud's Hobby plan is free for 100K events a month with 6 months of retention. OpenPanel Cloud has a 30-day trial then plans from $2.50/month; self-hosting is free with unlimited events."
       },
       {
         "label": "Open Source License",
         "openpanel": "AGPL-3.0",
         "competitor": "MIT License",
-        "notes": "OpenPanel is AGPL-3.0; Umami is MIT — both are open source and self-hostable. Commercial use is allowed under both licenses."
+        "notes": "OpenPanel is AGPL-3.0; Umami is MIT, both are open source and self-hostable. Commercial use is allowed under both licenses."
       }
     ]
   },
@@ -174,6 +180,12 @@
             "openpanel": true,
             "competitor": false,
             "notes": "Umami has distinct ID but no true user identification"
+          },
+          {
+            "name": "Session Replay",
+            "openpanel": "Opt-in",
+            "competitor": false,
+            "notes": "OpenPanel replay is masked by default and kept 30 days"
           }
         ]
       },
@@ -182,9 +194,9 @@
         "features": [
           {
             "name": "A/B Testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns only",
             "competitor": false,
-            "notes": "Umami is analytics-only, no experimentation"
+            "notes": "OpenPanel can break any report down by a variant property; neither tool has an experiment engine"
           },
           {
             "name": "Custom Properties on Events",
@@ -207,7 +219,7 @@
             "name": "Email Reports",
             "openpanel": false,
             "competitor": false,
-            "notes": "OpenPanel doesn't offer scheduled email reports — it sends real-time alerts via Slack, Discord, webhook, and in-app. Umami's email reports are cloud/paid only."
+            "notes": "OpenPanel sends a weekly insights digest and real-time alerts via Slack, Discord, webhook and in-app, not scheduled report emails. Umami email reports are cloud only."
           },
           {
             "name": "Tracking Pixels",
@@ -217,9 +229,9 @@
           },
           {
             "name": "Link Tracking",
-            "openpanel": true,
+            "openpanel": false,
             "competitor": true,
-            "notes": "Umami v3 added short URL link tracking"
+            "notes": "Umami v3 added short URL link tracking. OpenPanel tracks outgoing link clicks but has no URL shortener."
           }
         ]
       },
@@ -321,27 +333,30 @@
     "items": [
       {
         "label": "SDK Size",
-        "openpanel": "2.3 KB (gzipped)",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only when enabled",
         "competitor": "~2 KB (~1.5 KB gzipped)",
         "notes": null
       },
       {
         "label": "Platforms",
         "openpanel": [
-          "JavaScript/TypeScript",
+          "Script tag",
+          "JavaScript / Web",
+          "Node.js",
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
+          "Astro",
+          "Remix",
+          "Express",
           "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
-          "Node.js",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
           "Python",
           "Ruby",
-          "Java",
-          "Rust",
-          "PHP"
+          "Rust"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -351,7 +366,7 @@
           "Python (umami-analytics)",
           "REST API"
         ],
-        "notes": null
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter. There is no Go SDK."
       },
       {
         "label": "Open Source",
@@ -361,7 +376,7 @@
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "Docker Compose with PostgreSQL (Node.js 18.18+ required)",
         "notes": null
       },
@@ -387,27 +402,48 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "Umami offers a very generous free cloud tier. OpenPanel offers a 30-day free trial on cloud, simple event-based pricing with all features, and free unlimited self-hosting.",
+    "intro": "Umami has a free Hobby plan for small sites. OpenPanel has a 30-day trial, flat event-based pricing with every feature, and free unlimited self-hosting.",
     "openpanel": {
       "model": "Flat monthly by event volume, transparent",
-      "description": "Transparent pricing from $2.50/month for 5,000 events, with a 30-day free trial. All features included at every tier. Self-host free with unlimited events."
+      "description": "Flat monthly tiers by event volume from $2.50 for 5,000 events ($20 for 100k, $90 for 1M), with a 30-day free trial and no free tier. All features on every tier. Self-host free with unlimited events."
     },
     "competitor": {
-      "model": "Event-based with very generous free tier",
-      "description": "1M events/month free. $0.00002/event after free tier. Unlimited websites, unlimited team members, 5 years data retention. Self-hosted is completely free with no limits.",
-      "free_tier": "1,000,000 events/month free",
+      "model": "Event-based with a free Hobby plan",
+      "description": "Hobby: $0 for 100K events a month, 1 website, 6 months retention. Pro: $20/month for 1M events (then $0.00003 per event), up to 20 websites, 2 years retention. Business: $200/month for 10M events, unlimited websites, 5 years retention. Self-hosted Umami is free with no limits.",
+      "free_tier": "Hobby: 100K events/month, 1 website",
       "pricing_url": "https://umami.is/pricing"
-    }
+    },
+    "volumes": [
+      {
+        "volume": "100k events",
+        "openpanel": "$20",
+        "competitor": "$0 (Hobby)"
+      },
+      {
+        "volume": "1M events",
+        "openpanel": "$90",
+        "competitor": "$20 (Pro)"
+      },
+      {
+        "volume": "10M events",
+        "openpanel": "$350",
+        "competitor": "$200 (Business)"
+      }
+    ]
   },
   "migration": {
     "title": "Migrating from Umami to OpenPanel",
-    "intro": "Both use lightweight scripts with similar event tracking, making migration straightforward.",
+    "intro": "Both use lightweight scripts with similar event tracking, and OpenPanel has a built-in Umami importer for your history.",
     "difficulty": "easy",
     "estimated_time": "30 minutes to 2 hours",
     "steps": [
       {
         "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts with similar size (~2KB), making the transition easy."
+        "description": "Add the OpenPanel SDK to your application. Both scripts are small, so the transition is easy."
+      },
+      {
+        "title": "Import your Umami history",
+        "description": "Export your data from Umami and upload the file in OpenPanel's Imports settings. Pageviews and events arrive with their original dates."
       },
       {
         "title": "Map Custom Events",
@@ -431,8 +467,8 @@
       "notes": "Both use event-based tracking with similar APIs. umami.track() becomes op.track()."
     },
     "historical_data": {
-      "can_import": false,
-      "notes": "Most teams start fresh with OpenPanel and run both tools in parallel briefly."
+      "can_import": true,
+      "notes": "OpenPanel has a built-in Umami importer: export from Umami, upload the file under Settings > Imports, and watch the progress there."
     }
   },
   "use_cases": {
@@ -446,17 +482,17 @@
       },
       {
         "title": "Mobile App Analytics",
-        "description": "Umami is designed for web analytics and doesn't offer native mobile SDKs. OpenPanel provides native iOS, Android, React Native, and Flutter SDKs with full product analytics capabilities.",
+        "description": "Umami is designed for web analytics and doesn't offer native mobile SDKs. OpenPanel provides iOS (Swift), Android (Kotlin) and React Native SDKs with full product analytics capabilities.",
         "icon": "smartphone"
       },
       {
-        "title": "Teams Needing A/B Testing",
-        "description": "Umami focuses purely on analytics without experimentation features. If you need to run A/B tests and measure their impact, OpenPanel includes built-in experimentation.",
-        "icon": "git-branch"
+        "title": "Teams That Want Session Replay",
+        "description": "Umami has no session replay. OpenPanel records sessions when you turn it on, masks text and inputs by default, and shows the recording next to the session's events.",
+        "icon": "play"
       },
       {
         "title": "Companies Building Data Pipelines",
-        "description": "While Umami offers API access and data export, OpenPanel's ClickHouse backend is optimized for high-volume analytics queries, with raw data available via its export API (native data-warehouse export coming 2026).",
+        "description": "While Umami offers API access and data export, OpenPanel's ClickHouse backend is built for high-volume queries, and raw events can be exported to S3 or GCS every minute as JSONL.",
         "icon": "database"
       },
       {
@@ -476,27 +512,27 @@
       },
       {
         "question": "Why switch from Umami to OpenPanel?",
-        "answer": "Teams typically switch when they need user identification, mobile SDKs, or A/B testing. Umami excels at anonymous web analytics, but if you're building a product and need to understand individual user behavior across sessions, OpenPanel provides these capabilities."
+        "answer": "Teams typically switch when they need user identification, mobile SDKs or session replay. Umami excels at anonymous web analytics, but if you're building a product and need to understand individual user behavior across sessions, OpenPanel provides these capabilities."
       },
       {
         "question": "How does Umami's free tier compare to OpenPanel?",
-        "answer": "Umami Cloud offers 1 million events/month free, which is very generous. OpenPanel Cloud has a 30-day free trial then plans from $2.50/month, or free unlimited self-hosting. Both Umami's and OpenPanel's self-hosted versions are completely free with no limits."
+        "answer": "Umami Cloud's Hobby plan is free for 100K events a month on one website with 6 months of retention. OpenPanel Cloud has a 30-day free trial then plans from $2.50/month. Both self-hosted versions are free with no limits."
       },
       {
         "question": "Which has the smaller tracking script?",
-        "answer": "Both are very similar - Umami's script is about 2KB (1.5KB gzipped) and OpenPanel's is 2.3KB. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel."
+        "answer": "Umami's script is about 2 KB (1.5 KB gzipped) and OpenPanel's about 3 KB gzipped. Both are far smaller than Google Analytics (45 KB+) or Mixpanel."
       },
       {
         "question": "Can Umami track mobile apps?",
-        "answer": "Not with native SDKs. Umami is designed for web analytics and requires API calls for any non-browser tracking. OpenPanel offers native iOS, Android, React Native, and Flutter SDKs."
+        "answer": "Not with native SDKs. Umami is designed for web analytics and requires API calls for any non-browser tracking. OpenPanel offers Swift (iOS), Kotlin (Android) and React Native SDKs."
       },
       {
         "question": "Does Umami support heatmaps or session replay?",
-        "answer": "No. Umami focuses on privacy-first analytics without session recording or heatmaps. Neither does OpenPanel - both prioritize privacy over invasive tracking methods."
+        "answer": "Umami has neither. OpenPanel has opt-in session replay (masked by default, kept 30 days) but no heatmaps."
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "Umami requires Docker with PostgreSQL (Node.js 18.18+ minimum). Umami v3 dropped MySQL support. OpenPanel uses Docker Compose (ClickHouse, Postgres, and Redis), and its one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes."
+        "answer": "Umami requires Docker with PostgreSQL (Node.js 18.18+). OpenPanel uses Docker Compose with ClickHouse, Postgres and Redis, and a one-command install script sets it up."
       },
       {
         "question": "Is Umami or OpenPanel better for simple content websites?",

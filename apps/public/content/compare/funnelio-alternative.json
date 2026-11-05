@@ -1,6 +1,7 @@
 {
   "slug": "funnelio-alternative",
   "page_type": "alternative",
+  "category": "attribution",
   "seo": {
     "title": "Best Funnel.io Alternative 2026 - Open Source & Free",
     "description": "Looking for a Funnel.io alternative? OpenPanel provides product analytics with event tracking, funnels, and user behavior insights. Open source, self-hostable, and free to get started.",
@@ -24,13 +25,18 @@
     "founded": 2014,
     "headquarters": "Stockholm, Sweden"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Funnel.io?",
     "paragraphs": [
-      "Funnel.io is a marketing data integration platform designed to aggregate data from over 500 advertising platforms and marketing tools into unified reports. It's used by marketing teams at large organizations to bring together campaign performance data from Google Ads, Facebook, LinkedIn, and hundreds of other sources. But Funnel.io doesn't track user behavior at all \u2014 it aggregates data that already exists in external platforms.",
-      "OpenPanel and Funnel.io serve fundamentally different purposes. Funnel.io answers the question 'how are my marketing campaigns performing across platforms?' while OpenPanel answers 'what are users doing inside my product?' If you need to track events, build funnels, analyze retention, and understand user behavior, that's product analytics \u2014 and that's what OpenPanel does.",
-      "The cost difference reflects these different markets. Funnel.io starts at $399 per month, targeting enterprise marketing teams with large budgets. OpenPanel starts at $2.50 per month with a 30-day free trial, or can be self-hosted for free with unlimited events. For product teams and startups, OpenPanel delivers actionable analytics without the enterprise price tag.",
-      "If you're evaluating analytics tools and Funnel.io appeared in your search, you likely need product analytics rather than marketing data aggregation. OpenPanel gives you the user behavior insights, funnel analysis, and retention tracking that help you build better products \u2014 with open-source transparency and the option to self-host."
+      "Funnel.io is a marketing data integration platform designed to aggregate data from over 500 advertising platforms and marketing tools into unified reports. It's used by marketing teams at large organizations to bring together campaign performance data from Google Ads, Facebook, LinkedIn, and hundreds of other sources. But Funnel.io doesn't track user behavior at all, it aggregates data that already exists in external platforms.",
+      "OpenPanel and Funnel.io serve fundamentally different purposes. Funnel.io answers the question 'how are my marketing campaigns performing across platforms?' while OpenPanel answers 'what are users doing inside my product?' If you need to track events, build funnels, analyze retention, and understand user behavior, that's product analytics, and that's what OpenPanel does.",
+      "The cost difference reflects these different markets. Funnel.io starts at $300 per month billed annually, targeting marketing teams with real ad budgets. OpenPanel starts at $2.50 per month with a 30-day free trial, or can be self-hosted for free with unlimited events. For product teams and startups, OpenPanel delivers actionable analytics without the enterprise price tag.",
+      "If you're evaluating analytics tools and Funnel.io appeared in your search, you likely need product analytics rather than marketing data aggregation. OpenPanel gives you the user behavior insights, funnel analysis, and retention tracking that help you build better products, with open-source transparency and the option to self-host."
     ]
   },
   "summary_comparison": {
@@ -81,7 +87,7 @@
       {
         "label": "Pricing Transparency",
         "openpanel": "Public pricing from $2.50/mo + free self-hosting",
-        "competitor": "Starts at $399/month",
+        "competitor": "From $300/month, billed annually",
         "notes": "OpenPanel offers transparent pricing from $2.50/month (30-day free trial) plus free unlimited self-hosting. Funnel.io starts at $399/month (Essentials) with enterprise plans reaching $1,999+/month."
       }
     ]
@@ -160,9 +166,9 @@
           },
           {
             "name": "A/B Testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns",
             "competitor": false,
-            "notes": "Funnel.io does not provide experimentation features"
+            "notes": "Track the variant as an event or profile property and break any report down by it. No experiment runner, no feature flags, no significance test."
           }
         ]
       },
@@ -222,9 +228,9 @@
           },
           {
             "name": "Data Warehouse Export",
-            "openpanel": "Coming 2026",
+            "openpanel": true,
             "competitor": true,
-            "notes": "Funnel.io exports to BigQuery, Snowflake, etc. OpenPanel has an export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
+            "notes": "OpenPanel exports raw events to S3 or GCS as JSONL (no direct BI connectors). Funnel.io exports to BigQuery, Snowflake, etc."
           },
           {
             "name": "Looker Studio Integration",
@@ -317,7 +323,7 @@
     "items": [
       {
         "label": "Deployment",
-        "openpanel": "Docker Compose, guided setup wizard (self-hosted) or managed cloud",
+        "openpanel": "Docker Compose, one-command install script (self-hosted) or managed cloud",
         "competitor": "Cloud SaaS only - no self-hosting",
         "notes": null
       },
@@ -341,7 +347,7 @@
       },
       {
         "label": "Integrations",
-        "openpanel": "Slack, Discord, webhooks, export API (data-warehouse export coming 2026)",
+        "openpanel": "Slack, Discord, webhooks, S3 and GCS raw export, export API",
         "competitor": "500+ marketing connectors, Looker Studio, Power BI, Tableau, BigQuery, Snowflake, Redshift",
         "notes": null
       },
@@ -358,12 +364,12 @@
     "intro": "OpenPanel and Funnel.io have very different pricing models reflecting their different use cases.",
     "openpanel": {
       "model": "Flat monthly by event volume, transparent",
-      "description": "Tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K — 30-day free trial — or free self-hosting. All features included at every tier. No limits on users, dashboards, or data retention."
+      "description": "Tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K, 30-day free trial, or free self-hosting. All features included at every tier. No limits on users, dashboards or sites."
     },
     "competitor": {
-      "model": "Flexpoint-based, no free tier",
-      "description": "Free plan with limited connectors (100+ Starter connectors). Paid plans: Essentials ($399/month), Plus ($999/month), Enterprise ($1,999+/month). Pricing based on 'flexpoints' which depend on accounts connected and report types. Enterprise customers report spending $12,000-100,000+/year. Agency plans also available.",
-      "free_tier": "Free plan with 100+ Starter connectors and limited features",
+      "model": "Per plan, billed annually",
+      "description": "Starter: from $300/month billed annually, 117 connectors and 13 destinations. Business: from $600/month billed annually, 579 connectors and 46 destinations. Enterprise: custom. No free plan; a 30-day trial needs no card.",
+      "free_tier": "No free plan (30-day trial)",
       "pricing_url": "https://funnel.io/pricing"
     }
   },
@@ -414,12 +420,12 @@
       },
       {
         "title": "Startups Wanting Affordable Analytics",
-        "description": "Funnel.io starts at $399/month. OpenPanel offers transparent pricing from $2.50/month (with a 30-day free trial) and free unlimited self-hosting, making it accessible for startups and small teams.",
+        "description": "Funnel.io starts at $300/month, billed annually. OpenPanel offers transparent pricing from $2.50/month (with a 30-day free trial) and free unlimited self-hosting, making it accessible for startups and small teams.",
         "icon": "dollar-sign"
       },
       {
         "title": "Teams Requiring Self-Hosting",
-        "description": "Funnel.io is cloud-only with no self-hosting option. If you need to host analytics on your own infrastructure for data privacy, compliance, or cost reasons, OpenPanel can be self-hosted via Docker Compose. A one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes.",
+        "description": "Funnel.io is cloud-only with no self-hosting option. If you need to host analytics on your own infrastructure for data privacy, compliance, or cost reasons, OpenPanel can be self-hosted via Docker Compose. One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes.",
         "icon": "server"
       },
       {
@@ -452,7 +458,7 @@
       },
       {
         "question": "Why is Funnel.io so expensive compared to OpenPanel?",
-        "answer": "Funnel.io's pricing (starting at $399/month) reflects its value proposition: maintaining 500+ API connectors to marketing platforms, handling data transformation, and providing BI tool integrations. OpenPanel tracks your own product data with lightweight SDKs, which has different cost structures."
+        "answer": "Funnel.io's pricing (from $300/month, billed annually) reflects its value proposition: maintaining 600+ API connectors to marketing platforms, handling data transformation, and providing BI tool integrations. OpenPanel tracks your own product data with lightweight SDKs, which has different cost structures."
       },
       {
         "question": "Can I self-host Funnel.io?",

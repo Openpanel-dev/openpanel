@@ -2,6 +2,8 @@ import type { ServiceDeps } from '../../../services';
 
 type RegistrationDeps = Pick<ServiceDeps, 'db' | 'config'>;
 
+const NUL = '\0';
+
 /**
  * Whether a *new* user may be created right now.
  *
@@ -20,14 +22,19 @@ export async function getIsRegistrationAllowed(
   }
 
   // 1. First user is always allowed
-  const count = await deps.db.user.count();
-  if (count === 0) {
+  const anyUser = await deps.db.user.findFirst({ select: { id: true } });
+  if (!anyUser) {
     return true;
   }
 
-  // 2. If there is an invite, check if it is valid
+  // 2. If there is an invite, it must exist and be unexpired
   if (inviteId) {
     if (allowInvitation === false) {
+      return false;
+    }
+
+    // Postgres text cannot hold NUL: no invite matches, and the lookup would throw.
+    if (inviteId.includes(NUL)) {
       return false;
     }
 
@@ -37,7 +44,7 @@ export async function getIsRegistrationAllowed(
       },
     });
 
-    return !!invite;
+    return !!invite && invite.expiresAt >= new Date();
   }
 
   return allowRegistration;
