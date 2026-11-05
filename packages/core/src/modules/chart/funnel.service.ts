@@ -169,11 +169,11 @@ export function buildSessionsCte(input: {
 function fillFunnel(funnel: { level: number; count: number }[], steps: number) {
   const filled = Array.from({ length: steps }, (_, index) => {
     const level = index + 1;
-    const matchingResult = funnel.find((result) => result.level === level);
-    return {
-      level,
-      count: matchingResult ? matchingResult.count : 0,
-    };
+    // Raw values sharing a display label arrive as several rows per level.
+    const count = funnel
+      .filter((result) => result.level === level)
+      .reduce((sum, result) => sum + result.count, 0);
+    return { level, count };
   });
 
   // Accumulate counts from the bottom of the funnel upwards.

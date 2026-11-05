@@ -253,6 +253,7 @@ describe('funnel time to convert', () => {
       breakdowns: [{ id: 'plan', name: 'properties.plan' }],
     });
     expect(series.map((serie) => serie.id)).toEqual(['Not set']);
+    expect(series[0]?.steps.map((step) => step.count)).toEqual([3, 3]);
     expect(series[0]?.timeToConvert).toBe(4 * SECONDS_PER_MINUTE);
   });
 });
