@@ -455,25 +455,25 @@ describe('execute', () => {
   };
 
   describe('Basic transformations', () => {
-    it('should execute simple arrow function', () => {
+    it('should execute simple arrow function', async () => {
       const code = '(payload) => ({ event: payload.name })';
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ event: 'page_view' });
     });
 
-    it('should access nested properties', () => {
+    it('should access nested properties', async () => {
       const code = '(payload) => ({ plan: payload.properties.plan })';
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ plan: 'premium' });
     });
 
-    it('should handle multiple properties', () => {
+    it('should handle multiple properties', async () => {
       const code = `(payload) => ({
         event: payload.name,
         user: payload.profileId,
         location: payload.city
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({
         event: 'page_view',
         user: 'user-123',
@@ -483,11 +483,11 @@ describe('execute', () => {
   });
 
   describe('Date operations', () => {
-    it('should format dates', () => {
+    it('should format dates', async () => {
       const code = `(payload) => ({
         timestamp: new Date(payload.createdAt).toISOString()
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toHaveProperty('timestamp');
       expect((result as { timestamp: string }).timestamp).toBe(
         '2024-01-15T10:30:00.000Z'
@@ -496,61 +496,61 @@ describe('execute', () => {
   });
 
   describe('Array operations', () => {
-    it('should transform arrays', () => {
+    it('should transform arrays', async () => {
       const code = `(payload) => ({
         tags: payload.tags?.map(t => t.toUpperCase()) || []
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ tags: ['TAG1', 'TAG2'] });
     });
 
-    it('should filter arrays', () => {
+    it('should filter arrays', async () => {
       const code = `(payload) => ({
         filtered: payload.tags?.filter(t => t.includes('tag1')) || []
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ filtered: ['tag1'] });
     });
   });
 
   describe('String operations', () => {
-    it('should use template literals', () => {
+    it('should use template literals', async () => {
       const code = `(payload) => ({
         location: \`\${payload.city}, \${payload.country}\`
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ location: 'New York, US' });
     });
 
-    it('should use string methods', () => {
+    it('should use string methods', async () => {
       const code = `(payload) => ({
         upperName: payload.name.toUpperCase()
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ upperName: 'PAGE_VIEW' });
     });
   });
 
   describe('Math operations', () => {
-    it('should use Math functions', () => {
+    it('should use Math functions', async () => {
       const code = `(payload) => ({
         roundedLng: Math.round(payload.longitude)
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ roundedLng: -74 });
     });
   });
 
   describe('Conditional logic', () => {
-    it('should handle ternary operators', () => {
+    it('should handle ternary operators', async () => {
       const code = `(payload) => ({
         plan: payload.properties?.plan || 'free'
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ plan: 'premium' });
     });
 
-    it('should handle if conditions', () => {
+    it('should handle if conditions', async () => {
       const code = `(payload) => {
         const result = { event: payload.name };
         if (payload.properties?.plan === 'premium') {
@@ -558,13 +558,13 @@ describe('execute', () => {
         }
         return result;
       }`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({ event: 'page_view', plan: 'premium' });
     });
   });
 
   describe('Complex transformations', () => {
-    it('should handle nested object construction', () => {
+    it('should handle nested object construction', async () => {
       const code = `(payload) => ({
         event: payload.name,
         user: {
@@ -577,7 +577,7 @@ describe('execute', () => {
           device: payload.device
         }
       })`;
-      const result = execute(code, basePayload);
+      const result = await execute(code, basePayload);
       expect(result).toEqual({
         event: 'page_view',
         user: {
@@ -594,20 +594,20 @@ describe('execute', () => {
   });
 
   describe('Error handling', () => {
-    it('should handle runtime errors gracefully', () => {
+    it('should handle runtime errors gracefully', async () => {
       const code = '(payload) => payload.nonexistent.property';
-      expect(() => {
-        execute(code, basePayload);
-      }).toThrow('Error executing JavaScript template');
+      await expect(execute(code, basePayload)).rejects.toThrow(
+        'Error executing JavaScript template'
+      );
     });
 
-    it('should refuse to run a stored template that fails validation', () => {
+    it('should refuse to run a stored template that fails validation', async () => {
       // A template that was persisted at some point but does not pass
       // validation must not reach new Function().
       const code = `(payload) => payload['constructor']['constructor']('return 1')()`;
-      expect(() => {
-        execute(code, basePayload);
-      }).toThrow('Invalid JavaScript template');
+      await expect(execute(code, basePayload)).rejects.toThrow(
+        'Invalid JavaScript template'
+      );
     });
   });
 
@@ -621,16 +621,16 @@ describe('execute', () => {
       `(payload) => {   return {     event_name: payload.name,     first_name: payload.properties?.first_name || '',     last_name: payload.properties?.last_name || '',     email: payload.properties?.email || '',     phone: payload.properties?.phone || '',     sms_consent: payload.properties?.sms_consent || '',     form_name: payload.properties?.form_name || '',     form_id: payload.properties?.form_id || '',     page_url: payload.properties?.page_url || ''   }; }`,
     ];
 
-    it.each(productionTemplates)('validates and runs: %s', (code) => {
+    it.each(productionTemplates)('validates and runs: %s', async (code) => {
       expect(validate(code)).toEqual({ valid: true });
-      expect(() => execute(code, basePayload)).not.toThrow();
+      await execute(code, basePayload);
     });
 
-    it('produces the expected shape for the identify template', () => {
-      const result = execute(productionTemplates[0]!, basePayload) as Record<
-        string,
-        unknown
-      >;
+    it('produces the expected shape for the identify template', async () => {
+      const result = (await execute(
+        productionTemplates[0]!,
+        basePayload
+      )) as Record<string, unknown>;
       expect(result.name).toBe('page_view');
       expect(result.timestamp).toBe('2024-01-15T10:30:00.000Z');
       expect(result.properties).toMatchObject({
@@ -640,34 +640,34 @@ describe('execute', () => {
       });
     });
 
-    it('returns null when the template returns null', () => {
-      expect(execute(productionTemplates[1]!, basePayload)).toBeNull();
+    it('returns null when the template returns null', async () => {
+      expect(await execute(productionTemplates[1]!, basePayload)).toBeNull();
     });
   });
 
   describe('Isolation', () => {
-    it('does not hand the template a host object', () => {
+    it('does not hand the template a host object', async () => {
       // The payload crosses into the context as JSON, so mutations never
       // reach the caller's object.
       const payload = { name: 'x', nested: { a: 1 } };
-      execute(
+      await execute(
         '(payload) => { payload.nested.a = 2; return payload; }',
         payload
       );
       expect(payload.nested.a).toBe(1);
     });
 
-    it('measures the output cap in UTF-8 bytes', () => {
+    it('measures the output cap in UTF-8 bytes', async () => {
       // 600k three-byte characters is 600k UTF-16 units but 1.8MB on the wire.
-      expect(() => execute("(payload) => 'ࠀ'.repeat(600000)", {})).toThrow(
-        'too large'
-      );
+      await expect(
+        execute("(payload) => 'ࠀ'.repeat(600000)", {})
+      ).rejects.toThrow('too large');
     });
 
-    it('stops a template that runs too long', () => {
-      expect(() =>
+    it('stops a template that runs too long', async () => {
+      await expect(
         execute("(payload) => 'a'.repeat(100000000).replace(/(a+)+b/, '')", {})
-      ).toThrow('Error executing JavaScript template');
+      ).rejects.toThrow('Error executing JavaScript template');
     });
   });
 });

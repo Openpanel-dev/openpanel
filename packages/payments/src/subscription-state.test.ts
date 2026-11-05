@@ -103,11 +103,11 @@ describe('getSubscriptionState', () => {
       expected: 'canceling',
     },
     {
-      name: 'canceledAt wins even if period passed',
+      name: 'canceledAt with the period passed is canceled (missed webhook)',
       status: 'active',
       canceledAt: past,
       endsAt: past,
-      expected: 'canceling',
+      expected: 'canceled',
     },
 
     // Payment-problem states

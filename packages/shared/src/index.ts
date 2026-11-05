@@ -9,7 +9,14 @@ export {
 export { generateId, generateSecureId, shortId } from './id';
 export { getSafeJson, getSuperJson, setSuperJson } from './json';
 export { average, ifNaN, max, min, round, sum } from './math';
-export { deepMergeObjects, strip, toDots, toObject } from './object';
+export {
+  deepMergeObjects,
+  strip,
+  TO_DOTS_MAX_KEYS,
+  TO_DOTS_MAX_KEYS_PER_OBJECT,
+  toDots,
+  toObject,
+} from './object';
 export { slug } from './slug';
 export {
   stripLeadingAndTrailingSlashes,

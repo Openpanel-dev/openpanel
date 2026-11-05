@@ -243,6 +243,48 @@ describe('validateIngestRequest', () => {
   });
 });
 
+describe('validateIngestRequest — client type and profile filters', () => {
+  const blockedProfile = () =>
+    getClientByIdCached.mockResolvedValueOnce({
+      ...client,
+      project: {
+        ...client.project,
+        filters: [{ type: 'profile_id', profileId: '123' }],
+      },
+    } as unknown as typeof client);
+
+  for (const [label, trackBody] of [
+    ['a numeric profileId', { type: 'track', payload: { profileId: 123 } }],
+    [
+      'the id inside __identify',
+      {
+        type: 'track',
+        payload: {
+          profileId: 'other',
+          properties: { __identify: { profileId: '123' } },
+        },
+      },
+    ],
+    ['a root profileId', { profileId: '123' }],
+  ] as const) {
+    it(`blocks ${label} listed in the project filters`, async () => {
+      blockedProfile();
+
+      const result = await validateIngestRequest({
+        deps,
+        headers: { 'openpanel-client-id': CLIENT_ID },
+        clientIp: '1.2.3.4',
+        body: trackBody,
+      });
+
+      expect(result).toMatchObject({
+        ok: false,
+        message: 'Ingestion: Profile id is blocked by project filter',
+      });
+    });
+  }
+});
+
 describe('validateIngestRequest — secret verification (main #481)', () => {
   it('does not mark a request authenticated when the secret does not match', async () => {
     guarded();

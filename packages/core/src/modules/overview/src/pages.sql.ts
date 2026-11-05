@@ -47,6 +47,7 @@ function searchClause(search: string | undefined): SqlFragment {
   return sql`AND (e.path LIKE ${term} OR e.origin LIKE ${term} OR pt.title LIKE ${term})`;
 }
 
+/** Sessionless views still count, but cannot contribute elapsed time. */
 export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
   // Titles come from the requested range so the answer does not depend on the
   // wall clock — reading a fixed lookback window off the widest Map column
@@ -67,7 +68,7 @@ export function topPagesQuery(input: TopPagesQueryInput): SqlFragment {
       session_id,
       path,
       origin,
-      dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at)) AS duration
+      if(session_id = '', 0, dateDiff('millisecond', created_at, lead(created_at, 1, created_at) OVER (PARTITION BY session_id ORDER BY created_at))) AS duration
     FROM events
     WHERE project_id = ${sql.string(input.projectId)}
       AND name = 'screen_view'
@@ -145,12 +146,15 @@ export interface PageTimeseriesQueryInput {
 export function pageTimeseriesQuery(
   input: PageTimeseriesQueryInput
 ): SqlFragment {
-  const originFilter = input.filterOrigin
-    ? sql`AND e.origin = ${sql.string(input.filterOrigin)}`
-    : sql.empty;
-  const pathFilter = input.filterPath
-    ? sql`AND e.path = ${sql.string(input.filterPath)}`
-    : sql.empty;
+  // An empty selector still selects: '' is a page's origin or path, not "any".
+  const originFilter =
+    input.filterOrigin === undefined
+      ? sql.empty
+      : sql`AND e.origin = ${sql.string(input.filterOrigin)}`;
+  const pathFilter =
+    input.filterPath === undefined
+      ? sql.empty
+      : sql`AND e.path = ${sql.string(input.filterPath)}`;
 
   // `WITH FILL` attaches to the ORDER BY expression it follows, so the
   // ranking columns go after it, not before. ClickHouse fills AFTER
@@ -206,16 +210,19 @@ export function pageConversionsQuery(
       AND ${dateRangeWhere('created_at', input.startDate, input.endDate)}
   `;
 
+  // ASOF pairs each view with only its next conversion: whether that one is
+  // inside the window decides attribution, and a plain join would enumerate
+  // every view x conversion pair of a profile first.
   const viewsBeforeConversions = sql`
     SELECT DISTINCT e.profile_id, e.path, e.origin
     FROM events AS e
-    INNER JOIN conversion_events AS c ON e.profile_id = c.profile_id
+    ASOF INNER JOIN conversion_events AS c
+      ON e.profile_id = c.profile_id AND e.created_at < c.conv_time
     WHERE e.project_id = ${sql.string(input.projectId)}
       AND e.name = 'screen_view'
       AND e.path != ''
       AND ${dateRangeWhere('e.created_at', input.startDate, input.endDate)}
-      AND e.created_at < c.conv_time
-      AND e.created_at >= c.conv_time - INTERVAL ${sql.uint64(input.windowHours)} HOUR
+      AND c.conv_time <= e.created_at + INTERVAL ${sql.uint64(input.windowHours)} HOUR
   `;
 
   const totalVisitors = sql`

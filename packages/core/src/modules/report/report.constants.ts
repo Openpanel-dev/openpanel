@@ -224,6 +224,9 @@ export const chartSegments = {
   property_average: 'Average of property',
   property_max: 'Max of property',
   property_min: 'Min of property',
+  property_p50: 'Median of property',
+  property_p95: '95th percentile of property',
+  property_p99: '99th percentile of property',
 };
 
 export const lineTypes = {
@@ -758,6 +761,12 @@ export const zChartEvent = z.object({
     .array(zChartEventFilter)
     .default([])
     .describe('Filters applied specifically to this event'),
+  firstTime: z
+    .boolean()
+    .optional()
+    .describe(
+      "Count only each user's first-ever occurrence of this event, and only when that occurrence falls inside the selected range and matches this event's filters. Ignored for the any-event series ('*')."
+    ),
   customEventId: z
     .string()
     .optional()

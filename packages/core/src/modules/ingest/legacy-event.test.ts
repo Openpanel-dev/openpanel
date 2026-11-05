@@ -146,6 +146,25 @@ describe('ingestLegacyEvent', () => {
     expect(partitionKey).toBe(payload.deviceId);
   });
 
+  it('forwards only the legacy fields, never a stray groups or secret', async () => {
+    await ingestLegacyEvent(
+      {
+        ...makeRequest(),
+        body: {
+          ...legacyBody({ profileId: 'user-1' }),
+          groups: { not: 'an array' },
+          clientSecret: 'sec_from_body',
+        } as unknown as DeprecatedPostEventPayload,
+      },
+      { buffers, produceIncomingEvent, deps: transportDeps }
+    );
+
+    const { event } = produced[0]!.payload;
+    expect(event.groups).toEqual([]);
+    expect(event.profileId).toBe('user-1');
+    expect(JSON.stringify(event)).not.toContain('sec_from_body');
+  });
+
   it('mints the event id at the producer, like /track', async () => {
     await ingestLegacyEvent(makeRequest(), {
       buffers,

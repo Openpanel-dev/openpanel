@@ -7,9 +7,11 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChatComposer } from './chat-composer';
 import { ChatEmpty } from './chat-empty';
+import { takeLaunchedQuestion } from './chat-launch';
 import { ChatMessages } from './chat-messages';
 import type { AssistantUIMessage } from './types';
 import { useChatSession } from './use-chat-session';
+import { useAppParams } from '@/hooks/use-app-params';
 
 function readStoredModel(): string | null {
   if (typeof window === 'undefined') {
@@ -37,7 +39,10 @@ export function ChatView({
   models: readonly ChatModelEntry[];
   defaultModelId: string | null;
   hint?: ChatLaunchHint;
-  /** Sent once on mount; the launcher puts it in the URL. */
+  /**
+   * Prefills the composer. It comes from the URL, so anyone can write it into a
+   * link: the user reads it and presses Send before it runs with their access.
+   */
   initialQuestion?: string;
   onFirstMessage: () => void;
   onTitleChange: (title: string | null) => void;
@@ -81,14 +86,18 @@ export function ChatView({
     [messages.length, onFirstMessage, sendMessage]
   );
 
-  // The launcher's question is sent exactly once, however the page re-renders.
-  const sentInitial = useRef(false);
+  const { projectId } = useAppParams();
+  const tookLaunchedQuestion = useRef(false);
   useEffect(() => {
-    if (initialQuestion && !sentInitial.current && messages.length === 0) {
-      sentInitial.current = true;
-      send(initialQuestion);
+    if (tookLaunchedQuestion.current || messages.length > 0) {
+      return;
     }
-  }, [initialQuestion, messages.length, send]);
+    tookLaunchedQuestion.current = true;
+    const question = takeLaunchedQuestion(projectId);
+    if (question) {
+      send(question);
+    }
+  }, [messages.length, projectId, send]);
 
   return (
     <>
@@ -112,6 +121,7 @@ export function ChatView({
         <ChatComposer
           autoFocus
           busy={busy}
+          initialText={initialQuestion}
           modelId={modelId}
           models={models}
           onModelChange={selectModel}

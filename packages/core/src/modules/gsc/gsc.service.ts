@@ -13,7 +13,7 @@ import type { Logger } from '../../logger';
 import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { TABLE_NAMES } from '../../shared/ch-tables';
-import { googleGscClient } from '../auth/auth.service';
+import { getAccessChecks, googleGscClient } from '../auth/auth.service';
 
 const BACKFILL_MONTHS = 6;
 const CHUNK_DAYS = 14;
@@ -1384,6 +1384,7 @@ export interface GscOAuthCallbackInput {
   storedState: string;
   codeVerifier: string;
   projectId: string;
+  userId: string;
 }
 
 export interface GscOAuthCallbackResult {
@@ -1397,6 +1398,15 @@ export async function completeGscOAuthCallback(
   if (input.state !== input.storedState) {
     throw new Error('GSC OAuth state mismatch');
   }
+
+  // The cookies are only signed when COOKIE_SECRET is set, so the project they
+  // name is not proof that this user may connect it.
+  const { requireProjectAccess } = await getAccessChecks();
+  await requireProjectAccess({
+    userId: input.userId,
+    projectId: input.projectId,
+    level: 'write',
+  });
 
   const tokens = await googleGscClient(deps.config).validateAuthorizationCode(
     input.code,

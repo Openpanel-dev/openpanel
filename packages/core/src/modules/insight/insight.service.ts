@@ -491,7 +491,13 @@ export async function sendWeeklyDigests(
     where: {
       deleteAt: null,
       eventsCount: { gt: WEEKLY_DIGEST_MIN_EVENTS },
-      organization: { subscriptionStatus: { in: ['active', 'trialing'] } },
+      ...(deps.config.selfHosted
+        ? {}
+        : {
+            organization: {
+              subscriptionStatus: { in: ['active', 'trialing'] },
+            },
+          }),
     },
     select: {
       id: true,
@@ -505,7 +511,11 @@ export async function sendWeeklyDigests(
   for (const project of projects) {
     try {
       const state = project.organization.subscriptionState;
-      if (state !== 'active' && state !== 'trialing') {
+      if (
+        !deps.config.selfHosted &&
+        state !== 'active' &&
+        state !== 'trialing'
+      ) {
         continue;
       }
 

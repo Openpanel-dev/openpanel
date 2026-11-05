@@ -10,7 +10,7 @@ export function SignInDev({ inviteId }: { inviteId?: string }) {
   const mutation = useMutation(
     trpc.auth.signInDev.mutationOptions({
       onSuccess(data) {
-        if (data.type === 'totp_required') {
+        if (data.type === 'two_factor') {
           window.location.href = '/verify';
           return;
         }

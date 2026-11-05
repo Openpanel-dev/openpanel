@@ -52,11 +52,13 @@ export const getSlackInstallUrl = ({
   integrationId,
   organizationId,
   projectId,
+  userId,
 }: {
   config: CoreConfig;
   integrationId: string;
   organizationId: string;
   projectId: string;
+  userId: string;
 }): Promise<string> | null => {
   if (!config.slack.clientId) {
     return null;
@@ -64,7 +66,12 @@ export const getSlackInstallUrl = ({
   return slackInstaller(config).generateInstallUrl({
     scopes: INSTALL_SCOPES,
     redirectUri: config.slack.oauthRedirectUrl,
-    metadata: JSON.stringify({ integrationId, organizationId, projectId }),
+    metadata: JSON.stringify({
+      integrationId,
+      organizationId,
+      projectId,
+      userId,
+    }),
   });
 };
 

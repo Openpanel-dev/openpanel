@@ -208,9 +208,6 @@ test.describe('failed and slow api calls', () => {
       if (route.request().method() !== 'POST') {
         return route.continue();
       }
-      if (route.request().url().includes('auth.extendSession')) {
-        return route.continue();
-      }
       intercepted++;
       return failWith500(route);
     });

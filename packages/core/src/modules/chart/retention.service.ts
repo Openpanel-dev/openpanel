@@ -4,6 +4,7 @@
 import { DateTime, round } from '@openpanel/shared';
 import { range } from 'ramda';
 import type { ServiceDeps, Services } from '../../services';
+import { TimeRangeError } from '../../shared/time-buckets';
 import type { IChartEventFilter } from '../report/report.constants';
 import {
   type IRetentionCriteria,
@@ -209,6 +210,10 @@ const LUXON_UNIT: Record<IRetentionInterval, 'days' | 'weeks' | 'months'> = {
   month: 'months',
 };
 
+// Each period is two columns of `groupUniqArrayIf` over every cohort member,
+// so the matrix width is the statement's cost. A year by the day is 366.
+const MAX_RETENTION_PERIODS = 1000;
+
 const CLICKHOUSE_DATE_TIME_LENGTH = 'yyyy-MM-dd HH:mm:ss'.length;
 const ISO_DATE_LENGTH = 'yyyy-MM-dd'.length;
 
@@ -250,6 +255,11 @@ export async function getRetentionCohort(
   } = input;
 
   const diffInterval = diffIntervalCount(startDate, endDate, interval);
+  if (diffInterval > MAX_RETENTION_PERIODS) {
+    throw new TimeRangeError(
+      `Retention covers at most ${MAX_RETENTION_PERIODS} ${interval} periods and the selected range spans ${diffInterval}. Pick a coarser interval or a shorter range.`
+    );
+  }
 
   const cohortData = await runQuery<{
     cohort_interval: string;

@@ -1,44 +1,149 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReplayPlayerInstance } from '@/components/sessions/replay/replay-context';
-import { useReplayContext } from '@/components/sessions/replay/replay-context';
+import { LockIcon } from 'lucide-react';
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  DEFAULT_SKIP_INACTIVE,
+  type ReplayPlayerInstance,
+  SPEED_OPTIONS,
+  useReplayContext,
+} from './replay-context';
+import { getRecordedDimensions, type ReplayRecordEvent } from './replay-utils';
+import { cn } from '@/utils/cn';
 
 import 'rrweb-player/dist/style.css';
 
-/** rrweb meta event (type 4) carries the recorded viewport size */
-function getRecordedDimensions(
-  events: Array<{ type: number; data: unknown }>
-): { width: number; height: number } | null {
-  const meta = events.find((e) => e.type === 4);
-  if (
-    meta &&
-    typeof meta.data === 'object' &&
-    meta.data !== null &&
-    'width' in meta.data &&
-    'height' in meta.data
-  ) {
-    const { width, height } = meta.data as { width: number; height: number };
-    if (width > 0 && height > 0) {
-      return { width, height };
-    }
-  }
-  return null;
+const FALLBACK_ASPECT_RATIO = 16 / 9;
+const STAGE_PADDING = 24;
+const BROWSER_BAR_HEIGHT = 36;
+const PHONE_BEZEL = 10;
+const PHONE_URL_HEIGHT = 36;
+const MOUSE_TAIL = {
+  duration: 600,
+  lineCap: 'round',
+  lineWidth: 3,
+  strokeStyle: 'rgba(34, 102, 236, 0.45)',
+};
+
+type FrameKind = 'browser' | 'phone';
+
+interface Size {
+  width: number;
+  height: number;
 }
 
-function calcDimensions(
-  containerWidth: number,
-  aspectRatio: number
-): { width: number; height: number } {
-  const maxHeight = window.innerHeight * 0.7;
-  const height = Math.min(Math.round(containerWidth / aspectRatio), maxHeight);
-  const width = Math.min(containerWidth, Math.round(height * aspectRatio));
-  return { width, height };
+function fitViewport(area: Size, aspectRatio: number, kind: FrameKind): Size {
+  const chromeWidth = kind === 'phone' ? PHONE_BEZEL * 2 : 0;
+  const chromeHeight =
+    kind === 'phone' ? PHONE_BEZEL * 2 + PHONE_URL_HEIGHT : BROWSER_BAR_HEIGHT;
+  const maxWidth = Math.max(0, area.width - STAGE_PADDING * 2 - chromeWidth);
+  const maxHeight = Math.max(0, area.height - STAGE_PADDING * 2 - chromeHeight);
+  const height = Math.min(maxHeight, maxWidth / aspectRatio);
+  return {
+    width: Math.round(height * aspectRatio),
+    height: Math.round(height),
+  };
+}
+
+/**
+ * Height a stage needs to show a wide recording edge to edge, as CSS against
+ * the stage's container width; tall recordings are bounded by the stage's max.
+ */
+export function getStageFitHeight(events: ReplayRecordEvent[]): string {
+  const recorded = getRecordedDimensions(events);
+  const aspectRatio = recorded
+    ? recorded.width / recorded.height
+    : FALLBACK_ASPECT_RATIO;
+  if (aspectRatio < 1) {
+    return '100vh';
+  }
+  const verticalChrome = STAGE_PADDING * 2 + BROWSER_BAR_HEIGHT;
+  return `calc((100cqw - ${STAGE_PADDING * 2}px) / ${aspectRatio.toFixed(4)} + ${verticalChrome}px)`;
+}
+
+function BrowserFrame({
+  url,
+  viewport,
+  children,
+  width,
+}: {
+  url: ReactNode;
+  viewport: string | null;
+  children: ReactNode;
+  width: number;
+}) {
+  return (
+    <div
+      className="overflow-hidden rounded-xl bg-card shadow-[0_30px_80px_-20px_rgb(0_0_0/0.35),0_0_0_1px_var(--border)]"
+      style={{ width }}
+    >
+      <div
+        className="row items-center gap-3 border-b bg-def-100 px-3"
+        style={{ height: BROWSER_BAR_HEIGHT }}
+      >
+        <div className="row shrink-0 gap-1.5">
+          <span className="size-2.5 rounded-full bg-[#ff5f57]" />
+          <span className="size-2.5 rounded-full bg-[#febc2e]" />
+          <span className="size-2.5 rounded-full bg-[#28c840]" />
+        </div>
+        <div className="row h-6 min-w-0 flex-1 items-center gap-1.5 rounded-md bg-card px-2.5 text-xs shadow-[0_0_0_1px_var(--border)]">
+          <LockIcon className="size-3 shrink-0 text-muted-foreground" />
+          {url}
+        </div>
+        {viewport && (
+          <span className="hidden shrink-0 font-mono text-2xs text-muted-foreground sm:block">
+            {viewport}
+          </span>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function PhoneFrame({
+  url,
+  children,
+}: {
+  url: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="col items-center">
+      <div
+        className="row max-w-full items-center gap-1.5 self-stretch px-2"
+        style={{ height: PHONE_URL_HEIGHT }}
+      >
+        <div className="row mx-auto h-6 min-w-0 max-w-full items-center gap-1.5 rounded-full bg-card px-3 text-xs shadow-[0_0_0_1px_var(--border)]">
+          <LockIcon className="size-3 shrink-0 text-muted-foreground" />
+          {url}
+        </div>
+      </div>
+      <div
+        className="rounded-[44px] bg-neutral-900 shadow-[0_30px_80px_-20px_rgb(0_0_0/0.45),inset_0_0_0_1px_rgb(255_255_255/0.08)] ring-1 ring-black/40"
+        style={{ padding: PHONE_BEZEL }}
+      >
+        <div className="overflow-hidden rounded-[34px] bg-card">{children}</div>
+      </div>
+    </div>
+  );
 }
 
 export function ReplayPlayer({
   events,
+  url,
+  overlay,
 }: {
-  events: Array<{ type: number; data: unknown; timestamp: number }>;
+  events: ReplayRecordEvent[];
+  url: ReactNode;
+  overlay?: ReactNode;
 }) {
+  const areaRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<ReplayPlayerInstance | null>(null);
   const {
@@ -46,79 +151,84 @@ export function ReplayPlayer({
     onPlayerDestroy,
     setCurrentTime,
     setIsPlaying,
-    setDuration,
+    setIsSkipping,
   } = useReplayContext();
   const [importError, setImportError] = useState(false);
+  const [size, setSize] = useState<Size | null>(null);
+  const sizeRef = useRef<Size | null>(null);
 
-  const recordedDimensions = useMemo(
-    () => getRecordedDimensions(events),
-    [events]
-  );
+  const recorded = useMemo(() => getRecordedDimensions(events), [events]);
+  const aspectRatio = recorded
+    ? recorded.width / recorded.height
+    : FALLBACK_ASPECT_RATIO;
+  const frameKind: FrameKind = aspectRatio < 1 ? 'phone' : 'browser';
+
+  useLayoutEffect(() => {
+    const area = areaRef.current;
+    if (!area) {
+      return;
+    }
+    const measure = () => {
+      const next = fitViewport(
+        { width: area.clientWidth, height: area.clientHeight },
+        aspectRatio,
+        frameKind
+      );
+      sizeRef.current = next;
+      setSize(next);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(area);
+    return () => observer.disconnect();
+  }, [aspectRatio, frameKind]);
+
+  const hasSize = size !== null && size.width > 0;
 
   useEffect(() => {
-    if (!(events.length && containerRef.current)) {
+    const container = containerRef.current;
+    const initialSize = sizeRef.current;
+    if (!(events.length && container && hasSize && initialSize)) {
       return;
     }
 
-    // Clear any previous player DOM
-    containerRef.current.innerHTML = '';
-
+    container.innerHTML = '';
     let mounted = true;
     let player: ReplayPlayerInstance | null = null;
     let handleVisibilityChange: (() => void) | null = null;
 
-    const aspectRatio = recordedDimensions
-      ? recordedDimensions.width / recordedDimensions.height
-      : 16 / 9;
-
-    const { width, height } = calcDimensions(
-      containerRef.current.offsetWidth,
-      aspectRatio
-    );
-
     import('rrweb-player')
       .then((module) => {
-        if (!(containerRef.current && mounted)) {
+        if (!mounted) {
           return;
         }
-
-        const PlayerConstructor = module.default;
-        player = new PlayerConstructor({
-          target: containerRef.current,
+        player = new module.default({
+          target: container,
           props: {
             events,
-            width,
-            height,
+            width: initialSize.width,
+            height: initialSize.height,
             autoPlay: false,
             showController: false,
-            speedOption: [0.5, 1, 2, 4, 8],
-            UNSAFE_replayCanvas: true,
-            skipInactive: false,
+            speedOption: [...SPEED_OPTIONS],
+            skipInactive: DEFAULT_SKIP_INACTIVE,
+            mouseTail: MOUSE_TAIL,
           },
-        }) as ReplayPlayerInstance;
-
+        }) as unknown as ReplayPlayerInstance;
         playerRef.current = player;
 
-        // Track play state from replayer (getMetaData() does not expose isPlaying)
         let playingState = false;
-
-        // Wire rrweb's built-in event emitter — no RAF loop needed.
-        // Note: rrweb-player does NOT emit ui-update-duration; duration is
-        // read from getMetaData() on init and after each addEvent batch.
         player.addEventListener('ui-update-current-time', (e) => {
-          const t = e.payload as number;
-          setCurrentTime(t);
+          setCurrentTime(e.payload as number);
         });
-
         player.addEventListener('ui-update-player-state', (e) => {
-          const playing = e.payload === 'playing';
-          playingState = playing;
-          setIsPlaying(playing);
+          playingState = e.payload === 'playing';
+          setIsPlaying(playingState);
         });
+        player.addEventListener('skip-start', () => setIsSkipping(true));
+        player.addEventListener('skip-end', () => setIsSkipping(false));
 
-        // Pause on tab hide; resume on show (prevents timer drift).
-        // getMetaData() does not expose isPlaying, so we use playingState
-        // kept in sync by ui-update-player-state above.
+        // Pause while the tab is hidden so the replay clock does not drift.
         let wasPlaying = false;
         handleVisibilityChange = () => {
           if (!player) {
@@ -136,12 +246,7 @@ export function ReplayPlayer({
         };
         document.addEventListener('visibilitychange', handleVisibilityChange);
 
-        // Notify context — marks isReady = true and sets initial duration
-        const meta = player.getMetaData();
-        if (meta.totalTime > 0) {
-          setDuration(meta.totalTime);
-        }
-        onPlayerReady(player, meta.startTime);
+        onPlayerReady(player, events);
       })
       .catch(() => {
         if (mounted) {
@@ -149,61 +254,76 @@ export function ReplayPlayer({
         }
       });
 
-    const onWindowResize = () => {
-      if (!(containerRef.current && mounted && playerRef.current?.$set)) {
-        return;
-      }
-      const { width: w, height: h } = calcDimensions(
-        containerRef.current.offsetWidth,
-        aspectRatio
-      );
-      playerRef.current.$set({ width: w, height: h });
-    };
-    window.addEventListener('resize', onWindowResize);
-
     return () => {
       mounted = false;
-      window.removeEventListener('resize', onWindowResize);
       if (handleVisibilityChange) {
         document.removeEventListener(
           'visibilitychange',
           handleVisibilityChange
         );
       }
-      if (player) {
-        player.pause();
-      }
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
+      player?.pause();
+      container.innerHTML = '';
       playerRef.current = null;
       onPlayerDestroy();
     };
   }, [
     events,
-    recordedDimensions,
+    hasSize,
     onPlayerReady,
     onPlayerDestroy,
     setCurrentTime,
     setIsPlaying,
-    setDuration,
+    setIsSkipping,
   ]);
+
+  useEffect(() => {
+    if (!(size && playerRef.current?.$set)) {
+      return;
+    }
+    playerRef.current.$set({ width: size.width, height: size.height });
+    playerRef.current.triggerResize();
+  }, [size]);
 
   if (importError) {
     return (
-      <div className="flex h-[320px] items-center justify-center bg-black text-muted-foreground text-sm">
+      <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
         Failed to load replay player.
       </div>
     );
   }
 
+  const viewport = (
+    <div
+      className={cn(
+        'relative overflow-hidden bg-card',
+        '[&_.rr-player]:!float-none [&_.rr-player]:!rounded-none [&_.rr-player]:!bg-transparent [&_.rr-player]:!shadow-none',
+        '[&_.replayer-mouse]:after:!bg-highlight [&_.replayer-mouse]:after:!opacity-50'
+      )}
+      style={size ?? undefined}
+    >
+      <div ref={containerRef} />
+      {overlay}
+    </div>
+  );
+
+  const viewportLabel = recorded
+    ? `${recorded.width} × ${recorded.height}`
+    : null;
+
   return (
-    <div className="relative flex w-full justify-center overflow-hidden">
-      <div
-        className="w-full"
-        ref={containerRef}
-        style={{ maxHeight: '70vh' }}
-      />
+    <div
+      className="absolute inset-0 flex items-center justify-center"
+      ref={areaRef}
+    >
+      {hasSize &&
+        (frameKind === 'phone' ? (
+          <PhoneFrame url={url}>{viewport}</PhoneFrame>
+        ) : (
+          <BrowserFrame url={url} viewport={viewportLabel} width={size.width}>
+            {viewport}
+          </BrowserFrame>
+        ))}
     </div>
   );
 }

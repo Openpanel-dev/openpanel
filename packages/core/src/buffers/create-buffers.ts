@@ -1,3 +1,4 @@
+import { AiEventBuffer } from './ai-event-buffer';
 import type { BufferDeps } from './base-buffer';
 import { BotBuffer } from './bot-buffer';
 import { EventBuffer } from './event-buffer';
@@ -15,6 +16,7 @@ export interface Buffers {
   session: SessionBuffer;
   replay: ReplayBuffer;
   group: GroupBuffer;
+  aiEvent: AiEventBuffer;
 }
 
 export function createBuffers(deps: BufferDeps): Buffers {
@@ -26,5 +28,6 @@ export function createBuffers(deps: BufferDeps): Buffers {
     session: new SessionBuffer(deps),
     replay: new ReplayBuffer(deps),
     group: new GroupBuffer(deps),
+    aiEvent: new AiEventBuffer(deps),
   };
 }

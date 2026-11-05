@@ -3,9 +3,10 @@ import { testCoreConfig } from '../../../../test/config-fixture';
 import type { ServiceDeps } from '../../../services';
 import { getIsRegistrationAllowed } from './registration';
 
+const HOUR_MS = 60 * 60 * 1000;
 const mockUserCount = mock(async () => 5);
 const mockInviteFindUnique = mock(
-  async (): Promise<{ id: string } | null> => null
+  async (): Promise<{ id: string; expiresAt: Date } | null> => null
 );
 
 /**
@@ -56,7 +57,10 @@ describe('getIsRegistrationAllowed', () => {
   });
 
   it('allows a new user holding a valid invite when registration is disabled', async () => {
-    mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
+    mockInviteFindUnique.mockResolvedValue({
+      id: 'invite-1',
+      expiresAt: new Date(Date.now() + HOUR_MS),
+    });
 
     expect(
       await getIsRegistrationAllowed(
@@ -64,6 +68,20 @@ describe('getIsRegistrationAllowed', () => {
         'invite-1'
       )
     ).toBe(true);
+  });
+
+  it('blocks an expired invite', async () => {
+    mockInviteFindUnique.mockResolvedValue({
+      id: 'invite-1',
+      expiresAt: new Date(Date.now() - HOUR_MS),
+    });
+
+    expect(
+      await getIsRegistrationAllowed(
+        depsWith({ allowRegistration: false, allowInvitation: true }),
+        'invite-1'
+      )
+    ).toBe(false);
   });
 
   it('blocks an unknown invite id', async () => {
@@ -78,7 +96,10 @@ describe('getIsRegistrationAllowed', () => {
   });
 
   it('blocks a valid invite when invitations are disabled', async () => {
-    mockInviteFindUnique.mockResolvedValue({ id: 'invite-1' });
+    mockInviteFindUnique.mockResolvedValue({
+      id: 'invite-1',
+      expiresAt: new Date(Date.now() + HOUR_MS),
+    });
 
     expect(
       await getIsRegistrationAllowed(

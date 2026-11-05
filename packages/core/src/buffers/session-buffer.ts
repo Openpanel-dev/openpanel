@@ -25,6 +25,9 @@ export function resolveSessionTimeoutMs(config: CoreConfig): number {
   return config.session.timeoutMs ?? DEFAULT_SESSION_TIMEOUT_MS;
 }
 
+/** A session row is rewritten on every event, so its group union is capped. */
+const MAX_SESSION_GROUPS = 100;
+
 const sessionKey = (projectId: string, deviceId: string) =>
   `session:${projectId}:${deviceId}`;
 const profileIndexKey = (projectId: string, profileId: string) =>
@@ -317,7 +320,7 @@ export class SessionBuffer extends BaseBuffer {
     if (payload.groups?.length) {
       current.groups = [
         ...new Set([...(current.groups ?? []), ...payload.groups]),
-      ];
+      ].slice(0, MAX_SESSION_GROUPS);
     }
 
     return { current, chRows: [current, oldRow] };
@@ -369,7 +372,7 @@ export class SessionBuffer extends BaseBuffer {
       utm_campaign: pickUtm(payload, 'utm_campaign'),
       utm_content: pickUtm(payload, 'utm_content'),
       utm_term: pickUtm(payload, 'utm_term'),
-      groups: payload.groups ?? [],
+      groups: (payload.groups ?? []).slice(0, MAX_SESSION_GROUPS),
       sign: 1,
       version: 1,
     };

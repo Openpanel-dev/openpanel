@@ -25,6 +25,7 @@ export const TABLE_NAMES = {
   groups: 'groups',
   cohort_members: 'cohort_members',
   cohort_metadata: 'cohort_metadata',
+  ai_events: 'ai_events',
   // Superseded by the two event_*_summary_mv entries below and dropped in
   // migration 24; kept because migrations 13, 14 and 15 still name them.
   profile_event_summary_mv: 'profile_event_summary_mv',

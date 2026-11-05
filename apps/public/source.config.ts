@@ -22,18 +22,27 @@ export const docs = defineDocs({
   },
 });
 
+// `z.coerce.date()` turns a `date: null` frontmatter line into the epoch and
+// a quoted "12" into a year; only a parsed YAML date or an ISO day may reach
+// the coercion.
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const zFrontmatterDate = z
+  .union([z.date(), z.string().regex(ISO_DAY)])
+  .pipe(z.coerce.date());
+
 const zArticle = z.object({
   title: z.string().min(1),
   description: z.string(),
   tag: z.string().optional(),
   team: z.string().optional(),
-  date: z.date(),
+  date: zFrontmatterDate,
   cover: z.string().default('/content/cover-default.jpg'),
-  updated: z.date().optional(),
+  updated: zFrontmatterDate.optional(),
 });
 const zPage = z.object({
   title: z.string().min(1),
   description: z.string(),
+  noindex: z.boolean().optional(),
 });
 
 const zGuide = z.object({
@@ -41,8 +50,8 @@ const zGuide = z.object({
   description: z.string(),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']),
   timeToComplete: z.number(), // minutes
-  date: z.date(),
-  updated: z.date().optional(),
+  date: zFrontmatterDate,
+  updated: zFrontmatterDate.optional(),
   cover: z.string().default('/content/cover-default.jpg'),
   team: z.string().optional(),
   steps: z.array(

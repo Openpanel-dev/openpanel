@@ -231,14 +231,20 @@ function getNodeId(event: string, step: number) {
   return `${event}::step${step}`;
 }
 
-function groupTransitionsByStep(transitions: Transition[]) {
-  const byStep = new Map<number, Transition[]>();
+/** Keyed by step, then source, so each active node reads only its own edges. */
+function groupTransitionsByStepAndSource(transitions: Transition[]) {
+  const byStep = new Map<number, Map<string, Transition[]>>();
   for (const transition of transitions) {
-    const bucket = byStep.get(transition.step);
-    if (bucket) {
-      bucket.push(transition);
+    let bySource = byStep.get(transition.step);
+    if (!bySource) {
+      bySource = new Map();
+      byStep.set(transition.step, bySource);
+    }
+    const fromSource = bySource.get(transition.source);
+    if (fromSource) {
+      fromSource.push(transition);
     } else {
-      byStep.set(transition.step, [transition]);
+      bySource.set(transition.source, [transition]);
     }
   }
   return byStep;
@@ -253,7 +259,7 @@ function expandFlow(
 ): { nodes: Map<string, NodeData>; links: SankeyLink[] } {
   const nodes = new Map<string, NodeData>();
   const links: SankeyLink[] = [];
-  const transitionsByStep = groupTransitionsByStep(transitions);
+  const transitionsByStep = groupTransitionsByStepAndSource(transitions);
 
   const activeNodes = new Map<string, string>();
   topEntries.forEach((entry, index) => {
@@ -268,12 +274,11 @@ function expandFlow(
   });
 
   for (let step = FIRST_STEP; step < steps; step++) {
-    const stepTransitions = transitionsByStep.get(step) || [];
+    const stepTransitions = transitionsByStep.get(step);
     const nextActiveNodes = new Map<string, string>();
 
     for (const [sourceEvent, sourceNodeId] of activeNodes) {
-      const fromSource = stepTransitions
-        .filter((transition) => transition.source === sourceEvent)
+      const fromSource = (stepTransitions?.get(sourceEvent) ?? [])
         .sort((a, b) => b.value - a.value)
         .slice(0, TOP_DESTINATIONS_PER_NODE);
 

@@ -52,7 +52,10 @@ test('resolves the newest row per profile without FINAL', () => {
   expect(sql).not.toContain('FINAL');
   expect(sql).toContain('GROUP BY id');
   expect(sql).toContain(
-    'argMax(profiles.properties[{p2:String}], tuple(last_seen_at, cityHash64(profiles.properties[{p3:String}])))'
+    'WITH tuple(last_seen_at, cityHash64(profiles.properties[{p1:String}])) AS latest_row_key'
+  );
+  expect(sql).toContain(
+    'argMax(profiles.properties[{p3:String}], latest_row_key)'
   );
 });
 
@@ -74,13 +77,16 @@ test('orders every aggregate by ONE shared row key', () => {
     ],
   });
 
-  // One shared key per aggregate: same columns, same order, both times.
+  // The key is written once and every aggregate orders by its alias, so the
+  // statement grows linearly with the filter count.
   expect(sql).toContain(
-    'argMax(profiles.properties[{p2:String}], tuple(last_seen_at, cityHash64(profiles.properties[{p3:String}], profiles.email)))'
+    'WITH tuple(last_seen_at, cityHash64(profiles.properties[{p1:String}], profiles.email)) AS latest_row_key'
   );
+  expect(sql.match(/cityHash64/g)).toHaveLength(1);
   expect(sql).toContain(
-    'argMax(profiles.email, tuple(last_seen_at, cityHash64(profiles.properties[{p5:String}], profiles.email)))'
+    'argMax(profiles.properties[{p3:String}], latest_row_key)'
   );
+  expect(sql).toContain('argMax(profiles.email, latest_row_key)');
 });
 
 test('filters aggregates in HAVING, not WHERE', () => {
@@ -105,7 +111,7 @@ test('wraps plain columns too, so mixed cohorts stay on one scan', () => {
     ],
   });
 
-  expect(sql).toContain('argMax(profiles.email, tuple(last_seen_at,');
+  expect(sql).toContain('argMax(profiles.email, latest_row_key)');
   expect(sql).toContain(' OR ');
   expect(sql).not.toContain('FINAL');
 });
@@ -124,7 +130,7 @@ test('wraps numeric comparisons inside the cast', () => {
   });
 
   expect(sql).toContain(
-    'toFloat64OrNull(argMax(profiles.properties[{p2:String}], tuple(last_seen_at,'
+    'toFloat64OrNull(argMax(profiles.properties[{p3:String}], latest_row_key))'
   );
 });
 
@@ -143,7 +149,7 @@ test('binds user-controlled property keys instead of escaping them', () => {
 
   // The key never reaches the SQL text, escaped or not — it is a bound param.
   expect(query).not.toContain("pl'an");
-  expect(query).toContain('profiles.properties[{p2:String}]');
+  expect(query).toContain('profiles.properties[{p3:String}]');
   expect(Object.values(query_params)).toContain("pl'an");
 });
 

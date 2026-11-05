@@ -1,34 +1,52 @@
 import type { TableOfContents } from 'fumadocs-core/toc';
-import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
-import { FeatureCardContainer } from './feature-card';
+import { Children, isValidElement, type ReactNode } from 'react';
+import { cn } from '@/lib/utils';
 
-interface Props {
-  toc: TableOfContents;
+const INDENT_PX = 12;
+
+// Headings can carry inline markup such as links. A link inside <Link> is
+// invalid HTML and makes Next throw, so the table of contents shows plain text.
+function headingText(node: ReactNode): string {
+  if (node === null || node === undefined || typeof node === 'boolean') {
+    return '';
+  }
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (isValidElement<{ children?: ReactNode }>(node)) {
+    return headingText(node.props.children);
+  }
+  return Children.toArray(node).map(headingText).join('');
 }
 
-export const Toc: React.FC<Props> = ({ toc }) => {
+export function Toc({ toc }: { toc: TableOfContents }) {
+  if (toc.length === 0) {
+    return null;
+  }
   return (
-    <FeatureCardContainer className="gap-2">
-      <span className="font-semibold text-lg">Table of contents</span>
-      <ul>
+    <nav aria-label="Table of contents" className="col gap-3 text-sm">
+      <span className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+        On this page
+      </span>
+      <ul className="col gap-2 border-l">
         {toc.map((item) => (
           <li
-            className="py-1"
             key={item.url}
-            style={{ marginLeft: `${(item.depth - 2) * (4 * 4)}px` }}
+            style={{ paddingLeft: `${(item.depth - 1) * INDENT_PX}px` }}
           >
             <Link
-              className="row group/toc-item items-center gap-2 hover:underline"
+              className={cn(
+                '-ml-px block border-transparent border-l pl-3 text-muted-foreground transition-colors hover:border-foreground hover:text-foreground',
+                item.depth > 2 && 'text-xs'
+              )}
               href={item.url}
-              title={item.title?.toString() ?? ''}
             >
-              <ArrowRightIcon className="h-4 w-4 shrink-0 opacity-30 transition-opacity group-hover/toc-item:opacity-100" />
-              <span className="truncate text-sm">{item.title}</span>
+              {headingText(item.title)}
             </Link>
           </li>
         ))}
       </ul>
-    </FeatureCardContainer>
+    </nav>
   );
-};
+}

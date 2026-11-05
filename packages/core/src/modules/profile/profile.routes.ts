@@ -2,20 +2,19 @@
 // filtering and subscription-limit checks for this router live in the
 // ingest module, not this one.
 //
-// /profile has no request-body schema, so `payload` below is typed but not
-// shape-validated at the boundary — unlike /profile/increment and
-// /profile/decrement, which validate via `zAdjustProperty`.
+// /profile has no Elysia body schema: it parses loosely (zLooseIdentifyPayload)
+// so a bad optional field is dropped rather than refusing the legacy SDKs'
+// identify.
 
 import { parseUserAgent } from '@openpanel/shared/server';
 import { z } from 'zod';
 import { getGeoLocation } from '../../clients/geo';
 import { defineRoutes } from '../../http/define';
-import { zProfileId } from '../ingest/ingest.constants';
+import { zLooseIdentifyPayload, zProfileId } from '../ingest/ingest.constants';
 import { validateIngestRequest } from '../ingest/src/client-auth';
 import {
   type AdjustProfilePropertyResult,
   adjustProfileProperty,
-  type IdentifyProfileInput,
   identifyProfile,
 } from './profile.service';
 
@@ -61,7 +60,11 @@ export const profileRoutes = defineRoutes((app) =>
         if (body === null || body === undefined) {
           return status(400, 'Missing body');
         }
-        const payload = body as IdentifyProfileInput;
+        const parsed = zLooseIdentifyPayload.safeParse(body);
+        if (!parsed.success) {
+          return status(400, 'Invalid profileId');
+        }
+        const payload = parsed.data;
         const userAgent = parseUserAgent(
           ctx.headers.get('user-agent'),
           payload.properties
