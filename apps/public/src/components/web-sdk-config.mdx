@@ -6,7 +6,8 @@
 - `sessionReplay` - Session replay configuration object (default: disabled). See [session replay docs](/docs/session-replay) for full options.
   - `enabled` - Enable session replay recording (default: false)
   - `maskAllInputs` - Mask all input field values (default: true)
-  - `maskTextSelector` - CSS selector for text elements to mask (default: `[data-openpanel-replay-mask]`)
+  - `maskAllText` - Mask all text content in the recording (default: true)
+  - `unmaskTextSelector` - CSS selector for elements whose text stays visible when `maskAllText` is true
   - `blockSelector` - CSS selector for elements to replace with a placeholder (default: `[data-openpanel-replay-block]`)
   - `blockClass` - Class name that blocks elements from being recorded
   - `ignoreSelector` - CSS selector for elements excluded from interaction tracking
