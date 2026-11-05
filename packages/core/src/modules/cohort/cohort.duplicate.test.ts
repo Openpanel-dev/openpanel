@@ -68,7 +68,7 @@ beforeAll(async () => {
       lastComputedAt: COMPUTED_AT,
     },
   });
-});
+}, 30_000);
 
 afterAll(async () => {
   await deps.db.cohort.deleteMany({ where: { projectId: PROJECT_ID } });

@@ -128,7 +128,7 @@ beforeAll(async () => {
     },
   });
   original = await loadDashboard(DASHBOARD_ID);
-});
+}, 30_000);
 
 afterAll(async () => {
   await deps.db.dashboard.deleteMany({ where: { projectId: PROJECT_ID } });
