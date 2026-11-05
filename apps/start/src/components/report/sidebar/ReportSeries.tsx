@@ -311,6 +311,7 @@ export function ReportSeries() {
                   ) : (
                     <>
                       <ComboboxEvents
+                        allowUnseenEvents
                         className="min-w-0 flex-1"
                         customEvents={customEvents}
                         items={eventNames}
@@ -405,6 +406,7 @@ export function ReportSeries() {
 
             <div className="flex flex-wrap items-center gap-1 p-2">
               <ComboboxEvents
+                allowUnseenEvents
                 className="text-muted-foreground hover:text-foreground"
                 customEvents={customEvents}
                 disabled={isAddEventDisabled || isSankeyEventLimitReached}
