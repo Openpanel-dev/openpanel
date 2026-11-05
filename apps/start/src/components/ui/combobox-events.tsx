@@ -308,7 +308,9 @@ export function ComboboxEvents<
               itemHeight={32}
               itemKey="key"
             >
-              {(row) => {
+              {(row, index) => {
+                // cmdk lowercases values, so names differing by case would share one.
+                const commandValue = `${index}:${row.key}`;
                 if (row.kind === 'custom') {
                   const isSelected =
                     row.customEvent.id === selectedCustomEventId;
@@ -323,7 +325,7 @@ export function ComboboxEvents<
                         onSelectCustomEvent?.(row.customEvent);
                         setOpen(false);
                       }}
-                      value={row.key}
+                      value={commandValue}
                     >
                       {isSelected ? (
                         <CheckIcon className="h-4 w-4 flex-shrink-0" />
@@ -347,7 +349,7 @@ export function ComboboxEvents<
                       onSelect={() => {
                         handleSelection(row.name);
                       }}
-                      value={row.key}
+                      value={commandValue}
                     >
                       <PlusIcon className="h-4 w-4 flex-shrink-0" />
                       <span className="flex-1 truncate font-medium">
@@ -367,7 +369,7 @@ export function ComboboxEvents<
                       onSelect={() => {
                         handleSelection(row.name);
                       }}
-                      value={row.key}
+                      value={commandValue}
                     >
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />
                       <span className="flex-1 truncate font-medium">
@@ -393,7 +395,7 @@ export function ComboboxEvents<
                     onSelect={() => {
                       handleSelection(item.name);
                     }}
-                    value={row.key}
+                    value={commandValue}
                   >
                     {isSelected ? (
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />

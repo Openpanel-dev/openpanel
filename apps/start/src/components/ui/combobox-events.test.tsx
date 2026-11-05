@@ -154,4 +154,30 @@ describe('ComboboxEvents', () => {
 
     expect(onChange).toHaveBeenCalledWith('checkout_v2_completed');
   });
+
+  test('keyboard reaches events that differ only by case', () => {
+    // jsdom has no layout, and cmdk scrolls the highlighted row into view.
+    Element.prototype.scrollIntoView = vi.fn();
+    const onChange = vi.fn();
+    render(
+      <ComboboxEvents
+        items={[
+          { name: 'Add_To_Cart', count: 2, meta: undefined },
+          { name: 'add_to_cart', count: 1, meta: undefined },
+        ]}
+        onChange={onChange}
+        placeholder="Select event"
+        searchable
+        value=""
+      />
+    );
+
+    fireEvent.click(screen.getByRole('combobox'));
+    const input = screen.getByPlaceholderText('Search event...');
+    expect(document.querySelectorAll('[aria-selected="true"]')).toHaveLength(1);
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    expect(onChange).toHaveBeenCalledWith('add_to_cart');
+  });
 });
