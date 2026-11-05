@@ -687,8 +687,13 @@ export async function identifyProfile(
   payload: IdentifyProfileInput,
   request: ProfileRequestContext
 ): Promise<void> {
+  // Picked, not spread: a spread would let any extra field (`groups`) reach
+  // the shared profile buffer.
   await upsertProfile(deps, {
-    ...payload,
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    email: payload.email,
+    avatar: payload.avatar,
     id: payload.profileId,
     isExternal: true,
     projectId,

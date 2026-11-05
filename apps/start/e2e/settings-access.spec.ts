@@ -1,4 +1,5 @@
 import type { APIRequestContext } from '@playwright/test';
+import { signUpWithEmail } from './auth-helpers';
 import { expect, test } from './fixtures';
 import {
   anonymousApi,
@@ -90,13 +91,13 @@ test.beforeAll(async ({ seed }) => {
   project = await createThrowawayProject(admin, organizationId, 'access');
 
   // A real account that is not a member of the seeded organization.
-  const signedUp = await trpcMutation(outsider, 'auth.signUpEmail', {
+  const signedUp = await signUpWithEmail(outsider, {
     firstName: 'E2E',
     lastName: 'Outsider',
     email: `e2e-settings-outsider-${Date.now()}@openpanel.local`,
     password: OUTSIDER_PASSWORD,
   });
-  expect(signedUp.status, signedUp.errorMessage).toBe(200);
+  expect(signedUp.status(), await signedUp.text()).toBe(200);
 });
 
 test.afterAll(async () => {

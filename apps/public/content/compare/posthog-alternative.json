@@ -1,8 +1,9 @@
 {
   "slug": "posthog-alternative",
   "page_type": "alternative",
+  "category": "product",
   "seo": {
-    "title": "PostHog Alternative: OpenPanel vs PostHog",
+    "title": "OpenPanel vs PostHog: Pricing, Script Size and Self-Hosting",
     "description": "OpenPanel vs PostHog: a 3 KB vs 105 KB tracking script, cookie-free by default, simpler self-hosting, and what each costs at 1M and 10M events a month.",
     "noindex": false
   },
@@ -26,7 +27,7 @@
   },
   "meta": {
     "author": "Carl-Gerhard Lindesvärd",
-    "updated": "2026-10-18",
+    "updated": "2026-11-01",
     "prices_checked": "2026-10-18"
   },
   "overview": {
@@ -251,6 +252,12 @@
             "competitor": true
           },
           {
+            "name": "Raw event export to S3 or GCS",
+            "openpanel": true,
+            "competitor": true,
+            "notes": "OpenPanel writes JSONL every minute to S3-compatible storage or GCS; PostHog has batch exports."
+          },
+          {
             "name": "Slack, Discord and webhook alerts",
             "openpanel": true,
             "competitor": true
@@ -281,6 +288,7 @@
           "Next.js",
           "React",
           "Vue",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express",
@@ -288,8 +296,10 @@
           "React Native",
           "Swift (iOS)",
           "Kotlin (Android)",
+          "Java",
           "Python",
-          "PHP, Ruby, Rust, Java, Flutter (community)"
+          "Ruby",
+          "Rust"
         ],
         "competitor": [
           "JavaScript",
@@ -307,7 +317,7 @@
           "Flutter",
           "Rust"
         ],
-        "notes": "PostHog has a Go SDK; OpenPanel does not."
+        "notes": "PostHog has a Go SDK; OpenPanel does not. Community OpenPanel SDKs exist for PHP (Laravel) and Flutter."
       },
       {
         "label": "License",
@@ -411,7 +421,7 @@
         "description": "If your PostHog usage is events, funnels, retention and replay, OpenPanel covers it with one price and one script.",
         "icon": "target",
         "screenshot": {
-          "src": "/features/feature-retention.webp",
+          "mock": "retention",
           "alt": "OpenPanel retention report with a daily retention curve and cohort table for new users"
         }
       },
@@ -425,7 +435,7 @@
         "description": "OpenPanel stores nothing in the browser by default. PostHog needs a persistence change, and turning persistence off makes every page load a new anonymous user.",
         "icon": "shield",
         "screenshot": {
-          "src": "/features/feature-overview-main.webp",
+          "mock": "web-overview",
           "alt": "OpenPanel web analytics overview with visitors, sessions, pageviews and bounce rate"
         }
       },

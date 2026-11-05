@@ -2,6 +2,7 @@ import type { IServiceDashboards } from '@openpanel/core';
 import { useNavigate } from '@tanstack/react-router';
 import {
   BellIcon,
+  BotIcon,
   Building2Icon,
   ChartLineIcon,
   CogIcon,
@@ -55,6 +56,7 @@ export default function SidebarProjectMenu({
         icon={TrendingUpDownIcon}
         label="Insights"
       />
+      <SidebarLink exact={false} href={'/ai'} icon={BotIcon} label="AI" />
       <SidebarLink href={'/pages'} icon={LayersIcon} label="Pages" />
       <SidebarLink href={'/seo'} icon={SearchIcon} label="SEO" />
       <SidebarLink href={'/realtime'} icon={Globe2Icon} label="Realtime" />
@@ -96,7 +98,7 @@ function isShortcut(event: KeyboardEvent, key: string) {
 
 function SidebarKbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded border border-border bg-def-200 px-1.5 py-0.5 font-mono text-2xs text-muted-foreground">
+    <kbd className="font-mono text-2xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
       {children}
     </kbd>
   );

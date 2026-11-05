@@ -38,6 +38,11 @@ import {
   filterReadsProfileJoin,
   getEventFiltersWhereClause,
 } from './filter-where';
+import {
+  type FirstOccurrencePeriod,
+  firstTimeCondition,
+  rangePeriod,
+} from './first-time';
 
 /** The two keys windowFunnel may be computed per — a closed set. */
 const FUNNEL_GROUPS = ['session_id', 'profile_id'] as const;
@@ -142,14 +147,16 @@ export function knownFunnelBreakdowns(
 }
 
 /**
- * One `<filters> AND <event match>` per step. Exported because each
- * step's complete condition has to appear twice — inside windowFunnel and in
- * the row-level pre-filter — and funnel.sql.test.ts counts exactly that.
+ * One `<filters> AND <event match>` per step, plus the first-occurrence
+ * condition for a "first time" step. Exported because each step's complete
+ * condition has to appear twice, inside windowFunnel and in the row-level
+ * pre-filter, and funnel.sql.test.ts counts exactly that.
  */
 export function funnelStepConditions(
   eventSeries: IChartEvent[],
   projectId: string,
-  profilePropertyKeys: string[]
+  profilePropertyKeys: string[],
+  period?: FirstOccurrencePeriod
 ): SqlFragment[] {
   return eventSeries.map((event) => {
     // Qualify with 'events' so event-level `properties[...]` becomes
@@ -162,7 +169,17 @@ export function funnelStepConditions(
       getEventFiltersWhereClause(event.filters, projectId, 'events')
     ).map((clause) => fragmentWithProfileRefs(clause, profilePropertyKeys));
     const eventMatch = eventMatchCondition(event, projectId, 'events');
-    const parts = eventMatch ? [...filters, eventMatch] : filters;
+    const firstTime = period
+      ? firstTimeCondition({
+          event,
+          projectId,
+          eventsAlias: EVENTS_ALIAS,
+          period,
+        })
+      : null;
+    const parts = [...filters, eventMatch, firstTime].filter(
+      (part): part is SqlFragment => part !== null
+    );
     return parts.length > 0 ? sql.join(parts, ' AND ') : sql`1`;
   });
 }
@@ -379,6 +396,7 @@ function profileJoinFilters(eventSeries: IChartEvent[]): IChartEventFilter[] {
   );
 }
 
+/** Empty session IDs cannot define funnels; sessionless profiles remain eligible. */
 export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const { projectId, eventSeries, breakdowns, group } = input;
 
@@ -407,10 +425,13 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const conditions = funnelStepConditions(
     eventSeries,
     projectId,
-    profileKeys.keys
+    profileKeys.keys,
+    rangePeriod(input.startDate, input.endDate)
   );
   const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
+  const sessionFilter =
+    group === 'session_id' ? sql` AND events.session_id != ''` : sql.empty;
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
@@ -477,7 +498,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ' OR '
   )})`;
 
-  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
+  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)}${sessionFilter} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `

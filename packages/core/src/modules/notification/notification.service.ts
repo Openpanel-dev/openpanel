@@ -2,10 +2,10 @@
 // out of the eager barrel chain (jobs.registry.ts, services.ts) that pulls this module in.
 
 import type { Integration, Prisma } from '@openpanel/db/src/prisma-client';
-import { stripLeadingAndTrailingSlashes } from '@openpanel/shared';
 import { pathOr } from 'ramda';
 import { cacheablePerDb, type DbScope } from '../../cacheable-per-deps';
 import { sendEmail } from '../../clients/email';
+import type { Logger } from '../../logger';
 import { TRPCBadRequestError, TRPCForbiddenError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { listProjectMemberEmails } from '../../shared/access-lookups';
@@ -26,6 +26,11 @@ import type {
   IChartEventFilter,
 } from '../report/report.constants';
 import type { ICreateNotificationRule } from './notification.constants';
+import {
+  testFilterPattern,
+  toFilterPattern,
+  validateFilterPattern,
+} from './src/filter-regex';
 
 export const APP_NOTIFICATION_INTEGRATION_ID = 'app';
 export const EMAIL_NOTIFICATION_INTEGRATION_ID = 'email';
@@ -87,7 +92,8 @@ export const getNotificationRulesByProjectId = cacheablePerDb(
 
 export function matchEventFilters(
   payload: IServiceCreateEventPayload,
-  filters: IChartEventFilter[]
+  filters: IChartEventFilter[],
+  logger?: Logger
 ): boolean {
   return filters.every((filter) => {
     const { name, value, operator } = filter;
@@ -122,17 +128,10 @@ export function matchEventFilters(
         return value.some((val) => propertyValue.startsWith(String(val)));
       case 'endsWith':
         return value.some((val) => propertyValue.endsWith(String(val)));
-      case 'regex': {
-        return value
-          .map((val) => stripLeadingAndTrailingSlashes(String(val)))
-          .some((val) => {
-            try {
-              return new RegExp(val).test(propertyValue);
-            } catch {
-              return false;
-            }
-          });
-      }
+      case 'regex':
+        return value.some((val) =>
+          testFilterPattern(toFilterPattern(val), propertyValue, logger)
+        );
       case 'isNull':
         return propertyValue === '';
       case 'isNotNull':
@@ -153,14 +152,15 @@ export function matchEventFilters(
 
 export function matchEvent(
   payload: IServiceCreateEventPayload,
-  chartEvent: IChartEvent
+  chartEvent: IChartEvent,
+  logger?: Logger
 ): boolean {
   if (payload.name !== chartEvent.name && chartEvent.name !== '*') {
     return false;
   }
 
   if (chartEvent.filters.length > 0) {
-    return matchEventFilters(payload, chartEvent.filters);
+    return matchEventFilters(payload, chartEvent.filters, logger);
   }
 
   return true;
@@ -372,15 +372,34 @@ export async function getNotificationRuleByIdOrThrow(
   return await deps.db.notificationRule.findUniqueOrThrow({ where: { id } });
 }
 
+function assertRegexFiltersAreSafe(input: ICreateNotificationRule) {
+  for (const event of input.config.events) {
+    for (const filter of event.filters) {
+      if (filter.operator !== 'regex') {
+        continue;
+      }
+      for (const value of filter.value) {
+        const error = validateFilterPattern(toFilterPattern(value));
+        if (error) {
+          throw new TRPCBadRequestError(error);
+        }
+      }
+    }
+  }
+}
+
 /**
  * Authorization (`requireProjectAccess`) is the caller's job. Validates that every
  * connected integration belongs to `input.projectId` or is a legacy org-wide one
- * in the same org, then writes the rule.
+ * in the same org and that regex filters compile under RE2 and run fast
+ * enough, then writes the rule.
  */
 export async function createOrUpdateNotificationRule(
   deps: ServiceDeps,
   input: ICreateNotificationRule
 ) {
+  assertRegexFiltersAreSafe(input);
+
   const db = deps.db;
   const project = await db.project.findUniqueOrThrow({
     where: { id: input.projectId },

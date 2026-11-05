@@ -5,6 +5,7 @@ import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { callProvider } from '../../../clients/provider-error';
 import type { CoreConfig } from '../../../config';
+import { withAiContext } from '../../ai/ai.service';
 import { resolveOpenAITaskModel } from '../../assistant/src/providers';
 
 // Bump when the prompt or output shape changes — the worker re-enriches any
@@ -82,14 +83,18 @@ export async function enrichInsights(
   }
 
   const input = JSON.stringify(insights);
-  const result = await callProvider(ENRICH_PROVIDER, () =>
-    generateText({
-      model: resolveOpenAITaskModel(config, 'small'),
-      instructions: INSTRUCTION,
-      prompt: input,
-      reasoning: 'low',
-      output: Output.object({ schema: enrichmentOutputSchema }),
-    })
+  const result = await withAiContext(
+    { name: 'insight-enrich', properties: { insights: insights.length } },
+    () =>
+      callProvider(ENRICH_PROVIDER, () =>
+        generateText({
+          model: resolveOpenAITaskModel(config, 'small'),
+          instructions: INSTRUCTION,
+          prompt: input,
+          reasoning: 'low',
+          output: Output.object({ schema: enrichmentOutputSchema }),
+        })
+      )
   );
 
   return result.output?.results ?? [];

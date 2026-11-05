@@ -1,6 +1,5 @@
 // None of the behaviour below is decoration: the `ignoreCorsAndSecret`
-// short-circuit, the unanchored wildcard origin regex, CORS-before-secret
-// ordering, the ip and profile_id project filters, the `__revenue` gate, the
+// short-circuit, CORS-before-secret ordering, the ip and profile_id project filters, the `__revenue` gate, the
 // body-field credential fallback, the `mixan-*` header fallback, and the
 // 5-minute verify cache whose key holds base64(<plaintext secret>) are all
 // deliberate.
@@ -110,6 +109,26 @@ async function verifyClientSecret(
   return isVerified;
 }
 
+/**
+ * Every profile id the request can end up stored under, as the string the
+ * pipeline stores: `/track`'s `__identify` wins over its `profileId`, and
+ * `/event` and `/profile` carry it at the root. Numbers are stringified there
+ * too, so `123` must be refused by a `"123"` filter.
+ */
+function submittedProfileIds(body: unknown): string[] {
+  const candidates = [
+    path(['payload', 'properties', '__identify', 'profileId'], body),
+    path(['payload', 'profileId'], body),
+    path(['profileId'], body),
+  ];
+  return candidates
+    .filter(
+      (candidate): candidate is string | number =>
+        typeof candidate === 'string' || typeof candidate === 'number'
+    )
+    .map(String);
+}
+
 export async function validateIngestRequest({
   deps,
   headers,
@@ -190,11 +209,12 @@ export async function validateIngestRequest({
   const profileFilter = client.project.filters.filter(
     (filter): filter is IProjectFilterProfileId => filter.type === 'profile_id'
   );
-  const profileId =
-    path<string | undefined>(['payload', 'profileId'], body) || // Track handler
-    path<string | undefined>(['profileId'], body); // Event handler
-
-  if (profileFilter.some((filter) => filter.profileId === profileId)) {
+  const profileIds = submittedProfileIds(body);
+  if (
+    profileFilter.some((filter) =>
+      profileIds.includes(String(filter.profileId))
+    )
+  ) {
     return refuse(
       'Ingestion: Profile id is blocked by project filter',
       secretVerified

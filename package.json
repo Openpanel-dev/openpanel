@@ -23,7 +23,7 @@
       "tooling/*"
     ],
     "catalog": {
-      "zod": "4.3.6",
+      "zod": "4.6.7",
       "react": "19.2.3",
       "@types/react": "19.2.7",
       "react-dom": "19.2.3",

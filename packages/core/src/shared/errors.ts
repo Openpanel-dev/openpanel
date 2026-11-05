@@ -4,6 +4,7 @@
 import { classifyDriverError } from './driver-errors';
 
 const DEFAULT_HTTP_STATUS = 500;
+const BAD_REQUEST_STATUS = 400;
 
 export class LogError extends Error {
   public readonly payload?: Record<string, unknown>;
@@ -42,6 +43,16 @@ export class HttpError extends Error {
     this.extra = options?.extra;
     this.error = options?.error;
     Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+/** The caller asked for something unusable: 400 over REST, BAD_REQUEST over tRPC (rpc/base.ts). */
+export class BadRequestError extends Error {
+  readonly status = BAD_REQUEST_STATUS;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'BadRequestError';
   }
 }
 

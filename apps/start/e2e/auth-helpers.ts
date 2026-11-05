@@ -2,7 +2,12 @@ import { execFileSync } from 'node:child_process';
 import { createHmac } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Locator, Page, Response } from '@playwright/test';
+import type {
+  APIRequestContext,
+  Locator,
+  Page,
+  Response,
+} from '@playwright/test';
 
 export const FRESH_CONTEXT = { cookies: [], origins: [] };
 export const SHOTS_DIR = 'test-results/auth/shots';
@@ -14,11 +19,10 @@ const TOTP_OFFSET_MODULUS = 16;
 const TOTP_SIGN_BIT = 2 ** 31;
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 
-// The API allows 3 `auth.signInEmail` calls per 30s for the whole local stack
-// (every loopback client shares one bucket) and answers the 4th with a 5 minute
-// block that doubles on each repeat. Spacing our own attempts keeps a run under
+// better-auth allows 3 sign-in or sign-up calls per 10s per client IP, and
+// every local browser shares one. Spacing our own attempts keeps a run under
 // it; the timestamp lives in a file because a failed test restarts the worker.
-const SIGN_IN_SPACING_MS = 11_000;
+const SIGN_IN_SPACING_MS = 4000;
 const SIGN_IN_CLOCK_FILE = 'test-results/auth/.last-sign-in';
 const TOO_MANY_REQUESTS = 429;
 
@@ -43,16 +47,51 @@ export async function submitSignIn(
   await page.getByLabel('Email').fill(credentials.email);
   await page.getByLabel('Password', { exact: true }).fill(credentials.password);
   const answer = page.waitForResponse((response) =>
-    response.url().includes('/trpc/auth.signInEmail')
+    response.url().includes(SIGN_IN_PATH)
   );
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   const response = await answer;
   if (response.status() === TOO_MANY_REQUESTS) {
     throw new Error(
-      'auth.signInEmail is rate limited (shared bucket). Wait for the block to expire and rerun.'
+      'Sign-in is rate limited (shared bucket). Wait 10 seconds and rerun.'
     );
   }
   return response;
+}
+
+export const SIGN_IN_PATH = '/api/auth/sign-in/email';
+
+/** A JSON call to better-auth, from the dashboard's origin as the browser makes it. */
+export function authPost(
+  request: APIRequestContext,
+  path: string,
+  data: unknown
+) {
+  return request.post(`${apiUrl()}/api/auth${path}`, {
+    data,
+    headers: { origin: process.env.DASHBOARD_URL ?? '' },
+  });
+}
+
+/** Signs up through better-auth, spaced like a sign-in. */
+export async function signUpWithEmail(
+  request: APIRequestContext,
+  user: {
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+  }
+) {
+  await waitForSignInSlot();
+  const firstName = user.firstName ?? 'E2E';
+  const lastName = user.lastName ?? 'Auth';
+  return authPost(request, '/sign-up/email', {
+    ...user,
+    firstName,
+    lastName,
+    name: `${firstName} ${lastName}`,
+  });
 }
 
 export function toast(page: Page, text: string | RegExp): Locator {

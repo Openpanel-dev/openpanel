@@ -8,27 +8,27 @@ import type { z } from 'zod';
 import { Button } from '../ui/button';
 import { AuthHeading } from './auth-shell';
 import { PasswordInput } from './password-input';
-import { useTRPC } from '@/integrations/trpc/react';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 
 const validator = zResetPassword;
 type IForm = z.infer<typeof validator>;
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const navigate = useNavigate();
-  const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.auth.resetPassword.mutationOptions({
-      onSuccess() {
-        toast.success('Password reset successfully');
-        navigate({
-          to: '/login',
-        });
-      },
-      onError(error) {
-        toast.error(error.message);
-      },
-    })
-  );
+  const authClient = useAuthClient();
+  const mutation = useMutation({
+    mutationFn: ({ token, password }: IForm) =>
+      unwrap(authClient.resetPassword({ token, newPassword: password })),
+    onSuccess() {
+      toast.success('Password reset successfully');
+      navigate({
+        to: '/login',
+      });
+    },
+    onError(error) {
+      toast.error(error.message);
+    },
+  });
 
   const form = useForm<IForm>({
     resolver: zodResolver(validator),

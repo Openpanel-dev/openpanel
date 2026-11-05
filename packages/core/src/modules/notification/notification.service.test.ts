@@ -228,6 +228,41 @@ test('matchEventFilters: "is" matches the exact property value', () => {
   ).toBe(false);
 });
 
+test('matchEventFilters: regex matches through RE2, slashes stripped', () => {
+  const payload = { path: '/product/42' } as never;
+  const regex = (value: string) =>
+    [{ name: 'path', operator: 'regex', value: [value] }] as never;
+
+  expect(
+    subject.matchEventFilters(payload, regex('/^\\/product\\/\\d+$/'))
+  ).toBe(true);
+  expect(subject.matchEventFilters(payload, regex('^/cart'))).toBe(false);
+});
+
+test('matchEventFilters: a stored regex RE2 cannot compile never matches and is logged once', () => {
+  const payload = { path: '/product/42' } as never;
+  const lookahead = [
+    { name: 'path', operator: 'regex', value: ['(?=/product)/p'] },
+  ] as never;
+  const warn = mock(() => undefined);
+  const logger = { warn } as never;
+
+  expect(subject.matchEventFilters(payload, lookahead, logger)).toBe(false);
+  expect(subject.matchEventFilters(payload, lookahead, logger)).toBe(false);
+  expect(warn).toHaveBeenCalledTimes(1);
+});
+
+test('matchEventFilters: a backtracking-prone regex stays fast', () => {
+  const payload = { name: `${'a'.repeat(50_000)}!` } as never;
+  const startedAt = performance.now();
+  expect(
+    subject.matchEventFilters(payload, [
+      { name: 'name', operator: 'regex', value: ['(a+)+$'] },
+    ] as never)
+  ).toBe(false);
+  expect(performance.now() - startedAt).toBeLessThan(250);
+});
+
 test('matchEventFilters: has_profile compares profileId against deviceId', () => {
   const identified = { profileId: 'p1', deviceId: 'd1' } as never;
   const anonymous = { profileId: 'd1', deviceId: 'd1' } as never;
@@ -383,6 +418,36 @@ test('createOrUpdateNotificationRule rejects an export-only integration', async 
       projectId: 'proj_1',
     })
   ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});
+
+test('createOrUpdateNotificationRule rejects a regex filter RE2 cannot compile', async () => {
+  notificationRule.create.mockClear();
+  await expect(
+    subject.createOrUpdateNotificationRule(deps, {
+      name: 'Rule',
+      config: {
+        type: 'events',
+        events: [
+          {
+            name: 'screen_view',
+            segment: 'event',
+            filters: [
+              {
+                name: 'path',
+                operator: 'regex',
+                value: ['(a)\\1'],
+              },
+            ],
+          },
+        ],
+      } as never,
+      integrations: ['app'],
+      sendToApp: true,
+      sendToEmail: false,
+      projectId: 'proj_1',
+    })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+  expect(notificationRule.create).not.toHaveBeenCalled();
 });
 
 test('createOrUpdateNotificationRule creates a new rule when id is absent', async () => {

@@ -30,28 +30,25 @@ export type OrganizationRole = z.infer<typeof zOrganizationRole>;
 export const zInvitableRole = z.enum(['admin', 'member', 'viewer']);
 export type InvitableRole = z.infer<typeof zInvitableRole>;
 
-const ORGANIZATION_ADMIN_ROLES = [
+/** The roles that manage the organization, also for database filters. */
+export const ORGANIZATION_ADMIN_ROLES = [
   'owner',
   'admin',
 ] as const satisfies readonly OrganizationRole[];
 
-// The previous build still writes these while a rollout replaces it, after the
-// rename migration has run, so they are read for one more release; the next
-// release's migration renames them again.
-const ROLE_BY_LEGACY_ROLE: Record<string, OrganizationRole> = {
-  'org:admin': 'admin',
-  'org:member': 'member',
-};
-
-/** Every stored role that manages the organization, for database filters. */
-export const STORED_ADMIN_ROLES = [...ORGANIZATION_ADMIN_ROLES, 'org:admin'];
+/**
+ * For filters that delete or skip organizations: also the pre-rename spelling,
+ * which an install keeps until code migration 29 has run. A self-hosted
+ * upgrade can start its crons first, and a wrong "no admin" deletes the
+ * organization for good.
+ */
+export const STORED_ADMIN_ROLES: string[] = [
+  ...ORGANIZATION_ADMIN_ROLES,
+  'org:admin',
+];
 
 /** An unknown stored role reads as `member`, never as an admin. */
 export function normalizeOrganizationRole(stored: string): OrganizationRole {
-  const legacy = ROLE_BY_LEGACY_ROLE[stored];
-  if (legacy) {
-    return legacy;
-  }
   const parsed = zOrganizationRole.safeParse(stored);
   return parsed.success ? parsed.data : 'member';
 }

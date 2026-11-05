@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { HttpError, LogError, normalizeError } from './errors';
+import { BadRequestError, HttpError, LogError, normalizeError } from './errors';
 
 describe('LogError', () => {
   test('carries a payload and keeps its name and prototype chain', () => {
@@ -33,6 +33,15 @@ describe('HttpError', () => {
 });
 
 describe('normalizeError', () => {
+  test('answers a BadRequestError with 400 and its message', () => {
+    expect(
+      normalizeError(new BadRequestError('Pick a shorter range.'))
+    ).toMatchObject({
+      status: 400,
+      message: 'Pick a shorter range.',
+    });
+  });
+
   test('reads statusCode off an Error', () => {
     const error = Object.assign(new Error('nope'), { statusCode: 404 });
     expect(normalizeError(error)).toEqual({

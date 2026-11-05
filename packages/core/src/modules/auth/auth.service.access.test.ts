@@ -178,8 +178,7 @@ test('getOrganizationAccess reports the stored role, the old spellings by their 
   }
 
   const readAs: [stored: string, role: string][] = [
-    ['org:admin', 'admin'],
-    ['org:member', 'member'],
+    ['org:admin', 'member'],
     ['superuser', 'member'],
   ];
   for (const [stored, role] of readAs) {

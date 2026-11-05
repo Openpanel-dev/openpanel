@@ -2,18 +2,18 @@
   "slug": "developers",
   "audience": "developers",
   "seo": {
-    "title": "Analytics for Developers — Open Source, API-First, Self-Hostable",
-    "description": "OpenPanel is the open-source analytics platform built for developers. 16 SDKs, REST API, Docker self-hosting, TypeScript-first. Track events, funnels, and users without cookies.",
+    "title": "Analytics for Developers, Open Source, API-First, Self-Hostable",
+    "description": "OpenPanel is the open-source analytics platform built for developers. SDKs for the web, Node, React, Next.js, React Native, iOS, Android, Python and more, a REST API, Docker self-hosting, TypeScript. Track events, funnels and users without cookies.",
     "noindex": false
   },
   "hero": {
     "heading": "Analytics for developers",
-    "subheading": "An open-source analytics platform that respects your stack and your users' privacy. 16 SDKs, a REST API, Docker Compose self-hosting, and a 2.3 KB script. No cookies, no consent banners, no vendor lock-in.",
+    "subheading": "An open-source analytics platform that respects your stack and your users' privacy. SDKs for the web, Node, React, Next.js, Vue, React Native, iOS, Android, Python and more, a REST API, Docker Compose self-hosting, and a 3 KB script. No cookies, no consent banners, no lock-in.",
     "badges": [
       "Open source (AGPL-3.0)",
-      "16 SDKs",
+      "SDKs for every stack",
       "Self-host with Docker",
-      "2.3 KB script"
+      "3 KB script"
     ]
   },
   "problem": {
@@ -30,7 +30,7 @@
       },
       {
         "title": "Heavy SDKs and slow scripts",
-        "description": "The average analytics script is 30–80 KB. That's real performance impact on every page load. Plus the third-party network requests and cookie overhead."
+        "description": "The average analytics script is 30 to 80 KB. That is real performance impact on every page load, plus the third-party requests and cookie overhead."
       },
       {
         "title": "Cookie consent ruins your UX",
@@ -43,40 +43,40 @@
     "intro": "OpenPanel is TypeScript-first, API-driven, and designed to fit into modern development workflows.",
     "items": [
       {
-        "title": "16 SDKs for every framework",
-        "description": "JavaScript, React, Next.js, Vue, Nuxt, Astro, Remix, Express, React Native, Python, Ruby, Rust, Kotlin, Swift — plus a script tag and REST API."
+        "title": "SDKs for every stack",
+        "description": "Web, Node, React, Next.js, Vue, Nuxt, Astro, Remix, Express, React Native, Swift, Kotlin, Java, Python, Ruby and Rust, plus community Flutter and PHP packages, a script tag and a REST API."
       },
       {
-        "title": "2.3 KB tracking script",
-        "description": "The web script is tiny. No Lighthouse penalty, no performance impact, no bundle bloat. Async loading by default."
+        "title": "3 KB tracking script",
+        "description": "The web tracker is about 3 KB gzipped and loads async. Session replay is a separate module that only loads when you turn it on. No Lighthouse penalty."
       },
       {
         "title": "REST API for everything",
-        "description": "Track events, query data, manage projects, and export analytics — all via a documented REST API. Build custom dashboards or pipe data into your own systems."
+        "description": "Track events, query data, manage projects and export events through the REST API. There is also an MCP server with 48 tools, so Claude, Cursor or your own agent can query your data."
       },
       {
         "title": "Docker Compose self-hosting",
-        "description": "One command to deploy. PostgreSQL, ClickHouse, and Redis included. Run it on any VPS, in your Kubernetes cluster, or via Coolify/Dokploy."
+        "description": "One install script brings up ClickHouse, Postgres, Redis and the workers. Guides for Docker Compose, Kubernetes, Coolify and Dokploy. Self-hosted releases follow Cloud by a month or two."
       },
       {
         "title": "Cookieless by default",
-        "description": "No cookies means no consent banners and no blocked requests. Every user is tracked accurately, with full privacy compliance built in."
+        "description": "A visitor is a daily-rotating salted hash of user agent, IP and site. No cookies, no localStorage, so no consent banner for analytics and nothing for a cookie blocker to strip."
       },
       {
         "title": "Open source (AGPL-3.0)",
-        "description": "Read the code, report bugs, submit PRs. No proprietary black boxes. Self-hosting is the full product — no artificial feature limits."
+        "description": "The platform is AGPL-3.0, the SDKs are MIT. Read the code, report bugs, send PRs. Self-hosting is the full product with no feature limits."
       },
       {
         "title": "Event-based data model",
-        "description": "Track any event with arbitrary properties. No predefined schema, no reserved event names, no property limits. Your data model, your rules."
+        "description": "Track any event with any properties, nested objects included. Custom events in settings group several event names into one that every report can use."
       },
       {
         "title": "Real-time event stream",
-        "description": "See events as they fire. Debug tracking issues by watching live data flow through your system. No sampling, no delays."
+        "description": "The Events page listens live; new events appear with a click. Open one to see its properties, user, session and device, and filter by any value from the drawer."
       },
       {
         "title": "Declarative tracking with data attributes",
-        "description": "Add data-track attributes to HTML elements for zero-JavaScript event tracking. Perfect for static sites or server-rendered pages."
+        "description": "Add data-track attributes to HTML elements and the web SDK turns clicks into events with the other data-* attributes as properties. No JavaScript for static or server-rendered pages."
       }
     ]
   },
@@ -86,15 +86,15 @@
     "items": [
       {
         "title": "Own your data completely",
-        "description": "Self-host on your infrastructure. Access raw events in ClickHouse. Export anything via API. No vendor lock-in, ever."
+        "description": "Self-host on your infrastructure and query ClickHouse directly. On Cloud, export events through the API or to S3 and GCS. No lock-in."
       },
       {
         "title": "Ship tracking in minutes, not days",
-        "description": "npm install, add your client ID, and tracking starts. Automatic page view tracking out of the box. Custom events are one line of code."
+        "description": "npm install, add your client id, and screen views start tracking. Custom events are one call."
       },
       {
         "title": "No impact on site performance",
-        "description": "The 2.3 KB async script loads without blocking rendering. No cookies means no additional HTTP overhead. Your Lighthouse score stays perfect."
+        "description": "The 3 KB async script loads without blocking rendering, and without cookies there is no extra request overhead."
       },
       {
         "title": "Works with your deployment pipeline",
@@ -102,7 +102,7 @@
       },
       {
         "title": "Product analytics included",
-        "description": "Funnels, retention, user profiles, and cohort analysis alongside web analytics. No need for a separate Mixpanel or Amplitude subscription."
+        "description": "Funnels, retention, cohorts, user profiles, session replay and AI observability next to web analytics. No separate Mixpanel or Amplitude subscription."
       },
       {
         "title": "Transparent and auditable",
@@ -116,44 +116,56 @@
     "items": [
       {
         "question": "How does self-hosting work?",
-        "answer": "Clone the repo, configure environment variables, and run docker compose up. The stack includes PostgreSQL (config), ClickHouse (events), and Redis (caching/queues). A 4 vCPU / 8 GB RAM VPS handles most workloads. Deployment guides exist for Docker Compose, Kubernetes, Coolify, and Dokploy."
+        "answer": "Run the install script on any Linux box with Docker. It asks a few questions and brings up Docker Compose with Postgres (config), ClickHouse (events), Redis (cache and queues), Redpanda (ingest queue), the API and the worker. A 4 vCPU / 8 GB VPS handles most workloads. There are guides for Docker Compose, Kubernetes, Coolify and Dokploy."
       },
       {
         "question": "What's the data architecture?",
-        "answer": "OpenPanel uses a three-database strategy: PostgreSQL for relational data (users, projects, dashboards), ClickHouse for analytics events (OLAP, high-volume reads/writes), and Redis for caching, job queues, and real-time pub/sub. Events are ingested via the API, queued in Redis, and batch-written to ClickHouse by background workers."
+        "answer": "Postgres holds relational data (users, projects, dashboards), ClickHouse holds events, sessions and profiles, Redis handles caching, locks and queues. Events arrive at the API, go through a Kafka-compatible queue, and workers write them to ClickHouse in batches."
       },
       {
         "question": "Can I access raw event data?",
-        "answer": "Yes. Self-hosted users can query ClickHouse directly with SQL. Cloud users can export data via the REST API. There's no data sampling — you always see the full dataset."
+        "answer": "Yes. Self-hosted, query ClickHouse directly with SQL. On Cloud, export events through the REST API or set up an S3 or GCS export that writes every event as JSONL. There is no sampling."
       },
       {
         "question": "How does cookieless tracking work?",
-        "answer": "OpenPanel uses a combination of hashed IP address, user agent, and other browser signals to create anonymous session identifiers. No cookies are set, no local storage is used, and no personally identifiable information is stored. This approach is GDPR compliant without requiring consent."
+        "answer": "A visitor id is a hash of user agent, IP and site with a salt that rotates every day. No cookies, no localStorage, and the raw IP is not stored on events. Sessions end after 30 minutes of inactivity. Call identify() when you know who the user is."
       },
       {
         "question": "Is there a TypeScript SDK?",
-        "answer": "Yes. All JavaScript/TypeScript SDKs (web, React, Next.js, Vue, Nuxt, Astro, Express) are written in TypeScript with full type definitions. The tracking API is type-safe with autocomplete for event names and properties if you extend the types."
+        "answer": "Yes. The JavaScript SDKs (web, Node, React, Next.js, Vue, Nuxt, Astro, Remix, Express) are written in TypeScript with full type definitions for every method."
       },
       {
         "question": "Can I track server-side events?",
-        "answer": "Yes. Use the Express SDK, the Python/Ruby/Rust SDKs, or call the REST API directly from any server-side language. Server-side tracking is useful for backend events like payments, API usage, or background job completions."
+        "answer": "Yes. Use the Node SDK (or Express, Python, Ruby, Rust, Java) with a client secret, or call the REST API from any language. Server-side tracking is the place for payments, API usage and background jobs. Revenue events need the secret unless you enable client-side revenue in project settings."
       },
       {
         "question": "How does OpenPanel compare to PostHog for developers?",
-        "answer": "PostHog offers more tools (feature flags, experiments, error tracking) but requires more infrastructure to self-host (minimum 4 vCPU, 16 GB RAM). OpenPanel focuses on analytics — events, funnels, retention — with a lighter footprint and simpler deployment. Choose PostHog if you need an all-in-one platform; choose OpenPanel if you want focused analytics that's easy to run."
+        "answer": "PostHog offers more tools (feature flags, experiments, error tracking) and needs more infrastructure to self-host. OpenPanel focuses on analytics: events, funnels, retention, profiles, replay and AI observability, with a lighter stack and a one-script install. Choose PostHog for an all-in-one platform; choose OpenPanel for analytics that is easy to run."
       },
       {
         "question": "What's the tracking script size?",
-        "answer": "2.3 KB gzipped. For comparison, Google Analytics is ~28 KB, Mixpanel is ~32 KB, and PostHog is ~60 KB. The script loads asynchronously and doesn't block page rendering."
+        "answer": "About 3 KB gzipped for the web tracker. Session replay is a separate module of about 59 KB that only loads when replay is enabled. Both load async and never block rendering."
       }
     ]
   },
   "related_links": {
     "guides": [
-      { "title": "Next.js analytics setup", "url": "/guides/nextjs-analytics" },
-      { "title": "React analytics setup", "url": "/guides/react-analytics" },
-      { "title": "Node.js analytics setup", "url": "/guides/nodejs-analytics" },
-      { "title": "Python analytics setup", "url": "/guides/python-analytics" }
+      {
+        "title": "Next.js analytics setup",
+        "url": "/guides/nextjs-analytics"
+      },
+      {
+        "title": "React analytics setup",
+        "url": "/guides/react-analytics"
+      },
+      {
+        "title": "Node.js analytics setup",
+        "url": "/guides/nodejs-analytics"
+      },
+      {
+        "title": "Python analytics setup",
+        "url": "/guides/python-analytics"
+      }
     ],
     "articles": [
       {
@@ -178,7 +190,10 @@
         "title": "OpenPanel vs Plausible",
         "url": "/compare/plausible-alternative"
       },
-      { "title": "OpenPanel vs Umami", "url": "/compare/umami-alternative" }
+      {
+        "title": "OpenPanel vs Umami",
+        "url": "/compare/umami-alternative"
+      }
     ]
   },
   "ctas": {

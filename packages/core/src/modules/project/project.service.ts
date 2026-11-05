@@ -47,11 +47,32 @@ export async function getProjectById(deps: DbScope, id: string) {
   return res;
 }
 
-/** L1 LRU (60s) + L2 Redis, one instance per Postgres client. Empty cache name, so the Redis key is `cachable::<id>`. */
+/**
+ * L1 LRU (60s) + L2 Redis, one instance per Postgres client. Named so its keys
+ * never meet `getClientByIdCached`'s `cachable::<id>`: a project id is a slug
+ * of a user-chosen name and can spell out a client id.
+ */
 export const getProjectByIdCached = cacheablePerDb(
-  '',
+  'getProjectById',
   getProjectById,
   DAY_IN_SECONDS
+);
+
+/**
+ * Whether a project keeps AI prompts and completions. Redis only, no
+ * in-process copy: an opt-out must reach every ingest process at once.
+ */
+export const getProjectAiStoreContentCached = cacheablePerDb(
+  'getProjectAiStoreContent',
+  async (deps: DbScope, id: string): Promise<boolean | null> => {
+    const project = await deps.db.project.findUnique({
+      where: { id },
+      select: { aiStoreContent: true },
+    });
+    return project?.aiStoreContent ?? null;
+  },
+  DAY_IN_SECONDS,
+  { localCache: false }
 );
 
 export async function getProjectWithClients(deps: ServiceDeps, id: string) {
@@ -362,6 +383,7 @@ export function createProjectService(
       cors?: string[];
       crossDomain?: boolean;
       allowUnsafeRevenueTracking?: boolean;
+      aiStoreContent?: boolean;
       filters?: IProjectFilters[];
     }
   ): Promise<IServiceProject | null> {
@@ -392,6 +414,9 @@ export function createProjectService(
     if (input.allowUnsafeRevenueTracking !== undefined) {
       updateData.allowUnsafeRevenueTracking = input.allowUnsafeRevenueTracking;
     }
+    if (input.aiStoreContent !== undefined) {
+      updateData.aiStoreContent = input.aiStoreContent;
+    }
     if (input.filters !== undefined) {
       updateData.filters = input.filters;
     }
@@ -403,6 +428,7 @@ export function createProjectService(
 
     await Promise.all([
       getProjectByIdCached.clear(deps, project.id),
+      getProjectAiStoreContentCached.clear(deps, project.id),
       ...existing.clients.map((client) =>
         getClientByIdCached.clear(deps, client.id)
       ),

@@ -1,9 +1,13 @@
 import Image from 'next/image';
 import { FeatureCardContainer } from './feature-card';
+import { isVisualMockName, VisualMock } from './visual-mock';
 import { cn } from '@/lib/utils';
 
 interface WindowImageProps {
+  // Name of a VisualMock; when set, no image is rendered.
+  mock?: string;
   src?: string;
+  // Content files still carry a dark variant; the site only renders the light one.
   srcDark?: string;
   srcLight?: string;
   alt: string;
@@ -12,22 +16,30 @@ interface WindowImageProps {
 }
 
 export function WindowImage({
+  mock,
   src,
-  srcDark,
   srcLight,
   alt,
   caption,
   className,
 }: WindowImageProps) {
-  // If src is provided, use it for both (backward compatibility)
-  // Otherwise, use srcDark and srcLight
-  const darkSrc = srcDark || src;
-  const lightSrc = srcLight || src;
-
-  if (!(darkSrc && lightSrc)) {
-    throw new Error(
-      'WindowImage requires either src or both srcDark and srcLight'
+  if (mock && isVisualMockName(mock)) {
+    return (
+      <figure className={cn('col gap-4', className)}>
+        <VisualMock name={mock} />
+        {caption && (
+          <figcaption className="mx-auto max-w-lg text-center text-muted-foreground text-sm">
+            {caption}
+          </figcaption>
+        )}
+      </figure>
     );
+  }
+
+  const imageSrc = srcLight || src;
+
+  if (!imageSrc) {
+    throw new Error('WindowImage requires src or srcLight');
   }
 
   return (
@@ -38,7 +50,6 @@ export function WindowImage({
       ])}
     >
       <div className="col relative gap-2 overflow-hidden rounded-lg border bg-card/80 p-2">
-        {/* Window controls */}
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="size-2 rounded-full bg-red-500" />
@@ -49,16 +60,9 @@ export function WindowImage({
         <div className="relative w-full overflow-hidden rounded-md border">
           <Image
             alt={alt}
-            className="hidden h-auto w-full dark:block"
+            className="h-auto w-full"
             height={800}
-            src={darkSrc}
-            width={1200}
-          />
-          <Image
-            alt={alt}
-            className="h-auto w-full dark:hidden"
-            height={800}
-            src={lightSrc}
+            src={imageSrc}
             width={1200}
           />
         </div>

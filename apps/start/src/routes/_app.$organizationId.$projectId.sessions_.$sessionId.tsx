@@ -1,29 +1,51 @@
-import type { IServiceEvent, IServiceSession } from '@openpanel/core';
+import type { IServiceProfile, IServiceSession } from '@openpanel/core';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ZapIcon } from 'lucide-react';
-import { EmptyState } from '@/components/empty-state';
-import { EventIcon } from '@/components/events/event-icon';
-import { useEventDrawer } from '@/components/events/use-event-drawer';
+import {
+  ArrowRightIcon,
+  CalendarIcon,
+  ClockIcon,
+  CopyIcon,
+  Loader2Icon,
+  VideoIcon,
+} from 'lucide-react';
+import { useMemo } from 'react';
+import { AiUsageWidget } from '@/components/ai/ai-usage-widget';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
+import { MostEvents } from '@/components/profiles/most-events';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { SessionJourney } from '@/components/sessions/details/session-journey';
+import { SessionMetrics } from '@/components/sessions/details/session-metrics';
+import { groupEventsByPage } from '@/components/sessions/details/session-pages';
+import { SessionProperties } from '@/components/sessions/details/session-properties';
+import { SessionTimeline } from '@/components/sessions/details/session-timeline';
 import { ReplayShell } from '@/components/sessions/replay';
-import { KeyValueGrid } from '@/components/ui/key-value-grid';
+import {
+  MAX_SESSION_EVENTS,
+  type SessionEventsStatus,
+  sessionEventsQueryOptions,
+  useSessionEvents,
+} from '@/components/sessions/use-session-events';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import {
   Widget,
   WidgetBody,
   WidgetHead,
   WidgetTitle,
 } from '@/components/widget';
-import { useNumber } from '@/hooks/use-numer-formatter';
+import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
+import { clipboard } from '@/utils/clipboard';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
 import { createProjectTitle } from '@/utils/title';
+
+const MS_PER_SECOND = 1000;
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/sessions_/$sessionId'
@@ -37,12 +59,10 @@ export const Route = createFileRoute(
           projectId: params.projectId,
         })
       ),
-      context.queryClient.prefetchQuery(
-        context.trpc.event.events.queryOptions({
+      context.queryClient.prefetchInfiniteQuery(
+        sessionEventsQueryOptions(context.trpc, {
           projectId: params.projectId,
           sessionId: params.sessionId,
-          filters: [],
-          columnVisibility: {},
         })
       ),
     ]);
@@ -53,86 +73,181 @@ export const Route = createFileRoute(
   pendingComponent: FullPageLoadingState,
 });
 
-function sessionToFakeEvent(session: IServiceSession): IServiceEvent {
-  return {
-    ...session,
-    name: 'screen_view',
-    sessionId: session.id,
-    properties: {},
-    path: session.exitPath,
-    origin: session.exitOrigin,
-    importedAt: undefined,
-    meta: undefined,
-    sdkName: undefined,
-    sdkVersion: undefined,
-    profile: undefined,
-  };
+function HeaderFact({
+  icon,
+  children,
+}: {
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="row items-center gap-2 text-muted-foreground">
+      {icon}
+      <span className="text-foreground">{children}</span>
+    </div>
+  );
 }
 
-function VisitedRoutes({ paths }: { paths: string[] }) {
-  const counted = paths.reduce<Record<string, number>>((acc, p) => {
-    acc[p] = (acc[p] ?? 0) + 1;
-    return acc;
-  }, {});
-  const sorted = Object.entries(counted).sort((a, b) => b[1] - a[1]);
-  const max = sorted[0]?.[1] ?? 1;
+function SessionFacts({ session }: { session: IServiceSession }) {
+  const location = [session.city, session.country].filter(Boolean).join(', ');
+  return (
+    <div className="row mb-6 flex-wrap gap-x-5 gap-y-2">
+      <HeaderFact icon={<CalendarIcon className="size-4" />}>
+        {formatDateTime(session.createdAt)}
+      </HeaderFact>
+      <HeaderFact icon={<ClockIcon className="size-4" />}>
+        {fancyMinutes(session.duration / MS_PER_SECOND)}
+      </HeaderFact>
+      {location && (
+        <HeaderFact icon={<SerieIcon name={session.country || session.city} />}>
+          {location}
+        </HeaderFact>
+      )}
+      {session.referrerName && (
+        <HeaderFact icon={<SerieIcon name={session.referrerName} />}>
+          {session.referrerName}
+        </HeaderFact>
+      )}
+      {session.device && (
+        <HeaderFact icon={<SerieIcon name={session.device} />}>
+          <span className="capitalize">{session.device}</span>
+        </HeaderFact>
+      )}
+      {session.os && (
+        <HeaderFact icon={<SerieIcon name={session.os} />}>
+          {session.os}
+        </HeaderFact>
+      )}
+      {session.browser && (
+        <HeaderFact icon={<SerieIcon name={session.browser} />}>
+          {session.browser}
+        </HeaderFact>
+      )}
+    </div>
+  );
+}
 
-  if (sorted.length === 0) {
+// Everything below is built from the loaded events, except the metric totals.
+const EVENT_DERIVED_SECTIONS =
+  'the journey, timeline, unique pages, popular events and replay activity';
+
+function SessionEventsNotice({
+  status,
+  onRetry,
+}: {
+  status: SessionEventsStatus;
+  onRetry: () => void;
+}) {
+  if (status === 'complete') {
     return null;
   }
+  if (status === 'loading') {
+    return (
+      <div className="row items-center gap-2 text-muted-foreground text-sm">
+        <Loader2Icon className="size-4 animate-spin" />
+        Loading the rest of this session's events…
+      </div>
+    );
+  }
+  return (
+    <Alert className="row items-center justify-between gap-4">
+      <AlertDescription>
+        {status === 'failed'
+          ? `Some of this session's events could not be loaded, so ${EVENT_DERIVED_SECTIONS} are incomplete.`
+          : `This session has more than ${MAX_SESSION_EVENTS.toLocaleString()} events. Only the latest ${MAX_SESSION_EVENTS.toLocaleString()} are used for ${EVENT_DERIVED_SECTIONS}.`}
+      </AlertDescription>
+      {status === 'failed' && (
+        <Button onClick={onRetry} size="sm" variant="outline">
+          Retry
+        </Button>
+      )}
+    </Alert>
+  );
+}
+
+function VisitorCard({
+  profile,
+  session,
+  organizationId,
+  projectId,
+}: {
+  profile: IServiceProfile | null | undefined;
+  session: IServiceSession;
+  organizationId: string;
+  projectId: string;
+}) {
+  const isIdentified = session.profileId !== session.deviceId;
+  const name = profile && isIdentified ? getProfileName(profile, false) : null;
 
   return (
-    <Widget className="w-full">
+    <Widget className="w-full overflow-hidden">
       <WidgetHead>
-        <WidgetTitle>Visited pages</WidgetTitle>
+        <WidgetTitle>Visitor</WidgetTitle>
       </WidgetHead>
-      <div className="flex flex-col gap-1 p-1">
-        {sorted.map(([path, count]) => (
-          <div className="group relative px-3 py-2" key={path}>
-            <div
-              className="absolute top-0 bottom-0 left-0 rounded bg-def-200 group-hover:bg-def-300"
-              style={{ width: `${(count / max) * 100}%` }}
-            />
-            <div className="relative flex min-w-0 justify-between gap-2">
-              <span className="truncate text-sm">{path}</span>
-              <span className="shrink-0 font-medium text-sm">{count}</span>
-            </div>
+      <WidgetBody className="p-0">
+        <Link
+          className="group row items-center gap-3 p-4 transition-colors hover:bg-def-100"
+          params={{ organizationId, projectId, profileId: session.profileId }}
+          to="/$organizationId/$projectId/profiles/$profileId"
+        >
+          <ProfileAvatar {...profile} size="lg" />
+          <div className="col min-w-0 flex-1 gap-0.5">
+            <span className="truncate font-medium">
+              {name ?? 'Anonymous visitor'}
+            </span>
+            <span className="truncate text-muted-foreground text-sm">
+              {profile?.email || session.profileId}
+            </span>
           </div>
-        ))}
-      </div>
+          <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </WidgetBody>
     </Widget>
   );
 }
 
-function EventDistribution({ events }: { events: IServiceEvent[] }) {
-  const counted = events.reduce<Record<string, number>>((acc, e) => {
-    acc[e.name] = (acc[e.name] ?? 0) + 1;
-    return acc;
-  }, {});
-  const sorted = Object.entries(counted).sort((a, b) => b[1] - a[1]);
-  const max = sorted[0]?.[1] ?? 1;
+function SessionGroups({
+  groupIds,
+  organizationId,
+  projectId,
+}: {
+  groupIds: string[];
+  organizationId: string;
+  projectId: string;
+}) {
+  const trpc = useTRPC();
+  const { data: groups } = useQuery({
+    ...trpc.group.listByIds.queryOptions({ projectId, ids: groupIds }),
+    enabled: groupIds.length > 0,
+  });
 
-  if (sorted.length === 0) {
+  if (!groups?.length) {
     return null;
   }
 
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Event distribution</WidgetTitle>
+        <WidgetTitle>Groups</WidgetTitle>
       </WidgetHead>
-      <div className="flex flex-col gap-1 p-1">
-        {sorted.map(([name, count]) => (
-          <div className="group relative px-3 py-2" key={name}>
-            <div
-              className="absolute top-0 bottom-0 left-0 rounded bg-def-200 group-hover:bg-def-300"
-              style={{ width: `${(count / max) * 100}%` }}
-            />
-            <div className="relative flex justify-between gap-2">
-              <span className="text-sm">{name.replace(/_/g, ' ')}</span>
-              <span className="shrink-0 font-medium text-sm">{count}</span>
+      <div className="divide-y">
+        {groups.map((group) => (
+          <Link
+            className="row items-center gap-3 px-4 py-3 transition-colors hover:bg-def-100"
+            key={group.id}
+            params={{ organizationId, projectId, groupId: group.id }}
+            to="/$organizationId/$projectId/groups/$groupId"
+          >
+            <div className="col min-w-0 flex-1 gap-0.5">
+              <span className="truncate font-medium">{group.name}</span>
+              <span className="truncate text-muted-foreground text-sm tabular-nums">
+                {group.id}
+              </span>
             </div>
-          </div>
+            <span className="shrink-0 rounded border px-1.5 py-0.5 text-muted-foreground text-xs">
+              {group.type}
+            </span>
+          </Link>
         ))}
       </div>
     </Widget>
@@ -142,8 +257,6 @@ function EventDistribution({ events }: { events: IServiceEvent[] }) {
 function Component() {
   const { projectId, sessionId, organizationId } = Route.useParams();
   const trpc = useTRPC();
-  const { openEvent } = useEventDrawer();
-  const number = useNumber();
 
   const { data: session } = useSuspenseQuery(
     trpc.session.byId.queryOptions({ sessionId, projectId })
@@ -151,19 +264,11 @@ function Component() {
 
   useEntityPageContext('session', { sessionId });
 
-  const { data: eventsData } = useSuspenseQuery(
-    trpc.event.events.queryOptions({
-      projectId,
-      sessionId,
-      filters: [],
-      columnVisibility: {},
-    })
-  );
-
-  const events = eventsData?.data ?? [];
-
-  const isIdentified =
-    session.profileId && session.profileId !== session.deviceId;
+  const {
+    events,
+    status: eventsStatus,
+    retry: retryEvents,
+  } = useSessionEvents(trpc, { projectId, sessionId });
 
   const { data: profile } = useSuspenseQuery(
     trpc.profile.byId.queryOptions({
@@ -172,250 +277,103 @@ function Component() {
     })
   );
 
-  const { data: sessionGroups } = useQuery({
-    ...trpc.group.listByIds.queryOptions({
-      projectId,
-      ids: session.groups ?? [],
-    }),
-    enabled: (session.groups?.length ?? 0) > 0,
-  });
+  const visits = useMemo(
+    () => groupEventsByPage(events, session.endedAt),
+    [events, session.endedAt]
+  );
+  const eventCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const event of events) {
+      counts.set(event.name, (counts.get(event.name) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+  }, [events]);
 
-  const fakeEvent = sessionToFakeEvent(session);
+  const isIdentified = session.profileId !== session.deviceId;
+  const title =
+    profile && isIdentified
+      ? getProfileName(profile, false)
+      : 'Anonymous visitor';
 
   return (
-    <PageContainer className="col gap-8">
-      <PageHeader title={`Session: ${session.id}`}>
-        <div className="row mb-6 gap-4">
-          {session.country && (
-            <div className="row items-center gap-2">
-              <SerieIcon name={session.country} />
-              <span>
-                {session.country}
-                {session.city && ` / ${session.city}`}
-              </span>
-            </div>
-          )}
-          {session.device && (
-            <div className="row items-center gap-2">
-              <SerieIcon name={session.device} />
-              <span className="capitalize">{session.device}</span>
-            </div>
-          )}
-          {session.os && (
-            <div className="row items-center gap-2">
-              <SerieIcon name={session.os} />
-              <span>{session.os}</span>
-            </div>
-          )}
-          {session.model && (
-            <div className="row items-center gap-2">
-              <SerieIcon name={session.model} />
-              <span>{session.model}</span>
-            </div>
-          )}
-          {session.browser && (
-            <div className="row items-center gap-2">
-              <SerieIcon name={session.browser} />
-              <span>{session.browser}</span>
-            </div>
-          )}
-        </div>
+    <PageContainer className="col gap-6">
+      <PageHeader
+        actions={
+          <>
+            {session.hasReplay && (
+              <Button
+                icon={VideoIcon}
+                onClick={() =>
+                  document
+                    .getElementById('replay')
+                    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
+                variant="outline"
+              >
+                Watch replay
+              </Button>
+            )}
+            <Button
+              icon={CopyIcon}
+              onClick={() => clipboard(session.id, 'Session id copied')}
+              variant="outline"
+            >
+              Copy id
+            </Button>
+          </>
+        }
+        title={
+          <div className="row min-w-0 items-center gap-4">
+            <ProfileAvatar {...profile} />
+            <span className="truncate">{title}</span>
+            <span className="shrink-0 rounded-md bg-def-200 px-2 py-0.5 font-medium text-muted-foreground text-xs">
+              Session
+            </span>
+          </div>
+        }
+      >
+        <SessionFacts session={session} />
       </PageHeader>
 
+      <SessionEventsNotice onRetry={retryEvents} status={eventsStatus} />
+
+      <SessionMetrics events={events} session={session} />
+
       {session.hasReplay && (
-        <ReplayShell projectId={projectId} sessionId={sessionId} />
+        <ReplayShell
+          events={events}
+          projectId={projectId}
+          sessionId={sessionId}
+        />
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
-        <div className="col gap-6">
-          <Widget className="w-full">
-            <WidgetHead>
-              <WidgetTitle>Session info</WidgetTitle>
-            </WidgetHead>
-            <KeyValueGrid
-              className="border-0"
-              columns={1}
-              copyable
-              data={[
-                {
-                  name: 'duration',
-                  value: number.formatWithUnit(session.duration / 1000, 'min'),
-                },
-                { name: 'createdAt', value: session.createdAt },
-                { name: 'endedAt', value: session.endedAt },
-                { name: 'screenViews', value: session.screenViewCount },
-                { name: 'events', value: session.eventCount },
-                { name: 'bounce', value: session.isBounce ? 'Yes' : 'No' },
-                ...(session.entryPath
-                  ? [{ name: 'entryPath', value: session.entryPath }]
-                  : []),
-                ...(session.exitPath
-                  ? [{ name: 'exitPath', value: session.exitPath }]
-                  : []),
-                ...(session.referrerName
-                  ? [{ name: 'referrerName', value: session.referrerName }]
-                  : []),
-                ...(session.referrer
-                  ? [{ name: 'referrer', value: session.referrer }]
-                  : []),
-                ...(session.utmSource
-                  ? [{ name: 'utmSource', value: session.utmSource }]
-                  : []),
-                ...(session.utmMedium
-                  ? [{ name: 'utmMedium', value: session.utmMedium }]
-                  : []),
-                ...(session.utmCampaign
-                  ? [{ name: 'utmCampaign', value: session.utmCampaign }]
-                  : []),
-                ...(session.revenue > 0
-                  ? [
-                      {
-                        name: 'revenue',
-                        value: number.currency(session.revenue / 100),
-                      },
-                    ]
-                  : []),
-                { name: 'country', value: session.country, event: fakeEvent },
-                ...(session.city
-                  ? [{ name: 'city', value: session.city, event: fakeEvent }]
-                  : []),
-                ...(session.os
-                  ? [{ name: 'os', value: session.os, event: fakeEvent }]
-                  : []),
-                ...(session.browser
-                  ? [
-                      {
-                        name: 'browser',
-                        value: session.browser,
-                        event: fakeEvent,
-                      },
-                    ]
-                  : []),
-                ...(session.device
-                  ? [
-                      {
-                        name: 'device',
-                        value: session.device,
-                        event: fakeEvent,
-                      },
-                    ]
-                  : []),
-                ...(session.brand
-                  ? [{ name: 'brand', value: session.brand, event: fakeEvent }]
-                  : []),
-                ...(session.model
-                  ? [{ name: 'model', value: session.model, event: fakeEvent }]
-                  : []),
-              ]}
-            />
-          </Widget>
-
-          {isIdentified && profile && (
-            <Widget className="w-full">
-              <WidgetHead>
-                <WidgetTitle>Profile</WidgetTitle>
-              </WidgetHead>
-              <WidgetBody className="p-0">
-                <Link
-                  className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
-                  params={{
-                    organizationId,
-                    projectId,
-                    profileId: session.profileId,
-                  }}
-                  to="/$organizationId/$projectId/profiles/$profileId"
-                >
-                  <ProfileAvatar {...profile} size="lg" />
-                  <div className="col min-w-0 gap-0.5">
-                    <span className="truncate font-medium">
-                      {getProfileName(profile, false) ?? session.profileId}
-                    </span>
-                    {profile.email && (
-                      <span className="truncate text-muted-foreground text-sm">
-                        {profile.email}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              </WidgetBody>
-            </Widget>
-          )}
-
-          {sessionGroups && sessionGroups.length > 0 && (
-            <Widget className="w-full">
-              <WidgetHead>
-                <WidgetTitle>Groups</WidgetTitle>
-              </WidgetHead>
-              <WidgetBody className="p-0">
-                {sessionGroups.map((group) => (
-                  <Link
-                    className="row items-center gap-3 p-4 transition-colors hover:bg-accent"
-                    key={group.id}
-                    params={{ organizationId, projectId, groupId: group.id }}
-                    to="/$organizationId/$projectId/groups/$groupId"
-                  >
-                    <div className="col min-w-0 flex-1 gap-0.5">
-                      <span className="truncate font-medium">{group.name}</span>
-                      <span className="truncate text-muted-foreground text-sm tabular-nums">
-                        {group.id}
-                      </span>
-                    </div>
-                    <span className="shrink-0 rounded border px-1.5 py-0.5 text-muted-foreground text-xs">
-                      {group.type}
-                    </span>
-                  </Link>
-                ))}
-              </WidgetBody>
-            </Widget>
-          )}
-
-          <VisitedRoutes
-            paths={events
-              .filter((e) => e.name === 'screen_view' && e.path)
-              .map((e) => e.path)}
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <aside className="col gap-6">
+          <VisitorCard
+            organizationId={organizationId}
+            profile={profile}
+            projectId={projectId}
+            session={session}
           />
+          <SessionProperties session={session} />
+          <SessionGroups
+            groupIds={session.groups ?? []}
+            organizationId={organizationId}
+            projectId={projectId}
+          />
+          <AiUsageWidget
+            className="w-full"
+            entity={{ kind: 'session', sessionId }}
+            projectId={projectId}
+          />
+          {eventCounts.length > 0 && <MostEvents data={eventCounts} />}
+        </aside>
 
-          <EventDistribution events={events} />
-        </div>
-
-        <div className="col gap-6">
-          <Widget className="w-full">
-            <WidgetHead>
-              <WidgetTitle>Events</WidgetTitle>
-            </WidgetHead>
-            <div className="divide-y">
-              {events.map((event) => (
-                <button
-                  className="row w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-def-100"
-                  key={event.id}
-                  onClick={() =>
-                    openEvent({ id: event.id, createdAt: event.createdAt })
-                  }
-                  type="button"
-                >
-                  <EventIcon meta={event.meta} name={event.name} size="sm" />
-                  <div className="col min-w-0 flex-1">
-                    <span className="truncate font-medium text-sm">
-                      {event.name === 'screen_view' && event.path
-                        ? event.path
-                        : event.name.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
-                    {formatDateTime(event.createdAt)}
-                  </span>
-                </button>
-              ))}
-              {events.length === 0 && (
-                <EmptyState
-                  description="This session has no events in it."
-                  icon={ZapIcon}
-                  title="No events"
-                  variant="inline"
-                />
-              )}
-            </div>
-          </Widget>
+        <div className="col min-w-0 gap-6">
+          <SessionJourney visits={visits} />
+          <SessionTimeline sessionStart={session.createdAt} visits={visits} />
         </div>
       </div>
     </PageContainer>

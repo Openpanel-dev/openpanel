@@ -15,8 +15,16 @@ on:
       - "**/docs/**"
       - "**/CHANGELOG*"
       - "**/LICENSE*"
-      # SDKs (published separately)
-      - "packages/sdks/**"
+      # SDKs published to npm and not in the images. @openpanel/ai and
+      # @openpanel/sdk are left out of this list: core imports them, so the
+      # api image ships them and a change there needs the build and smoke.
+      - "packages/sdks/_info/**"
+      - "packages/sdks/astro/**"
+      - "packages/sdks/express/**"
+      - "packages/sdks/nextjs/**"
+      - "packages/sdks/nuxt/**"
+      - "packages/sdks/react-native/**"
+      - "packages/sdks/web/**"
       # Public app (docs/marketing, not part of Docker deploy)
       - "apps/public/**"
       # Dev / tooling
@@ -159,8 +167,14 @@ jobs:
           CLICKHOUSE_URL: http://localhost:23123/openpanel
           SELF_HOSTED: "true"
 
-      # No env block, deliberately. Every workspace's test preload pins DATABASE_URL / CLICKHOUSE_URL / REDIS_URL itself and
-      # creates and migrates the isolated `openpanel_test` databases (test/bun-preload.ts, packages/core/test/preload.ts).
+      # Core's preload only pins the URLs so infrastructure-free files run offline, yet many of its database tests
+      # assume `openpanel_test` exists, whichever shard they land in.
+      - name: Create test databases
+        if: matrix.directory == 'packages/core'
+        run: bun -e "await (await import('./test/bootstrap-databases.ts')).bootstrapTestDatabases()"
+
+      # No env block, deliberately. Every workspace's test preload pins DATABASE_URL / CLICKHOUSE_URL / REDIS_URL itself;
+      # test/bun-preload.ts also creates and migrates the isolated `openpanel_test` databases for the other workspaces.
       # Env set here would be silently overwritten.
       - name: Run tests
         working-directory: ${{ matrix.directory }}

@@ -83,11 +83,12 @@ RUN find . -maxdepth 4 -type d -name node_modules -prune -exec rm -rf {} + && \
 #      arch this image is built for; the glob is arch-independent (an arm64 build resolves `-linux-arm64`).
 #   2/3. apps/api/scripts (two mock fixtures, 15.5 MB, only used by the non-production `test:manage` script) and
 #      apps/api/e2e. Removed here rather than by splitting the COPY below, which keeps that COPY drift-proof.
-#   4. `*.test.ts` under packages/, and packages/sdks: nothing in the api's closure imports an SDK.
+#   4. `*.test.ts` under packages/. packages/sdks stays: core imports `@openpanel/ai` (which runs from source and
+#      pulls `@openpanel/sdk`), and the whole tree is under half a megabyte, so a per-package list is not worth
+#      the drift it invites.
 RUN find /app/node_modules/.bun -maxdepth 1 -name '*musl*' -prune -exec rm -rf {} + && \
     rm -rf /app/apps/api/scripts /app/apps/api/e2e && \
-    find /app/packages -type f -name '*.test.ts' -delete && \
-    rm -rf /app/packages/sdks
+    find /app/packages -type f -name '*.test.ts' -delete
 
 # PRISMA-CLI — the Prisma CLI the start command runs (`prisma migrate deploy`), with its engines, installed on its own
 # so it does not pull devDependencies into the app's node_modules. Shipping it means a container start needs no

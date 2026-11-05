@@ -9,6 +9,12 @@ import {
   type SequenceSubject,
   step,
 } from '../../email/src/sequence';
+import {
+  getOrganizationContact,
+  ORGANIZATION_ADMINS_INCLUDE,
+  type OrganizationContact,
+  type OrganizationWithAdmins,
+} from './contact';
 import type { HighlightProject } from './win-back-highlight';
 
 /**
@@ -43,18 +49,12 @@ function getMaxPerRun(config: CoreConfig): number {
 }
 
 /** The organization row shape this job reads. */
-export interface WindDownOrganization {
+export interface WindDownOrganization extends OrganizationWithAdmins {
   id: string;
   subscriptionState: string;
   subscriptionEndsAt: Date | null;
   windDownStartedAt: Date | null;
   windDownStep: string | null;
-  createdBy: {
-    id: string;
-    email: string;
-    firstName: string | null;
-    deletedAt: Date | null;
-  } | null;
   projects: { id: string; name: string }[];
 }
 
@@ -94,7 +94,7 @@ export interface WindDownDeps {
 
 interface WindDownContext {
   org: WindDownOrganization;
-  user: NonNullable<WindDownOrganization['createdBy']>;
+  user: OrganizationContact;
   dashboardUrl: string;
   /** Day 0 of this org's schedule. */
   startedAt: Date;
@@ -309,9 +309,7 @@ export async function runWindDownCron(
       ],
     },
     include: {
-      createdBy: {
-        select: { id: true, email: true, firstName: true, deletedAt: true },
-      },
+      ...ORGANIZATION_ADMINS_INCLUDE,
       projects: { select: { id: true, name: true } },
     },
   });
@@ -336,11 +334,16 @@ export async function runWindDownCron(
     });
   }
 
-  // Without a creator we have nobody to warn, so the sequence can't run. Such
+  // Without an admin we have nobody to warn, so the sequence can't run. Such
   // orgs are left alone; the delete cron already sweeps ones with no admin.
-  const contactable = expired.filter(
-    (org) => org.createdBy && !org.createdBy.deletedAt
-  );
+  const contacts = new Map<string, OrganizationContact>();
+  for (const org of expired) {
+    const contact = getOrganizationContact(org);
+    if (contact) {
+      contacts.set(org.id, contact);
+    }
+  }
+  const contactable = expired.filter((org) => contacts.has(org.id));
 
   // One cheap aggregate for the whole instance, same source the data-health
   // job uses. It answers "are the SDKs still live", which decides both the
@@ -394,10 +397,11 @@ export async function runWindDownCron(
     (org) => org.windDownStartedAt !== null || enteringIds.has(org.id)
   );
 
-  const subjects: SequenceSubject<WindDownContext>[] = active.map((org) => {
-    const user = org.createdBy as NonNullable<
-      WindDownOrganization['createdBy']
-    >;
+  const subjects: SequenceSubject<WindDownContext>[] = active.flatMap((org) => {
+    const user = contacts.get(org.id);
+    if (!user) {
+      return [];
+    }
     const startedAt = org.windDownStartedAt ?? now;
     const seen = activity.get(org.id);
 

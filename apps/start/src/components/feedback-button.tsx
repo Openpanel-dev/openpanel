@@ -1,7 +1,13 @@
 import { useRouteContext } from '@tanstack/react-router';
 import { op } from '@/utils/op';
 
-export function FeedbackButton({ className }: { className?: string }) {
+export function FeedbackButton({
+  className,
+  children = 'Give feedback',
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   const context = useRouteContext({ strict: false });
   return (
     <button
@@ -21,7 +27,7 @@ export function FeedbackButton({ className }: { className?: string }) {
       }}
       type="button"
     >
-      Give feedback
+      {children}
     </button>
   );
 }

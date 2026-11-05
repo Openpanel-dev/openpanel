@@ -1,4 +1,4 @@
-import { ChevronsUpDownIcon } from 'lucide-react';
+import { ChevronDownIcon } from 'lucide-react';
 import VirtualList from 'rc-virtual-list';
 import * as React from 'react';
 import { Button, type ButtonProps } from './button';
@@ -42,7 +42,7 @@ export function ComboboxAdvanced({
   placeholder,
   className,
   size,
-  variant = 'outline',
+  variant = 'input',
   children,
 }: ComboboxAdvancedProps) {
   const [open, setOpen] = React.useState(false);
@@ -129,7 +129,7 @@ export function ComboboxAdvanced({
           );
         })}
       </div>
-      <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      <ChevronDownIcon className="ml-2 size-4 shrink-0 opacity-50" />
     </Button>
   );
 

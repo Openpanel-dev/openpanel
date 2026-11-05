@@ -7,6 +7,7 @@ import {
   gotoHydrated,
   hasHorizontalOverflow,
   SHOTS_DIR,
+  SIGN_IN_PATH,
   submitSignIn,
   toast,
   waitForHydration,
@@ -19,7 +20,7 @@ test.use({ storageState: FRESH_CONTEXT });
 test.describe.configure({ timeout: 120_000 });
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
-const SIGN_IN_REQUEST = '/trpc/auth.signInEmail';
+const SESSION_COOKIE = 'openpanel.session_token';
 const DEV_SIGN_IN_REQUEST = '/trpc/auth.signInDev';
 
 test('signed-out visitors are sent to /login from every protected route', async ({
@@ -58,7 +59,7 @@ test('the login form validates before it calls the API', async ({ page }) => {
   const issues = watchIssues(page);
   let signInRequests = 0;
   page.on('request', (request) => {
-    if (request.url().includes(SIGN_IN_REQUEST)) {
+    if (request.url().includes(SIGN_IN_PATH)) {
       signInRequests += 1;
     }
   });
@@ -100,9 +101,9 @@ test('a wrong password and an unknown email are both refused', async ({
     email: seed.user.email,
     password: 'definitely-not-the-password',
   });
-  // 400, not 401: the dashboard reads any 401 as "signed out" and redirects.
-  expect(wrongPassword.status()).toBe(400);
-  await expect(toast(page, 'Incorrect email or password')).toBeVisible();
+  // better-auth's 401 goes to the form, not through the tRPC "signed out" handler.
+  expect(wrongPassword.status()).toBe(401);
+  await expect(toast(page, 'Invalid email or password')).toBeVisible();
   await expect(page).toHaveURL(/\/login$/);
   await page.screenshot({ path: `${SHOTS_DIR}/login-wrong-password.png` });
 
@@ -114,8 +115,8 @@ test('a wrong password and an unknown email are both refused', async ({
   await expect(page).toHaveURL(/\/login$/);
   expect(
     (await page.context().cookies()).map((cookie) => cookie.name)
-  ).not.toContain('session');
-  expect(issues.unexpected([/auth\.signInEmail/])).toEqual([]);
+  ).not.toContain(SESSION_COOKIE);
+  expect(issues.unexpected([/api\/auth\/sign-in/])).toEqual([]);
 });
 
 test('sign in, land on the organization, then log out from the profile menu', async ({
@@ -136,7 +137,7 @@ test('sign in, land on the organization, then log out from the profile menu', as
   });
 
   const cookies = await context.cookies();
-  const session = cookies.find((cookie) => cookie.name === 'session');
+  const session = cookies.find((cookie) => cookie.name === SESSION_COOKIE);
   expect(session).toMatchObject({
     httpOnly: true,
     secure: true,
@@ -169,15 +170,14 @@ test('sign in, land on the organization, then log out from the profile menu', as
   await expect(page.getByText('Used last time')).toBeVisible();
   await page.screenshot({ path: `${SHOTS_DIR}/login-used-last-time.png` });
   const afterLogout = (await context.cookies()).map((cookie) => cookie.name);
-  expect(afterLogout).not.toContain('session');
+  expect(afterLogout).not.toContain(SESSION_COOKIE);
   await page.goto(`/${seed.organizationId}`);
   await expect(page).toHaveURL(/\/login$/);
 
   // The server forgot the session too: replaying the old cookie is anonymous.
-  const replay = await request.get(
-    `${new URL(response.url()).origin}/trpc/auth.session`,
-    { headers: { cookie: `session=${session?.value}` } }
-  );
+  const replay = await request.get(`${apiUrl()}/trpc/auth.session`, {
+    headers: { cookie: `${SESSION_COOKIE}=${session?.value}` },
+  });
   expect((await replay.json()).result.data.json.userId).toBeNull();
   expect(issues.unexpected()).toEqual([]);
 });
@@ -247,7 +247,7 @@ test('the dev login button signs in with one click when DEV_LOGIN is set', async
     timeout: 20_000,
   });
   expect((await context.cookies()).map((cookie) => cookie.name)).toContain(
-    'session'
+    SESSION_COOKIE
   );
   expect(issues.unexpected()).toEqual([]);
 });

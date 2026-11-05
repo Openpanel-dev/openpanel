@@ -2,13 +2,13 @@
   "slug": "saas",
   "audience": "saas",
   "seo": {
-    "title": "SaaS Analytics — Track Events, Funnels & Retention Without Enterprise Pricing",
-    "description": "OpenPanel gives SaaS teams the product analytics they need to reduce churn and grow — events, funnels, retention, cohorts, and user profiles. Open source, from $2.50/month.",
+    "title": "SaaS Analytics, Track Events, Funnels & Retention Without Enterprise Pricing",
+    "description": "OpenPanel gives SaaS teams the product analytics they need to reduce churn and grow, events, funnels, retention, cohorts, and user profiles. Open source, from $2.50/month.",
     "noindex": false
   },
   "hero": {
     "heading": "Product analytics for SaaS teams",
-    "subheading": "See why users churn, where trials drop off, and which features drive retention. OpenPanel gives you events, funnels, retention analysis, and user profiles — the core analytics stack for SaaS — without Mixpanel or Amplitude's enterprise pricing.",
+    "subheading": "See why users churn, where trials drop off and which features drive retention. Events, funnels, retention, cohorts and user profiles, the core analytics stack for SaaS, without Mixpanel or Amplitude's enterprise pricing.",
     "badges": [
       "Funnel analysis",
       "Retention tracking",
@@ -34,17 +34,17 @@
       },
       {
         "title": "Cloud-only means full vendor dependence",
-        "description": "If Mixpanel raises prices, your data is hostage. No export path, no self-hosting option, and a pricing model that punishes growth."
+        "description": "If your vendor raises prices, you move or you pay. No self-hosting option, and a pricing model that punishes growth."
       }
     ]
   },
   "features": {
     "title": "The full product analytics stack for SaaS",
-    "intro": "Everything your team needs to understand users, reduce churn, and grow — without the enterprise pricing.",
+    "intro": "Everything your team needs to understand users, reduce churn, and grow, without the enterprise pricing.",
     "items": [
       {
         "title": "Event tracking",
-        "description": "Track any user action — feature used, button clicked, settings changed, plan upgraded. One line of code. Works across web, mobile, and your backend."
+        "description": "Track any user action: feature used, button clicked, settings changed, plan upgraded. One call. SDKs for the web, Node, React, Next.js, React Native, iOS, Android, Python and more."
       },
       {
         "title": "Funnel analysis",
@@ -52,27 +52,27 @@
       },
       {
         "title": "Retention analysis",
-        "description": "Cohort-based retention charts show you whether users activated in week 1 are still active in week 8. Identify which actions predict long-term retention."
+        "description": "A cohort grid shows whether users who signed up in week 1 are still active in week 8, with a weighted average that ignores weeks that have not happened yet. Pick any start and return event."
       },
       {
         "title": "User profiles",
-        "description": "See every event a specific user triggered since they signed up. Walk through their session to diagnose support issues or understand power user behavior."
+        "description": "Every event, session and replay for a specific user, plus the company they belong to through groups. Walk through a session to diagnose a support ticket or to see what power users do."
       },
       {
         "title": "Cohort analysis",
-        "description": "Group users by signup date, plan, or any property and compare their behavior over time. Understand how product changes affect different user segments."
+        "description": "Group users by what they did or who they are: did an event at least N times in the last 30 days, or has a property. Use a cohort as a filter or a breakdown in any report."
       },
       {
-        "title": "Real-time dashboard",
-        "description": "See new signups, trial activations, and feature usage as they happen. Know immediately when a new deployment changes user behavior."
+        "title": "Realtime dashboard",
+        "description": "See sign-ups, trial activations and feature usage as they happen. Know within minutes when a deployment changes user behaviour."
       },
       {
         "title": "Revenue tracking",
-        "description": "Send MRR, payment events, and plan upgrade data to OpenPanel. Correlate feature usage with revenue without a separate BI tool."
+        "description": "Send revenue events from your billing webhooks and see revenue per user, per source and per campaign. Correlate feature usage with revenue without a separate BI tool."
       },
       {
         "title": "Multi-platform SDKs",
-        "description": "Track across web app, marketing site, iOS, Android, and backend in one unified analytics view. Events from all platforms share the same user profiles."
+        "description": "Web app, marketing site, iOS, Android and backend in one view. Events from every platform share the same user profiles."
       }
     ]
   },
@@ -82,7 +82,7 @@
     "items": [
       {
         "title": "Predictable pricing as you scale",
-        "description": "Flat event tiers from $2.50 to $900/month. No per-seat fees, no MTU limits. Know exactly what you'll pay as your user base grows."
+        "description": "Flat event tiers from $2.50 to $900 a month. No per-seat fees, no MTU limits. Know what you will pay as your user base grows."
       },
       {
         "title": "Answer the questions SaaS teams actually ask",
@@ -90,11 +90,11 @@
       },
       {
         "title": "Self-host to eliminate per-event costs",
-        "description": "Large SaaS products generate millions of events. Self-hosting eliminates the cost entirely — pay only for your server infrastructure."
+        "description": "Large SaaS products generate millions of events. Self-hosting removes the event cost entirely; you pay only for your servers."
       },
       {
         "title": "All features from day one",
-        "description": "Funnels, retention, cohorts, user profiles, and dashboards are available at every pricing tier. No feature gating that forces upgrades."
+        "description": "Funnels, retention, cohorts, user profiles, session replay and dashboards are in every tier. No feature gating that forces upgrades."
       },
       {
         "title": "Open source and auditable",
@@ -108,7 +108,7 @@
     "items": [
       {
         "question": "How is OpenPanel different from Mixpanel for SaaS?",
-        "answer": "OpenPanel covers the same core analytics (events, funnels, retention, cohorts, user profiles) at a fraction of the cost. Mixpanel adds features like Metric Trees and advanced experimentation, but most SaaS teams don't use them. OpenPanel focuses on the analytics that actually drive decisions."
+        "answer": "OpenPanel covers the same core analytics (events, funnels, retention, cohorts, user profiles) at a fraction of the cost, and adds session replay and AI observability. Mixpanel adds Metric Trees, feature flags and an experiment runner, which most SaaS teams do not use."
       },
       {
         "question": "Can OpenPanel replace both GA4 and Mixpanel?",
@@ -116,31 +116,40 @@
       },
       {
         "question": "How do I track trial-to-paid conversions?",
-        "answer": "Track a trial_started event on signup and a plan_upgraded event on conversion. Build a funnel in OpenPanel between those two events. See conversion rate by cohort, traffic source, or any user property."
+        "answer": "Track a trial_started event on signup and a plan_upgraded event on conversion. Build a funnel or a conversion report between those two events and break it down by cohort, traffic source or any user property."
       },
       {
         "question": "Does OpenPanel support multi-product or multi-tenant SaaS?",
-        "answer": "Yes. Use the profileId to identify individual users and pass organization or workspace IDs as properties. You can filter analytics by any property you send."
+        "answer": "Yes. Use profileId for the user and groups for the organisation or workspace (upsertGroup and setGroup in the SDK). Every group has its own page with members and events, and group properties work as filters and breakdowns."
       },
       {
         "question": "What happens to my data if I stop paying for OpenPanel cloud?",
-        "answer": "You can export all your event data via the API at any time. Alternatively, migrate to self-hosting — OpenPanel has no lock-in and no proprietary data format."
+        "answer": "Export every event through the API, or set up an S3 or GCS export, at any time. Or migrate to self-hosting; there is no lock-in and no proprietary format."
       },
       {
         "question": "Can I track backend events from my SaaS API?",
-        "answer": "Yes. OpenPanel has server-side SDKs for Node.js, Python, and a REST API. Track subscription webhooks, background jobs, and server-side logic alongside client events."
+        "answer": "Yes. Use the Node, Express, Python, Ruby, Rust or Java SDKs with a client secret, or the REST API. Track subscription webhooks, background jobs and server-side logic alongside client events."
       },
       {
         "question": "Is OpenPanel GDPR compliant for SaaS?",
-        "answer": "Yes. Cookieless tracking by default, EU-only cloud hosting, and the option to self-host for complete data sovereignty. No consent banner required for product analytics."
+        "answer": "Yes. Cookieless tracking by default, Cloud hosted on Hetzner in Germany with a DPA included, and the option to self-host for complete data sovereignty. No consent banner required for product analytics."
       }
     ]
   },
   "related_links": {
     "guides": [
-      { "title": "Track custom events", "url": "/guides/track-custom-events" },
-      { "title": "Next.js analytics setup", "url": "/guides/nextjs-analytics" },
-      { "title": "React analytics setup", "url": "/guides/react-analytics" }
+      {
+        "title": "Track custom events",
+        "url": "/guides/track-custom-events"
+      },
+      {
+        "title": "Next.js analytics setup",
+        "url": "/guides/nextjs-analytics"
+      },
+      {
+        "title": "React analytics setup",
+        "url": "/guides/react-analytics"
+      }
     ],
     "articles": [
       {

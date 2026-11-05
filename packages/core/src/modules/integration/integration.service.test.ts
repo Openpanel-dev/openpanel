@@ -6,7 +6,15 @@
 // Access is a real `getAccessChecks()` over faked lookups; storage is an
 // in-memory fake `deps.db`.
 
-import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  expect,
+  mock,
+  spyOn,
+  test,
+} from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
 
 interface FakeIntegration {
@@ -31,6 +39,20 @@ mock.module('../../shared/access-lookups', () => ({
   canWriteProject: (access: { level: string } | null) =>
     !!access && (access.level === 'write' || access.level === 'admin'),
   getProjectById: mock(async () => ({ organizationId: 'org_1' })),
+}));
+
+let slackStateMetadata: Record<string, string> = {};
+const slackCodeExchange = mock(async () => new Response('{}'));
+const realSlack = { ...(await import('./src/slack')) };
+mock.module('./src/slack', () => ({
+  ...realSlack,
+  slackInstaller: () => ({
+    stateStore: {
+      verifyStateParam: async () => ({
+        metadata: JSON.stringify(slackStateMetadata),
+      }),
+    },
+  }),
 }));
 
 const integration = {
@@ -91,6 +113,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
+  mock.module('./src/slack', () => realSlack);
   mock.module('../../shared/access-lookups', () => realAccessLookups);
   resetAccessChecksForTests();
 });
@@ -220,4 +243,61 @@ test('delete returns only the id, not the deleted row', async () => {
 
   expect(result).toEqual({ id: 'int_1' });
   expect(integrationStore.has('int_1')).toBe(false);
+});
+
+test('createOrUpdate does not send stored header values to a new URL', async () => {
+  storeWebhook();
+
+  await expect(
+    subject.upsertIntegration(deps, 'u1', {
+      id: 'int_1',
+      name: 'Hook',
+      projectId: 'proj_1',
+      config: {
+        type: 'webhook',
+        url: 'https://attacker.example/hook',
+        headers: { Authorization: '', 'X-Trace': '' },
+        mode: 'message',
+      },
+    })
+  ).rejects.toThrow('Missing credentials: headers.Authorization');
+  expect(integrationStore.get('int_1')?.config).toMatchObject({
+    url: 'https://example.com/hook',
+  });
+});
+
+test('the Slack callback refuses an install started by another user', async () => {
+  storeSlack();
+  slackStateMetadata = {
+    organizationId: 'org_1',
+    integrationId: 'int_slack',
+    projectId: 'proj_1',
+    userId: 'u_initiator',
+  };
+  const fetchSpy = spyOn(globalThis, 'fetch').mockImplementation(
+    slackCodeExchange as unknown as typeof fetch
+  );
+
+  try {
+    await expect(
+      subject.completeSlackOAuthCallback(deps, {
+        code: 'code',
+        state: 'state',
+        userId: 'u_victim',
+      })
+    ).rejects.toThrow('started by another user');
+
+    projectAccessLevel = 'read';
+    await expect(
+      subject.completeSlackOAuthCallback(deps, {
+        code: 'code',
+        state: 'state',
+        userId: 'u_initiator',
+      })
+    ).rejects.toThrow();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+  } finally {
+    fetchSpy.mockRestore();
+  }
 });

@@ -4,7 +4,7 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
-import { TRPCNotFoundError } from '../../rpc/errors';
+import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
 import { getSettingsForProject } from '../organization/organization.service';
 import { zChartEventFilter, zRange } from '../report/report.constants';
 import { getChartStartEndDate } from '../report/src/chart-dates';
@@ -14,6 +14,7 @@ import {
   zCohortUpdate,
 } from './cohort.constants';
 import {
+  assertCohortDefinitionSupported,
   computeCohort,
   countCohort,
   deleteCohortMembership,
@@ -23,6 +24,7 @@ import {
   getCohortMemberRoutes,
   getCohortMembers,
   listCohortMemberProfiles,
+  UnsupportedCohortFilterError,
 } from './cohort.service';
 
 const EXPORT_PROFILES_MAX_LIMIT = 10_000;
@@ -33,6 +35,22 @@ const EXPORT_PROFILES_DEFAULT_LIMIT = 10_000;
  * passes no range, so this is what it shows.
  */
 const COHORT_ACTIVITY_DEFAULT_RANGE = '3m';
+
+// Refused on save and preview, so the builder shows why instead of the refresh
+// job failing later or, worse, the cohort matching everyone.
+function requireSupportedDefinition(
+  projectId: string,
+  definition: Parameters<typeof assertCohortDefinitionSupported>[1]
+): void {
+  try {
+    assertCohortDefinitionSupported(projectId, definition);
+  } catch (error) {
+    if (error instanceof UnsupportedCohortFilterError) {
+      throw new TRPCBadRequestError(error.message);
+    }
+    throw error;
+  }
+}
 
 const zCohortActivityInput = z.object({
   projectId: z.string(),
@@ -105,6 +123,7 @@ export const cohortRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'write',
       });
+      requireSupportedDefinition(input.projectId, input.definition);
 
       const db = ctx.db;
       const cohort = await db.cohort.create({
@@ -140,6 +159,9 @@ export const cohortRouter = createTRPCRouter({
         projectId: existingCohort.projectId,
         level: 'write',
       });
+      if (data.definition) {
+        requireSupportedDefinition(existingCohort.projectId, data.definition);
+      }
 
       const cohort = await db.cohort.update({
         where: { id },
@@ -302,6 +324,7 @@ export const cohortRouter = createTRPCRouter({
         projectId: input.projectId,
         level: 'read',
       });
+      requireSupportedDefinition(input.projectId, input.definition);
 
       const count = await countCohort(ctx, input.projectId, input.definition);
       const sampleProfiles = await computeCohort(

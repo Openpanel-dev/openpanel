@@ -165,6 +165,54 @@ ORDER BY (project_id, id)
 SETTINGS index_granularity = 8192
 ;
 
+CREATE TABLE IF NOT EXISTS ai_events
+(
+  `project_id` String CODEC(ZSTD(3)),
+  `id` UUID,
+  `type` LowCardinality(String),
+  `trace_id` String CODEC(ZSTD(3)),
+  `span_id` String CODEC(ZSTD(3)),
+  `parent_id` String CODEC(ZSTD(3)),
+  `conversation_id` String CODEC(ZSTD(3)),
+  `name` LowCardinality(String),
+  `model` LowCardinality(String),
+  `provider` LowCardinality(String),
+  `input_tokens` UInt32,
+  `output_tokens` UInt32,
+  `cache_read_tokens` UInt32,
+  `cache_write_tokens` UInt32,
+  `reasoning_tokens` UInt32,
+  `input_cost` Float64,
+  `output_cost` Float64,
+  `total_cost` Float64,
+  `cost_source` LowCardinality(String),
+  `latency_ms` UInt32,
+  `time_to_first_token_ms` UInt32,
+  `is_error` Bool,
+  `http_status` UInt16,
+  `stop_reason` LowCardinality(String),
+  `is_stream` Bool,
+  `model_parameters` String CODEC(ZSTD(3)),
+  `input` String CODEC(ZSTD(6)) TTL toDateTime(created_at) + INTERVAL 30 DAY,
+  `output` String CODEC(ZSTD(6)) TTL toDateTime(created_at) + INTERVAL 30 DAY,
+  `tools` String CODEC(ZSTD(6)) TTL toDateTime(created_at) + INTERVAL 30 DAY,
+  `error` String CODEC(ZSTD(3)),
+  `profile_id` String CODEC(ZSTD(3)),
+  `device_id` String CODEC(ZSTD(3)),
+  `session_id` String CODEC(LZ4),
+  `groups` Array(String) DEFAULT [] CODEC(ZSTD(3)),
+  `properties` Map(String, String) CODEC(ZSTD(3)),
+  `created_at` DateTime64(3) CODEC(DoubleDelta, ZSTD(3)),
+  INDEX idx_trace_id trace_id TYPE bloom_filter(0.01) GRANULARITY 1,
+  INDEX idx_conversation_id conversation_id TYPE bloom_filter(0.01) GRANULARITY 1,
+  INDEX idx_profile_id profile_id TYPE bloom_filter(0.01) GRANULARITY 1
+)
+ENGINE = MergeTree()
+PARTITION BY toYYYYMM(created_at)
+ORDER BY (project_id, toDate(created_at), created_at)
+SETTINGS index_granularity = 8192
+;
+
 CREATE TABLE IF NOT EXISTS gsc_daily
 (
     `project_id` String CODEC(ZSTD(3)),

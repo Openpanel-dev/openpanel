@@ -88,3 +88,49 @@ test('creates a write client for events and a read client whose token works for 
   // Its own secret, never the write client's.
   expect(decoded.endsWith(result.secret)).toBe(false);
 });
+
+test('stores the first touch on a new organization with the referrer resolved', async () => {
+  dbMock.organization.create.mockClear();
+  await createOnboardingProject(
+    deps,
+    {
+      organization: 'Beta',
+      project: 'Beta site',
+      domain: 'https://beta.com',
+      cors: [],
+      website: true,
+      app: false,
+      backend: false,
+      attribution: {
+        referrer: 'https://www.reddit.com/r/selfhosted/comments/abc/',
+        landingPage: '/compare/mixpanel',
+        utmCampaign: 'launch',
+        firstSeenAt: '2026-11-01T10:00:00.000Z',
+      },
+    },
+    'user_1'
+  );
+
+  const [call] = dbMock.organization.create.mock.calls;
+  expect(call?.[0].data.attribution).toEqual({
+    referrer: 'https://www.reddit.com/r/selfhosted/comments/abc/',
+    referrerName: 'Reddit',
+    referrerType: 'social',
+    landingPage: '/compare/mixpanel',
+    utmSource: null,
+    utmMedium: null,
+    utmCampaign: 'launch',
+    utmContent: null,
+    utmTerm: null,
+    firstSeenAt: '2026-11-01T10:00:00.000Z',
+  });
+});
+
+test('resolves the referrer from utm_source and drops an empty first touch', async () => {
+  const { toStoredAttribution } = await import('./onboarding.service');
+  expect(toStoredAttribution({ utmSource: 'twitter' })?.referrerName).toBe(
+    'Twitter'
+  );
+  expect(toStoredAttribution({})).toBeUndefined();
+  expect(toStoredAttribution(undefined)).toBeUndefined();
+});

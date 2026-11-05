@@ -9,9 +9,16 @@ export type ReplayRecorderConfig = {
   blockClass?: string;
   ignoreSelector?: string;
   flushIntervalMs?: number;
+  fullSnapshotIntervalMs?: number;
   maxEventsPerChunk?: number;
   maxPayloadBytes?: number;
 };
+
+// A full snapshot copies the whole page, so how often one is taken decides
+// most of a recording's size; it must not follow the flush interval. Same
+// interval as PostHog. rrweb only checks it when it records an event, so an
+// idle page takes no extra snapshots.
+const DEFAULT_FULL_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000;
 
 export type ReplayChunkPayload = {
   chunk_index: number;
@@ -21,6 +28,11 @@ export type ReplayChunkPayload = {
   ended_at: string;
   payload: string;
 };
+
+// rrweb's maskAllInputs skips hidden inputs, which carry CSRF tokens and
+// similar. They render nothing, so blocking them costs the replay nothing.
+const HIDDEN_INPUT_SELECTOR = 'input[type="hidden" i]';
+const DEFAULT_BLOCK_SELECTOR = '[data-openpanel-replay-block]';
 
 let stopRecording: (() => void) | null = null;
 
@@ -39,6 +51,8 @@ export function startReplayRecorder(
 
   const maxEventsPerChunk = config.maxEventsPerChunk ?? 200;
   const flushIntervalMs = config.flushIntervalMs ?? 10_000;
+  const fullSnapshotIntervalMs =
+    config.fullSnapshotIntervalMs ?? DEFAULT_FULL_SNAPSHOT_INTERVAL_MS;
   const maxPayloadBytes = config.maxPayloadBytes ?? 1_048_576; // 1MB
 
   let buffer: eventWithTime[] = [];
@@ -110,7 +124,7 @@ export function startReplayRecorder(
       buffer.push(event);
       flushIfNeeded(!!isCheckout);
     },
-    checkoutEveryNms: flushIntervalMs,
+    checkoutEveryNms: fullSnapshotIntervalMs,
     maskAllInputs: config.maskAllInputs ?? true,
     maskTextSelector: maskAllText ? '*' : '[data-openpanel-replay-mask]',
     maskTextFn:
@@ -122,7 +136,7 @@ export function startReplayRecorder(
             return text.replace(/\S/g, '*');
           }
         : undefined,
-    blockSelector: config.blockSelector ?? '[data-openpanel-replay-block]',
+    blockSelector: `${config.blockSelector ?? DEFAULT_BLOCK_SELECTOR}, ${HIDDEN_INPUT_SELECTOR}`,
     blockClass: config.blockClass,
     ignoreSelector: config.ignoreSelector,
   });

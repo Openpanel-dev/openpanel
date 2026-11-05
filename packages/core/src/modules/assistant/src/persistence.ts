@@ -64,7 +64,9 @@ export async function saveMessages(
       throw new Error(`Message ${foreign.id} belongs to another conversation`);
     }
     const title = stripNullCharacters(input.title ?? undefined);
-    await tx.conversation.upsert({
+    // The id comes from the client and is only checked before the model runs;
+    // someone else may have created it since, and must not get these messages.
+    const conversation = await tx.conversation.upsert({
       where: { id: input.conversationId },
       create: {
         id: input.conversationId,
@@ -77,7 +79,16 @@ export async function saveMessages(
         updatedAt: new Date(),
         ...(title ? { title } : {}),
       },
+      select: { userId: true, projectId: true },
     });
+    const ownedByCaller =
+      conversation.userId === input.userId &&
+      conversation.projectId === input.projectId;
+    if (!ownedByCaller) {
+      throw new Error(
+        `Conversation ${input.conversationId} belongs to another user`
+      );
+    }
     // Rows saved together must load in this order; the default timestamp can tie.
     const baseTime = Date.now();
     for (const [index, message] of input.messages.entries()) {

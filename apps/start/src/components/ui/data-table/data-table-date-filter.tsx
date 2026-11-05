@@ -184,7 +184,7 @@ export function DataTableDateFilter<TData>({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button className="border-dashed" size="sm" variant="outline">
+        <Button className="border-dashed" variant="outline">
           {hasValue ? (
             <div
               aria-label={`Clear ${title} filter`}

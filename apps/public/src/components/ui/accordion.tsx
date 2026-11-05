@@ -1,7 +1,6 @@
 import * as AccordionPrimitive from '@radix-ui/react-accordion';
 import { ChevronDown } from 'lucide-react';
 import type * as React from 'react';
-import { FeatureCardBackground } from '../feature-card';
 import { cn } from '@/lib/utils';
 
 const Accordion = AccordionPrimitive.Root;
@@ -32,13 +31,12 @@ const AccordionTrigger = ({
   <AccordionPrimitive.Header className="not-prose flex">
     <AccordionPrimitive.Trigger
       className={cn(
-        'group relative flex flex-1 cursor-pointer items-center justify-between overflow-hidden py-4 font-medium transition-all [&[data-state=open]>svg]:rotate-180',
+        'group flex flex-1 cursor-pointer items-center justify-between py-4 font-medium transition-colors hover:text-neutral-600 [&[data-state=open]>svg]:rotate-180',
         className
       )}
       ref={ref}
       {...props}
     >
-      <FeatureCardBackground />
       {children}
       <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200" />
     </AccordionPrimitive.Trigger>

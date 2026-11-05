@@ -53,8 +53,10 @@ export function getSubscriptionState(
       // `canceledAt` is set; the subscription stays usable until it expires.
       // Cancellation wins over a scheduled pause — Polar clears the pause flag
       // on cancel, but a stale combination must not hide that it's ending.
+      // Past the period end the status is stale (missed webhook): the paid
+      // period is over, so it is `canceled`, not still `canceling`.
       if (subscriptionCanceledAt) {
-        return 'canceling';
+        return endsInFuture ? 'canceling' : 'canceled';
       }
       // Pause-at-period-end works the same way: status stays `active` with the
       // flag set until the period ends, then Polar flips it to `paused`. If the

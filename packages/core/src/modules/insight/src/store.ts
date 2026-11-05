@@ -38,6 +38,7 @@ function toPersistedInsight(row: InsightRow): PersistedInsight {
   };
 }
 
+/** Keep insight persistence and candidate queries on the caller's dependency scope. */
 export function createInsightStore(deps: ServiceDeps): InsightStore {
   const db = deps.db;
   // `Prisma.DbNull` lives in the same module as the constructed client, so it
@@ -52,9 +53,9 @@ export function createInsightStore(deps: ServiceDeps): InsightStore {
           deleteAt: null,
           eventsCount: { gt: 10_000 },
           updatedAt: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24) },
-          organization: {
-            subscriptionStatus: 'active',
-          },
+          ...(deps.config.selfHosted
+            ? {}
+            : { organization: { subscriptionStatus: 'active' } }),
         },
         select: { id: true },
       });

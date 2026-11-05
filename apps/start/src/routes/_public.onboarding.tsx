@@ -24,10 +24,18 @@ export const Route = createFileRoute('/_public/onboarding')({
       { name: 'robots', content: 'noindex, follow' },
     ],
   }),
-  beforeLoad: async ({ context }) => {
-    if (await isSignedIn(context)) {
-      throw redirect({ to: '/' });
+  beforeLoad: async ({ context, search }) => {
+    if (!(await isSignedIn(context))) {
+      return;
     }
+    // A signed-in user opening an invite link accepts it explicitly there.
+    if (search.inviteId) {
+      throw redirect({
+        to: '/invite/$inviteId',
+        params: { inviteId: search.inviteId },
+      });
+    }
+    throw redirect({ to: '/' });
   },
   component: Component,
   validateSearch,

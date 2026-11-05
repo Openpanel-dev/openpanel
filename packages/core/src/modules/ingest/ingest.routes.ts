@@ -30,7 +30,6 @@ import { produceIncomingEvent } from './src/kafka';
 
 const TAGS = ['Track'];
 const LEGACY_EVENT_TAGS = ['Event'];
-const DUPLICATE_BODY = 'Duplicate event';
 /** Wind-down answers 202 with `{blocked:true}` rather than 402/403 — see
  *  `isIngestionWoundDown`. */
 const WIND_DOWN_STATUS = 202;
@@ -173,7 +172,7 @@ export const ingestRoutes = defineRoutes((app, deps: AppDeps) => {
             body,
           })
         ) {
-          return status(200, DUPLICATE_BODY);
+          return status(200, { duplicate: true });
         }
       },
     },

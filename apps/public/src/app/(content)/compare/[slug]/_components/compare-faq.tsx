@@ -1,29 +1,14 @@
-import { FaqItem, Faqs } from '@/components/faq';
-import { Section, SectionHeader } from '@/components/section';
+import { FaqSection } from '@/components/faq';
 import type { CompareFaqs } from '@/lib/compare';
 
-interface CompareFaqProps {
-  faqs: CompareFaqs;
-}
-
-export function CompareFaq({ faqs }: CompareFaqProps) {
+export function CompareFaq({ faqs }: { faqs: CompareFaqs }) {
   return (
-    <Section className="container">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <SectionHeader
-          className="mb-16"
-          description={faqs.intro}
-          title={faqs.title}
-          variant="sm"
-        />
-        <Faqs>
-          {faqs.items.map((faq) => (
-            <FaqItem key={faq.question} question={faq.question}>
-              {faq.answer}
-            </FaqItem>
-          ))}
-        </Faqs>
-      </div>
-    </Section>
+    <div id="faq">
+      <FaqSection
+        description={faqs.intro}
+        items={faqs.items}
+        title={faqs.title}
+      />
+    </div>
   );
 }
