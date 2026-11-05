@@ -148,6 +148,11 @@ describe('toCommandValue', () => {
 });
 
 describe('ComboboxEvents', () => {
+  // Keep event names short once the picker is open. cmdk finds the highlighted
+  // row by its hyphenated toCommandValue, and jsdom's selector engine backtracks
+  // on those hyphens: each extra character doubles the lookup, and a
+  // 25-character row key takes over 3 s.
+
   // floating-ui asks these on every position update, and jsdom's selector engine
   // takes seconds per answer, enough to stall the vitest worker.
   const topLayerSelectors = [':popover-open', ':modal'];
@@ -186,7 +191,7 @@ describe('ComboboxEvents', () => {
     render(
       <ComboboxEvents
         allowUnseenEvents
-        items={items}
+        items={[{ name: 'signup', count: 1, meta: undefined }]}
         onChange={onChange}
         placeholder="Select event"
         searchable
@@ -196,11 +201,11 @@ describe('ComboboxEvents', () => {
 
     fireEvent.click(screen.getByRole('combobox'));
     fireEvent.change(screen.getByPlaceholderText('Search event...'), {
-      target: { value: 'checkout_v2_completed' },
+      target: { value: 'signup_v2' },
     });
-    fireEvent.click(screen.getByText('Add "checkout_v2_completed"'));
+    fireEvent.click(screen.getByText('Add "signup_v2"'));
 
-    expect(onChange).toHaveBeenCalledWith('checkout_v2_completed');
+    expect(onChange).toHaveBeenCalledWith('signup_v2');
   });
 
   test('keyboard reaches events that differ only by case', () => {
