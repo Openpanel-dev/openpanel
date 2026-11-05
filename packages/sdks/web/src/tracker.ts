@@ -35,6 +35,11 @@ import { OpenPanel } from './index';
           if (typeof value === 'function') {
             return value.bind(op);
           }
+          // Turbopack compiles window.op?.(...) to window.op.call(...), and only
+          // the function target has call, apply and bind.
+          if (value === undefined) {
+            return Reflect.get(target, prop);
+          }
           // Otherwise return the property from op (for things like options, etc.)
           return value;
         },
