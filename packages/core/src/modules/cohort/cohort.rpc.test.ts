@@ -235,3 +235,53 @@ test('duplicate refuses a signed-in user without write access to the cohort', as
   });
   expect(duplicate).not.toHaveBeenCalled();
 });
+
+test('duplicate refuses a cohort whose definition is no longer supported', async () => {
+  const duplicate = mock(() => Promise.resolve());
+  const findUnique = mock(() =>
+    Promise.resolve({
+      id: 'cohort_1',
+      projectId: 'proj_1',
+      definition: {
+        type: 'event',
+        criteria: {
+          operator: 'and',
+          events: [
+            {
+              name: 'purchase',
+              filters: [
+                {
+                  id: 'f1',
+                  name: 'session.entry_path',
+                  operator: 'is',
+                  value: ['/'],
+                },
+              ],
+              timeframe: { type: 'relative', value: '30d' },
+            },
+          ],
+        },
+      },
+    })
+  );
+  const { ctx } = stubHttpCtx(
+    {
+      db: { cohort: { findUnique } },
+      services: {
+        auth: { requireProjectAccess: mock(() => Promise.resolve()) },
+        cohort: { duplicate },
+      },
+    } as unknown as Parameters<typeof stubHttpCtx>[0],
+    { session: {}, user: {}, userId: 'user_member' }
+  );
+  const caller = cohortRouter.createCaller(
+    await makeTrpcContext(ctx, new Headers(), {
+      cookieOptions: COOKIE_OPTIONS,
+    })
+  );
+
+  await expect(caller.duplicate({ id: 'cohort_1' })).rejects.toMatchObject({
+    code: 'BAD_REQUEST',
+  });
+  expect(duplicate).not.toHaveBeenCalled();
+});

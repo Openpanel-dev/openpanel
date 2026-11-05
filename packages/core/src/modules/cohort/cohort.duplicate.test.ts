@@ -95,6 +95,21 @@ test('copies the definition and starts a compute for the copy', async () => {
   );
 });
 
+test('removes the copy when its compute cannot be queued', async () => {
+  const queueError = new Error('queue unavailable');
+  enqueue.mockImplementationOnce(() => Promise.reject(queueError));
+  const countBefore = await deps.db.cohort.count({
+    where: { projectId: PROJECT_ID },
+  });
+
+  await expect(service.duplicate(original)).rejects.toBe(queueError);
+
+  const countAfter = await deps.db.cohort.count({
+    where: { projectId: PROJECT_ID },
+  });
+  expect(countAfter).toBe(countBefore);
+});
+
 test('leaves the original untouched, also when the copy is edited', async () => {
   const copy = await service.duplicate(original);
   await deps.db.cohort.update({

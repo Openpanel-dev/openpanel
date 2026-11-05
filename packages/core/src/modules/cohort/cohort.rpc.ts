@@ -227,6 +227,8 @@ export const cohortRouter = createTRPCRouter({
         level: 'write',
       });
 
+      requireSupportedDefinition(cohort.projectId, cohort.definition);
+
       return ctx.services.cohort.duplicate(cohort);
     }),
 

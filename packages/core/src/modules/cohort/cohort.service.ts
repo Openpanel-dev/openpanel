@@ -1147,7 +1147,13 @@ export function createCohortService(
 
   async function duplicate(cohort: Cohort): Promise<Cohort> {
     const copy = await duplicateCohort(deps, cohort);
-    await enqueueCompute(copy.id);
+    try {
+      await enqueueCompute(copy.id);
+    } catch (error) {
+      // Static cohorts can't be refreshed, so this compute is a copy's only one.
+      await deps.db.cohort.delete({ where: { id: copy.id } });
+      throw error;
+    }
     return copy;
   }
 

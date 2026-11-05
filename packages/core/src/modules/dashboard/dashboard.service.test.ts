@@ -4,6 +4,9 @@ import type { ServiceDeps } from '../../services';
 const ORGANIZATION_ID = 'dashboard-duplicate-org';
 const PROJECT_ID = 'dashboard-duplicate-project';
 const DASHBOARD_ID = 'dashboard-duplicate-source';
+const DASHBOARD_FILTERS = [
+  { id: 'f1', name: 'country', operator: 'is', value: ['SE'] },
+];
 
 let deps: ServiceDeps;
 let duplicateDashboard: typeof import('./dashboard.service').duplicateDashboard;
@@ -74,6 +77,7 @@ beforeAll(async () => {
       name: 'Growth',
       projectId: PROJECT_ID,
       organizationId: ORGANIZATION_ID,
+      filters: DASHBOARD_FILTERS,
       share: {
         create: {
           id: 'dashboard-duplicate-share',
@@ -152,6 +156,13 @@ test('copies every report with its tile layout into a new dashboard', async () =
   const [withLayout, withoutLayout] = copy.reports;
   expect(withLayout?.layout?.id).not.toBe(original.reports[0]?.layout?.id);
   expect(withoutLayout?.layout).toBeNull();
+});
+
+test('keeps the saved dashboard filters', async () => {
+  const created = await duplicateDashboard(deps, DASHBOARD_ID);
+  const copy = await loadDashboard(created.id);
+
+  expect(copy.filters).toEqual(DASHBOARD_FILTERS);
 });
 
 test('does not copy the share link', async () => {

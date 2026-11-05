@@ -182,6 +182,7 @@ export async function duplicateDashboard(
       name,
       projectId: source.projectId,
       organizationId: source.organizationId,
+      filters: source.filters ?? [],
       reports: {
         create: source.reports.map((report) => copyReport(deps, report)),
       },
