@@ -182,9 +182,11 @@ To keep the default and show specific text instead, use `unmaskTextSelector`:
 ```ts
 sessionReplay: {
   enabled: true,
-  unmaskTextSelector: '.product-name, nav',
+  unmaskTextSelector: '.product-name',
 }
 ```
+
+Keep this selector narrow: unmasking an element also shows the text of everything inside it.
 
 ### Ignore interactions
 
