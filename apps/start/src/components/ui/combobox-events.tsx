@@ -131,7 +131,11 @@ export function getEventRows({
     })),
     ...items
       .filter((item) => matchesSearch(item.name))
-      .map((item) => ({ key: item.name, kind: 'event' as const, item })),
+      .map((item) => ({
+        key: `event:${item.name}`,
+        kind: 'event' as const,
+        item,
+      })),
   ];
 
   const typedName = search.trim();
@@ -182,6 +186,10 @@ export function ComboboxEvents<
   }, [value, multiple]);
 
   function find(value: string) {
+    // An unseen name may differ from a known event only by case.
+    if (allowUnseenEvents) {
+      return items.find((item) => item.name === value);
+    }
     return items.find(
       (item) => item.name.toLowerCase() === value.toLowerCase()
     );
@@ -385,7 +393,7 @@ export function ComboboxEvents<
                     onSelect={() => {
                       handleSelection(item.name);
                     }}
-                    value={item.name}
+                    value={row.key}
                   >
                     {isSelected ? (
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />

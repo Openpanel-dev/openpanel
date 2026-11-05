@@ -5,8 +5,8 @@
 // typed name as an "Add" row, and keeps a selected unseen name visible so it
 // can be toggled off again.
 
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, test, vi } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import { ComboboxEvents, getEventRows } from './combobox-events';
 
 const items: Parameters<typeof getEventRows>[0]['items'] = [
@@ -31,8 +31,8 @@ describe('getEventRows', () => {
   test('offers the typed name last when no event matches it exactly', () => {
     const result = rows({ search: 'checkout' });
     expect(result.map((row) => row.key)).toEqual([
-      'checkout_started',
-      'checkout_completed',
+      'event:checkout_started',
+      'event:checkout_completed',
       'add:checkout',
     ]);
   });
@@ -99,13 +99,40 @@ describe('getEventRows', () => {
     const result = rows({ selectedValues: ['checkout_v2_completed'] });
     expect(result.map((row) => row.key)).toEqual([
       'unseen:checkout_v2_completed',
-      'checkout_started',
-      'checkout_completed',
+      'event:checkout_started',
+      'event:checkout_completed',
+    ]);
+  });
+
+  test('keeps the add row apart from an event named like its key', () => {
+    const result = rows({
+      items: [{ name: 'add:checkout', count: 1, meta: undefined }],
+      search: 'checkout',
+    });
+    expect(result.map((row) => row.key)).toEqual([
+      'event:add:checkout',
+      'add:checkout',
     ]);
   });
 });
 
 describe('ComboboxEvents', () => {
+  afterEach(cleanup);
+
+  test('shows an unseen name with its own casing when closed', () => {
+    render(
+      <ComboboxEvents
+        allowUnseenEvents
+        items={items}
+        onChange={vi.fn()}
+        placeholder="Select event"
+        value="Checkout_Completed"
+      />
+    );
+
+    expect(screen.getByRole('combobox').textContent).toBe('Checkout_Completed');
+  });
+
   test('selecting the add row emits the typed name', () => {
     const onChange = vi.fn();
     render(
