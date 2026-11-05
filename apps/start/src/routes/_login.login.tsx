@@ -46,10 +46,18 @@ export const Route = createFileRoute('/_login/login')({
     correlationId: z.string().optional(),
     inviteId: z.string().optional(),
   }),
-  loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(
-      context.trpc.auth.providers.queryOptions()
-    );
+  loaderDeps: ({ search }) => ({ inviteId: search.inviteId }),
+  loader: async ({ context, deps }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.providers.queryOptions()
+      ),
+      context.queryClient.ensureQueryData(
+        context.trpc.auth.registrationAllowed.queryOptions({
+          inviteId: deps.inviteId,
+        })
+      ),
+    ]);
   },
 });
 
@@ -63,6 +71,9 @@ function LoginPage() {
   const trpc = useTRPC();
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
+  );
+  const { data: registrationAllowed } = useSuspenseQuery(
+    trpc.auth.registrationAllowed.queryOptions({ inviteId })
   );
   const hasOAuthProviders = providers.google || providers.github;
   const [lastProvider] = useCookieStore<null | string>(
@@ -149,12 +160,17 @@ function LoginPage() {
         </>
       )}
 
-      <p className="text-center text-muted-foreground text-sm">
-        New to OpenPanel?{' '}
-        <a className="font-medium text-foreground underline" href={signUpHref}>
-          Create an account
-        </a>
-      </p>
+      {registrationAllowed && (
+        <p className="text-center text-muted-foreground text-sm">
+          New to OpenPanel?{' '}
+          <a
+            className="font-medium text-foreground underline"
+            href={signUpHref}
+          >
+            Create an account
+          </a>
+        </p>
+      )}
     </div>
   );
 }

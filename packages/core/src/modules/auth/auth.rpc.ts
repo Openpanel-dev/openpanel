@@ -9,7 +9,11 @@ import {
   publicProcedure,
 } from '../../rpc/base';
 import { enforceRateLimit } from '../../rpc/rate-limit';
-import { zSignInDev, zSignInShare } from './auth.constants';
+import {
+  zRegistrationAllowed,
+  zSignInDev,
+  zSignInShare,
+} from './auth.constants';
 import {
   getConfiguredProviders,
   getTwoFactorStatus,
@@ -17,6 +21,7 @@ import {
   signInWithDevLogin,
   signOutUser,
 } from './auth.service';
+import { getIsRegistrationAllowed } from './src/registration';
 
 const rateLimit = createRateLimitMiddleware(enforceRateLimit);
 
@@ -38,6 +43,14 @@ export const authRouter = createTRPCRouter({
   providers: publicProcedure.query(({ ctx }) =>
     getConfiguredProviders(ctx.config)
   ),
+
+  /**
+   * Whether the dashboard should offer sign-up to this visitor. The same rule
+   * the sign-up itself is held to, so an invite that can register sees the form.
+   */
+  registrationAllowed: publicProcedure
+    .input(zRegistrationAllowed)
+    .query(({ input, ctx }) => getIsRegistrationAllowed(ctx, input.inviteId)),
 
   /** Ends either kind of session and clears both cookies. */
   signOut: publicProcedure.mutation(async ({ ctx }) => {
