@@ -20,6 +20,7 @@ import { getFunnel } from './funnel.service';
  *                                                      30, 31, 40
  */
 const PROJECT_ID = 'test-funnel-time-to-convert';
+const UNSET_PLAN_PROJECT_ID = 'test-funnel-time-to-convert-unset';
 const START = '2024-03-04 00:00:00';
 const END = '2024-03-04 23:59:59';
 const FUNNEL_WINDOW_HOURS = 1;
@@ -71,6 +72,42 @@ function buildEvents() {
         0,
         0,
         {
+          created_at: new Date(JOURNEY_START + minute * MILLISECONDS_PER_MINUTE)
+            .toISOString()
+            .replace('T', ' ')
+            .replace('Z', ''),
+        }
+      )
+    )
+  );
+}
+
+/** Three raw values of `properties.plan` that all display as "Not set". */
+const UNSET_PLAN_MINUTES: [string, number][] = [
+  ['', 1],
+  [' ', 3],
+  ['Not set', 8],
+];
+
+function buildUnsetPlanEvents() {
+  return UNSET_PLAN_MINUTES.flatMap(([plan, minutes], index) =>
+    (
+      [
+        ['landing', 0],
+        ['signup', minutes],
+      ] as const
+    ).map(([step, minute]) =>
+      buildEvent(
+        new Date(),
+        UNSET_PLAN_PROJECT_ID,
+        crypto.randomUUID(),
+        step,
+        `profile-${index}`,
+        `session-${index}`,
+        0,
+        0,
+        {
+          properties: { plan },
           created_at: new Date(JOURNEY_START + minute * MILLISECONDS_PER_MINUTE)
             .toISOString()
             .replace('T', ' ')
@@ -146,11 +183,11 @@ describe('funnel time to convert', () => {
     deps = await testServiceDeps();
     await withClient(async (client) => {
       await client.command({
-        query: `DELETE FROM events WHERE project_id = '${PROJECT_ID}'`,
+        query: `DELETE FROM events WHERE project_id IN ('${PROJECT_ID}', '${UNSET_PLAN_PROJECT_ID}')`,
       });
       await client.insert({
         table: 'events',
-        values: buildEvents(),
+        values: [...buildEvents(), ...buildUnsetPlanEvents()],
         format: 'JSONEachRow',
       });
     });
@@ -159,7 +196,7 @@ describe('funnel time to convert', () => {
   afterAll(async () => {
     await withClient((client) =>
       client.command({
-        query: `DELETE FROM events WHERE project_id = '${PROJECT_ID}'`,
+        query: `DELETE FROM events WHERE project_id IN ('${PROJECT_ID}', '${UNSET_PLAN_PROJECT_ID}')`,
       })
     );
   });
@@ -205,5 +242,17 @@ describe('funnel time to convert', () => {
       total: 10,
     });
     expect((await timesToConvert('median')).steps?.[2]).toEqual([3, 8]);
+  });
+
+  it('aggregates breakdown values that display the same over all their groups', async () => {
+    const input = funnelInput('avg');
+    const series = await getFunnel(deps, {
+      ...input,
+      projectId: UNSET_PLAN_PROJECT_ID,
+      series: input.series.slice(0, 2),
+      breakdowns: [{ id: 'plan', name: 'properties.plan' }],
+    });
+    expect(series.map((serie) => serie.id)).toEqual(['Not set']);
+    expect(series[0]?.timeToConvert).toBe(4 * SECONDS_PER_MINUTE);
   });
 });

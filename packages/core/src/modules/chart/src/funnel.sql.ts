@@ -523,6 +523,10 @@ export function funnelChartQuery(base: FunnelBase): SqlFragment {
   return sql`${base.ctes}SELECT ${select} FROM funnel GROUP BY ${groupBy} ORDER BY level DESC`;
 }
 
+function normalizedBreakdown(index: number): SqlFragment {
+  return compiledText(`trim(ifNull(toString(b_${index}), ''))`);
+}
+
 /**
  * One row per (step, breakdown combination) from step 2 on: the aggregated
  * time, in seconds, each group took from the previous step and from the first
@@ -536,6 +540,12 @@ export function funnelTimeToConvertQuery(
   const aggregate = compiledText(TIME_TO_CONVERT_AGGREGATES[aggregation]);
   const stepTimes = compiledText(STEP_TIMES_ALIAS);
   const perSecond = sql.uint64(MILLISECONDS_PER_SECOND);
+  // Series are keyed by display label, and quantiles cannot be merged after
+  // the fact, so raw values sharing a label have to aggregate as one group.
+  const displayedBreakdowns = base.breakdowns.map((_, index) => {
+    const value = normalizedBreakdown(index);
+    return sql`if(${value} = '', ${sql.string(EMPTY_BREAKDOWN_LABEL)}, ${value}) AS ${compiledText(`b_${index}`)}`;
+  });
   const select = sql.join([
     sql`step`,
     ...aliases,
@@ -543,7 +553,7 @@ export function funnelTimeToConvertQuery(
     sql`${aggregate}(${stepTimes}[step] - ${stepTimes}[1]) / ${perSecond} AS from_first_step`,
   ]);
   const groupBy = sql.join([sql`step`, ...aliases]);
-  return sql`${base.ctes}SELECT ${select} FROM funnel ARRAY JOIN range(2, length(${stepTimes}) + 1) AS step GROUP BY ${groupBy}`;
+  return sql`${base.ctes}SELECT ${select} FROM (SELECT ${sql.join([stepTimes, ...displayedBreakdowns])} FROM funnel) ARRAY JOIN range(2, length(${stepTimes}) + 1) AS step GROUP BY ${groupBy}`;
 }
 
 export interface FunnelProfilesInput {
@@ -565,7 +575,7 @@ export interface FunnelProfilesInput {
  * way. `toString`/`ifNull` keep it valid for numeric and Nullable breakdowns.
  */
 function breakdownValueWhere(index: number, value: string): SqlFragment {
-  const normalized = compiledText(`trim(ifNull(toString(b_${index}), ''))`);
+  const normalized = normalizedBreakdown(index);
   if (value === EMPTY_BREAKDOWN_LABEL) {
     return sql`(${normalized} = '' OR ${normalized} = ${sql.string(EMPTY_BREAKDOWN_LABEL)})`;
   }
