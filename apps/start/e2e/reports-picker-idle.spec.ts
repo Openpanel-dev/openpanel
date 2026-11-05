@@ -48,6 +48,8 @@ async function commitsWhileIdle(page: Page): Promise<number> {
   await page.mouse.move(0, 0);
   await page.waitForTimeout(SETTLE_MS);
   const before = await page.evaluate(() => window.__reactCommits);
+  // Zero would mean the hook never fired, and every idle check would pass.
+  expect(before).toBeGreaterThan(0);
   await page.waitForTimeout(IDLE_WINDOW_MS);
   const after = await page.evaluate(() => window.__reactCommits);
   return after - before;
@@ -71,11 +73,20 @@ test('an open event picker stays idle and still searches and selects', async ({
 
   expect(await commitsWhileIdle(page)).toBeLessThanOrEqual(MAX_IDLE_COMMITS);
 
-  await page.getByPlaceholder('Search event...').fill('add_to_cart');
-  await page
+  const nonMatching = page
     .getByRole('option')
-    .filter({ hasText: /^add_to_cart\d/ })
-    .click();
+    .filter({ hasText: /^screen_view\d/ });
+  const matching = page
+    .getByRole('option')
+    .filter({ hasText: /^add_to_cart\d/ });
+  await expect(nonMatching).toBeVisible();
+  await page.getByPlaceholder('Search event...').fill('add_to_cart');
+  await expect(nonMatching).toHaveCount(0);
+  await expect(matching).toBeVisible();
+
+  expect(await commitsWhileIdle(page)).toBeLessThanOrEqual(MAX_IDLE_COMMITS);
+
+  await matching.click();
   await expect(sheet.getByRole('combobox').first()).toHaveText('add_to_cart');
 });
 
