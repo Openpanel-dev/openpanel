@@ -43,6 +43,11 @@ export type ISignInEmail = z.infer<typeof zSignInEmail>;
 
 export const zSignInDev = z.object({ inviteId: zShortId.nullish() });
 
+/** Unbounded: a mangled invite link is a "no", it must not break the login page. */
+export const zRegistrationAllowed = z.object({
+  inviteId: z.string().optional(),
+});
+
 export const zSignUpEmail = z.object({
   firstName: zPersonName,
   lastName: zPersonName,

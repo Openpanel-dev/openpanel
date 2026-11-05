@@ -3,8 +3,10 @@
 import { expect, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
 import { stubHttpCtx, TEST_SESSION } from '../../../test/rpc-fixtures';
+import type { HttpCtx } from '../../context';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
+import { MAX_ID } from '../../shared/limits.constants';
 import { authRouter } from './auth.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
@@ -18,8 +20,14 @@ const COOKIE_OPTIONS: CookieOptions = {
 // `TrpcContext.session` is never literally `null`, only its `userId` is.
 const EMPTY_SESSION = { session: null, user: null, userId: null };
 
-async function anonCaller(config = testCoreConfig()) {
-  const { ctx } = stubHttpCtx({ config }, EMPTY_SESSION);
+async function anonCaller(
+  config = testCoreConfig(),
+  db: Partial<HttpCtx['db']> = {}
+) {
+  const { ctx } = stubHttpCtx(
+    { config, db: db as HttpCtx['db'] },
+    EMPTY_SESSION
+  );
   const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
     cookieOptions: COOKIE_OPTIONS,
   });
@@ -152,4 +160,59 @@ test('session never hands the session token to the browser', async () => {
   const result = await authRouter.createCaller(trpcCtx).session();
   expect(result.userId).toBe(TEST_SESSION.userId);
   expect(JSON.stringify(result)).not.toContain('cookie-value');
+});
+
+function closedRegistration() {
+  const base = testCoreConfig();
+  return testCoreConfig({ auth: { ...base.auth, allowRegistration: false } });
+}
+
+function registrationDb(userCount: number, inviteExpiresAt?: Date) {
+  return {
+    user: { count: async () => userCount },
+    invite: {
+      findUnique: async () =>
+        inviteExpiresAt ? { expiresAt: inviteExpiresAt } : null,
+    },
+  } as unknown as Partial<HttpCtx['db']>;
+}
+
+test('registrationAllowed is open when ALLOW_REGISTRATION is unset', async () => {
+  const anon = await anonCaller();
+  expect(await anon.registrationAllowed({})).toBe(true);
+});
+
+test('registrationAllowed is closed to a visitor without an invite', async () => {
+  const anon = await anonCaller(closedRegistration(), registrationDb(5));
+  expect(await anon.registrationAllowed({})).toBe(false);
+});
+
+test('registrationAllowed stays open for the first user', async () => {
+  const anon = await anonCaller(closedRegistration(), registrationDb(0));
+  expect(await anon.registrationAllowed({})).toBe(true);
+});
+
+test('registrationAllowed opens for a live invite only', async () => {
+  const HOUR_MS = 60 * 60 * 1000;
+  const live = await anonCaller(
+    closedRegistration(),
+    registrationDb(5, new Date(Date.now() + HOUR_MS))
+  );
+  const expired = await anonCaller(
+    closedRegistration(),
+    registrationDb(5, new Date(Date.now() - HOUR_MS))
+  );
+  const unknown = await anonCaller(closedRegistration(), registrationDb(5));
+
+  expect(await live.registrationAllowed({ inviteId: 'inv_1' })).toBe(true);
+  expect(await expired.registrationAllowed({ inviteId: 'inv_1' })).toBe(false);
+  expect(await unknown.registrationAllowed({ inviteId: 'inv_1' })).toBe(false);
+});
+
+test('registrationAllowed answers no to a mangled invite id', async () => {
+  const anon = await anonCaller(closedRegistration(), registrationDb(5));
+  const mangledInviteId = 'x'.repeat(MAX_ID + 1);
+  expect(await anon.registrationAllowed({ inviteId: mangledInviteId })).toBe(
+    false
+  );
 });
