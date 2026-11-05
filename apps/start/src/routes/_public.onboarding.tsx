@@ -35,11 +35,13 @@ export const Route = createFileRoute('/_public/onboarding')({
       }
       throw redirect({ to: '/' });
     }
-    const registrationAllowed = await context.queryClient.ensureQueryData(
-      context.trpc.auth.registrationAllowed.queryOptions({
+    // Always fresh: a cached answer outlives an invite that has since expired.
+    const registrationAllowed = await context.queryClient.fetchQuery({
+      ...context.trpc.auth.registrationAllowed.queryOptions({
         inviteId: search.inviteId,
-      })
-    );
+      }),
+      staleTime: 0,
+    });
     if (!registrationAllowed) {
       // Keeps the invite: an existing user accepts it by signing in.
       throw redirect({ to: '/login', search: { inviteId: search.inviteId } });

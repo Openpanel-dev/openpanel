@@ -167,9 +167,9 @@ function closedRegistration() {
   return testCoreConfig({ auth: { ...base.auth, allowRegistration: false } });
 }
 
-function registrationDb(userCount: number, inviteExpiresAt?: Date) {
+function registrationDb(hasUsers: boolean, inviteExpiresAt?: Date) {
   return {
-    user: { count: async () => userCount },
+    user: { findFirst: async () => (hasUsers ? { id: 'user_1' } : null) },
     invite: {
       findUnique: async () =>
         inviteExpiresAt ? { expiresAt: inviteExpiresAt } : null,
@@ -183,12 +183,12 @@ test('registrationAllowed is open when ALLOW_REGISTRATION is unset', async () =>
 });
 
 test('registrationAllowed is closed to a visitor without an invite', async () => {
-  const anon = await anonCaller(closedRegistration(), registrationDb(5));
+  const anon = await anonCaller(closedRegistration(), registrationDb(true));
   expect(await anon.registrationAllowed({})).toBe(false);
 });
 
 test('registrationAllowed stays open for the first user', async () => {
-  const anon = await anonCaller(closedRegistration(), registrationDb(0));
+  const anon = await anonCaller(closedRegistration(), registrationDb(false));
   expect(await anon.registrationAllowed({})).toBe(true);
 });
 
@@ -196,13 +196,13 @@ test('registrationAllowed opens for a live invite only', async () => {
   const HOUR_MS = 60 * 60 * 1000;
   const live = await anonCaller(
     closedRegistration(),
-    registrationDb(5, new Date(Date.now() + HOUR_MS))
+    registrationDb(true, new Date(Date.now() + HOUR_MS))
   );
   const expired = await anonCaller(
     closedRegistration(),
-    registrationDb(5, new Date(Date.now() - HOUR_MS))
+    registrationDb(true, new Date(Date.now() - HOUR_MS))
   );
-  const unknown = await anonCaller(closedRegistration(), registrationDb(5));
+  const unknown = await anonCaller(closedRegistration(), registrationDb(true));
 
   expect(await live.registrationAllowed({ inviteId: 'inv_1' })).toBe(true);
   expect(await expired.registrationAllowed({ inviteId: 'inv_1' })).toBe(false);
@@ -210,7 +210,7 @@ test('registrationAllowed opens for a live invite only', async () => {
 });
 
 test('registrationAllowed answers no to a mangled invite id', async () => {
-  const anon = await anonCaller(closedRegistration(), registrationDb(5));
+  const anon = await anonCaller(closedRegistration(), registrationDb(true));
   const mangledInviteId = 'x'.repeat(MAX_ID + 1);
   expect(await anon.registrationAllowed({ inviteId: mangledInviteId })).toBe(
     false

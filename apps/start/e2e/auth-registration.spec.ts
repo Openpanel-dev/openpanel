@@ -64,6 +64,9 @@ test.describe('registration closed', () => {
       new RegExp(`/login\\?inviteId=${UNKNOWN_INVITE_ID}$`)
     );
     await expect(
+      page.getByRole('heading', { name: 'Welcome back' })
+    ).toBeVisible();
+    await expect(
       page.getByRole('link', { name: 'Create an account' })
     ).toHaveCount(0);
   });
