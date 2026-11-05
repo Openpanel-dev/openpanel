@@ -1,6 +1,7 @@
 // The one static composition point for every tRPC procedure this package
 // serves.
 
+import { aiRouter } from './modules/ai/ai.rpc';
 import { chatRouter } from './modules/assistant/assistant.rpc';
 import { authRouter } from './modules/auth/auth.rpc';
 import { chartRouter } from './modules/chart/chart.rpc';
@@ -59,6 +60,7 @@ export const appRouter = createTRPCRouter({
   event: eventRouter,
   profile: profileRouter,
   group: groupRouter,
+  ai: aiRouter,
   chart: chartRouter,
   overview: overviewRouter,
   report: reportRouter,

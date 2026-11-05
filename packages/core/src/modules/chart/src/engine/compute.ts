@@ -67,40 +67,43 @@ export function compute(
         (a, b) => new Date(a).getTime() - new Date(b).getTime()
       );
 
+      // Each dependency's points are indexed by date once: a lookup per
+      // (date, dependency) would make long minute-level ranges quadratic.
+      const dependencies = definitions
+        .slice(0, formulaIndex)
+        .flatMap((_depDef, depIndex) => {
+          const readableId = alphabetIds[depIndex];
+          if (!readableId) {
+            return [];
+          }
+          // Could be a formula from a previous breakdown group: match by
+          // definitionIndex AND breakdown signature.
+          const source =
+            seriesByIndex.get(depIndex) ??
+            results.find(
+              (s) =>
+                s.definitionIndex === depIndex &&
+                'type' in s.definition &&
+                s.definition.type === 'formula' &&
+                s.name.slice(1).join(':::') === breakdownSignature
+            );
+          const countByDate = new Map<string, number>();
+          for (const point of source?.data ?? []) {
+            if (!countByDate.has(point.date)) {
+              countByDate.set(point.date, point.count);
+            }
+          }
+          const totalCount =
+            source?.data.find((d) => d.total_count != null)?.total_count ?? 0;
+          return [{ readableId, countByDate, totalCount }];
+        });
+
       // total_count is constant across all dates for a breakdown group, so
       // it's computed once here rather than per date.
       const totalCountScope: Record<string, number> = {};
-      definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
-        const readableId = alphabetIds[depIndex];
-        if (!readableId) {
-          return;
-        }
-
-        const depSeries = seriesByIndex.get(depIndex);
-        if (depSeries) {
-          const totalCount = depSeries.data.find(
-            (d) => d.total_count != null
-          )?.total_count;
-          totalCountScope[readableId] = totalCount ?? 0;
-        } else {
-          // Could be a formula from a previous breakdown group - find it in results
-          const formulaSerie = results.find(
-            (s) =>
-              s.definitionIndex === depIndex &&
-              'type' in s.definition &&
-              s.definition.type === 'formula' &&
-              s.name.slice(1).join(':::') === breakdownSignature
-          );
-          if (formulaSerie) {
-            const totalCount = formulaSerie.data.find(
-              (d) => d.total_count != null
-            )?.total_count;
-            totalCountScope[readableId] = totalCount ?? 0;
-          } else {
-            totalCountScope[readableId] = 0;
-          }
-        }
-      });
+      for (const dependency of dependencies) {
+        totalCountScope[dependency.readableId] = dependency.totalCount;
+      }
 
       const totalCountResult = evaluateFormula(
         formula.formula,
@@ -111,35 +114,9 @@ export function compute(
 
       const formulaData = sortedDates.map((date) => {
         const scope: Record<string, number> = {};
-
-        definitions.slice(0, formulaIndex).forEach((_depDef, depIndex) => {
-          const readableId = alphabetIds[depIndex];
-          if (!readableId) {
-            return;
-          }
-
-          const depSeries = seriesByIndex.get(depIndex);
-          if (depSeries) {
-            const dataPoint = depSeries.data.find((d) => d.date === date);
-            scope[readableId] = dataPoint?.count ?? 0;
-          } else {
-            // Could be a formula from a previous breakdown group - find it in results
-            // Match by definitionIndex AND breakdown signature
-            const formulaSerie = results.find(
-              (s) =>
-                s.definitionIndex === depIndex &&
-                'type' in s.definition &&
-                s.definition.type === 'formula' &&
-                s.name.slice(1).join(':::') === breakdownSignature
-            );
-            if (formulaSerie) {
-              const dataPoint = formulaSerie.data.find((d) => d.date === date);
-              scope[readableId] = dataPoint?.count ?? 0;
-            } else {
-              scope[readableId] = 0;
-            }
-          }
-        });
+        for (const dependency of dependencies) {
+          scope[dependency.readableId] = dependency.countByDate.get(date) ?? 0;
+        }
 
         const result = evaluateFormula(formula.formula, scope);
 

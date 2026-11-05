@@ -67,6 +67,7 @@ function stubJobCtx(
     conversation: {} as Services['conversation'],
     assistant: {} as Services['assistant'],
     mcp: {} as Services['mcp'],
+    ai: {} as Services['ai'],
   };
   return {
     auth: null,

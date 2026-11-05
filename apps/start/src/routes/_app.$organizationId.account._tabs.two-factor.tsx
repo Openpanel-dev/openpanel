@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
+import { ShieldAlertIcon, ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
@@ -16,7 +16,7 @@ export const Route = createFileRoute(
 
 function Component() {
   const trpc = useTRPC();
-  const status = useSuspenseQuery(trpc.auth.totpStatus.queryOptions());
+  const status = useSuspenseQuery(trpc.auth.twoFactorStatus.queryOptions());
 
   return (
     <Widget className="w-full max-w-screen-md">
@@ -31,20 +31,26 @@ function Component() {
         </p>
 
         {status.data.enabled ? (
-          <EnabledView
-            enabledAt={status.data.enabledAt!}
-            remainingRecoveryCodes={status.data.remainingRecoveryCodes}
-          />
+          <EnabledView />
         ) : (
-          <DisabledView hasEmailProvider={status.data.hasEmailProvider} />
+          <DisabledView
+            hasPassword={status.data.hasPassword}
+            wasReset={status.data.wasReset}
+          />
         )}
       </WidgetBody>
     </Widget>
   );
 }
 
-function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
-  if (!hasEmailProvider) {
+function DisabledView({
+  hasPassword,
+  wasReset,
+}: {
+  hasPassword: boolean;
+  wasReset: boolean;
+}) {
+  if (!hasPassword) {
     return (
       <div className="col gap-2 rounded-md border border-border bg-def-100 px-4 py-3 text-sm">
         <div className="row items-center gap-2">
@@ -61,25 +67,35 @@ function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
   }
 
   return (
-    <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
-      <div className="row items-center gap-2 text-sm">
-        <ShieldOffIcon className="size-4 text-muted-foreground" />
-        <span>Two-factor authentication is disabled.</span>
+    <>
+      {wasReset && (
+        <div className="col gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <div className="row items-center gap-2">
+            <ShieldAlertIcon className="size-4 text-amber-500" />
+            <span>Set up two-factor authentication again</span>
+          </div>
+          <p className="text-muted-foreground">
+            We moved sign-in to a new system, and authenticator codes set up
+            before the move no longer work there. Two-factor is off until you
+            enable it again; remove the old OpenPanel entry from your
+            authenticator app first.
+          </p>
+        </div>
+      )}
+      <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
+        <div className="row items-center gap-2 text-sm">
+          <ShieldOffIcon className="size-4 text-muted-foreground" />
+          <span>Two-factor authentication is disabled.</span>
+        </div>
+        <Button onClick={() => pushModal('SetupTwoFactor')} size="sm">
+          Enable
+        </Button>
       </div>
-      <Button onClick={() => pushModal('SetupTwoFactor')} size="sm">
-        Enable
-      </Button>
-    </div>
+    </>
   );
 }
 
-function EnabledView({
-  enabledAt,
-  remainingRecoveryCodes,
-}: {
-  enabledAt: Date;
-  remainingRecoveryCodes: number;
-}) {
+function EnabledView() {
   return (
     <>
       <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
@@ -87,14 +103,7 @@ function EnabledView({
           <div className="center-center size-10 rounded-full bg-emerald-500/10">
             <ShieldCheckIcon className="size-4 text-emerald-500" />
           </div>
-          <div className="col gap-1">
-            <span>Two-factor authentication is enabled.</span>
-            <span className="text-muted-foreground text-xs">
-              Enabled {new Date(enabledAt).toLocaleString()} ·{' '}
-              {remainingRecoveryCodes} recovery code
-              {remainingRecoveryCodes === 1 ? '' : 's'} remaining
-            </span>
-          </div>
+          <span>Two-factor authentication is enabled.</span>
         </div>
       </div>
 

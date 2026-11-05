@@ -4,7 +4,7 @@ import type {
 } from '@openpanel/core/modules/report/report.constants';
 import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
-import { DatabaseIcon, FilterIcon } from 'lucide-react';
+import { DatabaseIcon, FilterIcon, HistoryIcon } from 'lucide-react';
 import { ReportSegment } from '../ReportSegment';
 import { changeEvent } from '../reportSlice';
 import { FiltersList } from './filters/FiltersList';
@@ -13,12 +13,16 @@ import { BuilderChip } from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
 import { useDispatch } from '@/redux';
 
+const ANY_EVENT = '*';
+
 export interface ReportSeriesItemProps
   extends React.HTMLAttributes<HTMLDivElement> {
   event: IChartEventItem | IChartEvent;
   index: number;
   showSegment: boolean;
   showAddFilter: boolean;
+  /** Offer the "first time" qualifier; the chart type has to support it. */
+  showFirstTime?: boolean;
   isSelectManyEvents: boolean;
   renderDragHandle?: (index: number) => React.ReactNode;
 }
@@ -28,6 +32,7 @@ export function ReportSeriesItem({
   index,
   showSegment,
   showAddFilter,
+  showFirstTime = false,
   isSelectManyEvents,
   renderDragHandle,
   ...props
@@ -42,6 +47,8 @@ export function ReportSeriesItem({
   const chartEvent = isFormula
     ? null
     : (normalizedEvent as IChartEventItem & { type: 'event' });
+  // The any-event series has no single event to take a first occurrence of.
+  const canCountFirstTime = showFirstTime && chartEvent?.name !== ANY_EVENT;
 
   return (
     <div {...props}>
@@ -56,8 +63,8 @@ export function ReportSeriesItem({
         {props.children}
       </div>
 
-      {/* Segment and Filter buttons - only for events */}
-      {chartEvent && (showSegment || showAddFilter) && (
+      {/* Segment, first time and filter buttons - only for events */}
+      {chartEvent && (showSegment || showAddFilter || canCountFirstTime) && (
         <div className="flex flex-wrap gap-1 px-3 pb-2.5 pl-10">
           {showSegment && (
             <ReportSegment
@@ -74,6 +81,28 @@ export function ReportSeriesItem({
               value={chartEvent.segment}
               variant="ghost"
             />
+          )}
+          {canCountFirstTime && (
+            <BuilderChip
+              aria-pressed={chartEvent.firstTime === true}
+              className={
+                chartEvent.firstTime
+                  ? 'bg-def-200 text-foreground dark:bg-def-300'
+                  : undefined
+              }
+              icon={HistoryIcon}
+              onClick={() => {
+                dispatch(
+                  changeEvent({
+                    ...chartEvent,
+                    firstTime: !chartEvent.firstTime,
+                  })
+                );
+              }}
+              title="Count only each user's first-ever occurrence of this event"
+            >
+              First time
+            </BuilderChip>
           )}
           {showAddFilter && (
             <PropertiesCombobox

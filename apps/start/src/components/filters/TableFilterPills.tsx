@@ -165,3 +165,44 @@ export function TableFilterPills({
     </div>
   );
 }
+
+/** Filters a viewer sees but cannot change, such as a shared dashboard's. */
+export function ReadOnlyFilterPills({
+  filters,
+  cohortNames,
+  className,
+}: {
+  filters: IChartEventFilter[];
+  cohortNames: Record<string, string>;
+  className?: string;
+}) {
+  if (filters.length === 0) {
+    return null;
+  }
+  return (
+    <div className={cn('row flex-wrap items-center gap-2', className)}>
+      {filters.map((filter, index) => {
+        const cohortText = getCohortIds(filter)
+          .flatMap((id) => cohortNames[id] ?? [])
+          .join(', ');
+        const valueText = cohortText || formatFilterValue(filter);
+        return (
+          <div
+            className="flex h-8 items-center divide-x overflow-hidden rounded-md border bg-card text-sm"
+            key={`${filter.name}-${index}`}
+          >
+            <span className="px-2">{humanizeFilterName(filter.name)}</span>
+            <span className="px-2 lowercase opacity-50">
+              {operators[filter.operator] ?? filter.operator}
+            </span>
+            {valueText && (
+              <span className="max-w-40 truncate px-2 font-semibold">
+                {valueText}
+              </span>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}

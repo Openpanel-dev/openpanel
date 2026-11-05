@@ -1,14 +1,15 @@
 {
   "slug": "mouseflow-alternative",
   "page_type": "alternative",
+  "category": "replay",
   "seo": {
     "title": "Best Mouseflow Alternative 2026 - Open Source & Free",
-    "description": "Looking for a Mouseflow alternative? OpenPanel offers product analytics with funnels, mobile SDKs, and self-hosting \u2014 beyond just visual behavior tracking. Open source and free to start.",
+    "description": "Looking for a Mouseflow alternative? OpenPanel offers product analytics with funnels, mobile SDKs, and self-hosting, beyond just visual behavior tracking. Open source and free to start.",
     "noindex": false
   },
   "hero": {
     "heading": "Best Mouseflow Alternative",
-    "subheading": "Need product analytics beyond heatmaps? OpenPanel provides event-based analytics, mobile SDKs, and self-hosting\u2014fully open source with transparent pricing.",
+    "subheading": "Need product analytics beyond heatmaps? OpenPanel provides event-based analytics, mobile SDKs, and self-hosting, fully open source with transparent pricing.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -24,12 +25,17 @@
     "founded": 2009,
     "headquarters": "Copenhagen, Denmark"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Mouseflow?",
     "paragraphs": [
       "Mouseflow is a behavior analytics platform that excels at visual website optimization with seven types of heatmaps, session replay, friction detection, and form analytics. It's a solid tool for understanding how visitors interact with specific pages on your website. But Mouseflow is web-only, proprietary, cloud-only, and focused on session-based observation rather than event-based product analytics.",
       "OpenPanel takes a fundamentally different approach with event-based analytics designed for product teams. Instead of watching session recordings to spot issues, you define the events and funnels that matter to your business and measure them quantitatively. Retention analysis shows whether users come back, cohort breakdowns reveal behavioral patterns, and user profiles connect the dots across multiple sessions.",
-      "The platform support gap is significant. Mouseflow works only on websites, while OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter alongside its web SDKs. For teams building multi-platform products, this means a single analytics tool for all surfaces instead of piecing together separate solutions.",
+      "The platform support gap is significant. Mouseflow works only on websites, while OpenPanel provides native SDKs iOS, Android and React Native alongside its web SDKs. For teams building multi-platform products, this means a single analytics tool for all surfaces instead of piecing together separate solutions.",
       "OpenPanel also offers what Mouseflow can't: full data ownership through self-hosting and open-source transparency under the AGPL-3.0 license. If you need to move beyond visual website optimization and measure product outcomes across web and mobile, OpenPanel provides the analytics foundation to do it."
     ]
   },
@@ -68,7 +74,7 @@
       },
       {
         "label": "Mobile SDKs",
-        "openpanel": "iOS, Android, React Native, Flutter",
+        "openpanel": "iOS, Android, React Native",
         "competitor": "Web only"
       },
       {
@@ -141,7 +147,7 @@
             "name": "Session replay",
             "openpanel": true,
             "competitor": true,
-            "notes": "Mouseflow's session replay is more advanced with friction scoring and form analytics"
+            "notes": "Mouseflow's replay adds friction scoring and form analytics. OpenPanel replay is opt-in and masked by default."
           },
           {
             "name": "Click heatmaps",
@@ -227,9 +233,9 @@
           },
           {
             "name": "EU data residency",
-            "openpanel": "Via self-hosting",
+            "openpanel": true,
             "competitor": true,
-            "notes": null
+            "notes": "OpenPanel Cloud runs in Germany; self-hosting is also an option"
           }
         ]
       },
@@ -264,25 +270,33 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "About 3 KB gzipped; session replay loads as a separate script only when enabled",
         "competitor": "Larger (includes recording)",
         "notes": null
       },
       {
         "label": "Supported platforms",
         "openpanel": [
-          "JavaScript",
+          "Script tag",
+          "JavaScript / Web",
+          "Node.js",
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
+          "Astro",
+          "Remix",
+          "Express",
           "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
-          "Node.js"
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust"
         ],
         "competitor": ["JavaScript (web only)"],
-        "notes": null
+        "notes": "Community SDKs exist for OpenPanel in PHP (Laravel) and Flutter. There is no Go SDK."
       },
       {
         "label": "Open source",
@@ -292,7 +306,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "Not available",
         "notes": null
       },
@@ -312,14 +326,14 @@
   },
   "pricing": {
     "title": "Pricing comparison",
-    "intro": "OpenPanel offers event-based pricing with free self-hosting. Mouseflow uses session-based pricing.",
+    "intro": "OpenPanel offers event-based pricing with free self-hosting. Mouseflow uses session-based pricing. Mouseflow prices from mouseflow.com on November 1, 2026.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+      "description": "Flat monthly tiers by event volume from $2.50 for 5,000 events, with a 30-day trial and no free tier. Self-host for free with unlimited events. All features included at every tier."
     },
     "competitor": {
       "model": "Session-based",
-      "description": "Free: 500 sessions/month. Starter: $31/month for 5,000 sessions. Growth: $109/month for 15,000 sessions. Business: $219/month for 50,000 sessions. All features included on all plans.",
+      "description": "Free: 500 sessions/month, one project, one funnel, 1 month retention. Essential: $25/month for 5,000 sessions, 3 months retention. Advanced: $109/month for 25,000 sessions, 6 months retention. Premium: $319/month for 100,000 sessions, 12 months retention. Enterprise: custom.",
       "free_tier": "Yes (500 sessions/month)",
       "pricing_url": "https://mouseflow.com/pricing"
     }
@@ -366,7 +380,7 @@
     "items": [
       {
         "title": "Mobile app analytics",
-        "description": "Mouseflow is web-only. OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter.",
+        "description": "Mouseflow is web-only. OpenPanel provides native SDKs iOS, Android and React Native.",
         "icon": "smartphone"
       },
       {
@@ -376,7 +390,7 @@
       },
       {
         "title": "Data ownership & self-hosting",
-        "description": "Complete data control with self-hosting. A one-command ./setup wizard walks you through configuration and brings the whole Docker Compose stack up in minutes. Mouseflow is cloud-only.",
+        "description": "Complete data control with self-hosting. One install script brings the whole Docker Compose stack up. Mouseflow is cloud-only.",
         "icon": "server"
       },
       {
@@ -397,11 +411,11 @@
     "items": [
       {
         "question": "Can OpenPanel replace Mouseflow's heatmaps and session replay?",
-        "answer": "No, OpenPanel does not provide heatmaps. If you need visual behavior analytics, consider using Mouseflow alongside OpenPanel, or explore alternatives like Hotjar or Microsoft Clarity."
+        "answer": "Session replay, yes: OpenPanel records sessions when you enable it and shows them next to the session's events. Heatmaps, no. If you need heatmaps, keep Mouseflow or add a free tool such as Microsoft Clarity."
       },
       {
         "question": "Does Mouseflow work with mobile apps?",
-        "answer": "No, Mouseflow is web-only. OpenPanel provides native SDKs for iOS, Android, React Native, and Flutter for mobile app analytics."
+        "answer": "No, Mouseflow is web-only. OpenPanel has Swift (iOS), Kotlin (Android) and React Native SDKs for mobile app analytics; session replay is web only."
       },
       {
         "question": "Which tool is better for e-commerce?",
@@ -413,7 +427,7 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "Mouseflow uses session-based pricing starting at $31/month for 5,000 sessions. OpenPanel uses tiered event-based pricing from $2.50/month for 5,000 events (30-day free trial). OpenPanel's self-hosted option is completely free with unlimited events."
+        "answer": "Mouseflow uses session-based pricing: free for 500 sessions a month, then $25/month for 5,000 sessions, $109 for 25,000 and $319 for 100,000, with retention from 1 to 12 months. OpenPanel uses flat event-based tiers from $2.50/month for 5,000 events (30-day trial, no free tier). Self-hosting OpenPanel is free with unlimited events."
       },
       {
         "question": "Can I use both tools together?",

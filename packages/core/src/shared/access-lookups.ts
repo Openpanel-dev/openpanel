@@ -27,6 +27,12 @@ export async function getProjectById(
   return db.project.findUnique({ where: { id: projectId } });
 }
 
+/**
+ * Removing a member or narrowing their grants must take effect on every api
+ * process at once, so access answers live in Redis only.
+ */
+const REVOCABLE_CACHE_OPTIONS = { localCache: false } as const;
+
 export interface IProjectAccess {
   level: AccessLevel;
 }
@@ -177,7 +183,8 @@ export const getProjectAccess = cacheable(
       return null;
     }
   },
-  60 * 5
+  60 * 5,
+  REVOCABLE_CACHE_OPTIONS
 );
 
 export type IOrganizationAccess = Member;
@@ -200,7 +207,8 @@ export const getOrganizationAccess = cacheable(
       },
     });
   },
-  60 * 5
+  60 * 5,
+  REVOCABLE_CACHE_OPTIONS
 );
 
 export async function getClientAccess({

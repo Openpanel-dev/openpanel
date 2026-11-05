@@ -1,31 +1,42 @@
-import { Section, SectionHeader } from '@/components/section';
+import { Reveal } from '@/components/reveal';
+import { SectionHeader } from '@/components/section';
 import type { CompareStrengths } from '@/lib/compare';
 
+const STAGGER_MS = 70;
+
+// Where the competitor is ahead. Kept on purpose; it is what makes the
+// rest of the page believable.
 export function CompetitorStrengths({
   strengths,
 }: {
   strengths: CompareStrengths;
 }) {
   return (
-    <Section className="container">
-      <SectionHeader
-        description={strengths.intro}
-        title={strengths.title}
-        variant="sm"
-      />
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        {strengths.items.map((item) => (
-          <div
-            className="col gap-2 rounded-2xl border bg-muted/20 p-6"
+    <section className="col container gap-10 py-16 md:py-24">
+      <Reveal>
+        <SectionHeader
+          align="center"
+          description={strengths.intro}
+          label="Fair is fair"
+          title={strengths.title}
+          variant="sm"
+        />
+      </Reveal>
+      <ul className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {strengths.items.map((item, index) => (
+          <Reveal
+            as="li"
+            className="surface col gap-2 p-6"
+            delay={index * STAGGER_MS}
             key={item.title}
           >
-            <h3 className="font-semibold">{item.title}</h3>
-            <p className="text-muted-foreground text-sm leading-relaxed">
+            <h3 className="font-medium">{item.title}</h3>
+            <p className="text-neutral-600 text-sm leading-relaxed">
               {item.description}
             </p>
-          </div>
+          </Reveal>
         ))}
-      </div>
-    </Section>
+      </ul>
+    </section>
   );
 }

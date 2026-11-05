@@ -837,3 +837,162 @@ describe('custom event series', () => {
     );
   });
 });
+
+describe('first time for user', () => {
+  const firstOccurrences = (alias: string) =>
+    `(${alias}.profile_id, ${alias}.created_at) GLOBAL IN (SELECT profile_id, min(created_at) AS first_seen FROM events WHERE project_id = '${PROJECT_ID}' AND name = 'screen_view' AND created_at <= toDateTime('${END}') GROUP BY profile_id HAVING first_seen >= toDateTime('${START}'))`;
+
+  it("keeps only each user's first occurrence, taken over all history", async () => {
+    const rendered = await getChartSql({
+      event: event({ segment: 'user', firstTime: true }),
+      breakdowns: [],
+      ...base,
+    });
+    // The history scan has no lower bound: a user who did the event before
+    // the range must not count again inside it.
+    expect(rendered.text).toContain(firstOccurrences('e'));
+    await explain(rendered);
+  });
+
+  it('leaves the series filters to the outer scan', async () => {
+    const rendered = await getChartSql({
+      event: event({
+        firstTime: true,
+        filters: [{ name: 'path', operator: 'is', value: ['/pricing'] }],
+      }),
+      breakdowns: [breakdown('country')],
+      ...base,
+    });
+    expect(rendered.text).toContain(firstOccurrences('e'));
+    expect(rendered.text).toContain("path = '/pricing'");
+    await explain(rendered);
+  });
+
+  it('composes with a profile filter and a profile breakdown', async () => {
+    await explain(
+      await getChartSql({
+        event: event({
+          firstTime: true,
+          filters: [
+            {
+              id: 'f1',
+              name: 'profile.properties.plan',
+              operator: 'is' as const,
+              value: ['pro'],
+            },
+          ],
+        }),
+        breakdowns: [breakdown('profile.properties.plan')],
+        ...base,
+      })
+    );
+  });
+
+  it('composes with one_event_per_user', async () => {
+    const rendered = await getChartSql({
+      event: event({ segment: 'one_event_per_user', firstTime: true }),
+      breakdowns: [breakdown('properties.experiment')],
+      ...base,
+    });
+    expect(rendered.text).toContain(firstOccurrences('e'));
+    await explain(rendered);
+  });
+
+  it('applies to the aggregate chart', async () => {
+    const rendered = await getAggregateChartSql({
+      event: event({ firstTime: true }),
+      breakdowns: [breakdown('country')],
+      ...base,
+    });
+    expect(rendered.text).toContain(firstOccurrences('e'));
+    await explain(rendered);
+  });
+
+  it("takes a custom event's first occurrence across its items", async () => {
+    const rendered = await getChartSql({
+      event: event({
+        name: 'Used navigation',
+        firstTime: true,
+        anyOf: [
+          { name: 'menu_open', filters: [] },
+          {
+            name: 'screen_view',
+            filters: [{ name: 'path', operator: 'is', value: ['/nav'] }],
+          },
+        ],
+      }),
+      breakdowns: [],
+      ...base,
+    });
+    expect(rendered.text).toContain(
+      `FROM events WHERE project_id = '${PROJECT_ID}' AND (name IN ('menu_open') OR (name = 'screen_view' AND path = '/nav')) AND created_at <= toDateTime('${END}') GROUP BY profile_id`
+    );
+    await explain(rendered);
+  });
+
+  it('is ignored without the qualifier and for the any-event series', async () => {
+    const plain = await getChartSql({
+      event: event(),
+      breakdowns: [],
+      ...base,
+    });
+    const anyEvent = await getChartSql({
+      event: event({ name: '*', firstTime: true }),
+      breakdowns: [],
+      ...base,
+    });
+    expect(plain.sql).not.toContain('first_seen');
+    expect(anyEvent.sql).not.toContain('first_seen');
+  });
+
+  it('lists the users whose first occurrence is in the drill-down bucket', async () => {
+    const { chartBucketProfilesQuery } = await import('./sql');
+    const rendered = render(
+      chartBucketProfilesQuery({
+        projectId: PROJECT_ID,
+        bucketDate: START,
+        interval: 'day',
+        event: { name: 'screen_view', filters: [], firstTime: true },
+        breakdowns: {},
+        limit: 10,
+      })
+    );
+    expect(rendered.text).toContain(
+      `(e.profile_id, e.created_at) GLOBAL IN (SELECT profile_id, min(created_at) AS first_seen FROM events WHERE project_id = '${PROJECT_ID}' AND name = 'screen_view' GROUP BY profile_id HAVING toStartOfDay(first_seen) = toDate('${START}'))`
+    );
+    await explain(rendered);
+  });
+
+  it('gates a conversion step on the qualified events table', async () => {
+    const { conversionQuery } = await import('./conversion.sql');
+    const { firstTimeCondition, rangePeriod } = await import('./first-time');
+    const firstStepWhere = firstTimeCondition({
+      event: { name: 'screen_view', firstTime: true },
+      projectId: PROJECT_ID,
+      eventsAlias: 'events',
+      period: rangePeriod(START, END),
+    });
+    const rendered = render(
+      conversionQuery({
+        projectId: PROJECT_ID,
+        startDate: START,
+        endDate: END,
+        interval: 'day',
+        group: 'session_id',
+        funnelWindowSeconds: 3600,
+        firstEventMatch: sql`events.name = ${sql.string('screen_view')}`,
+        secondEventMatch: sql`events.name = ${sql.string('sign_up')}`,
+        eventNames: ['screen_view', 'sign_up'],
+        firstEventWhere: firstStepWhere,
+        secondEventWhere: null,
+        breakdownSelects: [],
+        breakdownExpressions: [],
+        profileJoinFields: [],
+        needsGroupArrayJoin: false,
+        cohortJoins: [],
+      })
+    );
+    expect(rendered.text).toContain(firstOccurrences('events'));
+    await explain(rendered);
+  });
+});

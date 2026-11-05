@@ -4,6 +4,7 @@ import { Link } from '@tanstack/react-router';
 import { SparklesIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { curlSnippet, type SnippetContext } from './install-snippets';
+import { setLaunchedQuestion } from '@/components/chat/chat-launch';
 import CopyInput from '@/components/forms/copy-input';
 import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
@@ -116,20 +117,18 @@ export function InstallTroubleshooting({
         </div>
         <Link
           className={cn(buttonVariants({ size: 'default' }))}
-          onClick={() =>
+          onClick={() => {
+            setLaunchedQuestion(project.id, diagnoseQuestion(project));
             trackFunnel('onboarding_assistant_opened', {
               projectId: project.id,
               hasDomain: Boolean(project.domain),
-            })
-          }
+            });
+          }}
           params={{
             organizationId: project.organizationId,
             projectId: project.id,
           }}
-          search={{
-            q: diagnoseQuestion(project),
-            hint: { page: 'onboarding' },
-          }}
+          search={{ hint: { page: 'onboarding' } }}
           to="/$organizationId/$projectId/chat"
         >
           <SparklesIcon className="mr-2 size-4" />

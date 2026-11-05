@@ -15,6 +15,7 @@ export function ChatComposer({
   modelId,
   onModelChange,
   autoFocus,
+  initialText = '',
 }: {
   onSend: (text: string) => void;
   onStop: () => void;
@@ -23,9 +24,18 @@ export function ChatComposer({
   modelId: string | null;
   onModelChange: (id: string) => void;
   autoFocus?: boolean;
+  initialText?: string;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  // A new ?q= on an open chat replaces the draft; the q being cleared after a
+  // send must not.
+  useEffect(() => {
+    if (initialText) {
+      setText(initialText);
+    }
+  }, [initialText]);
 
   useEffect(() => {
     if (autoFocus) {

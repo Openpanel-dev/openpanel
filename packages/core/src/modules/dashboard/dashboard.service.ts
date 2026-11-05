@@ -8,6 +8,7 @@ import { TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getId } from '../../slug-id';
 import { getProjectById } from '../project/project.service';
+import type { IChartEventFilter } from '../report/report.constants';
 
 export type IServiceDashboard = Dashboard;
 export type IServiceDashboards = Prisma.DashboardGetPayload<{
@@ -110,9 +111,15 @@ export async function createDashboard(
   });
 }
 
+export interface UpdateDashboardInput {
+  id: string;
+  name?: string;
+  filters?: IChartEventFilter[];
+}
+
 export function updateDashboard(
   deps: ServiceDeps,
-  input: { id: string; name: string }
+  input: UpdateDashboardInput
 ): Promise<Dashboard> {
   return deps.db.dashboard.update({
     where: {
@@ -120,6 +127,7 @@ export function updateDashboard(
     },
     data: {
       name: input.name,
+      filters: input.filters,
     },
   });
 }
@@ -239,10 +247,8 @@ export function createDashboardService(
       name: string;
       projectId: string;
     }): Promise<Dashboard> => createDashboard(deps, input),
-    updateDashboard: (input: {
-      id: string;
-      name: string;
-    }): Promise<Dashboard> => updateDashboard(deps, input),
+    updateDashboard: (input: UpdateDashboardInput): Promise<Dashboard> =>
+      updateDashboard(deps, input),
     duplicateDashboard: (id: string): Promise<Dashboard> =>
       duplicateDashboard(deps, id),
     deleteDashboard: (input: {

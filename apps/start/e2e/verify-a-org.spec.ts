@@ -1,4 +1,5 @@
 import { request as playwrightRequest } from '@playwright/test';
+import { signUpWithEmail } from './auth-helpers';
 import { expect, test } from './fixtures';
 import {
   API_URL,
@@ -22,12 +23,13 @@ test('cancelling an organization deletion keeps a project that was already sched
     ignoreHTTPSErrors: true,
     baseURL: API_URL,
   });
-  await trpcMutation(owner, 'auth.signUpEmail', {
+  const signedUp = await signUpWithEmail(owner, {
     firstName: 'E2E',
     lastName: 'VerifyA',
     email: `e2e-verify-a-${stamp}@example.com`,
     password: PASSWORD,
   });
+  expect(signedUp.status()).toBe(200);
   const project = {
     domain: null,
     cors: [],

@@ -1,84 +1,57 @@
-import { ArrowRightIcon } from 'lucide-react';
 import Link from 'next/link';
-import { Section, SectionHeader } from '@/components/section';
-import type { RelatedLinks } from '@/lib/compare';
+import type { RelatedLink, RelatedLinks } from '@/lib/compare';
 
-interface RelatedLinksProps {
-  relatedLinks?: RelatedLinks;
+function Group({
+  title,
+  links,
+  suffix = '',
+}: {
+  title: string;
+  links: RelatedLink[];
+  suffix?: string;
+}) {
+  return (
+    <div className="col items-center gap-3">
+      <span className="text-neutral-500 text-sm">{title}</span>
+      <ul className="row flex-wrap justify-center gap-2">
+        {links.map((link) => (
+          <li key={link.url}>
+            <Link
+              className="row items-center rounded-full bg-white px-3.5 py-2 text-sm ring-1 ring-black/6 transition-colors hover:bg-neutral-900 hover:text-white"
+              href={link.url}
+            >
+              {link.title ?? link.name}
+              {suffix}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
-export function RelatedLinksSection({ relatedLinks }: RelatedLinksProps) {
-  if (
-    !(
-      relatedLinks &&
-      (relatedLinks.guides?.length ||
-        relatedLinks.articles?.length ||
-        relatedLinks.alternatives?.length)
-    )
-  ) {
+export function RelatedLinksSection({
+  relatedLinks,
+}: {
+  relatedLinks?: RelatedLinks;
+}) {
+  const alternatives = relatedLinks?.alternatives ?? [];
+  const guides = relatedLinks?.guides ?? [];
+  const articles = relatedLinks?.articles ?? [];
+  if (alternatives.length + guides.length + articles.length === 0) {
     return null;
   }
-
   return (
-    <Section className="container">
-      <SectionHeader
-        description="Explore more comparisons and guides to help you choose the right analytics tool."
-        title="Related resources"
-        variant="sm"
-      />
-      <div className="mt-12 grid gap-8 md:grid-cols-3">
-        {relatedLinks.guides && relatedLinks.guides.length > 0 && (
-          <div className="col gap-4">
-            <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
-              Guides
-            </h3>
-            {relatedLinks.guides.map((guide) => (
-              <Link
-                className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={guide.url}
-                key={guide.url}
-              >
-                <ArrowRightIcon className="size-4 shrink-0" />
-                {guide.title}
-              </Link>
-            ))}
-          </div>
-        )}
-        {relatedLinks.articles && relatedLinks.articles.length > 0 && (
-          <div className="col gap-4">
-            <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
-              Articles
-            </h3>
-            {relatedLinks.articles.map((article) => (
-              <Link
-                className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={article.url}
-                key={article.url}
-              >
-                <ArrowRightIcon className="size-4 shrink-0" />
-                {article.title}
-              </Link>
-            ))}
-          </div>
-        )}
-        {relatedLinks.alternatives && relatedLinks.alternatives.length > 0 && (
-          <div className="col gap-4">
-            <h3 className="font-semibold text-muted-foreground text-sm uppercase tracking-wider">
-              Comparisons
-            </h3>
-            {relatedLinks.alternatives.map((alternative) => (
-              <Link
-                className="row items-center gap-2 text-sm transition-colors hover:text-primary"
-                href={alternative.url}
-                key={alternative.url}
-              >
-                <ArrowRightIcon className="size-4 shrink-0" />
-                {alternative.name} alternative
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </Section>
+    <section className="col container items-center gap-8 py-12 md:py-16">
+      {alternatives.length > 0 && (
+        <Group
+          links={alternatives}
+          suffix=" alternative"
+          title="Other comparisons"
+        />
+      )}
+      {guides.length > 0 && <Group links={guides} title="Guides" />}
+      {articles.length > 0 && <Group links={articles} title="Articles" />}
+    </section>
   );
 }

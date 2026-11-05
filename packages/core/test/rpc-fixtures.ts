@@ -67,6 +67,7 @@ export const TEST_SESSION: Session = {
     name: null,
     emailVerified: false,
     image: null,
+    twoFactorEnabled: false,
     firstName: null,
     lastName: null,
     createdAt: TEST_EPOCH,

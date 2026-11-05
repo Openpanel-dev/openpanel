@@ -1,4 +1,5 @@
 import type { Ctx } from './context';
+import { createAiService } from './modules/ai/ai.service';
 import { createAssistantService } from './modules/assistant/assistant.service';
 import { createAuthService } from './modules/auth/auth.service';
 import { createChartService } from './modules/chart/chart.service';
@@ -73,6 +74,7 @@ export interface Services {
   event: ReturnType<typeof createEventService>;
   profile: ReturnType<typeof createProfileService>;
   group: ReturnType<typeof createGroupService>;
+  ai: ReturnType<typeof createAiService>;
   chart: ReturnType<typeof createChartService>;
   // One key per `*.service.ts`. `chart` keeps the composed facade its callers
   // use; the factories build stateless closures over `deps`, so binding a
@@ -123,6 +125,7 @@ export function createServices(deps: ServiceDeps): Services {
     event: createEventService(deps, services),
     profile: createProfileService(deps, services),
     group: createGroupService(deps, services),
+    ai: createAiService(deps, services),
     chart: createChartService(deps, services),
     funnel: createFunnelService(deps, services),
     conversion: createConversionService(deps, services),

@@ -92,6 +92,7 @@ export function ReportFixedEvents({
                     <span className="block">{alphabetIds[index]}</span>
                   </ColorSquare>
                   <ComboboxEvents
+                    allowUnseenEvents
                     className="flex-1"
                     items={eventNames}
                     multiple={isSelectManyEvents as false}
@@ -147,6 +148,7 @@ export function ReportFixedEvents({
               showSegment={showSegment}
             >
               <ComboboxEvents
+                allowUnseenEvents
                 className="flex-1"
                 items={eventNames}
                 multiple={isSelectManyEvents as false}

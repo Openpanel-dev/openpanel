@@ -1,9 +1,13 @@
+import { ArrowRightIcon } from 'lucide-react';
 import type { Metadata } from 'next';
-import { CompareCard } from './_components/compare-card';
-import { CompareIndexHero } from './_components/compare-index-hero';
+import Link from 'next/link';
+import { CompetitorMark } from './[slug]/_components/versus-mark';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { Section, SectionHeader } from '@/components/section';
-import { WindowImage } from '@/components/window-image';
+import { FeatureHero } from '@/components/blocks/feature-hero';
+import { Reveal } from '@/components/reveal';
+import { SectionHeader } from '@/components/section';
+import { VisualMock } from '@/components/visual-mock';
+import type { CompareCategory, CompareData } from '@/lib/compare';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { compareSource } from '@/lib/source';
@@ -19,54 +23,99 @@ export const metadata: Metadata = getPageMetadata({
   image: getOgImageUrl('/compare'),
 });
 
-const heroData = {
-  heading: 'Compare OpenPanel with any alternative',
-  subheading:
-    'See detailed feature and pricing comparisons between OpenPanel and popular analytics tools. Honest breakdowns showing what each tool does well and where OpenPanel provides better value for growing teams.',
-  badges: ['30 days free trial', 'Unlimited users', '30-second setup'],
-};
+const GROUPS: { category: CompareCategory; label: string; title: string }[] = [
+  {
+    category: 'product',
+    label: 'Product analytics',
+    title: 'Funnels, retention and profiles',
+  },
+  {
+    category: 'web',
+    label: 'Web analytics',
+    title: 'Visitors, sources and pages',
+  },
+  {
+    category: 'replay',
+    label: 'Session replay and heatmaps',
+    title: 'Watching what users do',
+  },
+  {
+    category: 'attribution',
+    label: 'Attribution',
+    title: 'Where users and revenue come from',
+  },
+];
 
-export default async function CompareIndexPage() {
-  const comparisons = compareSource.sort((a, b) =>
+const STAGGER_MS = 60;
+
+function CompetitorCard({ comparison }: { comparison: CompareData }) {
+  const competitorSlug = comparison.slug.replace(/-alternative$/, '');
+  return (
+    <Link
+      className="group surface surface-hover col h-full gap-3 p-6"
+      href={comparison.url}
+    >
+      <span className="row items-center justify-between gap-3">
+        <CompetitorMark
+          name={comparison.competitor.name}
+          slug={competitorSlug}
+        />
+        <ArrowRightIcon className="size-4 text-neutral-400 transition-transform group-hover:translate-x-1" />
+      </span>
+      <span className="text-neutral-600 text-sm">
+        {comparison.competitor.short_description}
+      </span>
+    </Link>
+  );
+}
+
+export default function CompareIndexPage() {
+  const byName = [...compareSource].sort((a, b) =>
     a.competitor.name.localeCompare(b.competitor.name)
   );
 
   return (
     <div>
-      <CompareIndexHero {...heroData} />
-
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Dashboard Overview"
-          caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
-          srcDark="/screenshots/overview-dark.png"
-          srcLight="/screenshots/overview-light.png"
-        />
+      <FeatureHero
+        description="Pricing, features, hosting, privacy and what switching takes, for every tool people weigh OpenPanel against. Each page says where the other tool is better, too."
+        title="Compare OpenPanel with any alternative"
+        visual={<VisualMock name="web-overview" />}
+      />
+      <div className="col container gap-20 py-16 md:py-24">
+        {GROUPS.map((group) => {
+          const comparisons = byName.filter(
+            (comparison) => comparison.category === group.category
+          );
+          if (comparisons.length === 0) {
+            return null;
+          }
+          return (
+            <section className="col gap-8" key={group.category}>
+              <Reveal>
+                <SectionHeader
+                  label={group.label}
+                  title={group.title}
+                  variant="sm"
+                />
+              </Reveal>
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {comparisons.map((comparison, index) => (
+                  <Reveal
+                    as="li"
+                    delay={index * STAGGER_MS}
+                    key={comparison.slug}
+                  >
+                    <CompetitorCard comparison={comparison} />
+                  </Reveal>
+                ))}
+              </ul>
+            </section>
+          );
+        })}
       </div>
-
-      <Section className="container">
-        <SectionHeader
-          description="Browse our complete list of detailed comparisons. See how OpenPanel stacks up against each competitor on features, pricing, and value."
-          title="All product comparisons"
-          variant="sm"
-        />
-        <div className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {comparisons.map((comparison) => (
-            <CompareCard
-              description={comparison.competitor.short_description}
-              key={comparison.slug}
-              name={comparison.competitor.name}
-              url={comparison.url}
-            />
-          ))}
-        </div>
-      </Section>
-
       <CtaBanner
         ctaLink="https://dashboard.openpanel.dev/onboarding"
-        ctaText="Get Started Free"
-        description="Join thousands of teams using OpenPanel for their analytics needs."
-        title="Ready to get started?"
+        ctaText="Start free trial"
       />
     </div>
   );

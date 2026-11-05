@@ -111,6 +111,36 @@ test('POST /profile identifies with geo + user agent and answers 202 + profileId
   expect(getGeoLocation).toHaveBeenCalledTimes(1);
 });
 
+test('POST /profile drops malformed optional fields before the service', async () => {
+  const response = await post('/profile', {
+    profileId: 'prof-1',
+    firstName: 'Ann',
+    lastName: ['x'],
+    email: { address: 'a@b.co' },
+    properties: 'plan=pro',
+    groups: ['smuggled'],
+  });
+
+  expect(response.status).toBe(202);
+  expect(identifyProfile).toHaveBeenCalledTimes(1);
+  const [, , received] = identifyProfile.mock.calls[0]!;
+  expect(received).toEqual({
+    profileId: 'prof-1',
+    firstName: 'Ann',
+    lastName: undefined,
+    email: undefined,
+    properties: undefined,
+  });
+});
+
+test('POST /profile refuses a body without a usable profileId', async () => {
+  for (const body of [{}, { profileId: { id: 1 } }, { profileId: '' }]) {
+    const response = await post('/profile', body);
+    expect([body, response.status]).toEqual([body, 400]);
+  }
+  expect(identifyProfile).not.toHaveBeenCalled();
+});
+
 test('POST /profile/increment passes value through; /decrement negates it', async () => {
   const body = { profileId: 'prof-1', property: 'visits', value: 3 };
 

@@ -1,14 +1,15 @@
 {
   "slug": "fullstory-alternative",
   "page_type": "alternative",
+  "category": "replay",
   "seo": {
-    "title": "FullStory Alternatives 2026: $2.50/mo vs $12,000/yr (Open Source)",
-    "description": "FullStory's enterprise contract starts at $12,000–$50,000/year. OpenPanel delivers events, funnels, retention, and session replay for $2.50/month — or free to self-host. Open source, AGPL-3.0 licensed, no sales call required.",
+    "title": "FullStory Alternatives 2026: Open Source Replay and Analytics from $2.50/mo",
+    "description": "FullStory's paid plans are quoted by sales with no public prices. OpenPanel delivers events, funnels, retention, and session replay for $2.50/month, or free to self-host. Open source, AGPL-3.0 licensed, no sales call required.",
     "noindex": false
   },
   "hero": {
     "heading": "Best FullStory Alternative",
-    "subheading": "Get powerful product analytics without FullStory's enterprise pricing. OpenPanel delivers funnel analysis, retention tracking, and user identification\u2014fully open source and self-hostable with transparent pricing.",
+    "subheading": "Get powerful product analytics without FullStory's enterprise pricing. OpenPanel delivers funnel analysis, retention tracking, and user identification, fully open source and self-hostable with transparent pricing.",
     "badges": [
       "Open-source",
       "Self-hostable",
@@ -24,13 +25,18 @@
     "founded": 2014,
     "headquarters": "Atlanta, GA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over FullStory?",
     "paragraphs": [
-      "FullStory is a premium Digital Experience Intelligence platform known for its pixel-perfect session replay and frustration signal detection. It's a powerful tool for UX teams debugging user issues and optimizing conversion flows. But with enterprise pricing reportedly starting at $12,000 to $50,000 or more per year and no public pricing page, FullStory is out of reach for most teams.",
-      "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month \u2014 or completely free when self-hosted \u2014 OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
+      "FullStory is a premium Digital Experience Intelligence platform known for its pixel-perfect session replay and frustration signal detection. It's a powerful tool for UX teams debugging user issues and optimizing conversion flows. But paid plans have no public prices and start with a sales conversation, which puts FullStory out of reach for many smaller teams.",
+      "OpenPanel focuses on product analytics rather than session replay, giving you event tracking, funnels, retention analysis, cohort breakdowns, and user profiles at a fraction of the cost. Starting at $2.50 per month, or completely free when self-hosted, OpenPanel makes product analytics accessible to teams of any size, with pricing that's transparent and predictable.",
       "The open-source advantage is significant here. FullStory is entirely proprietary and cloud-only, which means you have no visibility into how your data is processed and no option to run it on your own infrastructure. OpenPanel is AGPL-3.0 licensed with full self-hosting support, giving you complete data sovereignty and the ability to audit every line of code.",
-      "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics \u2014 understanding how users flow through funnels, measuring retention, and tracking user behavior \u2014 OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
+      "If session replay is your primary need, FullStory remains strong in that niche. But if you need product analytics, understanding how users flow through funnels, measuring retention, and tracking user behavior, OpenPanel delivers those capabilities without requiring an enterprise budget or sales conversation."
     ]
   },
   "summary_comparison": {
@@ -68,7 +74,7 @@
       },
       {
         "label": "Transparent pricing",
-        "openpanel": "Public pricing, 30-day free trial",
+        "openpanel": "Public flat tiers, 30-day free trial",
         "competitor": "Sales-required pricing"
       },
       {
@@ -180,9 +186,9 @@
         "features": [
           {
             "name": "A/B testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns",
             "competitor": false,
-            "notes": null
+            "notes": "Track the variant as an event or profile property and break any report down by it. No experiment runner, no feature flags, no significance test."
           },
           {
             "name": "Autocapture",
@@ -244,9 +250,9 @@
           },
           {
             "name": "Data warehouse sync",
-            "openpanel": "Coming 2026",
+            "openpanel": true,
             "competitor": true,
-            "notes": "OpenPanel offers raw data via its export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
+            "notes": "OpenPanel exports raw events to S3 or GCS as JSONL (no direct BI connectors). "
           },
           {
             "name": "Mobile SDKs",
@@ -264,7 +270,7 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "~3 KB gzipped",
         "competitor": "~10+ KB (autocapture)",
         "notes": null
       },
@@ -275,12 +281,20 @@
           "React",
           "Next.js",
           "Vue",
-          "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
+          "Nuxt",
+          "Astro",
+          "Remix",
+          "Express",
           "Node.js",
-          "PHP"
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
+          "Python",
+          "Ruby",
+          "Rust",
+          "Flutter (community)",
+          "PHP (community)"
         ],
         "competitor": [
           "JavaScript",
@@ -299,7 +313,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose, one-command install script",
         "competitor": "Not available",
         "notes": null
       },
@@ -322,12 +336,12 @@
     "intro": "OpenPanel offers transparent pricing. FullStory requires sales conversations with enterprise pricing.",
     "openpanel": {
       "model": "Event-based, transparent",
-      "description": "Start at $2.50/month for 5,000 events. Self-host for free with unlimited events. All features included at every tier."
+      "description": "Flat monthly tiers from $2.50/month for 5,000 events after a 30-day trial. Self-host for free with unlimited events. All features included at every tier."
     },
     "competitor": {
-      "model": "Session-based, sales-required",
-      "description": "14-day trial with 5,000 sessions. Business/Advanced/Enterprise plans require custom quotes. Pricing reportedly starts at $12,000-50,000+/year for most teams.",
-      "free_tier": "14-day trial (limited)",
+      "model": "Free plan, then sales-quoted",
+      "description": "FullstoryFree: 30,000 sessions a month, 12 months of retention, up to 10 users, no card needed. Business, Advanced and Enterprise plans have no public prices and require a sales conversation; mobile, StoryAI and Guides are add-ons.",
+      "free_tier": "Yes (30,000 sessions a month)",
       "pricing_url": "https://www.fullstory.com/pricing"
     }
   },
@@ -339,7 +353,7 @@
     "steps": [
       {
         "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your application. The SDK is lightweight (~2.3KB) compared to FullStory's autocapture script."
+        "description": "Add the OpenPanel SDK to your application. The SDK is lightweight (~3 KB) compared to FullStory's autocapture script."
       },
       {
         "title": "Map event tracking",
@@ -383,12 +397,12 @@
       },
       {
         "title": "Budget-conscious teams",
-        "description": "FullStory's enterprise pricing (reportedly $12,000-50,000+/year) is prohibitive. OpenPanel offers transparent pricing starting at $2.50/month.",
+        "description": "FullStory's paid plans are quoted by sales with no public prices. OpenPanel publishes flat tiers from $2.50/month.",
         "icon": "dollar"
       },
       {
         "title": "Product analytics focus",
-        "description": "If your primary need is product analytics\u2014funnels, retention, cohorts\u2014rather than visual debugging, OpenPanel provides these at a fraction of the cost.",
+        "description": "If your primary need is product analytics, funnels, retention, cohorts, rather than visual debugging, OpenPanel provides these at a fraction of the cost.",
         "icon": "chart"
       },
       {
@@ -412,11 +426,11 @@
       },
       {
         "question": "How does pricing compare?",
-        "answer": "FullStory requires sales conversations with pricing reportedly starting at $12,000/year. OpenPanel offers transparent tiered pricing from $2.50/month (5,000 events), e.g. $20/mo for 100K events, with a 30-day free trial — or free self-hosting. Most teams will save 80-90% with OpenPanel."
+        "answer": "FullStory has a free plan with 30,000 sessions a month; paid plans are quoted by sales with no public prices. OpenPanel publishes flat tiers from $2.50/month (5,000 events), e.g. $20/mo for 100K events, after a 30-day trial, or free self-hosting."
       },
       {
         "question": "Can I self-host FullStory?",
-        "answer": "No. FullStory is cloud-only SaaS. OpenPanel offers full self-hosting via Docker Compose for complete data control — a one-command `./setup` wizard walks you through configuration and brings the whole stack up in minutes."
+        "answer": "No. FullStory is cloud-only SaaS. OpenPanel offers full self-hosting via Docker Compose for complete data control, One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes."
       },
       {
         "question": "Is FullStory open source?",

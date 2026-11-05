@@ -14,6 +14,7 @@ import type {
   IChartBreakdown,
   IChartEvent,
   IChartEventFilter,
+  ITimeToConvertAggregation,
 } from '../../report/report.constants';
 import { JOINABLE_PROFILE_COLUMNS } from '../chart.constants';
 import { compiledText, fragmentWithProfileRefs } from './compiled';
@@ -37,6 +38,11 @@ import {
   filterReadsProfileJoin,
   getEventFiltersWhereClause,
 } from './filter-where';
+import {
+  type FirstOccurrencePeriod,
+  firstTimeCondition,
+  rangePeriod,
+} from './first-time';
 
 /** The two keys windowFunnel may be computed per — a closed set. */
 const FUNNEL_GROUPS = ['session_id', 'profile_id'] as const;
@@ -67,6 +73,24 @@ const STEP_EVENTS_ALIAS = 'step_events';
 /** The step bitmask in `step_events` is a UInt64. */
 const MAX_SEQUENCED_STEPS = 64;
 
+/** Each group's step timestamps, in ms, of the chain that reached its level. */
+const STEP_TIMES_ALIAS = 'step_times';
+
+const MILLISECONDS_PER_SECOND = 1000;
+
+// quantileExact, not quantile: past 8192 values quantile samples at random, so
+// a saved report would show a different median on every load.
+const TIME_TO_CONVERT_AGGREGATES: Record<ITimeToConvertAggregation, string> = {
+  avg: 'avg',
+  median: 'quantileExact(0.5)',
+  min: 'min',
+  max: 'max',
+  p25: 'quantileExact(0.25)',
+  p75: 'quantileExact(0.75)',
+  p90: 'quantileExact(0.9)',
+  p99: 'quantileExact(0.99)',
+};
+
 // windowFunnel runs in its default (>=) ordering on purpose. 'strict_increase'
 // resets step 1 on every matching row and then rejects a later step at the
 // same millisecond, so a track() followed by a screen_view in the same ms
@@ -88,6 +112,8 @@ export interface FunnelBaseInput {
   cohortMetadata: Map<string, CohortMetadata>;
   /** Travels to `session_timezone`; `toDateTime('…')` parses in it. */
   timezone: string;
+  /** Adds `step_times`, which the time-to-convert query reads. */
+  withStepTimes?: boolean;
 }
 
 /** Everything the funnel chart and the funnel profile list share. */
@@ -121,14 +147,16 @@ export function knownFunnelBreakdowns(
 }
 
 /**
- * One `<filters> AND <event match>` per step. Exported because each
- * step's complete condition has to appear twice — inside windowFunnel and in
- * the row-level pre-filter — and funnel.sql.test.ts counts exactly that.
+ * One `<filters> AND <event match>` per step, plus the first-occurrence
+ * condition for a "first time" step. Exported because each step's complete
+ * condition has to appear twice, inside windowFunnel and in the row-level
+ * pre-filter, and funnel.sql.test.ts counts exactly that.
  */
 export function funnelStepConditions(
   eventSeries: IChartEvent[],
   projectId: string,
-  profilePropertyKeys: string[]
+  profilePropertyKeys: string[],
+  period?: FirstOccurrencePeriod
 ): SqlFragment[] {
   return eventSeries.map((event) => {
     // Qualify with 'events' so event-level `properties[...]` becomes
@@ -141,7 +169,17 @@ export function funnelStepConditions(
       getEventFiltersWhereClause(event.filters, projectId, 'events')
     ).map((clause) => fragmentWithProfileRefs(clause, profilePropertyKeys));
     const eventMatch = eventMatchCondition(event, projectId, 'events');
-    const parts = eventMatch ? [...filters, eventMatch] : filters;
+    const firstTime = period
+      ? firstTimeCondition({
+          event,
+          projectId,
+          eventsAlias: EVENTS_ALIAS,
+          period,
+        })
+      : null;
+    const parts = [...filters, eventMatch, firstTime].filter(
+      (part): part is SqlFragment => part !== null
+    );
     return parts.length > 0 ? sql.join(parts, ' AND ') : sql`1`;
   });
 }
@@ -195,6 +233,22 @@ function valueAtStepInSequence(input: {
   const window = sql.uint64(input.windowMilliseconds);
   const carried = sql`if(e.2 = ${step}, tupleElement(e.3, ${valueIndex}), if(e.2 = 1, '', acc.2[e.2 - 1]))`;
   return sql`arrayFold((acc, e) -> if(e.2 = 1 OR (acc.1[e.2 - 1] >= 0 AND e.1 <= acc.1[e.2 - 1] + ${window}), (arrayMap((chain_start, level_index) -> if(level_index = e.2, if(e.2 = 1, e.1, acc.1[e.2 - 1]), chain_start), acc.1, range(1, ${stepCount} + 1)), arrayMap((chain_value, level_index) -> if(level_index = e.2, ${carried}, chain_value), acc.2, range(1, ${stepCount} + 1)), if(e.2 > acc.3, e.2, acc.3), if(e.2 > acc.3, ${carried}, acc.4)), acc), ${compiledText(STEP_EVENTS_ALIAS)}, (arrayWithConstant(${stepCount}, toInt64(-1)), arrayWithConstant(${stepCount}, ''), toUInt64(0), '')).4`;
+}
+
+/**
+ * The same windowFunnel replay as `valueAtStepInSequence`, keeping every
+ * level's chain of step timestamps instead of one value, and returning the
+ * chain that first reached the deepest level. Its length is the group's level.
+ */
+function stepTimesInSequence(input: {
+  stepCount: number;
+  windowMilliseconds: number;
+}): SqlFragment {
+  const stepCount = sql.uint64(input.stepCount);
+  const window = sql.uint64(input.windowMilliseconds);
+  const emptyChain = compiledText("CAST([], 'Array(Int64)')");
+  const chain = sql`if(e.2 = 1, [e.1], arrayPushBack(acc.1[e.2 - 1], e.1))`;
+  return sql`arrayFold((acc, e) -> if(e.2 = 1 OR (length(acc.1[e.2 - 1]) > 0 AND e.1 <= acc.1[e.2 - 1][1] + ${window}), (arrayMap((level_chain, level_index) -> if(level_index = e.2, ${chain}, level_chain), acc.1, range(1, ${stepCount} + 1)), if(e.2 > length(acc.2), ${chain}, acc.2)), acc), ${compiledText(STEP_EVENTS_ALIAS)}, (arrayWithConstant(${stepCount}, ${emptyChain}), ${emptyChain})).2 AS ${compiledText(STEP_TIMES_ALIAS)}`;
 }
 
 function breakdownExpression(
@@ -257,7 +311,7 @@ function breakdownSelects(
     }
     return sql`if(level >= ${sql.uint64(step)}, ${value}, ${sql.string(didNotReachStepLabel(step))}) as ${alias}`;
   });
-  if (sequenced.length === 0) {
+  if (sequenced.length === 0 && !input.withStepTimes) {
     return selects;
   }
   const values = sequenced.map((breakdown) =>
@@ -342,6 +396,7 @@ function profileJoinFilters(eventSeries: IChartEvent[]): IChartEventFilter[] {
   );
 }
 
+/** Empty session IDs cannot define funnels; sessionless profiles remain eligible. */
 export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const { projectId, eventSeries, breakdowns, group } = input;
 
@@ -370,10 +425,13 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
   const conditions = funnelStepConditions(
     eventSeries,
     projectId,
-    profileKeys.keys
+    profileKeys.keys,
+    rangePeriod(input.startDate, input.endDate)
   );
   const selects = breakdownSelects(input, profileKeys.keys, conditions);
 
+  const sessionFilter =
+    group === 'session_id' ? sql` AND events.session_id != ''` : sql.empty;
   const primaryKey = sql.id(group, FUNNEL_GROUPS);
   const cteSelects: SqlFragment[] = [
     primaryKey,
@@ -384,6 +442,14 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     cteSelects.push(sql`argMax(profile_id, created_at) AS profile_id`);
   }
   cteSelects.push(...selects);
+  if (input.withStepTimes) {
+    cteSelects.push(
+      stepTimesInSequence({
+        stepCount: conditions.length,
+        windowMilliseconds: input.funnelWindowMilliseconds,
+      })
+    );
+  }
 
   const groupByKeys: SqlFragment[] = [primaryKey];
   breakdowns.forEach((breakdown, index) => {
@@ -432,7 +498,7 @@ export function funnelBase(input: FunnelBaseInput): FunnelBase {
     ' OR '
   )})`;
 
-  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
+  const funnelCte = sql`SELECT ${sql.join(cteSelects)} FROM ${sql.id(CHART_TABLE.events)}${profileJoin}${groupJoin}${cohortJoins} WHERE project_id = ${sql.string(projectId)}${sessionFilter} AND ${dateRange}${eventNames.includes('*') ? sql.empty : sql` AND events.name IN ${sql.array('String', eventNames)}`} AND ${stepPreFilter} GROUP BY ${sql.join(groupByKeys)}`;
 
   const groupsCte = needsGroupArrayJoin
     ? sql`_g AS (${buildGroupsQuery(projectId)}), `
@@ -457,6 +523,39 @@ export function funnelChartQuery(base: FunnelBase): SqlFragment {
   return sql`${base.ctes}SELECT ${select} FROM funnel GROUP BY ${groupBy} ORDER BY level DESC`;
 }
 
+function normalizedBreakdown(index: number): SqlFragment {
+  return compiledText(`trim(ifNull(toString(b_${index}), ''))`);
+}
+
+/**
+ * One row per (step, breakdown combination) from step 2 on: the aggregated
+ * time, in seconds, each group took from the previous step and from the first
+ * step, over the groups that reached it.
+ */
+export function funnelTimeToConvertQuery(
+  base: FunnelBase,
+  aggregation: ITimeToConvertAggregation
+): SqlFragment {
+  const aliases = base.breakdowns.map((_, index) => compiledText(`b_${index}`));
+  const aggregate = compiledText(TIME_TO_CONVERT_AGGREGATES[aggregation]);
+  const stepTimes = compiledText(STEP_TIMES_ALIAS);
+  const perSecond = sql.uint64(MILLISECONDS_PER_SECOND);
+  // Series are keyed by display label, and quantiles cannot be merged after
+  // the fact, so raw values sharing a label have to aggregate as one group.
+  const displayedBreakdowns = base.breakdowns.map((_, index) => {
+    const value = normalizedBreakdown(index);
+    return sql`if(${value} = '', ${sql.string(EMPTY_BREAKDOWN_LABEL)}, ${value}) AS ${compiledText(`b_${index}`)}`;
+  });
+  const select = sql.join([
+    sql`step`,
+    ...aliases,
+    sql`${aggregate}(${stepTimes}[step] - ${stepTimes}[step - 1]) / ${perSecond} AS from_previous_step`,
+    sql`${aggregate}(${stepTimes}[step] - ${stepTimes}[1]) / ${perSecond} AS from_first_step`,
+  ]);
+  const groupBy = sql.join([sql`step`, ...aliases]);
+  return sql`${base.ctes}SELECT ${select} FROM (SELECT ${sql.join([stepTimes, ...displayedBreakdowns])} FROM funnel) ARRAY JOIN range(2, length(${stepTimes}) + 1) AS step GROUP BY ${groupBy}`;
+}
+
 export interface FunnelProfilesInput {
   /** 1-based funnel level. */
   targetLevel: number;
@@ -476,7 +575,7 @@ export interface FunnelProfilesInput {
  * way. `toString`/`ifNull` keep it valid for numeric and Nullable breakdowns.
  */
 function breakdownValueWhere(index: number, value: string): SqlFragment {
-  const normalized = compiledText(`trim(ifNull(toString(b_${index}), ''))`);
+  const normalized = normalizedBreakdown(index);
   if (value === EMPTY_BREAKDOWN_LABEL) {
     return sql`(${normalized} = '' OR ${normalized} = ${sql.string(EMPTY_BREAKDOWN_LABEL)})`;
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { toSeries } from './funnel.service';
+import { toSeries, toTimeToConvertBySerie } from './funnel.service';
 
 const BREAKDOWNS = [{ name: 'path' }];
 
@@ -87,5 +87,33 @@ describe('toSeries', () => {
 
     expect(series).toHaveLength(1);
     expect(series[0]).toHaveLength(2);
+  });
+});
+
+describe('toTimeToConvertBySerie', () => {
+  it('keys each step by the series id toSeries gives, so empty values land on "Not set"', () => {
+    const rows = [
+      { step: 2, b_0: '/a', from_previous_step: 4, from_first_step: 4 },
+      { step: 3, b_0: '/a', from_previous_step: 6, from_first_step: 10 },
+      { step: 2, b_0: '', from_previous_step: 1, from_first_step: 1 },
+    ];
+    const counts = [
+      { level: 3, count: 1, b_0: '/a' },
+      { level: 2, count: 1, b_0: '' },
+    ];
+
+    const bySerie = toTimeToConvertBySerie(rows, BREAKDOWNS);
+    const ids = toSeries(counts, BREAKDOWNS).map((serie) => serie[0]?.id);
+
+    expect(ids).toEqual(['/a', 'Not set']);
+    expect(bySerie.get('/a')?.fromPreviousStep.get(3)).toBe(6);
+    expect(bySerie.get('/a')?.fromFirstStep.get(3)).toBe(10);
+    expect(bySerie.get('Not set')?.fromPreviousStep.get(2)).toBe(1);
+  });
+
+  it('uses the single series id without breakdowns', () => {
+    const rows = [{ step: 2, from_previous_step: 3, from_first_step: 3 }];
+
+    expect([...toTimeToConvertBySerie(rows).keys()]).toEqual(['none']);
   });
 });

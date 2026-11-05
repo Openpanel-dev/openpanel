@@ -41,7 +41,7 @@ export default async function Page() {
 
   return (
     <div>
-      <HeroContainer className="-mb-32">
+      <HeroContainer>
         <SectionHeader
           align="center"
           as="h1"

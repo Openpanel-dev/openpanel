@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { assessTracking, type TrackingFacts } from './tracking';
+import { assessTracking, isProjectSite, type TrackingFacts } from './tracking';
 
 const CLIENT = 'a6d8af68-dfdb-4794-baac-809f503fb7bf';
 
@@ -66,6 +66,25 @@ describe('assessTracking', () => {
     ).toContain('another project');
   });
 
+  test('a client id the user cannot place reads the same whether or not it exists', () => {
+    const findings = assessTracking(
+      facts({
+        snippet: {
+          scriptTag: true,
+          initCall: true,
+          sdkPackage: false,
+          clientIds: ['11111111-1111-4111-8111-111111111111'],
+        },
+      })
+    );
+    const message = findings.find(
+      (finding) => finding.check === 'clientId'
+    )?.message;
+    expect(levels(findings, 'clientId')).toEqual(['error']);
+    expect(message).not.toContain('another project');
+    expect(message).not.toContain('does not exist');
+  });
+
   test('an origin outside the allowed list is an error, a wildcard is fine', () => {
     expect(
       levels(assessTracking(facts({ cors: ['https://other.test'] })), 'cors')
@@ -109,5 +128,23 @@ describe('assessTracking', () => {
     expect(
       levels(assessTracking(facts({ firstEventAt: null })), 'data')
     ).toEqual(['error']);
+  });
+});
+
+describe('isProjectSite', () => {
+  test("the project's own origin loads without asking, whatever the path", () => {
+    expect(isProjectSite('https://acme.test', 'acme.test/pricing?x=1')).toBe(
+      true
+    );
+  });
+
+  test('any other address needs the user to confirm it', () => {
+    expect(
+      isProjectSite('https://acme.test', 'https://evil.test/?d=secret')
+    ).toBe(false);
+    expect(
+      isProjectSite('https://acme.test', 'https://acme.test.evil.test')
+    ).toBe(false);
+    expect(isProjectSite(null, 'https://acme.test')).toBe(false);
   });
 });

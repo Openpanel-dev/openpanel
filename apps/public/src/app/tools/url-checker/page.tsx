@@ -148,15 +148,11 @@ export default function SiteCheckerPage() {
   }) => {
     switch (status) {
       case 'pass':
-        return (
-          <CheckCircle2 className="size-5 text-emerald-600 dark:text-emerald-400" />
-        );
+        return <CheckCircle2 className="size-5 text-emerald-600" />;
       case 'fail':
         return <XCircle className="size-5 text-destructive" />;
       case 'warning':
-        return (
-          <AlertCircle className="size-5 text-amber-600 dark:text-amber-400" />
-        );
+        return <AlertCircle className="size-5 text-amber-600" />;
       default:
         return <AlertCircle className="size-5 text-primary" />;
     }
@@ -234,7 +230,7 @@ export default function SiteCheckerPage() {
           className={cn(
             'mt-4 rounded-lg border p-4',
             isRateLimited
-              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
           )}
         >
@@ -550,10 +546,10 @@ export default function SiteCheckerPage() {
                       'font-mono',
                       result.technical.statusCode >= 200 &&
                         result.technical.statusCode < 300
-                        ? 'text-emerald-600 dark:text-emerald-400'
+                        ? 'text-emerald-600'
                         : result.technical.statusCode >= 300 &&
                             result.technical.statusCode < 400
-                          ? 'text-amber-600 dark:text-amber-400'
+                          ? 'text-amber-600'
                           : 'text-destructive'
                     )}
                   >
@@ -588,9 +584,9 @@ export default function SiteCheckerPage() {
                     className={cn(
                       'font-bold text-lg',
                       result.technical.responseTime.total < 1000
-                        ? 'text-emerald-600 dark:text-emerald-400'
+                        ? 'text-emerald-600'
                         : result.technical.responseTime.total < 3000
-                          ? 'text-amber-600 dark:text-amber-400'
+                          ? 'text-amber-600'
                           : 'text-destructive'
                     )}
                   >
@@ -806,9 +802,9 @@ export default function SiteCheckerPage() {
                     className={cn(
                       'h-2 rounded-full transition-all',
                       result.security.score >= 70
-                        ? 'bg-emerald-600 dark:bg-emerald-400'
+                        ? 'bg-emerald-600'
                         : result.security.score >= 40
-                          ? 'bg-amber-600 dark:bg-amber-400'
+                          ? 'bg-amber-600'
                           : 'bg-destructive'
                     )}
                     style={{ width: `${result.security.score}%` }}
@@ -878,7 +874,7 @@ export default function SiteCheckerPage() {
       )}
 
       {/* SEO Content Section */}
-      <div className="prose prose-neutral dark:prose-invert mt-16 max-w-none">
+      <div className="prose prose-neutral mt-16 max-w-none">
         <article className="space-y-8">
           <div>
             <h2 className="mb-4 font-bold text-3xl">

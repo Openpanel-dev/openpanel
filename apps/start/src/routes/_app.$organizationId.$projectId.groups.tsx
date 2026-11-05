@@ -1,25 +1,20 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, TagIcon } from 'lucide-react';
 import { parseAsString, useQueryState } from 'nuqs';
 import { GroupsTable } from '@/components/groups/table';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { ToolbarSelect } from '@/components/ui/toolbar-select';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
 
 const PAGE_SIZE = 50;
+const ALL_TYPES = 'all';
 
 export const Route = createFileRoute('/_app/$organizationId/$projectId/groups')(
   {
@@ -76,22 +71,18 @@ function Component() {
         query={groupsQuery}
         toolbarLeft={
           types.length > 0 ? (
-            <Select
-              onValueChange={(v) => setTypeFilter(v === 'all' ? '' : v)}
-              value={typeFilter || 'all'}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="All types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All types</SelectItem>
-                {types.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <ToolbarSelect
+              icon={TagIcon}
+              label="Type"
+              onChange={(value) =>
+                setTypeFilter(value === ALL_TYPES ? '' : value)
+              }
+              options={[
+                { value: ALL_TYPES, label: 'All types' },
+                ...types.map((type) => ({ value: type, label: type })),
+              ]}
+              value={typeFilter || ALL_TYPES}
+            />
           ) : null
         }
       />

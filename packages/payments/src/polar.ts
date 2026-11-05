@@ -22,11 +22,12 @@ export async function getProducts() {
     isArchived: false,
     sorting: ['price_amount'],
   });
-  return products.result.items.filter((product) => {
-    return (
-      product.metadata.custom !== 'true' && product.metadata.custom !== true
-    );
-  });
+  return products.result.items.filter((product) => !isCustomProduct(product));
+}
+
+/** Made for one organization by `create-custom-pricing`; `metadata.organizationId` says which. */
+export function isCustomProduct(product: Pick<IPolarProduct, 'metadata'>) {
+  return product.metadata.custom === 'true' || product.metadata.custom === true;
 }
 
 export async function getProduct(id: string) {

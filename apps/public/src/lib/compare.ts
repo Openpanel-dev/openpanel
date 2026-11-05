@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isContentSlug } from './utils';
 
 export interface CompareSeo {
   title: string;
@@ -118,7 +119,9 @@ export interface CompareTrustCompliance {
 }
 
 export interface CompareScreenshot {
-  src: string;
+  // Name of a VisualMock (src/components/visual-mock.tsx); preferred over images.
+  mock?: string;
+  src?: string;
   alt: string;
 }
 
@@ -197,10 +200,15 @@ export interface CompareOverview {
   paragraphs: string[];
 }
 
+// Which part of OpenPanel the competitor is closest to; picks the replicas
+// a page shows.
+export type CompareCategory = 'product' | 'web' | 'replay' | 'attribution';
+
 export interface CompareData {
   url: string;
   slug: string;
   page_type: 'alternative' | 'vs';
+  category: CompareCategory;
   seo: CompareSeo;
   hero: CompareHero;
   competitor: CompareCompetitor;
@@ -228,6 +236,9 @@ const contentDir = join(process.cwd(), 'content', 'compare');
 export async function getCompareData(
   slug: string
 ): Promise<CompareData | null> {
+  if (!isContentSlug(slug)) {
+    return null;
+  }
   try {
     const filePath = join(contentDir, `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');

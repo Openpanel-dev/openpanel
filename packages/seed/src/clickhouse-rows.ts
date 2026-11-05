@@ -4,6 +4,8 @@
 // stays out of the backend's dependency graph. `clickhouse-rows.test.ts`
 // checks these shapes against the schema.
 
+import type { SeedAiEvent } from './archetypes/archetype';
+
 export interface ClickhouseEventRow {
   id: string;
   name: string;
@@ -37,6 +39,16 @@ export interface ClickhouseEventRow {
   sdk_version: string;
   revenue?: number;
   groups: string[];
+}
+
+export interface ClickhouseAiEventRow extends SeedAiEvent {
+  project_id: string;
+  id: string;
+  profile_id: string;
+  device_id: string;
+  session_id: string;
+  groups: string[];
+  created_at: string;
 }
 
 export interface ClickhouseSessionRow {

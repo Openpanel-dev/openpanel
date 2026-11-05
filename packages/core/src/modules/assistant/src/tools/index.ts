@@ -10,7 +10,7 @@ import { entityTools } from './entities';
 import { referenceTools } from './references';
 import { searchTools } from './search';
 import { seoTools } from './seo';
-import { trackingTools } from './tracking';
+import { trackingToolApproval, trackingTools } from './tracking';
 
 /** One tool set per turn; every tool closes over the checked context. */
 export function createChatTools(ctx: ChatToolContext) {
@@ -33,7 +33,7 @@ export function createChatTools(ctx: ChatToolContext) {
 export type ChatTools = ReturnType<typeof createChatTools>;
 
 /** Writes wait for the user to confirm in the chat. */
-export const CHAT_TOOL_APPROVAL = {
+const CHAT_WRITE_APPROVAL = {
   create_dashboard: 'user-approval',
   save_chart: 'user-approval',
   create_reference: 'user-approval',
@@ -41,3 +41,7 @@ export const CHAT_TOOL_APPROVAL = {
   update_project: 'user-approval',
   change_plan: 'user-approval',
 } as const satisfies Partial<Record<keyof ChatTools, 'user-approval'>>;
+
+export function createChatToolApproval(ctx: ChatToolContext) {
+  return { ...CHAT_WRITE_APPROVAL, ...trackingToolApproval(ctx) };
+}

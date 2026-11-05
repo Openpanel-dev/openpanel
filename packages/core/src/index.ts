@@ -96,6 +96,14 @@ export {
 // `registry` itself is not exported: a caller that can reach it could start a
 // second collector graph outside a module.
 export { registerDefaultMetrics } from './metrics';
+export type {
+  IAiBreakdownRow,
+  IAiEntitySummary,
+  IAiMetrics,
+  IAiSeriesPoint,
+  IServiceAiEvent,
+  IServiceAiTrace,
+} from './modules/ai/ai.service';
 // Type-only: no value of the assistant module reaches a browser bundle.
 export type {
   AssistantUIMessage,
@@ -106,9 +114,6 @@ export {
   Arctic,
   cookieOptions,
   createAuthService,
-  deleteSessionTokenCookie,
-  githubClient,
-  googleClient,
   googleGscClient,
   parseCookieDomain,
 } from './modules/auth/auth.service';

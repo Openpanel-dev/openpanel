@@ -361,11 +361,11 @@ export async function getSessionReplayChunksFrom(
     })
   );
 
-  // `chunkIndex` is the row's position, not `row.chunk_index`, and `hasMore` counts rows
-  // the JSON filter may drop, so an unparseable chunk rewinds the client.
+  const page = rows.slice(0, REPLAY_CHUNKS_PAGE_SIZE);
+  // `nextIndex` counts every row read, so an unparseable chunk is skipped rather
+  // than refetched.
   return {
-    data: rows
-      .slice(0, REPLAY_CHUNKS_PAGE_SIZE)
+    data: page
       .map((row, index) => {
         const events = getSafeJson<
           { type: number; data: unknown; timestamp: number }[]
@@ -376,6 +376,7 @@ export async function getSessionReplayChunksFrom(
         return { chunkIndex: index + fromIndex, events };
       })
       .filter(Boolean),
+    nextIndex: fromIndex + page.length,
     hasMore: rows.length > REPLAY_CHUNKS_PAGE_SIZE,
   };
 }

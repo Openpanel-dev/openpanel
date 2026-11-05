@@ -3,7 +3,6 @@ import { defineRoutes } from '../../http/define';
 import {
   getFavicon,
   getGeoReport,
-  getOgImage,
   getStats,
   insertPingRecord,
 } from './misc.service';
@@ -36,19 +35,7 @@ export const miscRoutes = defineRoutes((app) =>
     .get(
       '/misc/favicon',
       async ({ query, ctx, set }) => {
-        const result = await getFavicon(ctx.config, query.url, ctx.logger);
-        set.status = result.status;
-        for (const [name, value] of Object.entries(result.headers)) {
-          set.headers[name] = value;
-        }
-        return result.status === 200 ? result.buffer : result.body;
-      },
-      { query: zImageQuery, detail: { tags: TAGS } }
-    )
-    .get(
-      '/misc/og',
-      async ({ query, ctx, set }) => {
-        const result = await getOgImage(ctx.config, query.url, ctx.logger);
+        const result = await getFavicon(query.url, ctx.logger);
         set.status = result.status;
         for (const [name, value] of Object.entries(result.headers)) {
           set.headers[name] = value;

@@ -5,6 +5,7 @@
 
 import { ch, TABLE_NAMES } from '@openpanel/db';
 import type {
+  ClickhouseAiEventRow,
   ClickhouseEventRow,
   ClickhouseProfileRow,
   ClickhouseSessionRow,
@@ -13,6 +14,7 @@ import { INSERT_BATCH_ROWS } from './seed.constants';
 
 export interface SinkCounts {
   events: number;
+  aiEvents: number;
   sessions: number;
   profiles: number;
 }
@@ -51,6 +53,7 @@ class TableBuffer<Row> {
 /** What the generator needs from a sink; tests substitute an in-memory one. */
 export interface RowSink {
   addEvents(rows: readonly ClickhouseEventRow[]): void;
+  addAiEvents(rows: readonly ClickhouseAiEventRow[]): void;
   addSession(row: ClickhouseSessionRow): void;
   addProfiles(rows: readonly ClickhouseProfileRow[]): void;
   flushFull(): Promise<void>;
@@ -62,6 +65,9 @@ export class ClickhouseSink implements RowSink {
   private readonly events = new TableBuffer<ClickhouseEventRow>(
     TABLE_NAMES.events
   );
+  private readonly aiEvents = new TableBuffer<ClickhouseAiEventRow>(
+    TABLE_NAMES.ai_events
+  );
   private readonly sessions = new TableBuffer<ClickhouseSessionRow>(
     TABLE_NAMES.sessions
   );
@@ -70,11 +76,15 @@ export class ClickhouseSink implements RowSink {
   );
 
   private get buffers(): TableBuffer<unknown>[] {
-    return [this.events, this.sessions, this.profiles];
+    return [this.events, this.aiEvents, this.sessions, this.profiles];
   }
 
   addEvents(rows: readonly ClickhouseEventRow[]): void {
     this.events.add(rows);
+  }
+
+  addAiEvents(rows: readonly ClickhouseAiEventRow[]): void {
+    this.aiEvents.add(rows);
   }
 
   addSession(row: ClickhouseSessionRow): void {
@@ -102,6 +112,7 @@ export class ClickhouseSink implements RowSink {
   counts(): SinkCounts {
     return {
       events: this.events.count,
+      aiEvents: this.aiEvents.count,
       sessions: this.sessions.count,
       profiles: this.profiles.count,
     };

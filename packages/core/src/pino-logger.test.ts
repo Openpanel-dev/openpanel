@@ -22,6 +22,12 @@ describe('redactSensitive', () => {
     });
   });
 
+  it('redacts a service account key', () => {
+    expect(
+      redactSensitive({ serviceAccountKey: '{"private_key":"x"}' })
+    ).toEqual({ serviceAccountKey: '[REDACTED]' });
+  });
+
   it('still redacts sensitive keys by name', () => {
     expect(redactSensitive({ authorization: 'Bearer abc', page: 2 })).toEqual({
       authorization: '[REDACTED]',

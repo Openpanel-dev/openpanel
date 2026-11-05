@@ -546,19 +546,46 @@ export interface RetentionChartInput {
 }
 
 /**
+ * The events a retention series selects: its `is` filter on `name`, wherever
+ * it sits among the filters. Reading any other filter as the selector would
+ * turn an exclusion into the events the cohort is built from.
+ */
+function retentionEventNames(
+  serie: ReturnType<typeof onlyEventSeries>[number] | undefined
+): string[] {
+  const selector = serie?.filters?.find(
+    (filter) => filter.name === 'name' && filter.operator === 'is'
+  );
+  if (!selector) {
+    return [];
+  }
+  // A series' filters combine with AND, so its `isNot` names are not events
+  // of that series either.
+  const excluded = new Set(
+    (serie?.filters ?? [])
+      .filter((filter) => filter.name === 'name' && filter.operator === 'isNot')
+      .flatMap((filter) => filter.value.map(String))
+  );
+  return selector.value.map(String).filter((name) => !excluded.has(name));
+}
+
+/**
  * A shared retention report takes its events from the saved series: each
- * series' `filters[0]` is the event-name selector, everything else is an
- * audience filter.
+ * series' name filters select its events, everything else is an audience
+ * filter.
  */
 function retentionInputFromReport(
   report: NonNullable<IServiceReport>,
   input: RetentionChartInput
 ): RetentionChartInput {
+  if (report.chartType !== 'retention') {
+    throw new Error('Report is not a retention report');
+  }
   const retentionOptions =
     report.options?.type === 'retention' ? report.options : undefined;
   const eventSeries = onlyEventSeries(report.series);
-  const firstEvent = (eventSeries[0]?.filters?.[0]?.value ?? []).map(String);
-  const secondEvent = (eventSeries[1]?.filters?.[0]?.value ?? []).map(String);
+  const firstEvent = retentionEventNames(eventSeries[0]);
+  const secondEvent = retentionEventNames(eventSeries[1]);
   if (firstEvent.length === 0 || secondEvent.length === 0) {
     throw new Error('Report must have at least 2 event series');
   }

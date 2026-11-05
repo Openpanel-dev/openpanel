@@ -43,8 +43,8 @@ function ProjectDashboard() {
       <ActivationBanner />
       <div className="sticky-header -top-px!">
         <div className="col gap-2 p-4">
-          <div className="flex justify-between gap-2">
-            <div className="flex gap-2">
+          <div className="flex flex-wrap justify-between gap-2">
+            <div className="flex flex-wrap gap-2">
               <OverviewRange />
               <OverviewInterval />
               <OverviewFilterButton mode="events" />

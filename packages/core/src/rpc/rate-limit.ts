@@ -40,9 +40,6 @@ const fallbackCounters = new LRUCache<string, number>({
   ttl: 5 * MINUTE,
 });
 
-/** The trusted-header defaults: the attribution address is client-forgeable. */
-const TRUSTED_ONLY = { attributionOrder: undefined, trustedOrder: undefined };
-
 const keyFor = (kind: string, path: string, fingerprint: string) =>
   `rl:${kind}:${path}:${fingerprint}`;
 
@@ -105,13 +102,14 @@ async function escalate(
 export const enforceRateLimit: EnforceRateLimit = async ({
   headers,
   remoteAddress,
+  ipHeaders,
   logger,
   path,
   max,
   windowMs,
 }) => {
   const { ip: trustedIp, header: ipHeader } = getTrustedIpFromHeaders(
-    TRUSTED_ONLY,
+    ipHeaders,
     headers,
     remoteAddress
   );

@@ -43,7 +43,9 @@ let buildFunnelBase: typeof import('../funnel.service').buildFunnelBase;
 let funnelChartQuery: typeof import('./funnel.sql').funnelChartQuery;
 let funnelProfilesQuery: typeof import('./funnel.sql').funnelProfilesQuery;
 let funnelStepConditions: typeof import('./funnel.sql').funnelStepConditions;
+let funnelTimeToConvertQuery: typeof import('./funnel.sql').funnelTimeToConvertQuery;
 let onlyReportEvents: typeof import('../../report/src/series').onlyReportEvents;
+let rangePeriod: typeof import('./first-time').rangePeriod;
 let deps: import('../../../services').ServiceDeps;
 
 const PROJECT_ID = 'test-sql-validation';
@@ -159,9 +161,14 @@ const chartText = async (breakdowns: IChartBreakdown[]) =>
 beforeAll(async () => {
   ({ ch } = await import('@openpanel/db/src/clickhouse/client'));
   ({ buildFunnelBase } = await import('../funnel.service'));
-  ({ funnelChartQuery, funnelProfilesQuery, funnelStepConditions } =
-    await import('./funnel.sql'));
+  ({
+    funnelChartQuery,
+    funnelProfilesQuery,
+    funnelStepConditions,
+    funnelTimeToConvertQuery,
+  } = await import('./funnel.sql'));
   ({ onlyReportEvents } = await import('../../report/src/series'));
+  ({ rangePeriod } = await import('./first-time'));
   const { testServiceDeps } = await import('../../../../test/service-deps');
   deps = await testServiceDeps();
 });
@@ -478,5 +485,80 @@ describe('funnel.sql — custom event steps', () => {
   it('parses and resolves', async () => {
     await explain(await chartStatement({ series }));
     await explain(await profilesStatement({ series }));
+  });
+});
+
+describe('funnel.sql / first time steps', () => {
+  const series = [
+    event({ id: 'A', firstTime: true }),
+    event({ id: 'B', name: 'sign_up' }),
+  ];
+  const stepConditions = () =>
+    funnelStepConditions(
+      onlyReportEvents(series),
+      PROJECT_ID,
+      [],
+      rangePeriod(START, END)
+    ).map(render);
+
+  it("matches the first-time step only at the user's first occurrence", () => {
+    const [firstStep, secondStep] = stepConditions().map(({ text }) => text);
+    expect(firstStep).toContain(
+      `(events.profile_id, events.created_at) GLOBAL IN (SELECT profile_id, min(created_at) AS first_seen FROM events WHERE project_id = '${PROJECT_ID}' AND name = 'screen_view' AND created_at <= toDateTime('${END}') GROUP BY profile_id HAVING first_seen >= toDateTime('${START}'))`
+    );
+    expect(secondStep).not.toContain('first_seen');
+  });
+
+  it('carries the condition into windowFunnel and the pre-filter', async () => {
+    const { sql } = render(await chartStatement({ series }));
+    const conditions = stepConditions().map((condition) => condition.sql);
+    expect(sql).toContain(
+      `(toUInt64(toUnixTimestamp64Milli(created_at)), ${conditions.join(', ')}) AS level`
+    );
+    expect(sql).toContain(` AND ((${conditions.join(') OR (')})) GROUP BY `);
+  });
+
+  it('parses and resolves, with and without a breakdown', async () => {
+    await explain(await chartStatement({ series }));
+    await explain(
+      await chartStatement({
+        series,
+        breakdowns: [breakdown('properties.experiment')],
+      })
+    );
+    await explain(await profilesStatement({ series }));
+  });
+});
+
+describe('funnel.sql / funnelTimeToConvertQuery', () => {
+  it('resolves without breakdowns', async () => {
+    const base = await buildFunnelBase(deps, {
+      ...baseInput(),
+      withStepTimes: true,
+    });
+    const statement = funnelTimeToConvertQuery(base, 'median');
+    expect(render(statement).sql).toContain(
+      'quantileExact(0.5)(step_times[step]'
+    );
+    await explain(statement);
+  });
+
+  it('shares step_events with a step breakdown and a profile breakdown', async () => {
+    const base = await buildFunnelBase(deps, {
+      ...baseInput({
+        breakdowns: [
+          { ...breakdown('properties.plan'), step: 2 },
+          breakdown('profile.properties.plan'),
+        ],
+      }),
+      withStepTimes: true,
+    });
+    const statement = funnelTimeToConvertQuery(base, 'avg');
+    expect(render(statement).sql.match(/AS step_events/g)).toHaveLength(1);
+    await explain(statement);
+  });
+
+  it('leaves step_times out of the chart unless asked', async () => {
+    expect(await chartSql([])).not.toContain('step_times');
   });
 });

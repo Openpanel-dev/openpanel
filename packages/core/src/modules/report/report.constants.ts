@@ -224,6 +224,9 @@ export const chartSegments = {
   property_average: 'Average of property',
   property_max: 'Max of property',
   property_min: 'Min of property',
+  property_p50: 'Median of property',
+  property_p95: '95th percentile of property',
+  property_p99: '99th percentile of property',
 };
 
 export const lineTypes = {
@@ -758,6 +761,12 @@ export const zChartEvent = z.object({
     .array(zChartEventFilter)
     .default([])
     .describe('Filters applied specifically to this event'),
+  firstTime: z
+    .boolean()
+    .optional()
+    .describe(
+      "Count only each user's first-ever occurrence of this event, and only when that occurrence falls inside the selected range and matches this event's filters. Ignored for the any-event series ('*')."
+    ),
   customEventId: z
     .string()
     .optional()
@@ -847,12 +856,31 @@ export const zConversionYAxisScale = z.enum(
 );
 export type IConversionYAxisScale = z.infer<typeof zConversionYAxisScale>;
 
+export const timeToConvertAggregations = {
+  avg: 'Average',
+  median: 'Median',
+  min: 'Min',
+  max: 'Max',
+  p25: '25th percentile',
+  p75: '75th percentile',
+  p90: '90th percentile',
+  p99: '99th percentile',
+} as const;
+export const zTimeToConvertAggregation = z.enum(
+  objectToZodEnums(timeToConvertAggregations)
+);
+export type ITimeToConvertAggregation = z.infer<
+  typeof zTimeToConvertAggregation
+>;
+
 // Conversion reports share the funnel options (group, window) and add a y-axis scale.
 export const zFunnelOptions = z.object({
   type: z.literal('funnel'),
   funnelGroup: z.string().optional(),
   funnelWindow: z.number().optional(),
   yAxisScale: zConversionYAxisScale.optional(),
+  /** Funnel only: how each step's time to convert is aggregated; unset hides it. */
+  timeToConvert: zTimeToConvertAggregation.optional(),
 });
 
 export const zRetentionOptions = z.object({

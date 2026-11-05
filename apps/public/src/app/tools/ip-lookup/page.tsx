@@ -182,7 +182,7 @@ export default function IPLookupPage() {
           className={cn(
             'mt-4 rounded-lg border p-4',
             isRateLimited
-              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+              ? 'border-amber-500/20 bg-amber-500/10 text-amber-600'
               : 'border-destructive/20 bg-destructive/10 text-destructive'
           )}
         >
@@ -348,7 +348,7 @@ export default function IPLookupPage() {
       )}
 
       {/* SEO Content Section */}
-      <div className="prose prose-neutral dark:prose-invert mt-16 max-w-none">
+      <div className="prose prose-neutral mt-16 max-w-none">
         <article className="space-y-8">
           <div>
             <h2 className="mb-4 font-bold text-3xl">

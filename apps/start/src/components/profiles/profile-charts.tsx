@@ -1,13 +1,16 @@
+import { AI_INTERNAL_EVENT_NAMES } from '@openpanel/core/modules/ai/ai.constants';
 import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { memo } from 'react';
 import { WidgetHead } from '../overview/overview-widget';
 import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody } from '@/components/widget';
 
-type Props = {
+const CHART_OPTIONS = { hideTable: true };
+
+interface Props {
   profileId: string;
   projectId: string;
-};
+}
 
 export const ProfileCharts = memo(
   ({ profileId, projectId }: Props) => {
@@ -59,6 +62,12 @@ export const ProfileCharts = memo(
               operator: 'is',
               value: [profileId],
             },
+            {
+              id: 'name',
+              name: 'name',
+              operator: 'isNot',
+              value: [...AI_INTERNAL_EVENT_NAMES],
+            },
           ],
           id: 'A',
           name: '*',
@@ -81,20 +90,20 @@ export const ProfileCharts = memo(
 
     return (
       <>
-        <Widget className="col-span-6 md:col-span-3">
+        <Widget>
           <WidgetHead>
             <span className="title">Page views</span>
           </WidgetHead>
           <WidgetBody>
-            <ReportChart report={pageViewsChart} />
+            <ReportChart options={CHART_OPTIONS} report={pageViewsChart} />
           </WidgetBody>
         </Widget>
-        <Widget className="col-span-6 md:col-span-3">
+        <Widget>
           <WidgetHead>
             <span className="title">Events per day</span>
           </WidgetHead>
           <WidgetBody>
-            <ReportChart report={eventsChart} />
+            <ReportChart options={CHART_OPTIONS} report={eventsChart} />
           </WidgetBody>
         </Widget>
       </>

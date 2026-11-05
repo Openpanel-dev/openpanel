@@ -4,8 +4,9 @@
 // `chartProcedure` (funnel, conversion, sankey, chart, aggregate, cohort) is the
 // share-aware builder: an anonymous caller holding a valid share resolves the
 // saved report, and the request renders that report (the caller may only move
-// the date window). The resolved report rides on `ctx.report`, so a handler
-// cannot forget to resolve it.
+// the date window). A dashboard share also applies the dashboard's saved
+// filters. The resolved report rides on `ctx.report`, so a handler cannot
+// forget to resolve it.
 
 import { z } from 'zod';
 import {
@@ -19,6 +20,7 @@ import {
   TRPCForbiddenError,
   TRPCNotFoundError,
 } from '../../rpc/errors';
+import { mergeDashboardFilters } from '../dashboard/dashboard.constants';
 import {
   zChartEventFilter,
   zChartSeries,
@@ -72,7 +74,13 @@ async function resolveShare(
   if (!report) {
     throw new TRPCNotFoundError('Report not found');
   }
-  return report;
+  return {
+    ...report,
+    globalFilters: mergeDashboardFilters(
+      report.globalFilters,
+      shareValidation.dashboardFilters
+    ),
+  };
 }
 
 /**

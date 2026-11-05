@@ -1,5 +1,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zSignUpEmail } from '@openpanel/core/modules/auth/auth.constants';
+import {
+  INVITE_HEADER,
+  zSignUpEmail,
+} from '@openpanel/core/modules/auth/auth.constants';
 import { useMutation } from '@tanstack/react-query';
 import {
   type SubmitErrorHandler,
@@ -11,7 +14,7 @@ import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { PasswordInput } from './password-input';
-import { useTRPC } from '@/integrations/trpc/react';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 const validator = zSignUpEmail;
@@ -22,35 +25,43 @@ export function SignUpEmailForm({
 }: {
   inviteId: string | undefined;
 }) {
-  const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.auth.signUpEmail.mutationOptions({
-      async onSuccess() {
-        trackFunnel('auth_signup_succeeded', {
-          provider: 'email',
-          hasInvite: Boolean(inviteId),
-        });
-        toast.success('Successfully signed up');
-        window.location.href = '/';
-      },
-      onError(error) {
-        trackFunnel('auth_signup_failed', {
-          provider: 'email',
-          reason: failureReason(error),
-        });
-        toast.error(error.message);
-      },
-    })
-  );
+  const authClient = useAuthClient();
+  const mutation = useMutation({
+    mutationFn: ({ firstName, lastName, email, password }: IForm) =>
+      unwrap(
+        authClient.signUp.email(
+          {
+            email,
+            password,
+            name: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+          },
+          { headers: inviteId ? { [INVITE_HEADER]: inviteId } : undefined }
+        )
+      ),
+    onSuccess() {
+      trackFunnel('auth_signup_succeeded', {
+        provider: 'email',
+        hasInvite: Boolean(inviteId),
+      });
+      toast.success('Successfully signed up');
+      window.location.href = '/';
+    },
+    onError(error) {
+      trackFunnel('auth_signup_failed', {
+        provider: 'email',
+        reason: failureReason(error),
+      });
+      toast.error(error.message);
+    },
+  });
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
     trackFunnel('auth_provider_clicked', { page: 'signup', provider: 'email' });
-    mutation.mutate({
-      ...values,
-      inviteId,
-    });
+    mutation.mutate(values);
   };
   const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
     trackFunnel('auth_form_invalid', {

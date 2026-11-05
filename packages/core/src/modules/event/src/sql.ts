@@ -154,7 +154,7 @@ function eventListConditions(query: EventListQuery): SqlFragment[] {
   }
   if (query.cursor) {
     conditions.push(
-      sql`created_at < ${sql.string(formatClickhouseDate(query.cursor))}`
+      sql`created_at < toDateTime64(${sql.string(formatClickhouseDateTime64(query.cursor))}, 3)`
     );
   }
   conditions.push(sql`project_id = ${projectId}`);

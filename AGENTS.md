@@ -21,7 +21,7 @@ Open-source product analytics (a Mixpanel alternative). Bun monorepo.
 | `packages/db` | Prisma (Postgres) + ClickHouse client and the `sql` tag (`src/clickhouse/sql.ts`) | |
 | `packages/seed` | Deterministic seed data for Postgres + ClickHouse (`bun run seed`) | |
 | `packages/redis`, `packages/email`, `packages/payments`, `packages/sdks/*` | Redis client/locks/pubsub, React Email, billing, client SDKs | |
-| `apps/public` | Marketing + docs | Next.js, Fumadocs |
+| `apps/public` | Marketing + docs; the look and page recipe are in `apps/public/DESIGN.md` | Next.js, Fumadocs |
 
 Data flow: SDK → `POST /track` (`packages/core/src/modules/ingest`) → Kafka → the
 worker role → ClickHouse (`events`, `sessions`, `profiles`, materialized views).
@@ -113,9 +113,9 @@ curl -sS -X POST "$API_URL/track" \
 # Management API (root client)
 curl -sS "$API_URL/manage/projects" -H "openpanel-client-id: $ROOT_ID" -H "openpanel-client-secret: $ROOT_SECRET"
 
-# tRPC as the seeded user: sign in, keep the `session` cookie, call any procedure
-curl -sS -c cookies.txt -X POST "$API_URL/trpc/auth.signInEmail" -H 'content-type: application/json' \
-  -d '{"json":{"email":"admin@openpanel.local","password":"openpanel"}}'
+# tRPC as the seeded user: sign in through better-auth, keep its cookie, call any procedure
+curl -sS -c cookies.txt -X POST "$API_URL/api/auth/sign-in/email" -H 'content-type: application/json' \
+  -H "origin: $DASHBOARD_URL" -d '{"email":"admin@openpanel.local","password":"openpanel"}'
 curl -sS -b cookies.txt "$API_URL/trpc/organization.list"
 
 # The product's MCP (streamable HTTP; url with token is `.seed.json` → mcp.url)
