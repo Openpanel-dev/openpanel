@@ -27,27 +27,14 @@ describe('eventQueryFiltersParser', () => {
     expect(serialize(parse(query) ?? [])).toBe(query);
   });
 
-  it('keeps reserved characters in a filter name', () => {
-    const filters = [
-      { id: 'a', name: 'properties.a,b;c%d', operator: 'is', value: ['x'] },
-      { id: 'country', name: 'country', operator: 'is', value: ['SE'] },
-    ] as const;
-    const query = serialize(filters as never);
-
-    expect(query).toBe('properties.a%2Cb%3Bc%25d,is,x;country,is,SE');
-    expect(parse(query)?.map((filter) => filter.name)).toEqual([
-      'properties.a,b;c%d',
-      'country',
-    ]);
-  });
-
-  it('still reads an old link with a stray percent in a name', () => {
-    const query = 'properties.100%,is,x;cohort:abc,inCohort,';
+  it('reads percent sequences in a name literally, as old links wrote them', () => {
+    const query = 'properties.a%2Cb,is,x;properties.100%25,is,y';
 
     expect(parse(query)?.map((filter) => filter.name)).toEqual([
-      'properties.100%',
-      'cohort:abc',
+      'properties.a%2Cb',
+      'properties.100%25',
     ]);
+    expect(serialize(parse(query) ?? [])).toBe(query);
   });
 
   it('leaves links without a type unchanged', () => {

@@ -13,11 +13,6 @@ import { useCallback } from 'react';
 
 const nuqsOptions = { history: 'push' } as const;
 
-// Only the characters the format reserves, so every other name keeps its URL
-// and an old link with a stray `%` still parses.
-const RESERVED_NAME_CHARACTERS = /[%,;]/g;
-const ESCAPED_NAME_CHARACTERS = /%(?:25|2C|3B)/gi;
-
 export const eventQueryFiltersParser = createParser({
   parse: (query: string) => {
     if (query === '') {
@@ -27,10 +22,7 @@ export const eventQueryFiltersParser = createParser({
 
     return filters.map((filter) => {
       const [key, operator, value, cohortIdSegment, type] = filter.split(',');
-      const name = (key ?? '').replace(
-        ESCAPED_NAME_CHARACTERS,
-        decodeURIComponent
-      );
+      const name = key ?? '';
       // 4th segment is pipe-separated cohort ids. Old single-id URLs split
       // to a one-element array; new URLs may carry many.
       const cohortIds = cohortIdSegment
@@ -77,11 +69,7 @@ export const eventQueryFiltersParser = createParser({
         // Always serialize by `name` — `id` may be a random shortId used only
         // for React reconciliation and would otherwise clobber the human
         // label on the next page load.
-        const encodedName = filter.name.replace(
-          RESERVED_NAME_CHARACTERS,
-          encodeURIComponent
-        );
-        return `${encodedName},${filter.operator},${encodedValue}${trailingSegments}`;
+        return `${filter.name},${filter.operator},${encodedValue}${trailingSegments}`;
       })
       .join(';');
   },
