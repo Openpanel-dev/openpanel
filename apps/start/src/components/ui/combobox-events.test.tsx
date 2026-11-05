@@ -6,15 +6,7 @@
 // can be toggled off again.
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  test,
-  vi,
-} from 'vitest';
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest';
 import {
   ComboboxEvents,
   getEventRows,
@@ -154,7 +146,8 @@ describe('ComboboxEvents', () => {
   // 25-character row key takes over 3 s.
 
   // floating-ui asks these on every position update, and jsdom's selector engine
-  // takes seconds per answer, enough to stall the vitest worker.
+  // takes seconds per answer, enough to stall the vitest worker. The stub stays
+  // for the whole file, because a position update outlives the last test.
   const topLayerSelectors = [':popover-open', ':modal'];
   const nativeMatches = Element.prototype.matches;
   beforeAll(() => {
@@ -166,9 +159,6 @@ describe('ComboboxEvents', () => {
         nativeMatches.call(this, selector)
       );
     };
-  });
-  afterAll(() => {
-    Element.prototype.matches = nativeMatches;
   });
   afterEach(cleanup);
 
