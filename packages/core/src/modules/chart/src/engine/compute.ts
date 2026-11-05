@@ -11,7 +11,9 @@ export function compute(
     type: 'event' | 'formula';
     id?: string;
     formula?: string;
-  }>
+  }>,
+  /** `date` holds a bucket label, already in order, rather than a date. */
+  { datesAreBuckets = false }: { datesAreBuckets?: boolean } = {}
 ): ConcreteSeries[] {
   const results: ConcreteSeries[] = [...fetchedSeries];
 
@@ -63,9 +65,11 @@ export function compute(
         });
       });
 
-      const sortedDates = Array.from(allDates).sort(
-        (a, b) => new Date(a).getTime() - new Date(b).getTime()
-      );
+      const sortedDates = datesAreBuckets
+        ? Array.from(allDates)
+        : Array.from(allDates).sort(
+            (a, b) => new Date(a).getTime() - new Date(b).getTime()
+          );
 
       // Each dependency's points are indexed by date once: a lookup per
       // (date, dependency) would make long minute-level ranges quadratic.

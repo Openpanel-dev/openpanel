@@ -53,7 +53,9 @@ export async function executeChart(
   // 3-series comparison chart is one round trip's worth of latency, not two.
   const [computedSeries, previousSeries] = await Promise.all([
     fetch(deps, executionPlan).then((series) =>
-      compute(series, executionPlan.definitions)
+      compute(series, executionPlan.definitions, {
+        datesAreBuckets: input.chartType === 'distribution',
+      })
     ),
     previousPlan
       ? fetch(deps, previousPlan).then((series) =>
