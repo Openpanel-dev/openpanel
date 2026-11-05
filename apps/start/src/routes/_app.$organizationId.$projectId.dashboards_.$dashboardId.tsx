@@ -152,9 +152,15 @@ function Component() {
     [dashboard?.filters]
   );
   // Replace, so Back does not land on the dashboard without its saved filters.
-  const [urlFilters, setUrlFilters] = useTableFilters(
+  const [rawUrlFilters, setUrlFilters] = useTableFilters(
     DASHBOARD_FILTERS_URL_KEY,
     { history: 'replace' }
+  );
+  // A hand-edited link can hold a filter the chart input rejects, which would
+  // fail every tile.
+  const urlFilters = useMemo(
+    () => parseDashboardFilters(rawUrlFilters),
+    [rawUrlFilters]
   );
   const [seededDashboardId, setSeededDashboardId] = useState<string | null>(
     null
@@ -173,15 +179,17 @@ function Component() {
     if (isSeeded || !dashboard) {
       return;
     }
-    // A link that carries filters wins over the saved ones.
-    if (urlFilters.length === 0 && savedFilters.length > 0) {
-      setUrlFilters(savedFilters);
+    // A link that carries valid filters wins over the saved ones.
+    const openingFilters = urlFilters.length > 0 ? urlFilters : savedFilters;
+    if (!isSameDashboardFilters(rawUrlFilters, openingFilters)) {
+      setUrlFilters(openingFilters);
     }
     setSeededDashboardId(dashboardId);
   }, [
     isSeeded,
     dashboard,
-    urlFilters.length,
+    rawUrlFilters,
+    urlFilters,
     savedFilters,
     setUrlFilters,
     dashboardId,

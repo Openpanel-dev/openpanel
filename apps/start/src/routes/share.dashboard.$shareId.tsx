@@ -130,7 +130,10 @@ function RouteComponent() {
               <OverviewInterval />
             </div>
           </div>
-          <ReadOnlyFilterPills filters={share.dashboard.filters} />
+          <ReadOnlyFilterPills
+            cohortNames={share.dashboard.cohortNames}
+            filters={share.dashboard.filters}
+          />
         </div>
       </div>
       <div className="mx-auto max-w-7xl p-4">

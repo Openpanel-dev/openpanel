@@ -1,4 +1,5 @@
 import ShortUniqueId from 'short-unique-id';
+import { z } from 'zod';
 import { TRPCForbiddenError, TRPCNotFoundError } from '../../rpc/errors';
 import type { ServiceDeps, Services } from '../../services';
 import { getProjectAccess } from '../../shared/access-lookups';
@@ -6,7 +7,10 @@ import { hasShareAccess, type ShareType } from '../../shared/share-access';
 import { hashPassword } from '../auth/auth.service';
 import { parseDashboardFilters } from '../dashboard/dashboard.constants';
 import { getDashboardById } from '../dashboard/dashboard.service';
-import type { IChartEventFilter } from '../report/report.constants';
+import {
+  getCohortIds,
+  type IChartEventFilter,
+} from '../report/report.constants';
 import {
   getReportById,
   getReportsByDashboardId,
@@ -477,6 +481,26 @@ export async function createShareOverview(
   return { id: share.id, public: share.public, hasPassword: !!share.password };
 }
 
+/** Anonymous viewers cannot list cohorts, so the share carries the names its
+ *  pills show. The column is a uuid: any other saved id would fail the query. */
+async function getFilterCohortNames(
+  deps: ServiceDeps,
+  projectId: string,
+  filters: IChartEventFilter[]
+): Promise<Record<string, string>> {
+  const ids = filters
+    .flatMap(getCohortIds)
+    .filter((id) => z.string().uuid().safeParse(id).success);
+  if (ids.length === 0) {
+    return {};
+  }
+  const cohorts = await deps.db.cohort.findMany({
+    where: { id: { in: ids }, projectId },
+    select: { id: true, name: true },
+  });
+  return Object.fromEntries(cohorts.map(({ id, name }) => [id, name]));
+}
+
 export async function getShareDashboard(
   deps: ServiceDeps,
   shareId: string,
@@ -487,6 +511,7 @@ export async function getShareDashboard(
     where: { id: shareId },
     select: {
       id: true,
+      projectId: true,
       public: true,
       password: true,
       organization: { select: { name: true } },
@@ -503,6 +528,7 @@ export async function getShareDashboard(
     return lockedShare(share.id, share.organization, share.project);
   }
 
+  const filters = parseDashboardFilters(share.dashboard.filters);
   return {
     id: share.id,
     requiresPassword: false as const,
@@ -510,7 +536,8 @@ export async function getShareDashboard(
     project: share.project,
     dashboard: {
       name: share.dashboard.name,
-      filters: parseDashboardFilters(share.dashboard.filters),
+      filters,
+      cohortNames: await getFilterCohortNames(deps, share.projectId, filters),
     },
   };
 }

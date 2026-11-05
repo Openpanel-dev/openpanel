@@ -43,6 +43,7 @@ export function useTableFilters(
             ? { cohortIds: filter.cohortIds }
             : {}),
           ...(filter.cohortId ? { cohortId: filter.cohortId } : {}),
+          ...(filter.type ? { type: filter.type } : {}),
         }))
       );
     },

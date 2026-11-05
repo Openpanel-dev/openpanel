@@ -8,6 +8,7 @@ import { afterAll, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
 import { testCoreConfig } from '../../../test/config-fixture';
 import { testServices } from '../../../test/service-deps';
 import { createShareAccessToken } from '../../shared/share-access';
+import type { IChartEventFilter } from '../report/report.constants';
 
 interface FakeShare {
   id: string;
@@ -59,6 +60,12 @@ function findDashboardShareByDashboardId(dashboardId: string) {
 function findReportShareByReportId(reportId: string) {
   return [...reportShareStore.values()].find((s) => s.reportId === reportId);
 }
+
+const COHORT_ID = '7f8a3e2c-0b1d-4c55-9a6e-2d4f1b3c5e70';
+
+const cohort = {
+  findMany: mock(async () => [{ id: COHORT_ID, name: 'Power users' }]),
+};
 
 const shareOverview = {
   findUnique: mock(
@@ -254,7 +261,7 @@ beforeAll(async () => {
   const { createShareService } = await import('./share.service');
   subject = createShareService(
     {
-      db: { shareOverview, shareDashboard, shareReport },
+      db: { shareOverview, shareDashboard, shareReport, cohort },
       config: testCoreConfig(),
     } as unknown as import('../../services').ServiceDeps,
     testServices()
@@ -527,7 +534,7 @@ test('getShareDashboardReports returns the dashboard reports once unlocked', asy
   );
 });
 
-const SAVED_COUNTRY_FILTER = {
+const SAVED_COUNTRY_FILTER: IChartEventFilter = {
   id: 'country',
   name: 'country',
   operator: 'is',
@@ -549,6 +556,34 @@ test('getShareDashboard returns the saved dashboard filters, dropping invalid on
   expect(result).toMatchObject({
     requiresPassword: false,
     dashboard: { name: 'Main', filters: [SAVED_COUNTRY_FILTER] },
+  });
+});
+
+test('getShareDashboard names the saved cohorts and skips ids that are not uuids', async () => {
+  dashboardShareStore.set('share_1', {
+    id: 'share_1',
+    organizationId: 'org_1',
+    projectId: 'proj_1',
+    dashboardId: 'dash_1',
+    public: true,
+    password: null,
+    filters: [
+      {
+        name: 'cohort',
+        operator: 'inCohort',
+        value: [],
+        cohortIds: [COHORT_ID, 'not-a-uuid'],
+      },
+    ],
+  });
+
+  const result = await subject.getShareDashboard('share_1', cookies());
+  expect(result).toMatchObject({
+    dashboard: { cohortNames: { [COHORT_ID]: 'Power users' } },
+  });
+  expect(cohort.findMany).toHaveBeenCalledWith({
+    where: { id: { in: [COHORT_ID] }, projectId: 'proj_1' },
+    select: { id: true, name: true },
   });
 });
 
