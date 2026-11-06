@@ -35,6 +35,37 @@ The `/track` endpoint accepts a `type` field that determines what gets recorded:
 | `decrement` | Decrement a numeric profile property |
 | `group` | Create or update a group |
 | `assign_group` | Link a profile to one or more groups |
+| `batch` | Send up to 250 of the above in one request |
+
+### Batching
+
+Useful when a client has been offline and has events queued up. Each item goes through the same pipeline as if it were sent alone, one after another in the order you list them. Items without `__timestamp` all get the time the request arrived, so set `__timestamp` on each event to keep when, and in what order, they actually happened.
+
+```json
+{
+  "type": "batch",
+  "payload": [
+    { "type": "track", "payload": { "name": "screen_view", "properties": { "__timestamp": "2026-10-25T08:00:00.000Z" } } },
+    { "type": "track", "payload": { "name": "" } },
+    { "type": "increment", "payload": { "profileId": "nobody", "property": "visits" } }
+  ]
+}
+```
+
+The response is `200` with an array, one entry per item in the same order. Each entry is the body that item would have got on its own, except that validation messages also name the item's position in the batch:
+
+```json
+[
+  { "deviceId": "…", "sessionId": "…" },
+  { "status": 400, "error": "Error", "message": "body/payload.1.payload.name Too small: expected string to have >=1 characters" },
+  { "status": 404, "message": "Profile not found" }
+]
+```
+
+- An invalid or refused item gets its own `status` and `message`, and the other items are still recorded. Check each entry's `status`: a `4xx` item will fail the same way if you resend it.
+- The request itself is rejected with `400` only when the envelope is wrong: `payload` is not an array, is empty, or has more than 250 items.
+- If the server fails to store the batch, the request returns `500`. Items before the failure may already be recorded, so a resend can record them twice.
+- The request body size limit applies to the whole batch.
 
 ### Groups and events
 
