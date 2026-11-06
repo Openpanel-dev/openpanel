@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { LayoutPanelTopIcon, Pencil, PlusIcon, Trash } from 'lucide-react';
+import {
+  Copy,
+  LayoutPanelTopIcon,
+  Pencil,
+  PlusIcon,
+  Trash,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardActions, CardActionsItem } from '@/components/card';
 import { DashboardPreview } from '@/components/dashboard-preview';
@@ -47,6 +53,17 @@ function Component() {
     })
   );
   const dashboards = query.data ?? [];
+  const duplication = useMutation(
+    trpc.dashboard.duplicate.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess(dashboard) {
+        query.refetch();
+        toast('Success', {
+          description: `Created "${dashboard.name}".`,
+        });
+      },
+    })
+  );
   const deletion = useMutation(
     trpc.dashboard.delete.mutationOptions({
       onError: (error, variables) => {
@@ -125,6 +142,16 @@ function Component() {
                   >
                     <Pencil size={16} />
                     Edit
+                  </button>
+                </CardActionsItem>
+                <CardActionsItem asChild className="w-full">
+                  <button
+                    disabled={duplication.isPending}
+                    onClick={() => duplication.mutate({ id: item.id })}
+                    type="button"
+                  >
+                    <Copy size={16} />
+                    Duplicate
                   </button>
                 </CardActionsItem>
                 <CardActionsItem asChild className="w-full text-destructive">
