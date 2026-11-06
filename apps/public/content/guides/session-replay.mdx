@@ -168,14 +168,25 @@ To mask text within an element without blocking its layout from the replay, use 
 
 The span's text appears as `***` in the replay while the surrounding layout remains visible.
 
-Configure a custom selector to avoid adding attributes to every element:
+All text is already masked by default (`maskAllText: true`), so this attribute only changes the replay when you turn that off. With `maskAllText: false`, only text inside elements with the attribute is masked, so mark every sensitive element first:
 
 ```ts
 sessionReplay: {
   enabled: true,
-  maskTextSelector: '.balance, .account-number, [data-pii]',
+  maskAllText: false,
 }
 ```
+
+To keep the default and show specific text instead, use `unmaskTextSelector`:
+
+```ts
+sessionReplay: {
+  enabled: true,
+  unmaskTextSelector: '.product-name',
+}
+```
+
+Keep this selector narrow: unmasking an element also shows the text of everything inside it.
 
 ### Ignore interactions
 
