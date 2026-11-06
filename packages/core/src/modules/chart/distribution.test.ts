@@ -1,6 +1,7 @@
 /**
  * Distribution charts over property values that the shared fixture does not
- * have: non-finite strings and ranges narrower than the label precision.
+ * have: non-finite strings, ranges narrower than the label precision, and
+ * several series that have to share one set of bins.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
@@ -28,23 +29,26 @@ mock.module('@openpanel/redis', () => ({
 const VALUES_BY_USER: Record<string, string[][]> = {
   score: [['1'], ['2'], ['5', 'Infinity'], ['inf'], ['nan'], ['-inf']],
   rate: Array.from({ length: 10 }, (_, index) => [`0.10${index}`]),
+  order: [['10'], ['100']],
+  ticket: [['1000'], ['2000']],
 };
 
 type EventSeriesItem = Extract<IChartEventItem, { type: 'event' }>;
 
 const series = (
   name: string,
-  aggregation: IPerUserAggregation = 'sum'
+  aggregation: IPerUserAggregation = 'sum',
+  id = 'A'
 ): EventSeriesItem => ({
   type: 'event',
-  id: 'A',
+  id,
   name,
   segment: 'event',
   filters: [],
   perUser: { aggregation, property: 'properties.value' },
 });
 
-const report = (items: EventSeriesItem[]): IReportInput => ({
+const report = (items: IChartEventItem[]): IReportInput => ({
   projectId: PROJECT_ID,
   chartType: 'distribution',
   interval: 'day',
@@ -58,6 +62,7 @@ const report = (items: EventSeriesItem[]): IReportInput => ({
 });
 
 let service: ReturnType<typeof import('./chart.service').createChartService>;
+let deps: import('../../services').ServiceDeps;
 
 async function withClient<T>(
   run: (client: ReturnType<typeof createClient>) => Promise<T>
@@ -81,7 +86,8 @@ beforeAll(async () => {
     '../../../test/service-deps'
   );
   const { createChartService } = await import('./chart.service');
-  service = createChartService(await testServiceDeps(), testServices());
+  deps = await testServiceDeps();
+  service = createChartService(deps, testServices());
 
   const events = Object.entries(VALUES_BY_USER).flatMap(([name, users]) =>
     users.flatMap((values, user) =>
@@ -140,5 +146,87 @@ describe('distribution over awkward property values', () => {
     expect(new Set(data.map((point) => point.date)).size).toBe(10);
     expect(chart.series[0]?.metrics.sum).toBe(10);
     expect(chart.series[0]?.metrics.count).toBe(10);
+  });
+});
+
+describe('distribution with several series', () => {
+  const orderAndTicket = [series('order'), series('ticket', 'sum', 'B')];
+  const bucketsOf = (
+    chart: Awaited<ReturnType<typeof service.execute>>,
+    name: string
+  ) =>
+    chart.series
+      .find((serie) => serie.names.some((part) => part.includes(name)))
+      ?.data.map((point) => point.count);
+
+  it('gives every series the same bins over their combined range', async () => {
+    const chart = await service.execute(report(orderAndTicket));
+    const [first, second] = chart.series.map((serie) =>
+      serie.data.map((point) => point.date)
+    );
+
+    expect(second).toEqual(first);
+    expect(first?.[0]).toBe('10 - 209');
+    expect(first?.[9]).toBe('1801 - 2000');
+    expect(bucketsOf(chart, 'order')).toEqual([2, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    expect(bucketsOf(chart, 'ticket')).toEqual([0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  });
+
+  it('keeps breakdown series on the shared bins', async () => {
+    const chart = await service.execute({
+      ...report(orderAndTicket),
+      breakdowns: [{ id: '1', name: 'properties.value' }],
+    });
+    const labels = chart.series.map((serie) =>
+      serie.data.map((point) => point.date).join()
+    );
+
+    expect(chart.series).toHaveLength(4);
+    expect(new Set(labels).size).toBe(1);
+  });
+
+  it('adds series up bucket by bucket in a formula', async () => {
+    const chart = await service.execute(
+      report([
+        ...orderAndTicket,
+        { type: 'formula', id: 'C', formula: 'A+B', displayName: 'both' },
+      ])
+    );
+
+    expect(bucketsOf(chart, 'both')).toEqual([2, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+  });
+
+  it('still answers for a report that mixes counts and binned values', async () => {
+    const chart = await service.execute(
+      report([
+        series('order'),
+        { ...series('ticket', 'sum', 'B'), perUser: { aggregation: 'count' } },
+      ])
+    );
+
+    expect(chart.series).toHaveLength(2);
+  });
+
+  it('puts a value outside the shared range into the edge bins', async () => {
+    const { getChartSql } = await import('./src/statement');
+    const { runQuery } = await import('./src/run-query');
+    const statement = await getChartSql(deps, {
+      event: series('order'),
+      projectId: PROJECT_ID,
+      startDate: START,
+      endDate: END,
+      breakdowns: [],
+      interval: 'day',
+      chartType: 'distribution',
+      metric: 'sum',
+      previous: false,
+      timezone: 'UTC',
+      binRange: { lo: 50, hi: 60 },
+    });
+    const rows = await runQuery<{ count: number }>(deps, statement, 'UTC');
+
+    expect(rows.map((row) => row.count)).toEqual([
+      1, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    ]);
   });
 });

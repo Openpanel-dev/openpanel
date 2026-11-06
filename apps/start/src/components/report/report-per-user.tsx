@@ -1,5 +1,11 @@
-import type { IPerUserAggregation } from '@openpanel/core/modules/report/report.constants';
-import { perUserAggregations } from '@openpanel/core/modules/report/report.constants';
+import type {
+  IPerUserAggregation,
+  PerUserBucketKind,
+} from '@openpanel/core/modules/report/report.constants';
+import {
+  perUserAggregations,
+  perUserBucketKind,
+} from '@openpanel/core/modules/report/report.constants';
 import {
   ActivityIcon,
   EqualApproximatelyIcon,
@@ -43,6 +49,8 @@ interface ReportPerUserProps {
   variant?: ButtonProps['variant'];
   size?: ButtonProps['size'];
   value: IPerUserAggregation;
+  /** Set when the chart's other series only leave room for this kind. */
+  requiredKind?: PerUserBucketKind;
   onChange: (aggregation: IPerUserAggregation) => void;
 }
 
@@ -52,6 +60,7 @@ export function ReportPerUser({
   variant = 'outline',
   size,
   value,
+  requiredKind,
   onChange,
 }: ReportPerUserProps) {
   const items = mapKeys(perUserAggregations).map((key) => ({
@@ -80,6 +89,10 @@ export function ReportPerUser({
             return (
               <DropdownMenuItem
                 className="group"
+                disabled={
+                  requiredKind !== undefined &&
+                  perUserBucketKind(item.value) !== requiredKind
+                }
                 key={item.value}
                 onClick={() => onChange(item.value)}
               >

@@ -1,5 +1,6 @@
 import type {
   IChartBreakdown,
+  IChartEvent,
   IChartEventFilter,
   IChartEventItem,
   IChartLineType,
@@ -19,6 +20,7 @@ import {
   getDefaultIntervalByRange,
   isHourIntervalEnabledByRange,
   isMinuteIntervalEnabledByRange,
+  perUserBucketKind,
 } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
 import type { PayloadAction } from '@reduxjs/toolkit';
@@ -95,6 +97,24 @@ export function normalizeSeriesForChartType(
   });
 }
 
+// A new series starts as a count, which cannot share a chart with binned series.
+function perUserForNewSerie(
+  state: InitialState,
+  serie: UnionOmit<IChartEventItem, 'id'>
+): Pick<IChartEvent, 'perUser'> | undefined {
+  if (state.chartType !== 'distribution' || serie.type !== 'event') {
+    return undefined;
+  }
+  const binnedSerie = state.series.find(
+    (existing) =>
+      existing.type === 'event' &&
+      perUserBucketKind(existing.perUser?.aggregation) === 'binned'
+  );
+  return binnedSerie?.type === 'event'
+    ? { perUser: binnedSerie.perUser }
+    : undefined;
+}
+
 export const reportSlice = createSlice({
   name: 'report',
   initialState,
@@ -159,6 +179,7 @@ export const reportSlice = createSlice({
       state.series.push({
         id: shortId(),
         ...action.payload,
+        ...perUserForNewSerie(state, action.payload),
       });
     },
     duplicateEvent: (state, action: PayloadAction<IChartEventItem>) => {

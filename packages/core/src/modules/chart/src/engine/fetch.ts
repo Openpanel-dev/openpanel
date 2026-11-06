@@ -8,10 +8,18 @@ import type {
   IChartEventItem,
   IGetChartDataInput,
 } from '../../../report/report.constants';
-import { alphabetIds } from '../../../report/report.constants';
+import {
+  alphabetIds,
+  perUserBucketKind,
+} from '../../../report/report.constants';
 import { mapWithConcurrency } from '../concurrency';
 import { runQuery } from '../run-query';
-import { getAggregateChartSql, getChartSql } from '../statement';
+import type { DistributionBinRange } from '../sql';
+import {
+  getAggregateChartSql,
+  getChartSql,
+  getDistributionRangeSql,
+} from '../statement';
 import type { NormalizedInput } from './normalize';
 import type { ConcreteSeries, Plan, SeriesDefinition } from './types';
 
@@ -164,6 +172,87 @@ function queryEvent(event: EventDefinition): IGetChartDataInput['event'] {
   };
 }
 
+function seriesQueryInput(
+  plan: Plan,
+  event: EventDefinition
+): IGetChartDataInput & { timezone: string } {
+  return {
+    event: queryEvent(event),
+    projectId: plan.input.projectId,
+    startDate: plan.input.startDate,
+    endDate: plan.input.endDate,
+    breakdowns: plan.input.breakdowns,
+    interval: plan.input.interval,
+    chartType: plan.input.chartType,
+    metric: plan.input.metric,
+    previous: plan.input.previous ?? false,
+    limit: plan.input.limit,
+    offset: plan.input.offset,
+    timezone: plan.timezone,
+  };
+}
+
+interface SeriesRange extends DistributionBinRange {
+  users: number;
+}
+
+/** A series' value range, over the same rows `fetch` ends up charting for it. */
+async function seriesBinRange(
+  deps: ServiceDeps,
+  plan: Plan,
+  event: EventDefinition
+): Promise<SeriesRange | undefined> {
+  const input = seriesQueryInput(plan, event);
+  const [range] = await runQuery<SeriesRange>(
+    deps,
+    await getDistributionRangeSql(deps, input),
+    plan.timezone
+  );
+  if (range?.users || plan.input.breakdowns.length === 0) {
+    return range?.users ? range : undefined;
+  }
+  const [unbrokenRange] = await runQuery<SeriesRange>(
+    deps,
+    await getDistributionRangeSql(deps, { ...input, breakdowns: [] }),
+    plan.timezone
+  );
+  return unbrokenRange?.users ? unbrokenRange : undefined;
+}
+
+/**
+ * The range every binned series of a distribution shares, so their bins line
+ * up. One series is left alone: its query finds its own range for free.
+ */
+async function sharedBinRange(
+  deps: ServiceDeps,
+  plan: Plan,
+  events: EventDefinition[]
+): Promise<DistributionBinRange | undefined> {
+  if (plan.input.chartType !== 'distribution') {
+    return undefined;
+  }
+  const binned = events.filter(
+    ({ perUser }) =>
+      perUser?.property && perUserBucketKind(perUser.aggregation) === 'binned'
+  );
+  if (binned.length < 2) {
+    return undefined;
+  }
+  const ranges = await mapWithConcurrency(
+    binned,
+    SERIES_FETCH_CONCURRENCY,
+    (event) => seriesBinRange(deps, plan, event)
+  );
+  const found = ranges.filter((range) => range !== undefined);
+  if (found.length === 0) {
+    return undefined;
+  }
+  return {
+    lo: Math.min(...found.map((range) => range.lo)),
+    hi: Math.max(...found.map((range) => range.hi)),
+  };
+}
+
 /** Fetch every event series of the plan; breakdown expansion included. */
 export async function fetch(
   deps: ServiceDeps,
@@ -181,28 +270,22 @@ export async function fetch(
     }
   );
 
+  const binRange = await sharedBinRange(
+    deps,
+    plan,
+    fetchable.map(({ definition }) => definition as EventDefinition)
+  );
+
   const perDefinition = await mapWithConcurrency(
     fetchable,
     SERIES_FETCH_CONCURRENCY,
     async ({ index, definition, placeholder }) => {
       const event = definition as EventDefinition;
-      const queryInput: IGetChartDataInput = {
-        event: queryEvent(event),
-        projectId: plan.input.projectId,
-        startDate: plan.input.startDate,
-        endDate: plan.input.endDate,
-        breakdowns: plan.input.breakdowns,
-        interval: plan.input.interval,
-        chartType: plan.input.chartType,
-        metric: plan.input.metric,
-        previous: plan.input.previous ?? false,
-        limit: plan.input.limit,
-        offset: plan.input.offset,
-      };
+      const queryInput = { ...seriesQueryInput(plan, event), binRange };
 
       let rows = await runChartQuery(
         deps,
-        await getChartSql(deps, { ...queryInput, timezone: plan.timezone }),
+        await getChartSql(deps, queryInput),
         plan.timezone
       );
       // Nothing matched the breakdown: fall back to the plain series.
@@ -212,7 +295,6 @@ export async function fetch(
           await getChartSql(deps, {
             ...queryInput,
             breakdowns: [],
-            timezone: plan.timezone,
           }),
           plan.timezone
         );

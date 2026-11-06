@@ -911,6 +911,19 @@ describe('distribution (per-user) chart', () => {
     await Promise.all([explain(sum), explain(distinct)]);
   });
 
+  it('takes shared bins instead of working out its own range', async () => {
+    const rendered = await getChartSql({
+      event: event({
+        perUser: { aggregation: 'sum', property: 'properties.value' },
+      }),
+      breakdowns: [],
+      ...distribution,
+      binRange: { lo: 1, hi: 5 },
+    });
+    expect(rendered.text).not.toContain('OVER ()');
+    await explain(rendered);
+  });
+
   it('matches nothing while no property is picked', async () => {
     const rendered = await getChartSql({
       event: event({ perUser: { aggregation: 'p90' } }),

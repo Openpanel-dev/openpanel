@@ -1082,6 +1082,46 @@ export type IChartSeries = z.infer<typeof zChartSeries>;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
 export type IChartEventPerUser = z.infer<typeof zChartEventPerUser>;
 export type IPerUserAggregation = z.infer<typeof zPerUserAggregation>;
+export type PerUserBucketKind = 'fixed' | 'binned';
+
+/** Whether an aggregation lands in the fixed integer buckets or in bins over a value range. */
+export function perUserBucketKind(
+  aggregation: IPerUserAggregation = 'count'
+): PerUserBucketKind {
+  return aggregation === 'count' || aggregation === 'distinct_count'
+    ? 'fixed'
+    : 'binned';
+}
+
+function eventBucketKinds(series: IChartEventItem[]): Set<PerUserBucketKind> {
+  return new Set(
+    series.flatMap((serie) =>
+      serie.type === 'event'
+        ? [perUserBucketKind(serie.perUser?.aggregation)]
+        : []
+    )
+  );
+}
+
+/** Fixed buckets and bins have no x-axis in common, so a chart cannot show both. */
+export function mixesPerUserBucketKinds(series: IChartEventItem[]): boolean {
+  return eventBucketKinds(series).size > 1;
+}
+
+/**
+ * The kind a series has to keep to match the other series, if they agree on
+ * one. A report that already mixes them leaves every series free, so it can be
+ * fixed one series at a time.
+ */
+export function requiredPerUserBucketKind(
+  series: IChartEventItem[],
+  seriesId: string | undefined
+): PerUserBucketKind | undefined {
+  const kinds = eventBucketKinds(
+    series.filter((serie) => serie.id !== seriesId)
+  );
+  return kinds.size === 1 ? [...kinds][0] : undefined;
+}
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
   IChartEvent['filters'][number]['value'][number];

@@ -19,7 +19,10 @@ import type {
   IChartEventItem,
   IChartFormula,
 } from '@openpanel/core/modules/report/report.constants';
-import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
+import {
+  alphabetIds,
+  requiredPerUserBucketKind,
+} from '@openpanel/core/modules/report/report.constants';
 import { HandIcon, PiIcon, PlusIcon } from 'lucide-react';
 import {
   addSerie,
@@ -238,6 +241,10 @@ export function ReportSeries() {
                   index={index}
                   isSelectManyEvents={isSelectManyEvents}
                   key={event.id}
+                  requiredPerUserKind={requiredPerUserBucketKind(
+                    selectedSeries,
+                    event.id
+                  )}
                   showAddFilter={showAddFilter}
                   showFirstTime={showFirstTime}
                   showPerUser={showPerUser}

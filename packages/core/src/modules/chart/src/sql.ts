@@ -126,6 +126,11 @@ export interface ResolvedChartBreakdowns {
   cohortMetadata: ReadonlyMap<string, CohortMetadata>;
 }
 
+export interface DistributionBinRange {
+  lo: number;
+  hi: number;
+}
+
 export type ChartSeriesQueryInput = ResolvedChartBreakdowns & {
   event: ChartQueryEvent;
   interval: IInterval;
@@ -133,6 +138,8 @@ export type ChartSeriesQueryInput = ResolvedChartBreakdowns & {
   endDate: string;
   projectId: string;
   timezone: string;
+  /** Bins shared with the chart's other series, instead of this series' own range. */
+  binRange?: DistributionBinRange;
 };
 
 export type AggregateChartQueryInput = ResolvedChartBreakdowns & {
@@ -650,18 +657,8 @@ function perUserValue(
   };
 }
 
-/**
- * Users bucketed by a per-user value (event count, or an aggregate of an
- * event property). Counts and distinct counts use fixed integer buckets,
- * everything else equal-width bins between the smallest and largest value,
- * shared by every breakdown so the series line up.
- *
- * Rows keep the series shape: the bucket label rides in `date` and the rows
- * come back in bucket order, which `groupByLabels` preserves.
- */
-export function perUserDistributionQuery(
-  input: ChartSeriesQueryInput
-): SqlFragment {
+/** One row per user and breakdown, carrying the value a distribution buckets by. */
+function perUserRows(input: ChartSeriesQueryInput) {
   // The segment does not apply: every user counts once per series.
   const event = { ...input.event, segment: 'event' as const };
   const body = chartBody({
@@ -677,7 +674,30 @@ export function perUserDistributionQuery(
   body.select.user_value = sql`${value} as user_value`;
   groupBy.profile_id = sql`profile_id`;
 
-  const perUser = sql`${selectClause(body.select)} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)}`;
+  const rows = sql`SELECT * FROM (${selectClause(body.select)} FROM ${sql.id(CHART_TABLE.events)} e ${joinsClause(body.joins)} ${whereClause(body.where)} ${groupByClause(groupBy)}) WHERE user_value IS NOT NULL AND isFinite(user_value)`;
+  return { ctes: body.ctes, labels, rows, discrete };
+}
+
+/** The smallest and largest user value of one series, to share its bins with the others. */
+export function perUserRangeQuery(input: ChartSeriesQueryInput): SqlFragment {
+  const { ctes, rows } = perUserRows(input);
+  return sql`${withClause(ctes)}SELECT count() as users, toFloat64(min(user_value)) as lo, toFloat64(max(user_value)) as hi FROM (${rows})`;
+}
+
+/**
+ * Users bucketed by a per-user value (event count, or an aggregate of an
+ * event property). Counts and distinct counts use fixed integer buckets,
+ * everything else equal-width bins between the smallest and largest value,
+ * shared by every breakdown so the series line up. `binRange` extends that to
+ * the chart's other series.
+ *
+ * Rows keep the series shape: the bucket label rides in `date` and the rows
+ * come back in bucket order, which `groupByLabels` preserves.
+ */
+export function perUserDistributionQuery(
+  input: ChartSeriesQueryInput
+): SqlFragment {
+  const { ctes, labels, rows, discrete } = perUserRows(input);
 
   const bins = sql.uint64(CONTINUOUS_BUCKET_COUNT);
   const width = sql`((hi - lo) / ${bins})`;
@@ -686,7 +706,8 @@ export function perUserDistributionQuery(
     : sql`if(hi = lo, 1, ${bins})`;
   const bucket = discrete
     ? sql`arrayCount(bound -> user_value > bound, ${sql.array('Float64', DISCRETE_BUCKET_BOUNDS)})`
-    : sql`if(hi = lo, 0, least(toUInt32(floor((user_value - lo) / ${width})), ${bins} - 1))`;
+    : // Events landing after a shared range was read can sit outside it.
+      sql`if(hi = lo, 0, least(toUInt32(greatest(floor((user_value - lo) / ${width}), 0)), ${bins} - 1))`;
   // Read after the ARRAY JOIN, where the range travels as bucket_lo/bucket_hi.
   const binWidth = sql`((bucket_hi - bucket_lo) / ${bins})`;
   // The label is what series points are keyed by, so two bins must never round
@@ -695,19 +716,21 @@ export function perUserDistributionQuery(
   const bucketLabel = discrete
     ? sql`${sql.array('String', DISCRETE_BUCKET_LABELS)}[bucket + 1]`
     : sql`if(bucket_hi = bucket_lo, toString(round(bucket_lo, ${sql.uint64(MIN_BIN_LABEL_DIGITS)})), concat(toString(round(bucket_lo + bucket * ${binWidth}, ${labelDigits})), ' - ', toString(round(bucket_lo + (bucket + 1) * ${binWidth}, ${labelDigits}))))`;
-  const range = discrete
-    ? sql`, 0 as lo, 0 as hi`
-    : sql`, min(user_value) OVER () as lo, max(user_value) OVER () as hi`;
+  const ownRange = sql`, min(user_value) OVER () as lo, max(user_value) OVER () as hi`;
+  const sharedRange = input.binRange
+    ? sql`, ${sql.float64(input.binRange.lo)} as lo, ${sql.float64(input.binRange.hi)} as hi`
+    : ownRange;
+  const range = discrete ? sql`, 0 as lo, 0 as hi` : sharedRange;
 
   // One count per bucket and series, empty buckets included, so the x-axis
   // keeps its shape; ARRAY JOIN turns them back into rows.
-  return sql`${withClause(body.ctes)}SELECT ${sql.join(labels, ', ')}, ${bucketLabel} as date, count, total_count
+  return sql`${withClause(ctes)}SELECT ${sql.join(labels, ', ')}, ${bucketLabel} as date, count, total_count
     FROM (
       SELECT ${sql.join(labels, ', ')}, any(lo) as bucket_lo, any(hi) as bucket_hi, count(*) as total_count,
         sumForEach(arrayMap(index -> toUInt64(index = bucket), range(${bucketCount}))) as counts
       FROM (
         SELECT *, ${bucket} as bucket
-        FROM (SELECT *${range} FROM (${perUser}) WHERE user_value IS NOT NULL AND isFinite(user_value))
+        FROM (SELECT *${range} FROM (${rows}))
       )
       GROUP BY ${sql.join(labels, ', ')}
     )

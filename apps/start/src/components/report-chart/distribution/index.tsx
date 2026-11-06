@@ -1,3 +1,4 @@
+import { mixesPerUserBucketKinds } from '@openpanel/core/modules/report/report.constants';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
@@ -9,7 +10,8 @@ import { Chart } from './chart';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportDistributionChart() {
-  const { isLazyLoading, shareId } = useReportChartContext();
+  const { isLazyLoading, report, shareId } = useReportChartContext();
+  const isMixed = mixesPerUserBucketKinds(report.series);
   const chartInput = useChartInput();
   const trpc = useTRPC();
 
@@ -21,10 +23,14 @@ export function ReportDistributionChart() {
       },
       {
         placeholderData: keepPreviousData,
-        enabled: !isLazyLoading,
+        enabled: !(isLazyLoading || isMixed),
       }
     )
   );
+
+  if (isMixed) {
+    return <Mixed />;
+  }
 
   if (
     isLazyLoading ||
@@ -47,6 +53,17 @@ export function ReportDistributionChart() {
       chart={(series) => <Chart series={series} />}
       data={res.data}
     />
+  );
+}
+
+function Mixed() {
+  return (
+    <AspectContainer>
+      <ReportChartEmpty title="These series can't share a chart">
+        Counts use fixed buckets and property values use bins. Change or remove
+        a series so they all use the same kind.
+      </ReportChartEmpty>
+    </AspectContainer>
   );
 }
 

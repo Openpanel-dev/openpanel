@@ -1,6 +1,7 @@
 import type {
   IChartEvent,
   IChartEventItem,
+  PerUserBucketKind,
 } from '@openpanel/core/modules/report/report.constants';
 import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { shortId } from '@openpanel/shared';
@@ -24,6 +25,7 @@ export interface ReportSeriesItemProps
   showAddFilter: boolean;
   /** Distribution charts pick a per-user value instead of a segment. */
   showPerUser?: boolean;
+  requiredPerUserKind?: PerUserBucketKind;
   /** Offer the "first time" qualifier; the chart type has to support it. */
   showFirstTime?: boolean;
   isSelectManyEvents: boolean;
@@ -36,6 +38,7 @@ export function ReportSeriesItem({
   showSegment,
   showAddFilter,
   showPerUser = false,
+  requiredPerUserKind,
   showFirstTime = false,
   isSelectManyEvents,
   renderDragHandle,
@@ -105,6 +108,7 @@ export function ReportSeriesItem({
                     })
                   );
                 }}
+                requiredKind={requiredPerUserKind}
                 size="sm"
                 value={perUserAggregation}
                 variant="ghost"

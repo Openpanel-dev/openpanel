@@ -1,6 +1,7 @@
 import type { IReport } from '@openpanel/core/modules/report/report.constants';
 import { describe, expect, test } from 'vitest';
 import reducer, {
+  addSerie,
   applyDraft,
   changeChartType,
   changeConversionYAxisScale,
@@ -138,5 +139,41 @@ describe('per-user value and segment', () => {
     const withPerUser = reducer(undefined, setReport(report('distribution')));
     const linear = reducer(withPerUser, changeChartType('linear'));
     expect(linear.series[0]).not.toHaveProperty('perUser');
+  });
+});
+
+describe('new series on a distribution', () => {
+  const perUser = { aggregation: 'sum' as const, property: 'properties.value' };
+  const chart = (series: IReport['series']) =>
+    reducer(
+      undefined,
+      setReport({
+        projectId: 'project',
+        name: 'Report',
+        chartType: 'distribution',
+        lineType: 'monotone',
+        interval: 'day',
+        range: '30d',
+        previous: false,
+        metric: 'sum',
+        series,
+        breakdowns: [],
+      } as IReport)
+    );
+  const newSerie = addSerie({
+    type: 'event',
+    name: 'b',
+    segment: 'event',
+    filters: [],
+  });
+
+  test('takes over the binned value of the chart', () => {
+    const state = reducer(chart([{ ...event('a'), perUser }]), newSerie);
+    expect(state.series[1]).toMatchObject({ name: 'b', perUser });
+  });
+
+  test('stays a count next to counts', () => {
+    const state = reducer(chart([event('a')]), newSerie);
+    expect(state.series[1]).not.toHaveProperty('perUser');
   });
 });

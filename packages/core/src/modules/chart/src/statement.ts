@@ -11,14 +11,19 @@ import { collectBreakdownCohortIds } from './field-resolution';
 import {
   aggregateChartQuery,
   chartSeriesQuery,
+  type DistributionBinRange,
   knownBreakdowns,
   perUserDistributionQuery,
+  perUserRangeQuery,
   type ResolvedChartBreakdowns,
   requestsAllCohortsBreakdown,
   withoutEmptyAllCohortsBreakdown,
 } from './sql';
 
-export type ChartSqlInput = IGetChartDataInput & { timezone: string };
+export type ChartSqlInput = IGetChartDataInput & {
+  timezone: string;
+  binRange?: DistributionBinRange;
+};
 export type AggregateChartSqlInput = Omit<
   IGetChartDataInput,
   'interval' | 'chartType'
@@ -68,20 +73,13 @@ export async function resolveChartBreakdowns(
   return { breakdowns, allCohorts, cohortMetadata };
 }
 
-export async function getChartSql(
-  deps: ServiceDeps,
-  input: ChartSqlInput
-): Promise<SqlFragment> {
+async function seriesQueryInput(deps: ServiceDeps, input: ChartSqlInput) {
   const resolved = await resolveChartBreakdowns(
     deps,
     input.projectId,
     input.breakdowns
   );
-  const buildQuery =
-    input.chartType === 'distribution'
-      ? perUserDistributionQuery
-      : chartSeriesQuery;
-  return buildQuery({
+  return {
     ...resolved,
     event: input.event,
     interval: input.interval,
@@ -89,7 +87,26 @@ export async function getChartSql(
     endDate: input.endDate,
     projectId: input.projectId,
     timezone: input.timezone,
-  });
+    binRange: input.binRange,
+  };
+}
+
+export async function getChartSql(
+  deps: ServiceDeps,
+  input: ChartSqlInput
+): Promise<SqlFragment> {
+  const buildQuery =
+    input.chartType === 'distribution'
+      ? perUserDistributionQuery
+      : chartSeriesQuery;
+  return buildQuery(await seriesQueryInput(deps, input));
+}
+
+export async function getDistributionRangeSql(
+  deps: ServiceDeps,
+  input: ChartSqlInput
+): Promise<SqlFragment> {
+  return perUserRangeQuery(await seriesQueryInput(deps, input));
 }
 
 export async function getAggregateChartSql(
