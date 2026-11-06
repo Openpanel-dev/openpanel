@@ -48,6 +48,7 @@ const RENAMED_ENV_VARS = [
   ['BULLBOARD_PASSWORD', 'ADMIN_PASSWORD'],
 ] as const;
 const BUNDLED_KAFKA_HOST = 'op-rp:';
+const BUNDLED_API_URL_SSR = 'http://op-api:3000';
 
 const templateCompose = parseDocument(templates.compose);
 
@@ -87,10 +88,13 @@ const hasWorkerRole = (install: Install) =>
 
 const dependsOnPath = (service: string) => ['services', service, 'depends_on'];
 
-// depends_on comes as a map (with conditions), a plain list, or a YAML alias
-// shared between services; all three are valid compose.
-const dependencyNames = (compose: Document, service: string): string[] => {
-  const node = compose.getIn(dependsOnPath(service), true);
+// depends_on and networks come as a map, a plain list, or a YAML alias shared
+// between services; all three are valid compose.
+const collectionNames = (
+  compose: Document,
+  path: readonly string[]
+): string[] => {
+  const node = compose.getIn(path, true);
   const resolved = isAlias(node) ? node.resolve(compose) : node;
   if (isMap(resolved)) {
     return resolved.items.map((pair) =>
@@ -103,6 +107,25 @@ const dependencyNames = (compose: Document, service: string): string[] => {
     );
   }
   return [];
+};
+
+const dependencyNames = (compose: Document, service: string): string[] =>
+  collectionNames(compose, dependsOnPath(service));
+
+const serviceNetworks = (install: Install, service: string): string[] => {
+  const names = collectionNames(install.compose, [
+    'services',
+    service,
+    'networks',
+  ]);
+  return names.length > 0 ? names : ['default'];
+};
+
+const dashboardReachesApi = (install: Install): boolean => {
+  const apiNetworks = serviceNetworks(install, 'op-api');
+  return serviceNetworks(install, 'op-dashboard').some((network) =>
+    apiNetworks.includes(network)
+  );
 };
 
 const addDependency = (
@@ -547,6 +570,23 @@ export const apiUrl: Check = (install) => {
   };
 };
 
+// `has`, not `get`: a blank `API_URL_SSR=` is an operator opting out of the
+// internal address, and a custom address is theirs to keep. A dashboard on its
+// own network keeps the public route, which works, over one it cannot reach.
+export const apiUrlSsr: Check = (install) => {
+  if (install.env.has('API_URL_SSR') || !dashboardReachesApi(install)) {
+    return null;
+  }
+  return {
+    id: 'env/api-url-ssr',
+    severity: 'warn',
+    title: 'API_URL_SSR is not set',
+    detail:
+      'Without it the dashboard server calls the api through the public API_URL, where a proxy such as Cloudflare can challenge it and break page loads. After the fix, run `openpanel reload` to apply it.',
+    fix: (target) => target.env.set('API_URL_SSR', BUNDLED_API_URL_SSR),
+  };
+};
+
 export const dashboardUrl: Check = (install) => {
   if (install.env.get('DASHBOARD_URL')) {
     return null;
@@ -755,6 +795,7 @@ export const checks: Check[] = [
   renamedEnvVars,
   dashboardUrl,
   apiUrl,
+  apiUrlSsr,
   adminCredentials,
   selfHosted,
   automaticMigrations,
