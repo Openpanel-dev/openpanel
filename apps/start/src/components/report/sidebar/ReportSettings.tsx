@@ -43,6 +43,11 @@ export function ReportSettings() {
 
   const funnelOptions = options?.type === 'funnel' ? options : undefined;
   const funnelGroup = funnelOptions?.funnelGroup;
+  // Conversion has no group key, so a stored `group` runs per session there.
+  const shownFunnelGroup =
+    chartType !== 'funnel' && funnelGroup === 'group'
+      ? 'session_id'
+      : funnelGroup || 'session_id';
   const funnelWindow = funnelOptions?.funnelWindow;
   const conversionYAxisScale =
     funnelOptions?.yAxisScale ?? DEFAULT_CONVERSION_Y_AXIS_SCALE;
@@ -214,7 +219,7 @@ export function ReportSettings() {
               }}
               placeholder="Default: Session"
               size="sm"
-              value={funnelGroup || 'session_id'}
+              value={shownFunnelGroup}
               variant="input"
             />
           </div>
