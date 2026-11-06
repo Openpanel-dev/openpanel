@@ -165,6 +165,37 @@ export function isKnownEventField(name: string): boolean {
   return false;
 }
 
+/**
+ * The "hold property constant" fields a funnel or conversion can group its
+ * steps by: event-level only (a top-level events column or an event
+ * `properties.*` key). Profile, group and cohort values do not change from one
+ * step to the next, and a wildcard key renders an array, so those are dropped,
+ * as are unknown names and duplicates.
+ */
+export function knownHoldProperties(names: string[] = []): string[] {
+  return Array.from(new Set(names)).filter((name) => {
+    const property = normalizeEventField(name);
+    if (property.startsWith('properties.')) {
+      return !(property.includes('*') || isWildcardPropertyKey(property));
+    }
+    return EVENT_TOP_LEVEL_COLUMNS.has(property);
+  });
+}
+
+/** The per-row expression a held property is grouped by. */
+export function holdPropertyExpression(
+  name: string,
+  eventsAlias: string
+): SqlFragment {
+  return getSelectPropertyKey(
+    name,
+    undefined,
+    undefined,
+    undefined,
+    eventsAlias
+  );
+}
+
 export function isNumericColumn(columnName: string): boolean {
   return NUMERIC_EVENT_COLUMNS.includes(columnName);
 }
