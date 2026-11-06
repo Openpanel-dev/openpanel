@@ -3,6 +3,7 @@ import {
   AreaChartIcon,
   BarChart3Icon,
   BarChartHorizontalIcon,
+  ChartColumnBigIcon,
   ChartScatterIcon,
   ConeIcon,
   GitBranchIcon,
@@ -29,6 +30,7 @@ export const CHART_TYPE_ICONS: Record<IChartType, LucideIcon> = {
   retention: ChartScatterIcon,
   conversion: TrendingUpIcon,
   sankey: GitBranchIcon,
+  distribution: ChartColumnBigIcon,
 };
 
 // Shown rows: a short dashboard still looks like a dashboard, a long one is cut

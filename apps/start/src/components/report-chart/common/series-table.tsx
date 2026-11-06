@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useReportChartContext } from '../context';
 import { PreviousDiffIndicatorPure } from './previous-diff-indicator';
 import { SerieIcon } from './serie-icon';
+import { seriesMetricColumns } from './series-metric-columns';
 import {
   type ReportColumn,
   ReportDataTable,
@@ -30,13 +31,6 @@ interface Props {
   onReset?: () => void;
 }
 
-const METRIC_COLUMNS = [
-  { key: 'count', header: 'Unique' },
-  { key: 'sum', header: 'Sum' },
-  { key: 'average', header: 'Average' },
-  { key: 'min', header: 'Min' },
-  { key: 'max', header: 'Max' },
-] as const;
 const BREAKDOWN_COLUMN_WIDTH = 140;
 
 /** One row per series: its breakdown values, the summary metrics and a heat-shaded cell per period. */
@@ -48,7 +42,7 @@ export function SeriesTable({
   onReset,
 }: Props) {
   const {
-    report: { interval, unit, breakdowns, name },
+    report: { interval, unit, breakdowns, name, chartType },
   } = useReportChartContext();
   const number = useNumber();
   const formatDate = useFormatDateInterval({ interval, short: true });
@@ -102,7 +96,7 @@ export function SeriesTable({
           width: BREAKDOWN_COLUMN_WIDTH,
         })
       ),
-      ...METRIC_COLUMNS.map(
+      ...seriesMetricColumns(chartType).map(
         ({ key, header }): ReportColumn<SeriesRow> => ({
           id: key,
           header,
@@ -123,14 +117,15 @@ export function SeriesTable({
       ...dates.map(
         (date): ReportColumn<SeriesRow> => ({
           id: date,
-          header: formatDate(date),
+          // A distribution's columns are buckets, not periods.
+          header: chartType === 'distribution' ? date : formatDate(date),
           value: (row) => row.countByDate[date] ?? 0,
           render: (row) => formatValue(row.countByDate[date] ?? 0),
           decorate: 'heat',
         })
       ),
     ],
-    [breakdowns, dates, formatDate, formatValue]
+    [breakdowns, chartType, dates, formatDate, formatValue]
   );
 
   return (

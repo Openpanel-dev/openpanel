@@ -36,7 +36,10 @@ export async function executeChart(
 ): Promise<FinalChart> {
   const normalized = await normalizeWithinSubscription(deps, input);
   const executionPlan = plan(normalized);
-  const previousPlan = input.previous
+  // Distribution buckets are not periods, and continuous bins differ between
+  // the two ranges, so there is nothing to line the previous period up with.
+  const comparePrevious = input.previous && input.chartType !== 'distribution';
+  const previousPlan = comparePrevious
     ? plan({
         ...normalized,
         ...getChartPrevStartEndDate({
@@ -50,7 +53,9 @@ export async function executeChart(
   // 3-series comparison chart is one round trip's worth of latency, not two.
   const [computedSeries, previousSeries] = await Promise.all([
     fetch(deps, executionPlan).then((series) =>
-      compute(series, executionPlan.definitions)
+      compute(series, executionPlan.definitions, {
+        datesAreBuckets: input.chartType === 'distribution',
+      })
     ),
     previousPlan
       ? fetch(deps, previousPlan).then((series) =>

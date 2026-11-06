@@ -211,6 +211,7 @@ export const chartTypes = {
   retention: 'Retention',
   conversion: 'Conversion',
   sankey: 'Sankey',
+  distribution: 'Distribution',
 } as const;
 
 export const chartSegments = {
@@ -228,6 +229,20 @@ export const chartSegments = {
   property_p95: '95th percentile of property',
   property_p99: '99th percentile of property',
 };
+
+/** How a distribution chart reduces each user's events to the one value it buckets them by. */
+export const perUserAggregations = {
+  count: 'Count of events',
+  sum: 'Sum of property',
+  avg: 'Average of property',
+  min: 'Min of property',
+  max: 'Max of property',
+  median: 'Median of property',
+  p90: 'P90 of property',
+  p95: 'P95 of property',
+  p99: 'P99 of property',
+  distinct_count: 'Distinct values of property',
+} as const;
 
 export const lineTypes = {
   monotone: 'Monotone',
@@ -716,6 +731,22 @@ export const zChartEventSegment = z
   .default('event')
   .describe('Defines how the event data should be segmented or aggregated');
 
+export const zPerUserAggregation = z.enum(
+  objectToZodEnums(perUserAggregations)
+);
+
+export const zChartEventPerUser = z.object({
+  aggregation: zPerUserAggregation.describe(
+    "How each user's events are reduced to one value"
+  ),
+  property: z
+    .string()
+    .optional()
+    .describe(
+      'Event property to aggregate; every aggregation but count needs one'
+    ),
+});
+
 const JOINED_FILTER_PREFIXES = ['profile.', 'group.'];
 const COHORT_OPERATORS: string[] = ['inCohort', 'notInCohort'];
 
@@ -757,6 +788,11 @@ export const zChartEvent = z.object({
       'Optional property of the event used for specific segment calculations (e.g., value for property_sum/average)'
     ),
   segment: zChartEventSegment,
+  perUser: zChartEventPerUser
+    .optional()
+    .describe(
+      'Distribution charts only: the per-user value users are bucketed by. Defaults to the count of events.'
+    ),
   filters: z
     .array(zChartEventFilter)
     .default([])
@@ -1044,6 +1080,48 @@ export type IChartFormula = z.infer<typeof zChartFormula>;
 export type IChartEventItem = z.infer<typeof zChartEventItem>;
 export type IChartSeries = z.infer<typeof zChartSeries>;
 export type IChartEventSegment = z.infer<typeof zChartEventSegment>;
+export type IChartEventPerUser = z.infer<typeof zChartEventPerUser>;
+export type IPerUserAggregation = z.infer<typeof zPerUserAggregation>;
+export type PerUserBucketKind = 'fixed' | 'binned';
+
+/** Whether an aggregation lands in the fixed integer buckets or in bins over a value range. */
+export function perUserBucketKind(
+  aggregation: IPerUserAggregation = 'count'
+): PerUserBucketKind {
+  return aggregation === 'count' || aggregation === 'distinct_count'
+    ? 'fixed'
+    : 'binned';
+}
+
+function eventBucketKinds(series: IChartEventItem[]): Set<PerUserBucketKind> {
+  return new Set(
+    series.flatMap((serie) =>
+      serie.type === 'event'
+        ? [perUserBucketKind(serie.perUser?.aggregation)]
+        : []
+    )
+  );
+}
+
+/** Fixed buckets and bins have no x-axis in common, so a chart cannot show both. */
+export function mixesPerUserBucketKinds(series: IChartEventItem[]): boolean {
+  return eventBucketKinds(series).size > 1;
+}
+
+/**
+ * The kind a series has to keep to match the other series, if they agree on
+ * one. A report that already mixes them leaves every series free, so it can be
+ * fixed one series at a time.
+ */
+export function requiredPerUserBucketKind(
+  series: IChartEventItem[],
+  seriesId: string | undefined
+): PerUserBucketKind | undefined {
+  const kinds = eventBucketKinds(
+    series.filter((serie) => serie.id !== seriesId)
+  );
+  return kinds.size === 1 ? [...kinds][0] : undefined;
+}
 export type IChartEventFilter = IChartEvent['filters'][number];
 export type IChartEventFilterValue =
   IChartEvent['filters'][number]['value'][number];
