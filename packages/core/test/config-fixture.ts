@@ -18,6 +18,7 @@ export function testCoreConfig(
     adminAuth: undefined,
     encryptionKey: undefined,
     pingDisabled: false,
+    faviconFetchDisabled: false,
     logging: {
       level: 'info',
       silent: false,

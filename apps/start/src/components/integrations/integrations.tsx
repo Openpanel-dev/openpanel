@@ -47,7 +47,7 @@ export const CLIENT_INTEGRATIONS: Record<IIntegrationType, IClientIntegration> =
       icon: (
         <IntegrationCardLogoImage
           backgroundColor="#481449"
-          src="https://play-lh.googleusercontent.com/mzJpTCsTW_FuR6YqOPaLHrSEVCSJuXzCljdxnCKhVZMcu6EESZBQTCHxMh8slVtnKqo"
+          src="/logos/slack.png"
         />
       ),
       Form: SlackIntegrationForm,
@@ -57,7 +57,8 @@ export const CLIENT_INTEGRATIONS: Record<IIntegrationType, IClientIntegration> =
       icon: (
         <IntegrationCardLogoImage
           backgroundColor="#5864F2"
-          src="https://static.vecteezy.com/system/resources/previews/006/892/625/non_2x/discord-logo-icon-editorial-free-vector.jpg"
+          className="p-3"
+          src="/logos/discord.svg"
         />
       ),
       Form: DiscordIntegrationForm,

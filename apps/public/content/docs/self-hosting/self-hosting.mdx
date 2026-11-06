@@ -200,6 +200,39 @@ ALLOW_INVITATION=false
 
 For a complete reference of all environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
 
+### Running without outbound calls
+
+A self-hosted dashboard loads its scripts, fonts, maps and logos from your own server. With `SELF_HOSTED` set, which `openpanel init` does for you, it also skips the UserJot feedback widget that OpenPanel Cloud loads, and "Give feedback" becomes a plain link to our public board.
+
+Two things still leave your server by default. Turn them off in `.env`:
+
+```bash title=".env"
+DISABLE_PING=true
+DISABLE_FAVICON_FETCH=true
+```
+
+| Variable | What it stops |
+| --- | --- |
+| `DISABLE_PING` | The daily usage ping to `api.openpanel.dev`, which sends your dashboard URL and total event count |
+| `DISABLE_FAVICON_FETCH` | Favicon lookups from the API to `icons.duckduckgo.com` and `www.google.com` (which can redirect to `*.gstatic.com`). Referrers and pages show no favicon, but the bundled browser, OS and device logos stay |
+
+Run `openpanel reload` after changing `.env`. If your setup lists environment variables per service, as the Coolify template does, set `DISABLE_FAVICON_FETCH` on the API and `DISABLE_PING` on the worker.
+
+The rest only happens when you use the feature that needs it:
+
+- **Email**: Resend or your SMTP server. Emails also show a logo hosted on `cdn.jsdelivr.net`, which the recipient's mail client loads.
+- **AI chat**: your OpenAI or Anthropic endpoint. Its docs tool reads `openpanel.dev/llms-full.txt` and carries on without it if that fails.
+- **Integrations and sign-in**: Slack, Discord, webhooks, S3 and GCS exports, Google Search Console, social login and imports from Mixpanel or Amplitude talk to those services.
+- **Profile avatars**: if your events set an avatar URL, the browser viewing the profile loads it from that URL.
+- **The `openpanel` CLI**: checks GitHub for new releases, and `init` and `upgrade` pull images from a registry.
+- **Public tool routes**: `/tools/site-checker` and `/tools/ip-lookup` on the API make their own lookups when called. The dashboard doesn't use them.
+
+Links in the dashboard, such as Docs, go to `openpanel.dev` only when someone clicks them.
+
+<Callout>
+We have not tested a full install on a network with no outbound access, so check your own setup before relying on this. Install, upgrades and image pulls need a registry you can reach.
+</Callout>
+
 ## Helpful commands
 
 Run these anywhere: the CLI finds your install (the current directory, `./self-hosting` in an old git clone, the last install it used, or a running OpenPanel stack) and prints which one it picked. Pass `--dir <path>` to choose explicitly.

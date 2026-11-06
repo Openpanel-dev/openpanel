@@ -114,6 +114,16 @@ describe('the boot flags main.ts branches on', () => {
     ).toBe(false);
   });
 
+  it('DISABLE_FAVICON_FETCH is 1 or true, so `false` keeps favicons', () => {
+    const disabled = (value?: string) =>
+      loadConfig({ ...base, DISABLE_FAVICON_FETCH: value }).core
+        .faviconFetchDisabled;
+    expect(disabled()).toBe(false);
+    expect(disabled('1')).toBe(true);
+    expect(disabled('true')).toBe(true);
+    expect(disabled('false')).toBe(false);
+  });
+
   it('QUEUE_NAMESPACE and QUEUE_CLUSTER default to off, so queue keys stay unprefixed', () => {
     const config = loadConfig(base);
     expect(config.QUEUE_CLUSTER).toBe(false);

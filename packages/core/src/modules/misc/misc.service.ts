@@ -102,9 +102,14 @@ function notFound(): ImageAssetFailure {
 
 /** `GET /misc/favicon?url=` — the site's icon as the icon services have it, unmodified. */
 export async function getFavicon(
+  config: CoreConfig,
   rawUrl: string | undefined,
   logger?: Pick<Logger, 'debug' | 'warn' | 'error'>
 ): Promise<ImageAssetResult> {
+  if (config.faviconFetchDisabled) {
+    return notFound();
+  }
+
   const hostname = hostnameFromInput(rawUrl);
   if (!hostname) {
     return notFound();

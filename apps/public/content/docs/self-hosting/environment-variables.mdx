@@ -714,6 +714,32 @@ Enable self-hosted mode. Set to `true` or `1` to enable self-hosting features. U
 SELF_HOSTED=true
 ```
 
+### DISABLE_PING
+
+**Type**: `boolean`
+**Required**: No
+**Default**: Not set
+
+Stops the daily usage ping, which sends your dashboard URL and total event count to `api.openpanel.dev`. Any value turns it off, including `false`, so remove the variable to turn the ping back on.
+
+**Example**:
+```bash
+DISABLE_PING=true
+```
+
+### DISABLE_FAVICON_FETCH
+
+**Type**: `boolean`
+**Required**: No
+**Default**: `false`
+
+Stops the API asking DuckDuckGo and Google for the favicons shown next to referrers and pages. `/misc/favicon` answers 404 and the dashboard leaves those icons out. Set to `true` or `1`. Read by the API only.
+
+**Example**:
+```bash
+DISABLE_FAVICON_FETCH=true
+```
+
 ## Worker & Queue
 
 ### DISABLE_BULLBOARD
