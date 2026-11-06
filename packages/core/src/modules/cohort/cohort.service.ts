@@ -6,6 +6,7 @@
 
 import type { ClickHouseSettings } from '@clickhouse/client';
 import { type SqlFragment, sql } from '@openpanel/db/src/clickhouse/sql';
+import type { Cohort } from '@openpanel/db/src/prisma-client';
 import { chQuery } from '../../ch-query';
 import type { CoreConfig } from '../../config';
 import type { ServiceDeps, Services } from '../../services';
@@ -1095,6 +1096,24 @@ export function getCohortMemberRoutes(
   );
 }
 
+const DUPLICATE_NAME_PREFIX = 'Copy of ';
+
+/** Copies the definition only; membership is recomputed for the copy. */
+export function duplicateCohort(
+  deps: ServiceDeps,
+  cohort: Cohort
+): Promise<Cohort> {
+  return deps.db.cohort.create({
+    data: {
+      name: `${DUPLICATE_NAME_PREFIX}${cohort.name}`,
+      description: cohort.description,
+      projectId: cohort.projectId,
+      definition: cohort.definition ?? {},
+      isStatic: cohort.isStatic,
+    },
+  });
+}
+
 export function createCohortService(
   deps: ServiceDeps,
   _services: () => Services
@@ -1126,9 +1145,22 @@ export function createCohortService(
     );
   }
 
+  async function duplicate(cohort: Cohort): Promise<Cohort> {
+    const copy = await duplicateCohort(deps, cohort);
+    try {
+      await enqueueCompute(copy.id);
+    } catch (error) {
+      // Static cohorts can't be refreshed, so this compute is a copy's only one.
+      await deps.db.cohort.delete({ where: { id: copy.id } });
+      throw error;
+    }
+    return copy;
+  }
+
   return {
     updateMembership,
     listRefreshableCohortIds: listCohortIds,
     enqueueCompute,
+    duplicate,
   };
 }
