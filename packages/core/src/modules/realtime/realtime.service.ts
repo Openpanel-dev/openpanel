@@ -15,13 +15,20 @@ import {
 } from '../../shared/ch-dates';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { type IClickhouseEvent, transformEvent } from '../event/event.service';
+import { getGroupsByIds } from '../group/group.service';
 import { getProfiles } from '../profile/profile.service';
+import type { RealtimeFilters } from './realtime.constants';
 
 const REALTIME_WINDOW_MINUTES = 30;
+const ONLINE_WINDOW_MINUTES = 5;
 const ACTIVE_SESSIONS_LIMIT = 50;
 const RECENT_SESSIONS_LIMIT = 30;
 const SESSION_START_EVENT = 'session_start';
+const ACTIVE_PEOPLE_LIMIT = 30;
+const ACTIVE_GROUPS_LIMIT = 30;
+const TOP_PAGES_LIMIT = 10;
 const TOP_SOURCES_LIMIT = 8;
+const FILTER_OPTIONS_LIMIT = 30;
 const MS_PER_MINUTE = 60_000;
 const COORDINATES_QUERY_LIMIT = 5000;
 const COORDINATES_CLUSTER_TARGET = 500;
@@ -40,8 +47,30 @@ const EXCLUDED_BADGE_EVENT_NAMES = [
 // consistent; the raw `chQuery` ones send none.
 const CLIX_SESSION_TIMEZONE = { session_timezone: 'UTC' } as const;
 
+/** Captures the host of a URL and matches nothing else, such as `Google`. */
+const REFERRER_URL_HOST_PATTERN =
+  '^[a-zA-Z][a-zA-Z0-9+.-]*://(?:[^/@]*@)?(?:www\\.)?([^/:?#]+)';
+
+/** `referrer_name` holds the full URL for any referrer we have no name for. */
+export const REFERRER_HOST = sql`if(match(referrer_name, ${sql.string(REFERRER_URL_HOST_PATTERN)}), extract(referrer_name, ${sql.string(REFERRER_URL_HOST_PATTERN)}), referrer_name)`;
+
 function since(): Date {
   return subMinutes(new Date(), REALTIME_WINDOW_MINUTES);
+}
+
+function buildRealtimeFilterClause(filters?: RealtimeFilters): SqlFragment {
+  const countries = filters?.countries ?? [];
+  const referrers = filters?.referrers ?? [];
+  const countryClause =
+    countries.length > 0
+      ? sql` AND country IN ${sql.array('String', countries)}`
+      : sql.empty;
+  const referrerClause =
+    referrers.length > 0
+      ? sql` AND ${REFERRER_HOST} IN ${sql.array('String', referrers)}`
+      : sql.empty;
+
+  return sql`${countryClause}${referrerClause}`;
 }
 
 export interface RealtimeLocation {
@@ -215,7 +244,8 @@ function buildRealtimeBadgeDetailsFilter(input: {
 
 export async function getRealtimeCoordinates(
   deps: ServiceDeps,
-  projectId: string
+  projectId: string,
+  filters?: RealtimeFilters
 ) {
   const res = await chQuery<CoordinatePoint>(
     deps,
@@ -229,7 +259,7 @@ export async function getRealtimeCoordinates(
     WHERE project_id = ${sql.string(projectId)}
       AND created_at >= now() - INTERVAL ${sql.uint64(REALTIME_WINDOW_MINUTES)} MINUTE
       AND longitude IS NOT NULL
-      AND latitude IS NOT NULL
+      AND latitude IS NOT NULL${buildRealtimeFilterClause(filters)}
     GROUP BY country, city, longitude, latitude
     ORDER BY count DESC
     LIMIT ${sql.uint64(COORDINATES_QUERY_LIMIT)}`
@@ -244,17 +274,18 @@ export async function getRealtimeMapBadgeDetails(
     projectId: string;
     detailScope: RealtimeBadgeDetailScope;
     locations: RealtimeLocation[];
+    filters?: RealtimeFilters;
   }
 ) {
   const sinceDate = formatClickhouseDate(since());
-  const locationFilter = buildRealtimeBadgeDetailsFilter(input);
+  const locationFilter = sql`(${buildRealtimeBadgeDetailsFilter(input)})${buildRealtimeFilterClause(input.filters)}`;
   const projectIdParam = sql.string(input.projectId);
   const sinceParam = sql.string(sinceDate);
   const events = sql.id(TABLE_NAMES.events);
 
   const summaryQuery = sql`SELECT COUNT(DISTINCT session_id) as total_sessions, COUNT(DISTINCT nullIf(profile_id, '')) as total_profiles FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND ${locationFilter}`;
 
-  const topReferrersQuery = sql`SELECT referrer_name, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND referrer_name != ${sql.string('')} AND ${locationFilter} GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
+  const topReferrersQuery = sql`SELECT ${REFERRER_HOST} AS referrer_host, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND referrer_name != ${sql.string('')} AND ${locationFilter} GROUP BY referrer_host ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
 
   const topPathsQuery = sql`SELECT origin, path, COUNT(DISTINCT session_id) as count FROM ${events} WHERE project_id = ${projectIdParam} AND created_at >= ${sinceParam} AND path != ${sql.string('')} AND ${locationFilter} GROUP BY origin, path ORDER BY count DESC LIMIT ${sql.uint64(MAP_BADGE_TOP_LIMIT)}`;
 
@@ -267,7 +298,7 @@ export async function getRealtimeMapBadgeDetails(
         total_profiles: number;
       }>(deps, summaryQuery, CLIX_SESSION_TIMEZONE),
       chQuery<{
-        referrer_name: string;
+        referrer_host: string;
         count: number;
       }>(deps, topReferrersQuery, CLIX_SESSION_TIMEZONE),
       chQuery<{
@@ -340,7 +371,7 @@ export async function getRealtimeMapBadgeDetails(
       ).size,
     },
     topReferrers: topReferrers.map((item) => ({
-      referrerName: item.referrer_name,
+      referrerName: item.referrer_host,
       count: item.count,
     })),
     topPaths,
@@ -369,7 +400,8 @@ export async function getRealtimeMapBadgeDetails(
 
 export async function getRealtimeActiveSessions(
   deps: ServiceDeps,
-  projectId: string
+  projectId: string,
+  filters?: RealtimeFilters
 ) {
   const rows = await chQuery<IClickhouseEvent>(
     deps,
@@ -379,7 +411,7 @@ export async function getRealtimeActiveSessions(
       device
     FROM ${sql.id(TABLE_NAMES.events)}
     WHERE project_id = ${sql.string(projectId)}
-      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}${buildRealtimeFilterClause(filters)}
     ORDER BY created_at DESC
     LIMIT ${sql.uint64(ACTIVE_SESSIONS_LIMIT)}`
   );
@@ -389,7 +421,8 @@ export async function getRealtimeActiveSessions(
 /** The latest sessions to start, newest first: one `session_start` row each. */
 export async function getRealtimeRecentSessions(
   deps: ServiceDeps,
-  projectId: string
+  projectId: string,
+  filters?: RealtimeFilters
 ) {
   const rows = await chQuery<IClickhouseEvent>(
     deps,
@@ -400,7 +433,7 @@ export async function getRealtimeRecentSessions(
     FROM ${sql.id(TABLE_NAMES.events)}
     WHERE project_id = ${sql.string(projectId)}
       AND name = ${sql.string(SESSION_START_EVENT)}
-      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}${buildRealtimeFilterClause(filters)}
     ORDER BY created_at DESC
     LIMIT ${sql.uint64(RECENT_SESSIONS_LIMIT)}`
   );
@@ -415,10 +448,12 @@ export interface RealtimeTopSources {
 /** Top referrers and top countries from one scan of the window. */
 export async function getRealtimeTopSources(
   deps: ServiceDeps,
-  projectId: string
+  projectId: string,
+  filters?: RealtimeFilters,
+  limit = TOP_SOURCES_LIMIT
 ): Promise<RealtimeTopSources> {
   const rows = await chQuery<{
-    referrer_name: string;
+    referrer_host: string;
     country: string;
     sessions: number;
     is_referrer_row: number;
@@ -426,29 +461,225 @@ export async function getRealtimeTopSources(
   }>(
     deps,
     sql`SELECT
-      referrer_name,
+      ${REFERRER_HOST} AS referrer_host,
       country,
       uniq(session_id) AS sessions,
       grouping(country) AS is_referrer_row,
-      grouping(referrer_name) AS is_country_row
+      grouping(referrer_host) AS is_country_row
     FROM ${sql.id(TABLE_NAMES.events)}
     WHERE project_id = ${sql.string(projectId)}
-      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
-    GROUP BY GROUPING SETS ((referrer_name), (country))
-    HAVING (is_referrer_row = 1 AND referrer_name != ${sql.string('')})
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}${buildRealtimeFilterClause(filters)}
+    GROUP BY GROUPING SETS ((referrer_host), (country))
+    HAVING (is_referrer_row = 1 AND referrer_host != ${sql.string('')})
       OR (is_country_row = 1 AND country != ${sql.string('')})
     ORDER BY sessions DESC
-    LIMIT ${sql.uint64(TOP_SOURCES_LIMIT)} BY is_referrer_row, is_country_row`
+    LIMIT ${sql.uint64(limit)} BY is_referrer_row, is_country_row`
   );
 
   return {
     referrers: rows
       .filter((row) => row.is_referrer_row === 1)
-      .map((row) => ({ name: row.referrer_name, sessions: row.sessions })),
+      .map((row) => ({ name: row.referrer_host, sessions: row.sessions })),
     countries: rows
       .filter((row) => row.is_country_row === 1)
       .map((row) => ({ country: row.country, sessions: row.sessions })),
   };
+}
+
+/** Every value worth offering in the filter pickers, whatever is filtered now. */
+export function getRealtimeFilterOptions(
+  deps: ServiceDeps,
+  projectId: string
+): Promise<RealtimeTopSources> {
+  return getRealtimeTopSources(
+    deps,
+    projectId,
+    undefined,
+    FILTER_OPTIONS_LIMIT
+  );
+}
+
+/** The filtered twin of `getActiveVisitorCount`, which only knows whole projects. */
+export async function getRealtimeOnlineCount(
+  deps: ServiceDeps,
+  projectId: string,
+  filters?: RealtimeFilters
+): Promise<number> {
+  const rows = await chQuery<{ count: number }>(
+    deps,
+    sql`SELECT uniq(profile_id) AS count
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND profile_id != ${sql.string('')}
+      AND created_at >= now() - INTERVAL ${sql.uint64(ONLINE_WINDOW_MINUTES)} MINUTE${buildRealtimeFilterClause(filters)}`
+  );
+
+  return rows[0]?.count ?? 0;
+}
+
+export interface RealtimeActivePerson {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatar: string;
+  lastSeenAt: Date;
+  path: string;
+  country: string;
+  city: string;
+  groups: Array<{ id: string; name: string; type: string }>;
+}
+
+/** Identified visitors in the window, most recently active first. */
+export async function getRealtimeActivePeople(
+  deps: ServiceDeps,
+  projectId: string,
+  filters?: RealtimeFilters
+): Promise<RealtimeActivePerson[]> {
+  const rows = await chQuery<{
+    profile_id: string;
+    last_seen_at: string;
+    latest_path: string;
+    latest_country: string;
+    latest_city: string;
+    group_ids: string[];
+  }>(
+    deps,
+    sql`SELECT
+      profile_id,
+      max(created_at) AS last_seen_at,
+      argMax(path, created_at) AS latest_path,
+      argMax(country, created_at) AS latest_country,
+      argMax(city, created_at) AS latest_city,
+      groupUniqArrayArray(groups) AS group_ids
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+      AND profile_id != ${sql.string('')}
+      AND profile_id != device_id${buildRealtimeFilterClause(filters)}
+    GROUP BY profile_id
+    ORDER BY last_seen_at DESC
+    LIMIT ${sql.uint64(ACTIVE_PEOPLE_LIMIT)}`,
+    CLIX_SESSION_TIMEZONE
+  );
+
+  const profiles = await getProfiles(
+    deps,
+    rows.map((row) => row.profile_id),
+    projectId
+  );
+  const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+  // Membership set on the profile counts too: not every event carries `groups`.
+  const groupIdsOf = (row: (typeof rows)[number]) => [
+    ...new Set([
+      ...row.group_ids,
+      ...(profileById.get(row.profile_id)?.groups ?? []),
+    ]),
+  ];
+  const groups = await getGroupsByIds(deps, projectId, [
+    ...new Set(rows.flatMap(groupIdsOf)),
+  ]);
+  const groupById = new Map(groups.map((group) => [group.id, group]));
+
+  return rows.map((row) => {
+    const profile = profileById.get(row.profile_id);
+
+    return {
+      id: row.profile_id,
+      firstName: profile?.firstName ?? '',
+      lastName: profile?.lastName ?? '',
+      email: profile?.email ?? '',
+      avatar: profile?.avatar ?? '',
+      lastSeenAt: convertClickhouseDateToJs(row.last_seen_at),
+      path: row.latest_path,
+      country: row.latest_country,
+      city: row.latest_city,
+      groups: groupIdsOf(row).flatMap((id) => {
+        const group = groupById.get(id);
+        return group
+          ? [{ id: group.id, name: group.name, type: group.type }]
+          : [];
+      }),
+    };
+  });
+}
+
+export interface RealtimeActiveGroup {
+  id: string;
+  name: string;
+  type: string;
+  people: number;
+  lastSeenAt: Date;
+}
+
+/** Groups with activity in the window, most recently active first. */
+export async function getRealtimeActiveGroups(
+  deps: ServiceDeps,
+  projectId: string,
+  filters?: RealtimeFilters
+): Promise<RealtimeActiveGroup[]> {
+  const rows = await chQuery<{
+    group_id: string;
+    people: number;
+    last_seen_at: string;
+  }>(
+    deps,
+    sql`SELECT
+      group_id,
+      uniq(profile_id) AS people,
+      max(created_at) AS last_seen_at
+    FROM ${sql.id(TABLE_NAMES.events)}
+    ARRAY JOIN groups AS group_id
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}${buildRealtimeFilterClause(filters)}
+    GROUP BY group_id
+    ORDER BY last_seen_at DESC
+    LIMIT ${sql.uint64(ACTIVE_GROUPS_LIMIT)}`,
+    CLIX_SESSION_TIMEZONE
+  );
+
+  const groups = await getGroupsByIds(
+    deps,
+    projectId,
+    rows.map((row) => row.group_id)
+  );
+  const groupById = new Map(groups.map((group) => [group.id, group]));
+
+  return rows.flatMap((row) => {
+    const group = groupById.get(row.group_id);
+    return group
+      ? [
+          {
+            id: group.id,
+            name: group.name,
+            type: group.type,
+            people: row.people,
+            lastSeenAt: convertClickhouseDateToJs(row.last_seen_at),
+          },
+        ]
+      : [];
+  });
+}
+
+/** The most visited paths in the window. */
+export async function getRealtimeTopPages(
+  deps: ServiceDeps,
+  projectId: string,
+  filters?: RealtimeFilters
+): Promise<Array<{ id: string; path: string; sessions: number }>> {
+  const rows = await chQuery<{ path: string; sessions: number }>(
+    deps,
+    sql`SELECT path, uniq(session_id) AS sessions
+    FROM ${sql.id(TABLE_NAMES.events)}
+    WHERE project_id = ${sql.string(projectId)}
+      AND created_at >= ${sql.string(formatClickhouseDate(since()))}
+      AND path != ${sql.string('')}${buildRealtimeFilterClause(filters)}
+    GROUP BY path
+    ORDER BY sessions DESC
+    LIMIT ${sql.uint64(TOP_PAGES_LIMIT)}`
+  );
+
+  return rows.map((row) => ({ id: row.path, ...row }));
 }
 
 export interface RealtimeHistogram {
@@ -461,7 +692,8 @@ export interface RealtimeHistogram {
 /** Per-minute activity for the window, with the window total from the same scan. */
 export async function getRealtimeHistogram(
   deps: ServiceDeps,
-  projectId: string
+  projectId: string,
+  filters?: RealtimeFilters
 ): Promise<RealtimeHistogram> {
   const windowStart = since();
   const rows = await chQuery<{
@@ -478,7 +710,7 @@ export async function getRealtimeHistogram(
       grouping(minute) AS is_total
     FROM ${sql.id(TABLE_NAMES.events)}
     WHERE project_id = ${sql.string(projectId)}
-      AND created_at >= ${sql.string(formatClickhouseDate(windowStart))}
+      AND created_at >= ${sql.string(formatClickhouseDate(windowStart))}${buildRealtimeFilterClause(filters)}
     GROUP BY GROUPING SETS ((minute), ())`,
     CLIX_SESSION_TIMEZONE
   );

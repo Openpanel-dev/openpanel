@@ -9,12 +9,18 @@
 
 import { z } from 'zod';
 import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { zRealtimeFilters } from './realtime.constants';
 import {
+  getRealtimeActiveGroups,
+  getRealtimeActivePeople,
   getRealtimeActiveSessions,
   getRealtimeCoordinates,
+  getRealtimeFilterOptions,
   getRealtimeHistogram,
   getRealtimeMapBadgeDetails,
+  getRealtimeOnlineCount,
   getRealtimeRecentSessions,
+  getRealtimeTopPages,
   getRealtimeTopSources,
 } from './realtime.service';
 
@@ -35,9 +41,14 @@ const realtimeBadgeDetailScopeSchema = z.enum([
   'merged',
 ]);
 
+const realtimeInputSchema = z.object({
+  projectId: z.string(),
+  filters: zRealtimeFilters.optional(),
+});
+
 export const realtimeRouter = createTRPCRouter({
   coordinates: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
+    .input(realtimeInputSchema)
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,
@@ -45,7 +56,7 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeCoordinates(ctx, input.projectId);
+      return getRealtimeCoordinates(ctx, input.projectId, input.filters);
     }),
   mapBadgeDetails: protectedProcedure
     .input(
@@ -56,6 +67,7 @@ export const realtimeRouter = createTRPCRouter({
           .array(realtimeLocationSchema)
           .min(MAP_BADGE_LOCATIONS_MIN)
           .max(MAP_BADGE_LOCATIONS_MAX),
+        filters: zRealtimeFilters.optional(),
       })
     )
     .query(async ({ input, ctx }) => {
@@ -68,7 +80,7 @@ export const realtimeRouter = createTRPCRouter({
       return getRealtimeMapBadgeDetails(ctx, input);
     }),
   activeSessions: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
+    .input(realtimeInputSchema)
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,
@@ -76,10 +88,10 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeActiveSessions(ctx, input.projectId);
+      return getRealtimeActiveSessions(ctx, input.projectId, input.filters);
     }),
   recentSessions: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
+    .input(realtimeInputSchema)
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,
@@ -87,10 +99,10 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeRecentSessions(ctx, input.projectId);
+      return getRealtimeRecentSessions(ctx, input.projectId, input.filters);
     }),
   topSources: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
+    .input(realtimeInputSchema)
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
         userId: ctx.session.userId,
@@ -98,9 +110,64 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeTopSources(ctx, input.projectId);
+      return getRealtimeTopSources(ctx, input.projectId, input.filters);
     }),
   histogram: protectedProcedure
+    .input(realtimeInputSchema)
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeHistogram(ctx, input.projectId, input.filters);
+    }),
+  activePeople: protectedProcedure
+    .input(realtimeInputSchema)
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeActivePeople(ctx, input.projectId, input.filters);
+    }),
+  activeGroups: protectedProcedure
+    .input(realtimeInputSchema)
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeActiveGroups(ctx, input.projectId, input.filters);
+    }),
+  topPages: protectedProcedure
+    .input(realtimeInputSchema)
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeTopPages(ctx, input.projectId, input.filters);
+    }),
+  onlineCount: protectedProcedure
+    .input(realtimeInputSchema)
+    .query(async ({ input, ctx }) => {
+      await ctx.services.auth.requireProjectAccess({
+        userId: ctx.session.userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      return getRealtimeOnlineCount(ctx, input.projectId, input.filters);
+    }),
+  filterOptions: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input, ctx }) => {
       await ctx.services.auth.requireProjectAccess({
@@ -109,6 +176,6 @@ export const realtimeRouter = createTRPCRouter({
         level: 'read',
       });
 
-      return getRealtimeHistogram(ctx, input.projectId);
+      return getRealtimeFilterOptions(ctx, input.projectId);
     }),
 });

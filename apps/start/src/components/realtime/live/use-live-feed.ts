@@ -8,21 +8,26 @@ import {
 /**
  * Turns a newest-first list that is refetched in bursts into a feed that
  * gains one item at a time. The first load shows at once; later arrivals
- * queue up and drop in on a steady beat.
+ * queue up and drop in on a steady beat. A new `resetKey` means a different
+ * list, so its first load shows at once too.
  */
-export function useLiveFeed<T extends { id: string }>(items: T[] | undefined) {
+export function useLiveFeed<T extends { id: string }>(
+  items: T[] | undefined,
+  resetKey = ''
+) {
   const [shown, setShown] = useState<T[]>([]);
   const seenIds = useRef(new Set<string>());
   const queue = useRef<T[]>([]);
-  const isPrimed = useRef(false);
+  const primedFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (!items) {
       return;
     }
 
-    if (!isPrimed.current) {
-      isPrimed.current = true;
+    if (primedFor.current !== resetKey) {
+      primedFor.current = resetKey;
+      queue.current = [];
       seenIds.current = new Set(items.map((item) => item.id));
       setShown(items.slice(0, FEED_MAX_ITEMS));
       return;
@@ -41,7 +46,7 @@ export function useLiveFeed<T extends { id: string }>(items: T[] | undefined) {
     queue.current = [...queue.current, ...arrivals.reverse()].slice(
       -FEED_MAX_ITEMS
     );
-  }, [items]);
+  }, [items, resetKey]);
 
   useEffect(() => {
     const interval = setInterval(() => {
