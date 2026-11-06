@@ -640,6 +640,9 @@ function perUserValue(
   if (aggregation === 'distinct_count') {
     return { value: sql`${aggregate}(${propertyKey})`, discrete: true };
   }
+  // `toFloat64OrNull` reads "inf" and "nan" as numbers, and one of them would
+  // make the whole range unusable.
+  body.where.finiteProperty = sql`isFinite(toFloat64OrZero(${propertyKey}))`;
   return {
     value: sql`${aggregate}(toFloat64OrNull(${propertyKey}))`,
     discrete: false,
@@ -700,7 +703,7 @@ export function perUserDistributionQuery(
         sumForEach(arrayMap(index -> toUInt64(index = bucket), range(${bucketCount}))) as counts
       FROM (
         SELECT *, ${bucket} as bucket
-        FROM (SELECT *${range} FROM (${perUser}) WHERE user_value IS NOT NULL)
+        FROM (SELECT *${range} FROM (${perUser}) WHERE user_value IS NOT NULL AND isFinite(user_value))
       )
       GROUP BY ${sql.join(labels, ', ')}
     )
