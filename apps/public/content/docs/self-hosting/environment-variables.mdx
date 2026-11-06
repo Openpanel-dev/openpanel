@@ -148,7 +148,7 @@ It also matters behind Cloudflare. Through the public `API_URL`, SSR requests le
 
 The browser always keeps using the public `API_URL`; only requests made from the dashboard server during SSR use `API_URL_SSR`. If unset, SSR falls back to `API_URL`. Point it straight at the API service, without the `/api` suffix: that prefix exists only on the public URL, where the proxy strips it.
 
-`openpanel upgrade` and `openpanel doctor --fix` add it to an existing Docker Compose install. To keep SSR on the public URL, leave a blank `API_URL_SSR=` line in `.env`.
+`openpanel upgrade` adds it to an existing install that the CLI manages (one with `op-api` and `op-dashboard` services) and applies it. `openpanel doctor --fix` adds it too; run `openpanel reload` afterwards to apply it. On any other setup, set it yourself. To keep SSR on the public URL, leave a blank `API_URL_SSR=` line in `.env`.
 
 **Example**:
 ```bash

@@ -203,10 +203,31 @@ describe('API_URL_SSR', () => {
     expect(fixed(dir).env.get('API_URL_SSR')).toBeUndefined();
   });
 
-  test('a compose file without op-api has no address to suggest', () => {
+  test('a dashboard on a separate network keeps the public route', () => {
     const dir = v1Copy();
-    editCompose(dir, (text) => text.replaceAll('op-api', 'custom-api'));
+    editCompose(dir, (text) =>
+      text.replace(
+        '  op-dashboard:\n    image:',
+        '  op-dashboard:\n    networks: [edge]\n    image:'
+      )
+    );
     expect(ids(dir)).not.toContain('env/api-url-ssr');
+  });
+
+  test('a network shared with the api still gets the internal address', () => {
+    const dir = v1Copy();
+    editCompose(dir, (text) =>
+      text
+        .replace(
+          '  op-dashboard:\n    image:',
+          '  op-dashboard:\n    networks: [edge, backend]\n    image:'
+        )
+        .replace(
+          '  op-api:\n    image:',
+          '  op-api:\n    networks:\n      backend: {}\n    image:'
+        )
+    );
+    expect(ids(dir)).toContain('env/api-url-ssr');
   });
 });
 
