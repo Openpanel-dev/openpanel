@@ -116,9 +116,11 @@ export const zChartInput = z.object({
     .describe('Top N for bar, pie and sankey.'),
   unit: z.string().optional().describe('Y-axis unit: `%`, `$`, `ms`.'),
   funnelGroup: z
-    .enum(['session_id', 'profile_id'])
+    .enum(['session_id', 'profile_id', 'group'])
     .optional()
-    .describe('Funnel only: count unique sessions or unique profiles.'),
+    .describe(
+      'Funnel only: count unique sessions, unique profiles or unique groups.'
+    ),
   funnelWindowHours: z
     .number()
     .int()

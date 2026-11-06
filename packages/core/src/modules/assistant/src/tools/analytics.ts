@@ -445,7 +445,9 @@ export function analyticsTools(ctx: ChatToolContext) {
           .min(1)
           .max(MAX_FUNNEL_WINDOW_HOURS)
           .default(DEFAULT_FUNNEL_WINDOW_HOURS),
-        groupBy: z.enum(['session_id', 'profile_id']).default('session_id'),
+        groupBy: z
+          .enum(['session_id', 'profile_id', 'group'])
+          .default('session_id'),
       }),
       execute: async ({
         title,
