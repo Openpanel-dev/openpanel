@@ -90,6 +90,7 @@ const PER_USER_AGGREGATE_FUNCTION: Record<
 const DISCRETE_BUCKET_BOUNDS = [1, 2, 3, 5, 10];
 const DISCRETE_BUCKET_LABELS = ['1', '2', '3', '4-5', '6-10', '11+'];
 const CONTINUOUS_BUCKET_COUNT = 10;
+const MIN_BIN_LABEL_DIGITS = 2;
 
 export const PROPERTY_VALUES_LIMIT = 100_000;
 /** `profiles` columns a `profile.<field>` reference may select. */
@@ -688,9 +689,12 @@ export function perUserDistributionQuery(
     : sql`if(hi = lo, 0, least(toUInt32(floor((user_value - lo) / ${width})), ${bins} - 1))`;
   // Read after the ARRAY JOIN, where the range travels as bucket_lo/bucket_hi.
   const binWidth = sql`((bucket_hi - bucket_lo) / ${bins})`;
+  // The label is what series points are keyed by, so two bins must never round
+  // to the same text: keep one digit more than the bin width needs.
+  const labelDigits = sql`greatest(toInt32(${sql.uint64(MIN_BIN_LABEL_DIGITS)}), toInt32(ceil(-log10(${binWidth}))) + 1)`;
   const bucketLabel = discrete
     ? sql`${sql.array('String', DISCRETE_BUCKET_LABELS)}[bucket + 1]`
-    : sql`if(bucket_hi = bucket_lo, toString(round(bucket_lo, 2)), concat(toString(round(bucket_lo + bucket * ${binWidth}, 2)), ' - ', toString(round(bucket_lo + (bucket + 1) * ${binWidth}, 2))))`;
+    : sql`if(bucket_hi = bucket_lo, toString(round(bucket_lo, ${sql.uint64(MIN_BIN_LABEL_DIGITS)})), concat(toString(round(bucket_lo + bucket * ${binWidth}, ${labelDigits})), ' - ', toString(round(bucket_lo + (bucket + 1) * ${binWidth}, ${labelDigits}))))`;
   const range = discrete
     ? sql`, 0 as lo, 0 as hi`
     : sql`, min(user_value) OVER () as lo, max(user_value) OVER () as hi`;

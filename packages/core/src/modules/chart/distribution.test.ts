@@ -1,6 +1,6 @@
 /**
  * Distribution charts over property values that the shared fixture does not
- * have: non-finite strings.
+ * have: non-finite strings and ranges narrower than the label precision.
  */
 
 import { afterAll, beforeAll, describe, expect, it, mock } from 'bun:test';
@@ -27,6 +27,7 @@ mock.module('@openpanel/redis', () => ({
 /** Event name -> one list of `value` properties per user. */
 const VALUES_BY_USER: Record<string, string[][]> = {
   score: [['1'], ['2'], ['5', 'Infinity'], ['inf'], ['nan'], ['-inf']],
+  rate: Array.from({ length: 10 }, (_, index) => [`0.10${index}`]),
 };
 
 type EventSeriesItem = Extract<IChartEventItem, { type: 'event' }>;
@@ -129,5 +130,15 @@ describe('distribution over awkward property values', () => {
     expect(chart.series[0]?.metrics.sum).toBe(3);
     expect(data[0]).toEqual({ date: '1 - 1.4', count: 1 });
     expect(data[9]).toEqual({ date: '4.6 - 5', count: 1 });
+  });
+
+  it('keeps every bin of a range narrower than two decimals', async () => {
+    const chart = await service.execute(report([series('rate', 'avg')]));
+    const data = chart.series[0]?.data ?? [];
+
+    expect(data).toHaveLength(10);
+    expect(new Set(data.map((point) => point.date)).size).toBe(10);
+    expect(chart.series[0]?.metrics.sum).toBe(10);
+    expect(chart.series[0]?.metrics.count).toBe(10);
   });
 });
