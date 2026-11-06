@@ -48,6 +48,7 @@ const RENAMED_ENV_VARS = [
   ['BULLBOARD_PASSWORD', 'ADMIN_PASSWORD'],
 ] as const;
 const BUNDLED_KAFKA_HOST = 'op-rp:';
+const BUNDLED_API_URL_SSR = 'http://op-api:3000';
 
 const templateCompose = parseDocument(templates.compose);
 
@@ -547,6 +548,22 @@ export const apiUrl: Check = (install) => {
   };
 };
 
+// `has`, not `get`: a blank `API_URL_SSR=` is an operator opting out of the
+// internal address, and a custom address is theirs to keep.
+export const apiUrlSsr: Check = (install) => {
+  if (install.env.has('API_URL_SSR') || !hasService(install, 'op-api')) {
+    return null;
+  }
+  return {
+    id: 'env/api-url-ssr',
+    severity: 'warn',
+    title: 'API_URL_SSR is not set',
+    detail:
+      'Without it the dashboard server calls the api through the public API_URL, where a proxy such as Cloudflare can challenge it and break page loads.',
+    fix: (target) => target.env.set('API_URL_SSR', BUNDLED_API_URL_SSR),
+  };
+};
+
 export const dashboardUrl: Check = (install) => {
   if (install.env.get('DASHBOARD_URL')) {
     return null;
@@ -755,6 +772,7 @@ export const checks: Check[] = [
   renamedEnvVars,
   dashboardUrl,
   apiUrl,
+  apiUrlSsr,
   adminCredentials,
   selfHosted,
   automaticMigrations,

@@ -53,6 +53,7 @@ describe('init output', () => {
     expect(files.get('.env')).toContain(
       `CLICKHOUSE_URL="${BUNDLED_URLS.clickhouse}"`
     );
+    expect(files.get('.env')).toContain('API_URL_SSR="http://op-api:3000"');
     expect(files.has('clickhouse/init-db.sh')).toBe(true);
     expect(files.has('caddy/Caddyfile')).toBe(true);
   });

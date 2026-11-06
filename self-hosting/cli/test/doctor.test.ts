@@ -37,6 +37,7 @@ describe('doctor on a v1 install', () => {
       'env/kafka-brokers',
       'env/kafka-partitions',
       'env/auth-secret',
+      'env/api-url-ssr',
       'env/automatic-migrations',
       'env/enabled-queues',
       'env/removed-vars',
