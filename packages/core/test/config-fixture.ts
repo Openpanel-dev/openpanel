@@ -140,7 +140,7 @@ export function testCoreConfig(
       vacuumEnabled: true,
       vacuumBatchSize: undefined,
       vacuumStaleThresholdMs: undefined,
-      profileBackfillEnabled: false,
+      profileBackfillEnabled: true,
       profileBackfillProjectIds: [],
     },
     query: {
