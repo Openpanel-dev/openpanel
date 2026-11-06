@@ -288,6 +288,16 @@ describe('distribution chart', () => {
     expect(data.slice(1, 9).every(([, count]) => count === 0)).toBe(true);
   });
 
+  it('stays empty until a property is picked for the aggregation', async () => {
+    const chart = await service.execute(
+      distribution(
+        pageView({ name: 'session_end', perUser: { aggregation: 'median' } })
+      )
+    );
+
+    expect(chart.series).toEqual([]);
+  });
+
   it('does not compare against the previous period', async () => {
     const chart = await service.execute({
       ...distribution(pageView({ name: '*' })),

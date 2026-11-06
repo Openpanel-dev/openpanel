@@ -610,7 +610,12 @@ function perUserValue(
 ): { value: SqlFragment; discrete: boolean } {
   const aggregation = event.perUser?.aggregation ?? 'count';
   const property = event.perUser?.property;
-  if (aggregation === 'count' || !property) {
+  if (aggregation === 'count') {
+    return { value: sql`count(*)`, discrete: true };
+  }
+  if (!property) {
+    // Nothing to aggregate yet: no rows, so the chart shows its empty state.
+    body.where.property = sql`0 = 1`;
     return { value: sql`count(*)`, discrete: true };
   }
   const propertyKey = fragmentWithProfileRefs(

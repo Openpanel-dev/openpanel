@@ -911,13 +911,13 @@ describe('distribution (per-user) chart', () => {
     await Promise.all([explain(sum), explain(distinct)]);
   });
 
-  it('falls back to the event count while no property is picked', async () => {
+  it('matches nothing while no property is picked', async () => {
     const rendered = await getChartSql({
       event: event({ perUser: { aggregation: 'p90' } }),
       breakdowns: [],
       ...distribution,
     });
-    expect(rendered.text).toContain('count(*) as user_value');
+    expect(rendered.text).toContain('0 = 1');
     await explain(rendered);
   });
 
