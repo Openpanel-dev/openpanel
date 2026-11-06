@@ -181,7 +181,6 @@ const IGNORED_NOISE = [
   /status of 502/, // console echo of a dev-server module 502
   /favicon/,
   /sentry/i,
-  /cdn\.brandfetch\.io|googleusercontent|vecteezy/, // third-party logos
 ];
 
 export interface PageIssues {

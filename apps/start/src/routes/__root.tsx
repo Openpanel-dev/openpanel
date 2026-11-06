@@ -16,6 +16,7 @@ import { LockIcon } from 'lucide-react';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
 import { EmptyState } from '@/components/empty-state';
+import { FeedbackWidgetScripts } from '@/components/feedback-widget-scripts';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
@@ -124,16 +125,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <Providers>{children}</Providers>
         <ThemeScriptOnce />
         <Scripts />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.$ujq=window.$ujq||[];window.uj=window.uj||new Proxy({},{get:(_,p)=>(...a)=>window.$ujq.push([p,...a])});document.head.appendChild(Object.assign(document.createElement('script'),{src:'https://cdn.userjot.com/sdk/v2/uj.js',type:'module',async:!0}));`,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.uj.init('cm6thlmwr03xr13jghznx87gk', { widget: true, trigger: 'custom' });`,
-          }}
-        />
+        <FeedbackWidgetScripts />
         <div className="hidden">
           <div className="bg-chart-0 text-chart-0" />
           <div className="bg-chart-1 text-chart-1" />

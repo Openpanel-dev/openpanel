@@ -280,6 +280,24 @@ describe('worker replicas', () => {
   });
 });
 
+describe('DISABLE_FAVICON_FETCH', () => {
+  const findingFor = (value: string) => {
+    const install = loadInstall(V1_FIXTURE);
+    install.env.set('DISABLE_FAVICON_FETCH', value);
+    return runDoctor(install).find(
+      (candidate) => candidate.id === 'env/favicon-fetch-flag'
+    );
+  };
+
+  test('flags a value that leaves the lookups running', () => {
+    expect(findingFor('yes')?.title).toContain('"yes"');
+  });
+
+  test.each(['true', '1', 'false', '0'])('accepts %s', (value) => {
+    expect(findingFor(value)).toBeUndefined();
+  });
+});
+
 test('flags DATABASE_URL_REPLICA, which v3 no longer reads', () => {
   const install = loadInstall(V1_FIXTURE);
   install.env.set('DATABASE_URL_REPLICA', 'postgresql://replica:5432/postgres');

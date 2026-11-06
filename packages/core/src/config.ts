@@ -260,6 +260,8 @@ export interface CoreConfig {
   encryptionKey: string | undefined;
   /** DISABLE_PING: a self-hosted instance opts out of the usage ping. */
   pingDisabled: boolean;
+  /** DISABLE_FAVICON_FETCH: `/misc/favicon` answers 404 and asks no icon service. */
+  faviconFetchDisabled: boolean;
   logging: LoggingConfig;
   auth: AuthConfig;
   cookies: CookieConfig;

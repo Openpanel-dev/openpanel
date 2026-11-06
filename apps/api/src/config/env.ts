@@ -471,6 +471,7 @@ const rawSchema = z.object({
   POLAR_WEBHOOK_SECRET: optionalString,
   GCS_API_ENDPOINT: optionalString,
   DISABLE_PING: definedIsTrueSchema,
+  DISABLE_FAVICON_FETCH: trueOrOneSchema,
 
   KAFKA_CLIENT_ID: stringWithDefault(DEFAULT_KAFKA_CLIENT_ID),
   KAFKA_BROKERS: tokenList,
@@ -849,6 +850,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         : undefined,
     encryptionKey: raw.ENCRYPTION_KEY,
     pingDisabled: raw.DISABLE_PING,
+    faviconFetchDisabled: raw.DISABLE_FAVICON_FETCH,
     logging: {
       level: raw.LOG_LEVEL,
       silent: raw.LOG_SILENT,

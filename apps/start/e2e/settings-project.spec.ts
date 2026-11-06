@@ -563,6 +563,22 @@ test.describe('imports', () => {
     return dialog;
   }
 
+  test('provider logos are served by the dashboard itself', async ({
+    page,
+  }) => {
+    await gotoHydrated(page, settingsPath('imports'), importButtons);
+    const logos = page.getByRole('img', { name: 'Integration Logo' });
+    await expect(logos).toHaveCount(PROVIDERS.length);
+
+    for (const logo of await logos.all()) {
+      await expect(logo).toHaveAttribute('src', /^\/logos\//);
+      const loaded = await logo.evaluate(
+        (image: HTMLImageElement) => image.complete && image.naturalWidth > 0
+      );
+      expect(loaded).toBe(true);
+    }
+  });
+
   test('every provider modal validates before starting an import', async ({
     page,
   }) => {

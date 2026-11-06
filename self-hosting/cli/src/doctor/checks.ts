@@ -49,6 +49,7 @@ const RENAMED_ENV_VARS = [
 ] as const;
 const BUNDLED_KAFKA_HOST = 'op-rp:';
 const BUNDLED_API_URL_SSR = 'http://op-api:3000';
+const FAVICON_FLAG_VALUES = new Set(['true', '1', 'false', '0']);
 
 const templateCompose = parseDocument(templates.compose);
 
@@ -632,6 +633,23 @@ export const selfHosted: Check = (install) => {
   };
 };
 
+// Any other value reads as off, so `yes` would leave the lookups running for
+// an operator who believes they stopped them.
+export const faviconFetchFlag: Check = (install) => {
+  const value = install.env.get('DISABLE_FAVICON_FETCH');
+  if (!value || FAVICON_FLAG_VALUES.has(value)) {
+    return null;
+  }
+  return {
+    id: 'env/favicon-fetch-flag',
+    severity: 'warn',
+    title: `DISABLE_FAVICON_FETCH is "${value}"`,
+    detail:
+      'Only `true` or `1` stops the api asking icon services for favicons.',
+    manual: 'Set it to `true`, or remove it to keep favicons.',
+  };
+};
+
 export const automaticMigrations: Check = (install) => {
   const value = install.env.get('AUTOMATIC_MIGRATIONS');
   if (value === 'true' || value === '1') {
@@ -798,6 +816,7 @@ export const checks: Check[] = [
   apiUrlSsr,
   adminCredentials,
   selfHosted,
+  faviconFetchFlag,
   automaticMigrations,
   enabledQueues,
   removedEnvVars,
