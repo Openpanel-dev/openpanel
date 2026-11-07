@@ -107,6 +107,27 @@ describe('getRetentionCohort', () => {
     expect(cohortsOnly(rows)).toEqual(mutable(RETENTION_BLUEPRINT.weekOn));
   });
 
+  it('keeps a cohort none of whose users did the return event', async () => {
+    // Only RU1 and RU2 purchase, both from the D0 cohort of three; the D1 cohort
+    // of RU4 and RU5 never does.
+    const rows = await getRetentionCohort(deps, {
+      projectId: PROJECT_ID,
+      firstEvent: ['app_open'],
+      secondEvent: ['purchase'],
+      criteria: 'on',
+      interval: 'day',
+      startDate: day.start,
+      endDate: day.end,
+    });
+
+    expect(cohortsOnly(rows)).toEqual([
+      { cohort_interval: '2024-03-04', sum: 3, values: [0, 1, 1] },
+      { cohort_interval: '2024-03-05', sum: 2, values: [0, 0, 0] },
+    ]);
+    // The D0 returns pooled over all five users, not just D0's three.
+    expect(rows[0]?.percentages).toEqual([0, 0.2, 0.2]);
+  });
+
   it('prepends a weighted-average row that is 100% retained at interval 0', async () => {
     const rows = await getRetentionCohort(deps, {
       projectId: PROJECT_ID,
