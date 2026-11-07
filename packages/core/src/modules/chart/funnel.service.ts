@@ -420,6 +420,7 @@ export async function getFunnelCore(
     steps: string[];
     windowHours?: number;
     groupBy?: FunnelGroup;
+    timeToConvert?: ITimeToConvertAggregation;
   }
 ) {
   const { timezone } = await getSettingsForProject(deps, input.projectId);
@@ -447,6 +448,7 @@ export async function getFunnelCore(
       type: 'funnel',
       funnelWindow: input.windowHours ?? DEFAULT_FUNNEL_WINDOW_HOURS,
       funnelGroup: input.groupBy ?? 'session_id',
+      timeToConvert: input.timeToConvert,
     },
     timezone,
   });
@@ -461,6 +463,7 @@ export async function getFunnelCore(
     };
   }
 
+  const withTimeToConvert = input.timeToConvert !== undefined;
   const steps = primarySeries.steps.map((step, index) => ({
     step: index + 1,
     eventName: step.event.displayName || step.event.name,
@@ -473,6 +476,7 @@ export async function getFunnelCore(
         : Math.round(step.dropoffPercent * ROUND_TO_TWO_DECIMALS) /
           ROUND_TO_TWO_DECIMALS,
     isHighestDropoff: step.isHighestDropoff,
+    ...(withTimeToConvert ? { timeToConvertSeconds: step.timeToConvert } : {}),
   }));
 
   const totalUsers = steps[0]?.users ?? 0;
@@ -488,6 +492,9 @@ export async function getFunnelCore(
             (completedUsers / totalUsers) * ROUND_RATE_TO_TWO_DECIMALS
           ) / ROUND_TO_TWO_DECIMALS
         : 0,
+    ...(withTimeToConvert
+      ? { timeToConvertSeconds: primarySeries.timeToConvert }
+      : {}),
   };
 }
 
