@@ -247,21 +247,21 @@ test('getRealtimeRecentSessions only reads session starts in the project and win
 test('getRealtimeTopSources splits one grouping-sets scan into referrers and countries', async () => {
   nextRows = [
     {
-      referrer_name: 'Google',
+      referrer_host: 'Google',
       country: '',
       sessions: 12,
       is_referrer_row: 1,
       is_country_row: 0,
     },
     {
-      referrer_name: '',
+      referrer_host: '',
       country: 'SE',
       sessions: 9,
       is_referrer_row: 0,
       is_country_row: 1,
     },
     {
-      referrer_name: 'Reddit',
+      referrer_host: 'Reddit',
       country: '',
       sessions: 3,
       is_referrer_row: 1,
@@ -273,9 +273,9 @@ test('getRealtimeTopSources splits one grouping-sets scan into referrers and cou
 
   expect(chQuery).toHaveBeenCalledTimes(1);
   const { query, query_params } = chQuery.mock.calls[0]![0];
-  expect(query).toContain('GROUPING SETS ((referrer_name), (country))');
-  expect(query).toContain('project_id = {p1:String}');
-  expect(query_params.p1).toBe('proj_1');
+  expect(query).toContain('GROUPING SETS ((referrer_host), (country))');
+  expect(query).toContain('project_id = {p3:String}');
+  expect(query_params.p3).toBe('proj_1');
   expect(result).toEqual({
     referrers: [
       { name: 'Google', sessions: 12 },
@@ -312,4 +312,57 @@ test('getRealtimeHistogram fills every minute of the window and takes the total 
   expect(result.minutes.filter((entry) => entry.sessions === 0)).toHaveLength(
     MINUTES_PER_REALTIME_WINDOW
   );
+});
+
+test('filters narrow the query by country and by the cleaned referrer host', async () => {
+  await subject.getRealtimeRecentSessions(deps, 'proj_1', {
+    countries: ['SE', 'NO'],
+    referrers: ['example.com'],
+  });
+
+  const { query, query_params } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('AND country IN');
+  expect(query).toContain('extract(referrer_name');
+  const params: unknown[] = Object.values(query_params);
+  expect(params).toContainEqual(['SE', 'NO']);
+  expect(params).toContainEqual(['example.com']);
+});
+
+test('no filters, or empty ones, add no conditions', async () => {
+  await subject.getRealtimeRecentSessions(deps, 'proj_1');
+  await subject.getRealtimeRecentSessions(deps, 'proj_1', {
+    countries: [],
+    referrers: [],
+  });
+
+  for (const [{ query }] of chQuery.mock.calls) {
+    expect(query).not.toContain('country IN');
+    expect(query).not.toContain('extract(referrer_name');
+  }
+});
+
+test('getRealtimeTopSources groups referrers by host, not by the stored URL', async () => {
+  await subject.getRealtimeTopSources(deps, 'proj_1');
+
+  const { query } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('GROUPING SETS ((referrer_host), (country))');
+});
+
+test('getRealtimeActivePeople only reads identified visitors', async () => {
+  await expect(
+    subject.getRealtimeActivePeople(deps, 'proj_1')
+  ).resolves.toEqual([]);
+
+  const { query } = chQuery.mock.calls[0]![0];
+  expect(query).toContain('profile_id != device_id');
+});
+
+test('getRealtimeActiveGroups drops ids with no group row', async () => {
+  nextRows = [
+    { group_id: 'grp_gone', people: 2, last_seen_at: '2026-09-04 00:00:00' },
+  ];
+
+  await expect(
+    subject.getRealtimeActiveGroups(deps, 'proj_1')
+  ).resolves.toEqual([]);
 });

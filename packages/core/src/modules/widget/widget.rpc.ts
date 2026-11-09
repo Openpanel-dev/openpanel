@@ -19,6 +19,7 @@ import {
 import { TRPCNotFoundError } from '../../rpc/errors';
 import { TABLE_NAMES } from '../../shared/ch-tables';
 import { getSettingsForProject } from '../organization/organization.service';
+import { REFERRER_HOST } from '../realtime/realtime.service';
 import {
   zCounterWidgetOptions,
   zRealtimeWidgetOptions,
@@ -266,7 +267,7 @@ export const widgetRouter = createTRPCRouter({
       const referrersQueryPromise = options.referrers
         ? chQuery<{ referrer: string; count: number }>(
             ctx,
-            sql`SELECT referrer_name as referrer, uniq(session_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} AND referrer_name != '' AND referrer_name IS NOT NULL GROUP BY referrer_name ORDER BY count DESC LIMIT ${sql.uint64(REALTIME_TOP_LIST_LIMIT)}`,
+            sql`SELECT ${REFERRER_HOST} as referrer, uniq(session_id) as count FROM ${EVENTS_TABLE} WHERE project_id = ${sql.string(projectId)} AND ${REALTIME_WINDOW} AND referrer_name != '' AND referrer_name IS NOT NULL GROUP BY referrer ORDER BY count DESC LIMIT ${sql.uint64(REALTIME_TOP_LIST_LIMIT)}`,
             settings
           )
         : Promise.resolve<Array<{ referrer: string; count: number }>>([]);
