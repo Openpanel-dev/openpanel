@@ -66,14 +66,10 @@ describe('placeWidget', () => {
 
 describe('shiftWidget', () => {
   it('swaps a widget with its neighbour', () => {
-    expect(shiftWidget(layout, 'sessions', -1).left).toEqual([
-      'sessions',
-      'online',
-    ]);
-    expect(shiftWidget(layout, 'online', 1).left).toEqual([
-      'sessions',
-      'online',
-    ]);
+    const swapped = { ...layout, left: ['sessions', 'online'] };
+
+    expect(shiftWidget(layout, 'sessions', -1)).toEqual(swapped);
+    expect(shiftWidget(layout, 'online', 1)).toEqual(swapped);
   });
 
   it('stops at the ends of a column and ignores hidden widgets', () => {
