@@ -27,9 +27,10 @@ const RealtimeReloader = ({ projectId }: Props) => {
   });
 
   useEffect(() => {
-    // Active only: hidden widgets and filters no longer in use stay in the cache.
+    // Refetches what is shown and marks the rest stale, so a widget shown again
+    // or a filter picked again loads fresh instead of from the cache.
     const refetch = (filters: QueryFilters) =>
-      client.refetchQueries({ ...filters, type: 'active' });
+      client.invalidateQueries({ ...filters, refetchType: 'active' });
 
     const refreshFeeds = () => {
       if (document.hidden || !hasNewEvents.current) {
@@ -42,6 +43,7 @@ const RealtimeReloader = ({ projectId }: Props) => {
       refetch(trpc.realtime.activeGroups.queryFilter({ projectId }));
     };
     // Summaries refresh even with no new events: sessions leave the window too.
+    // People and groups leave the window that way too.
     const refreshSummaries = () => {
       if (document.hidden) {
         return;
@@ -50,6 +52,8 @@ const RealtimeReloader = ({ projectId }: Props) => {
       refetch(trpc.realtime.histogram.queryFilter({ projectId }));
       refetch(trpc.realtime.topSources.queryFilter({ projectId }));
       refetch(trpc.realtime.topPages.queryFilter({ projectId }));
+      refetch(trpc.realtime.activePeople.queryFilter({ projectId }));
+      refetch(trpc.realtime.activeGroups.queryFilter({ projectId }));
       refetch(trpc.realtime.onlineCount.queryFilter({ projectId }));
       refetch(trpc.realtime.filterOptions.queryFilter({ projectId }));
     };

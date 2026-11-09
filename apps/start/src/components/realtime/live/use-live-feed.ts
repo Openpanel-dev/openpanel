@@ -20,6 +20,13 @@ export function useLiveFeed<T extends { id: string }>(
   const queue = useRef<T[]>([]);
   const primedFor = useRef<string | null>(null);
 
+  // Declared first so it runs before the effect below primes the new list.
+  useEffect(() => {
+    primedFor.current = null;
+    queue.current = [];
+    setShown([]);
+  }, [resetKey]);
+
   useEffect(() => {
     if (!items) {
       return;
@@ -27,7 +34,6 @@ export function useLiveFeed<T extends { id: string }>(
 
     if (primedFor.current !== resetKey) {
       primedFor.current = resetKey;
-      queue.current = [];
       seenIds.current = new Set(items.map((item) => item.id));
       setShown(items.slice(0, FEED_MAX_ITEMS));
       return;

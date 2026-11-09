@@ -6,16 +6,19 @@ import { useRealtimeLayout } from './use-realtime-layout';
 import { cn } from '@/utils/cn';
 
 function LiveColumn({
+  label,
   widgets,
   projectId,
   className,
 }: {
+  label: string;
   widgets: RealtimeWidgetId[];
   projectId: string;
   className: string;
 }) {
   return (
-    <div
+    <aside
+      aria-label={label}
       className={cn(
         'absolute top-6 bottom-36 hidden w-72 flex-col gap-6 md:flex',
         className
@@ -25,7 +28,7 @@ function LiveColumn({
         const { Component } = REALTIME_WIDGETS[id];
         return <Component key={id} projectId={projectId} />;
       })}
-    </div>
+    </aside>
   );
 }
 
@@ -46,19 +49,25 @@ export function RealtimeLiveOverlays({ projectId }: { projectId: string }) {
         <>
           <LiveColumn
             className="left-6"
+            label="Left column"
             projectId={projectId}
             widgets={layout.left}
           />
           <LiveColumn
             className="right-6"
+            label="Right column"
             projectId={projectId}
             widgets={layout.right}
           />
-          {layout.showIsland ? (
-            <div className="absolute inset-x-0 bottom-6 flex justify-center px-4">
-              <LiveTopIsland projectId={projectId} />
-            </div>
-          ) : null}
+          {/* Customize is desktop-only, so a narrow screen always shows the bar. */}
+          <div
+            className={cn(
+              'absolute inset-x-0 bottom-6 flex justify-center px-4',
+              !layout.showIsland && 'md:hidden'
+            )}
+          >
+            <LiveTopIsland projectId={projectId} />
+          </div>
         </>
       ) : null}
     </div>

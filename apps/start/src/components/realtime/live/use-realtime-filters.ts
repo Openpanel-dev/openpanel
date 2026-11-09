@@ -1,4 +1,7 @@
-import type { RealtimeFilters } from '@openpanel/core/modules/realtime/realtime.constants';
+import {
+  REALTIME_FILTER_VALUES_MAX,
+  type RealtimeFilters,
+} from '@openpanel/core/modules/realtime/realtime.constants';
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs';
 
 const filterValuesParser = parseAsArrayOf(parseAsString)
@@ -24,8 +27,12 @@ export function useRealtimeFilters() {
 
   const hasFilters = countries.length > 0 || referrers.length > 0;
   // Undefined when unfiltered, so those query keys match the plain project ones.
+  // A hand-edited URL can carry more values than the procedures accept.
   const filters: RealtimeFilters | undefined = hasFilters
-    ? { countries, referrers }
+    ? {
+        countries: countries.slice(0, REALTIME_FILTER_VALUES_MAX),
+        referrers: referrers.slice(0, REALTIME_FILTER_VALUES_MAX),
+      }
     : undefined;
 
   return {

@@ -29,14 +29,15 @@ function FilteredCounter({ projectId }: { projectId: string }) {
     trpc.realtime.onlineCount.queryOptions({ projectId, filters })
   );
 
-  return <CounterValue value={data ?? 0} />;
+  return <CounterValue value={data} />;
 }
 
-function CounterValue({ value }: { value: number }) {
+/** Undefined while loading or after a failed request: the count is unknown. */
+function CounterValue({ value }: { value: number | undefined }) {
   return (
     <div className="flex flex-col">
       <div className="font-semibold text-6xl tabular-nums tracking-tight">
-        <AnimatedNumber value={value} />
+        {value === undefined ? '–' : <AnimatedNumber value={value} />}
       </div>
       <div className="flex items-center gap-2 font-medium text-2xs text-muted-foreground uppercase tracking-widest">
         <Ping />

@@ -70,6 +70,10 @@ describe('shiftWidget', () => {
       'sessions',
       'online',
     ]);
+    expect(shiftWidget(layout, 'online', 1).left).toEqual([
+      'sessions',
+      'online',
+    ]);
   });
 
   it('stops at the ends of a column and ignores hidden widgets', () => {

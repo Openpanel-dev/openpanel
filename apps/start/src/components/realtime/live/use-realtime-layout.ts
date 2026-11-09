@@ -4,6 +4,7 @@ import {
   parseRealtimeLayout,
   type RealtimeLayout,
 } from './live-layout';
+import { readStorage, writeStorage } from './live-storage';
 
 /**
  * The widget layout, remembered per browser and project. It is null until
@@ -15,20 +16,20 @@ export function useRealtimeLayout(projectId: string) {
   const [layout, setLayout] = useState<RealtimeLayout | null>(null);
 
   useEffect(() => {
-    setLayout(parseRealtimeLayout(window.localStorage.getItem(storageKey)));
+    setLayout(parseRealtimeLayout(readStorage(storageKey)));
   }, [storageKey]);
 
   const saveLayout = useCallback(
     (next: RealtimeLayout) => {
       setLayout(next);
-      window.localStorage.setItem(storageKey, JSON.stringify(next));
+      writeStorage(storageKey, JSON.stringify(next));
     },
     [storageKey]
   );
 
   const resetLayout = useCallback(() => {
     setLayout(DEFAULT_REALTIME_LAYOUT);
-    window.localStorage.removeItem(storageKey);
+    writeStorage(storageKey, null);
   }, [storageKey]);
 
   return { layout, saveLayout, resetLayout };
