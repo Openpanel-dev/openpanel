@@ -1,0 +1,103 @@
+---
+title: Deploy with Easypanel
+description: Deploy OpenPanel using Easypanel's one-click template
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
+
+[Easypanel](https://easypanel.io) is a self-hosted, open-source platform for deploying applications on your own server. OpenPanel has a one-click deployment template there that provisions all the services (API, dashboard, worker, Postgres, Redis, ClickHouse, GeoIP, and a Caddy reverse proxy) in one go.
+
+## Prerequisites
+
+- An Easypanel instance installed and running
+- A server with at least 2GB RAM (4GB+ recommended)
+- A domain name pointed at your server
+
+## Quick Start
+
+<Steps>
+<Step>
+### Deploy the template
+
+1. Log in to your Easypanel dashboard
+2. Open **Templates** and search for **OpenPanel**
+3. Click the template to open it
+</Step>
+
+<Step>
+### Set the application domain
+
+Set **Application Domain** to the domain you want to use for the dashboard (e.g. `analytics.yourdomain.com`), without `https://` or `http://`.
+
+<Callout>
+This single domain serves both the dashboard and the API. The template's bundled Caddy service reverse-proxies `/api` to the API service and everything else to the dashboard, so no separate API domain or manual path configuration is needed.
+</Callout>
+</Step>
+
+<Step>
+### Deploy
+
+Click **Deploy**. Easypanel provisions the Caddy, API, dashboard, worker, Postgres, Redis, ClickHouse, and GeoIP services, and wires up their connection strings and secrets automatically.
+</Step>
+
+<Step>
+### Verify installation
+
+Once deployment finishes:
+
+1. Check that all services are running in the Easypanel dashboard:
+   - `<app>-caddy` - reverse proxy
+   - `<app>-api` - API server
+   - `<app>-dashboard` - dashboard (frontend)
+   - `<app>-worker` - background worker
+   - `<app>-db` - PostgreSQL database
+   - `<app>-redis` - Redis cache
+   - `<app>-ch` - ClickHouse database
+   - `<app>-geo` - GeoIP service
+
+2. Open your configured domain and try creating an account to verify the API is working correctly.
+</Step>
+</Steps>
+
+## Configuration Details
+
+### Required settings
+
+- **Application Domain** - the only setting you must provide; everything else (service name, images, secrets) has a working default.
+
+### Optional settings
+
+- **Email Sender Address** and **Resend API Key** - set these to enable outgoing email for password resets and invitations.
+- Service names and Docker image tags for each service are all editable, with pinned defaults.
+
+## Docker services
+
+The OpenPanel Easypanel template includes these services:
+
+- **`<app>-caddy`**: Reverse proxy routing `/api` to the API and everything else to the dashboard
+- **`<app>-api`**: OpenPanel API server
+- **`<app>-dashboard`**: OpenPanel dashboard (frontend)
+- **`<app>-worker`**: Background worker for processing events
+- **`<app>-db`**: PostgreSQL database
+- **`<app>-redis`**: Redis cache
+- **`<app>-ch`**: ClickHouse analytics database
+- **`<app>-geo`**: GeoIP lookup service
+
+## Updating OpenPanel
+
+To update an image, edit the relevant service's image tag in Easypanel and redeploy that service. Persistent data (Postgres, ClickHouse, Caddy config) lives in Easypanel volumes and survives redeploys.
+
+## Next Steps
+
+- [Configure email settings](/docs/self-hosting/self-hosting#e-mail) for password resets and invitations
+- [Set up AI integration](/docs/self-hosting/self-hosting#ai-integration) for the analytics assistant
+- [Configure SDK](/docs/self-hosting/self-hosting#always-use-correct-api-url) to track events from your applications
+
+## Additional Resources
+
+- [Easypanel Documentation](https://easypanel.io/docs)
+- [OpenPanel template on Easypanel](https://easypanel.io/templates/openpanel)
