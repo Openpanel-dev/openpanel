@@ -1,0 +1,75 @@
+---
+title: Deploy with xCloud (2.x)
+description: Deploy OpenPanel using xCloud's one-click app
+---
+
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner version="v2" />
+
+[xCloud](https://xcloud.host) is a hosted server management platform. OpenPanel is available as a one-click app, so you can deploy it without using a terminal.
+
+## Prerequisites
+
+- An xCloud account
+- A server connected to xCloud with enough memory for the OpenPanel stack
+- A domain name for the dashboard
+
+## Quick Start
+
+<Steps>
+<Step>
+### Select OpenPanel
+
+1. Log in to your xCloud dashboard
+2. Open the **One-Click Apps** catalog
+3. Choose **OpenPanel**
+</Step>
+
+<Step>
+### Choose a Domain and Server
+
+Choose the domain you want to use and the server to deploy to. The install form has no other fields to fill in.
+</Step>
+
+<Step>
+### Deploy
+
+Start the installation. xCloud starts the dashboard, API, worker, PostgreSQL, ClickHouse and Redis, and generates the required secrets. Wait for the deployment to finish.
+</Step>
+
+<Step>
+### Create Your Owner Account
+
+Open `/onboarding` on your domain (for example `https://analytics.yourdomain.com/onboarding`). No admin password is generated, so the first account you register becomes the owner.
+
+<Callout type="warn">
+Registration closes after the first user is created. Make sure to register your owner account first!
+</Callout>
+</Step>
+</Steps>
+
+## Configuration
+
+For a complete reference of all available environment variables, see the [Environment Variables documentation](/docs/self-hosting/environment-variables).
+
+### Tracking
+
+The API is served at `/api` on your own domain, so use `https://your-domain.com/api` as the API URL in your SDK. See [Configure SDK](/docs/self-hosting/v2/get-started#always-use-correct-api-url).
+
+### Email
+
+Email is off until you configure it. See [E-mail](/docs/self-hosting/v2/get-started#e-mail) for the Resend and SMTP options.
+
+## Next Steps
+
+- [Configure email settings](/docs/self-hosting/v2/get-started#e-mail) for password resets and invitations
+- [Set up AI integration](/docs/self-hosting/v2/get-started#ai-integration) for the analytics assistant
+- [Configure SDK](/docs/self-hosting/v2/get-started#always-use-correct-api-url) to track events from your applications
+- [Enable social login](/docs/self-hosting/social-login) with Google or GitHub
+
+## Additional Resources
+
+- [OpenPanel on xCloud](https://xcloud.host/openpanel-hosting/)
