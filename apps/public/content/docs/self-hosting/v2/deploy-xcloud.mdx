@@ -14,7 +14,7 @@ import { SelfHostingVersionBanner } from '@/components/self-hosting-version-bann
 ## Prerequisites
 
 - An xCloud account
-- A server connected to xCloud with enough memory for the OpenPanel stack
+- A server connected to xCloud with at least 3072 MB of RAM, which is the minimum the xCloud template requires. A server with 4 GB of RAM is the practical floor
 - A domain name for the dashboard
 
 ## Quick Start
@@ -61,7 +61,7 @@ The API is served at `/api` on your own domain, so use `https://your-domain.com/
 
 ### Email
 
-Email is off until you configure it. See [E-mail](/docs/self-hosting/v2/get-started#e-mail) for the Resend and SMTP options.
+Email is off until you configure it. See [E-mail](/docs/self-hosting/v2/get-started#e-mail) for the Resend and SMTP options. In xCloud, add those variables in your site's Environment editor and redeploy.
 
 ## Next Steps
 
