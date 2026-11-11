@@ -314,6 +314,29 @@ ALLOW_REGISTRATION=true
 Registration is automatically disabled after the first user is created. Set this to `true` to re-enable it.
 </Callout>
 
+### ALLOW_REGISTRATION_DOMAINS
+
+**Type**: `string` (comma-separated)
+**Required**: No
+**Default**: none (no restriction)
+
+Limit registration to email addresses on the listed domains. Use it together with `ALLOW_REGISTRATION=true` to open sign-up to your own organisation without opening it to everyone, for example when [social login](/docs/self-hosting/social-login) is enabled.
+
+**Example**:
+```bash
+ALLOW_REGISTRATION=true
+ALLOW_REGISTRATION_DOMAINS=acme.com,example.org
+```
+
+- Matching is exact and case-insensitive: `acme.com` does not admit `eu.acme.com`. List each subdomain you want to allow.
+- The first user is always allowed, and existing users can always sign in.
+- A valid invite is not subject to the list, so you can still invite people from other domains.
+- `ALLOW_REGISTRATION=false` still blocks all uninvited sign-ups.
+
+<Callout type="warn">
+Google and GitHub sign-ins only succeed with an email the provider has verified. Email and password sign-up does not verify the address, so anyone can register by typing an address on a listed domain. Do not rely on this setting alone to keep password sign-ups inside your organisation.
+</Callout>
+
 ### ALLOW_INVITATION
 
 **Type**: `boolean`

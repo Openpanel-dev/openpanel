@@ -14,10 +14,15 @@ const NUL = '\0';
  */
 export async function getIsRegistrationAllowed(
   deps: RegistrationDeps,
-  inviteId?: string | null
+  inviteId?: string | null,
+  email?: string | null
 ) {
-  const { allowRegistration, allowInvitation } = deps.config.auth;
-  if (allowRegistration === undefined) {
+  const { allowRegistration, allowInvitation, allowRegistrationDomains } =
+    deps.config.auth;
+  if (
+    allowRegistration === undefined &&
+    allowRegistrationDomains.length === 0
+  ) {
     return true;
   }
 
@@ -27,7 +32,8 @@ export async function getIsRegistrationAllowed(
     return true;
   }
 
-  // 2. If there is an invite, it must exist and be unexpired
+  // 2. If there is an invite, it must exist and be unexpired. An invite is an
+  // explicit admin decision, so it is not subject to the domain list.
   if (inviteId) {
     if (allowInvitation === false) {
       return false;
@@ -47,5 +53,30 @@ export async function getIsRegistrationAllowed(
     return !!invite && invite.expiresAt >= new Date();
   }
 
-  return allowRegistration;
+  if (allowRegistration === false) {
+    return false;
+  }
+
+  // 3. Open registration, optionally narrowed to a set of email domains
+  return (
+    allowRegistrationDomains.length === 0 ||
+    isEmailDomainAllowed(email, allowRegistrationDomains)
+  );
+}
+
+/** Exact, case-insensitive match: `acme.com` does not admit `eu.acme.com`. */
+function isEmailDomainAllowed(
+  email: string | null | undefined,
+  domains: string[]
+) {
+  const at = email?.lastIndexOf('@') ?? -1;
+  if (!email || at === -1) {
+    return false;
+  }
+  return domains.includes(
+    email
+      .slice(at + 1)
+      .trim()
+      .toLowerCase()
+  );
 }

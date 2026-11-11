@@ -319,7 +319,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
         create: {
           before: async (user, ctx) => {
             const inviteId = ctx ? await readInviteId(ctx) : undefined;
-            if (!(await getIsRegistrationAllowed(deps, inviteId))) {
+            if (!(await getIsRegistrationAllowed(deps, inviteId, user.email))) {
               throw new APIError('FORBIDDEN', {
                 code: 'REGISTRATION_NOT_ALLOWED',
                 message: 'Registrations are not allowed',

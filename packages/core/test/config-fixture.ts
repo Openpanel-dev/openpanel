@@ -33,6 +33,7 @@ export function testCoreConfig(
       trustedOrigins: [],
       allowRegistration: undefined,
       allowInvitation: undefined,
+      allowRegistrationDomains: [],
       github: { clientId: '', clientSecret: '', redirectUri: '' },
       google: { clientId: '', clientSecret: '', redirectUri: '' },
       googleGsc: { clientId: '', clientSecret: '', redirectUri: '' },
