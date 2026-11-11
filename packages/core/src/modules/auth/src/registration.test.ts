@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import type { ServiceDeps } from '../../../services';
-import { getIsRegistrationAllowed } from './registration';
+import {
+  getIsRegistrationAllowed,
+  getIsUserCreationAllowed,
+} from './registration';
 
 const HOUR_MS = 60 * 60 * 1000;
 const EXISTING_USER = { id: 'user_1' };
@@ -138,7 +141,7 @@ describe('getIsRegistrationAllowed', () => {
 
     it('allows a new user on a listed domain', async () => {
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith(restricted),
           undefined,
           'jane@example.org'
@@ -148,7 +151,7 @@ describe('getIsRegistrationAllowed', () => {
 
     it('matches the domain case-insensitively', async () => {
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith(restricted),
           undefined,
           'Jane@ACME.com'
@@ -158,7 +161,7 @@ describe('getIsRegistrationAllowed', () => {
 
     it('blocks a new user on any other domain', async () => {
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith(restricted),
           undefined,
           'jane@gmail.com'
@@ -174,29 +177,35 @@ describe('getIsRegistrationAllowed', () => {
         'acme.com',
       ]) {
         expect(
-          await getIsRegistrationAllowed(depsWith(restricted), undefined, email)
+          await getIsUserCreationAllowed(depsWith(restricted), undefined, email)
         ).toBe(false);
       }
     });
 
-    it('blocks when no email is known', async () => {
-      expect(await getIsRegistrationAllowed(depsWith(restricted))).toBe(false);
+    it('blocks user creation when no email is known', async () => {
+      expect(
+        await getIsUserCreationAllowed(depsWith(restricted), undefined, null)
+      ).toBe(false);
+    });
+
+    it('still offers sign-up before an email is known', async () => {
+      expect(await getIsRegistrationAllowed(depsWith(restricted))).toBe(true);
     });
 
     it('applies when ALLOW_REGISTRATION is unset', async () => {
       const deps = depsWith({ allowRegistrationDomains: ['acme.com'] });
 
       expect(
-        await getIsRegistrationAllowed(deps, undefined, 'jane@acme.com')
+        await getIsUserCreationAllowed(deps, undefined, 'jane@acme.com')
       ).toBe(true);
       expect(
-        await getIsRegistrationAllowed(deps, undefined, 'jane@gmail.com')
+        await getIsUserCreationAllowed(deps, undefined, 'jane@gmail.com')
       ).toBe(false);
     });
 
     it('does not reopen registration that is disabled', async () => {
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith({ ...restricted, allowRegistration: false }),
           undefined,
           'jane@acme.com'
@@ -208,7 +217,7 @@ describe('getIsRegistrationAllowed', () => {
       mockFirstUser.mockResolvedValue(null);
 
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith(restricted),
           undefined,
           'jane@gmail.com'
@@ -223,7 +232,7 @@ describe('getIsRegistrationAllowed', () => {
       });
 
       expect(
-        await getIsRegistrationAllowed(
+        await getIsUserCreationAllowed(
           depsWith(restricted),
           'invite-1',
           'contractor@gmail.com'

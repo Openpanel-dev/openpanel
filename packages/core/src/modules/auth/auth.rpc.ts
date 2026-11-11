@@ -45,8 +45,9 @@ export const authRouter = createTRPCRouter({
   ),
 
   /**
-   * Whether the dashboard should offer sign-up to this visitor. The same rule
-   * the sign-up itself is held to, so an invite that can register sees the form.
+   * Whether the dashboard should offer sign-up to this visitor, so an invite
+   * that can register sees the form. ALLOW_REGISTRATION_DOMAINS is checked
+   * later, at user creation, once there is an email to check.
    */
   registrationAllowed: publicProcedure
     .input(zRegistrationAllowed)

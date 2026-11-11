@@ -187,6 +187,20 @@ test('registrationAllowed is closed to a visitor without an invite', async () =>
   expect(await anon.registrationAllowed({})).toBe(false);
 });
 
+test('registrationAllowed stays open when registration is limited to email domains', async () => {
+  const base = testCoreConfig();
+  const config = testCoreConfig({
+    auth: {
+      ...base.auth,
+      allowRegistration: true,
+      allowRegistrationDomains: ['acme.com'],
+    },
+  });
+  const anon = await anonCaller(config, registrationDb(true));
+
+  expect(await anon.registrationAllowed({})).toBe(true);
+});
+
 test('registrationAllowed stays open for the first user', async () => {
   const anon = await anonCaller(closedRegistration(), registrationDb(false));
   expect(await anon.registrationAllowed({})).toBe(true);

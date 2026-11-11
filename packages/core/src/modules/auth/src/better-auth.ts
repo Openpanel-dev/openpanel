@@ -24,7 +24,7 @@ import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
 import { cookieOptions } from './constants';
 import { isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
-import { getIsRegistrationAllowed } from './registration';
+import { getIsUserCreationAllowed } from './registration';
 import { generateSessionToken } from './token';
 
 export const AUTH_BASE_PATH = '/api/auth';
@@ -319,7 +319,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
         create: {
           before: async (user, ctx) => {
             const inviteId = ctx ? await readInviteId(ctx) : undefined;
-            if (!(await getIsRegistrationAllowed(deps, inviteId, user.email))) {
+            if (!(await getIsUserCreationAllowed(deps, inviteId, user.email))) {
               throw new APIError('FORBIDDEN', {
                 code: 'REGISTRATION_NOT_ALLOWED',
                 message: 'Registrations are not allowed',
