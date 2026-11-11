@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import type { ServiceDeps } from '../../../services';
-import { getIsRegistrationAllowed } from './registration';
+import {
+  getIsRegistrationAllowed,
+  getIsUserCreationAllowed,
+} from './registration';
 
 const HOUR_MS = 60 * 60 * 1000;
 const EXISTING_USER = { id: 'user_1' };
@@ -20,6 +23,7 @@ const mockInviteFindUnique = mock(
 function depsWith(auth: {
   allowRegistration?: boolean;
   allowInvitation?: boolean;
+  allowRegistrationDomains?: string[];
 }): ServiceDeps {
   const base = testCoreConfig();
   return {
@@ -127,5 +131,113 @@ describe('getIsRegistrationAllowed', () => {
       )
     ).toBe(false);
     expect(mockInviteFindUnique).not.toHaveBeenCalled();
+  });
+
+  describe('ALLOW_REGISTRATION_DOMAINS', () => {
+    const restricted = {
+      allowRegistration: true,
+      allowRegistrationDomains: ['acme.com', 'example.org'],
+    };
+
+    it('allows a new user on a listed domain', async () => {
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith(restricted),
+          undefined,
+          'jane@example.org'
+        )
+      ).toBe(true);
+    });
+
+    it('matches the domain case-insensitively', async () => {
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith(restricted),
+          undefined,
+          'Jane@ACME.com'
+        )
+      ).toBe(true);
+    });
+
+    it('blocks a new user on any other domain', async () => {
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith(restricted),
+          undefined,
+          'jane@gmail.com'
+        )
+      ).toBe(false);
+    });
+
+    it('does not admit subdomains or lookalikes', async () => {
+      for (const email of [
+        'jane@eu.acme.com',
+        'jane@notacme.com',
+        'jane@acme.com.evil.io',
+        'acme.com',
+      ]) {
+        expect(
+          await getIsUserCreationAllowed(depsWith(restricted), undefined, email)
+        ).toBe(false);
+      }
+    });
+
+    it('blocks user creation when no email is known', async () => {
+      expect(
+        await getIsUserCreationAllowed(depsWith(restricted), undefined, null)
+      ).toBe(false);
+    });
+
+    it('still offers sign-up before an email is known', async () => {
+      expect(await getIsRegistrationAllowed(depsWith(restricted))).toBe(true);
+    });
+
+    it('applies when ALLOW_REGISTRATION is unset', async () => {
+      const deps = depsWith({ allowRegistrationDomains: ['acme.com'] });
+
+      expect(
+        await getIsUserCreationAllowed(deps, undefined, 'jane@acme.com')
+      ).toBe(true);
+      expect(
+        await getIsUserCreationAllowed(deps, undefined, 'jane@gmail.com')
+      ).toBe(false);
+    });
+
+    it('does not reopen registration that is disabled', async () => {
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith({ ...restricted, allowRegistration: false }),
+          undefined,
+          'jane@acme.com'
+        )
+      ).toBe(false);
+    });
+
+    it('still allows the very first user on any domain', async () => {
+      mockFirstUser.mockResolvedValue(null);
+
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith(restricted),
+          undefined,
+          'jane@gmail.com'
+        )
+      ).toBe(true);
+    });
+
+    it('lets a valid invite through from any domain', async () => {
+      mockInviteFindUnique.mockResolvedValue({
+        id: 'invite-1',
+        expiresAt: new Date(Date.now() + HOUR_MS),
+      });
+
+      expect(
+        await getIsUserCreationAllowed(
+          depsWith(restricted),
+          'invite-1',
+          'contractor@gmail.com'
+        )
+      ).toBe(true);
+    });
   });
 });

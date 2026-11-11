@@ -39,6 +39,12 @@ export interface AuthConfig {
    */
   allowRegistration: boolean | undefined;
   allowInvitation: boolean | undefined;
+  /**
+   * ALLOW_REGISTRATION_DOMAINS, lowercased. When non-empty, a new user without
+   * an invite must have an email on one of these domains. Empty means no
+   * restriction.
+   */
+  allowRegistrationDomains: string[];
   github: OAuthClientConfig;
   google: OAuthClientConfig;
   /** The same Google client, redirected at the Search Console callback. */

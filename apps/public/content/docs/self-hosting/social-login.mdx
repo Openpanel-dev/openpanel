@@ -146,7 +146,7 @@ With Coolify, the bundled template exposes them as `OPENPANEL_GOOGLE_CLIENT_ID`,
 
 ## Things to know
 
-Registration rules still apply. A social login that would create a new user is subject to [`ALLOW_REGISTRATION`](/docs/self-hosting/environment-variables#allow_registration) and [`ALLOW_INVITATION`](/docs/self-hosting/environment-variables#allow_invitation). The very first user is always allowed. After that, users need an invite link or `ALLOW_REGISTRATION=true`. Existing users can always sign in.
+Registration rules still apply. A social login that would create a new user is subject to [`ALLOW_REGISTRATION`](/docs/self-hosting/environment-variables#allow_registration) and [`ALLOW_INVITATION`](/docs/self-hosting/environment-variables#allow_invitation). The very first user is always allowed. After that, users need an invite link or `ALLOW_REGISTRATION=true`. To admit only your own organisation, add [`ALLOW_REGISTRATION_DOMAINS`](/docs/self-hosting/environment-variables#allow_registration_domains). Existing users can always sign in.
 
 Accounts are not linked automatically. If someone signed up with email/password and later clicks "Sign in with Google" using the same address, they are sent back to the login page with `Please sign in using your original authentication method`. The same applies between Google and GitHub. Users must keep using the method they signed up with.
 

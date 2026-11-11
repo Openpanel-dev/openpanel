@@ -118,6 +118,14 @@ function splitTokens(value: string | undefined): string[] {
 
 const optionalString = z.preprocess(blankToUndefined, z.string().optional());
 
+/** `"Acme.com, @example.org"` -> `['acme.com', 'example.org']`. */
+function parseDomainList(value: string | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((domain) => domain.trim().toLowerCase().replace(/^@/, ''))
+    .filter(Boolean);
+}
+
 const stringWithDefault = (fallback: string) =>
   z.preprocess(blankToUndefined, z.string().default(fallback));
 
@@ -439,6 +447,8 @@ const rawSchema = z.object({
 
   ALLOW_REGISTRATION: optionalString,
   ALLOW_INVITATION: optionalString,
+  /** Comma-separated email domains a new, uninvited user must belong to. */
+  ALLOW_REGISTRATION_DOMAINS: optionalString,
   /** A one-click sign-in on the login page; refused under NODE_ENV=production. */
   DEV_LOGIN: devLoginSchema,
   GITHUB_CLIENT_ID: stringWithDefault(''),
@@ -874,6 +884,7 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
         raw.ALLOW_INVITATION === undefined
           ? undefined
           : raw.ALLOW_INVITATION !== FALSE_STRING,
+      allowRegistrationDomains: parseDomainList(raw.ALLOW_REGISTRATION_DOMAINS),
       github: {
         clientId: raw.GITHUB_CLIENT_ID,
         clientSecret: raw.GITHUB_CLIENT_SECRET,

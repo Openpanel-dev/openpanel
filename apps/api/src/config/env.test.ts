@@ -404,6 +404,16 @@ describe('derived values, computed once in the transform', () => {
         .allowRegistration
     ).toBe(true);
   });
+
+  it('ALLOW_REGISTRATION_DOMAINS becomes a normalised list', () => {
+    expect(loadConfig(base).core.auth.allowRegistrationDomains).toEqual([]);
+    expect(
+      loadConfig({
+        ...base,
+        ALLOW_REGISTRATION_DOMAINS: ' Acme.com, @example.org ,,',
+      }).core.auth.allowRegistrationDomains
+    ).toEqual(['acme.com', 'example.org']);
+  });
 });
 
 describe('cross-field invariants, checked before the transform', () => {
