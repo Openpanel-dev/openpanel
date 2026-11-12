@@ -222,6 +222,12 @@ export async function runReportConfig(
 ): Promise<unknown> {
   const engineInput = {
     ...config,
+    // The model works with raw event names, so no project display name is filled in.
+    series: config.series.map((item) =>
+      item.type === 'event' && !item.displayName
+        ? { ...item, displayName: item.name }
+        : item
+    ),
     projectId: ctx.projectId,
     timezone: ctx.timezone,
   } as unknown as EngineInput;

@@ -2,7 +2,7 @@ import { EVENT_DISPLAY_NAME_MAX_LENGTH } from '@openpanel/core/modules/event/eve
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PaintBucketIcon, UndoIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
@@ -37,6 +37,7 @@ export default function EditEvent({ id }: Props) {
   const [selectedColor, setColor] = useState(EventIconRecords.default!.color);
   const [conversion, setConversion] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const seededEventId = useRef<string | null>(null);
   const [step, setStep] = useState<'icon' | 'color'>('icon');
   useEffect(() => {
     if (event?.meta?.icon) {
@@ -48,8 +49,10 @@ export default function EditEvent({ id }: Props) {
     if (event?.meta?.conversion) {
       setConversion(event.meta.conversion);
     }
-    if (event?.meta?.displayName) {
-      setDisplayName(event.meta.displayName);
+    // Seeded once per event, so a refetch keeps what the user has typed.
+    if (event && seededEventId.current !== event.id) {
+      seededEventId.current = event.id;
+      setDisplayName(event.meta?.displayName ?? '');
     }
   }, [event]);
 
