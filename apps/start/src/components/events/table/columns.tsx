@@ -30,12 +30,13 @@ export function useColumns() {
       header: 'Name',
       cell({ row }) {
         const { name, path, revenue } = row.original;
+        const label = row.original.meta?.displayName || name.replace(/_/g, ' ');
         const fullTitle =
           name === 'screen_view'
             ? path
             : name === 'revenue' && revenue
               ? `${name} (${number.currency(revenue / 100)})`
-              : name.replace(/_/g, ' ');
+              : label;
 
         const renderName = () => {
           if (name === 'screen_view') {
@@ -59,7 +60,7 @@ export function useColumns() {
             const model = row.original.properties?.ai_model;
             return (
               <>
-                {name.replace(/_/g, ' ')}
+                {label}
                 {typeof model === 'string' && model && (
                   <span className="ml-2 text-muted-foreground">{model}</span>
                 )}
@@ -67,7 +68,7 @@ export function useColumns() {
             );
           }
 
-          return name.replace(/_/g, ' ');
+          return label;
         };
 
         return (

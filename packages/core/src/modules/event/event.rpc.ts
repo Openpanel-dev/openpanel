@@ -13,7 +13,10 @@ import {
   zTimeInterval,
 } from '../report/report.constants';
 import { getChartStartEndDate } from '../report/src/chart-dates';
-import { TOP_PAGES_SORT_COLUMNS } from './event.constants';
+import {
+  EVENT_DISPLAY_NAME_MAX_LENGTH,
+  TOP_PAGES_SORT_COLUMNS,
+} from './event.constants';
 import {
   getBotEventsPage,
   getConversionEventNames,
@@ -61,6 +64,13 @@ export const eventRouter = createTRPCRouter({
       z.object({
         projectId: z.string(),
         name: z.string(),
+        // Blank clears the name; leaving it out keeps the stored one.
+        displayName: z
+          .string()
+          .trim()
+          .max(EVENT_DISPLAY_NAME_MAX_LENGTH)
+          .transform((value) => value || null)
+          .nullish(),
         icon: z.string().optional(),
         color: z.string().optional(),
         conversion: z.boolean().optional(),

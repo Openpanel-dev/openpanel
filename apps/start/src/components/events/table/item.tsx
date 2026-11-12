@@ -81,9 +81,9 @@ export const EventItem = memo<EventItemProps>(
                   </span>
                 </>
               ) : (
-                <>
-                  <span className="font-medium">{event.name}</span>
-                </>
+                <span className="font-medium">
+                  {event.meta?.displayName || event.name}
+                </span>
               )}
             </span>
           </div>

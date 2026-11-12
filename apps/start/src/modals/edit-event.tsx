@@ -1,3 +1,4 @@
+import { EVENT_DISPLAY_NAME_MAX_LENGTH } from '@openpanel/core/modules/event/event.constants';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PaintBucketIcon, UndoIcon } from 'lucide-react';
@@ -35,6 +36,7 @@ export default function EditEvent({ id }: Props) {
   const [selectedIcon, setIcon] = useState<string | null>(null);
   const [selectedColor, setColor] = useState(EventIconRecords.default!.color);
   const [conversion, setConversion] = useState(false);
+  const [displayName, setDisplayName] = useState('');
   const [step, setStep] = useState<'icon' | 'color'>('icon');
   useEffect(() => {
     if (event?.meta?.icon) {
@@ -46,6 +48,9 @@ export default function EditEvent({ id }: Props) {
     if (event?.meta?.conversion) {
       setConversion(event.meta.conversion);
     }
+    if (event?.meta?.displayName) {
+      setDisplayName(event.meta.displayName);
+    }
   }, [event]);
 
   const SelectedIcon = selectedIcon ? EventIconMapper[selectedIcon] : null;
@@ -55,6 +60,7 @@ export default function EditEvent({ id }: Props) {
       onSuccess() {
         toast('Event updated');
         client.invalidateQueries(trpc.event.pathFilter());
+        client.invalidateQueries(trpc.chart.pathFilter());
         popModal();
       },
     })
@@ -70,6 +76,18 @@ export default function EditEvent({ id }: Props) {
         title={`Edit: ${event?.name}`}
       />
       <div className="col gap-4">
+        <div>
+          <Label className="mb-4 block" htmlFor="event-display-name">
+            Display name
+          </Label>
+          <Input
+            id="event-display-name"
+            maxLength={EVENT_DISPLAY_NAME_MAX_LENGTH}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder={event?.name}
+            value={displayName}
+          />
+        </div>
         <div>
           <Label className="mb-4 block">Conversion</Label>
           <label className="flex cursor-pointer select-none items-center gap-4 rounded-md border border-border p-4">
@@ -200,6 +218,7 @@ export default function EditEvent({ id }: Props) {
             mutation.mutate({
               projectId,
               name: event!.name,
+              displayName,
               icon: selectedIcon ?? EventIconRecords.default!.icon,
               color: selectedColor ?? EventIconRecords.default!.color,
               conversion,

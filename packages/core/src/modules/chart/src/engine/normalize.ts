@@ -9,6 +9,7 @@ import type {
 import { alphabetIds } from '../../../report/report.constants';
 import { getChartStartEndDate } from '../../../report/src/chart-dates';
 import { mergeGlobalFilters } from '../../../report/src/series';
+import { applyEventDisplayNames } from '../event-display-names';
 import type { SeriesDefinition } from './types';
 
 export type NormalizedInput = IReportInputWithDates & {
@@ -59,10 +60,14 @@ export async function normalize(
     (input as { series?: LegacySeriesItem[] }).series ??
     (input as { events?: LegacySeriesItem[] }).events ??
     [];
-  const series = await expandCustomEvents(
+  const series = await applyEventDisplayNames(
     deps,
     input.projectId,
-    rawSeries.map(toSeriesDefinition)
+    await expandCustomEvents(
+      deps,
+      input.projectId,
+      rawSeries.map(toSeriesDefinition)
+    )
   );
   return {
     ...input,
