@@ -1,8 +1,13 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, mock } from 'bun:test';
+import { randomUUID } from 'node:crypto';
+import type { ServiceDeps } from '../../../services';
 import type { IChartSeries } from '../../report/report.constants';
 import type { NormalizedInput } from './engine/normalize';
 import { plan } from './engine/plan';
-import { withEventDisplayNames } from './event-display-names';
+import {
+  applyEventDisplayNames,
+  withEventDisplayNames,
+} from './event-display-names';
 
 const DISPLAY_NAMES = new Map([['signup', 'Account created']]);
 
@@ -70,5 +75,58 @@ describe('withEventDisplayNames', () => {
     } as unknown as NormalizedInput);
     expect(concreteSeries[0]?.name).toEqual(['Account created']);
     expect(concreteSeries[0]?.context.event).toBe('signup');
+  });
+});
+
+describe('applyEventDisplayNames', () => {
+  const setup = (metas: { name: string; displayName: string | null }[]) => {
+    const findMany = mock(async () => metas);
+    const deps = { db: { eventMeta: { findMany } } } as unknown as ServiceDeps;
+    return { deps, findMany, projectId: `proj_display_names_${randomUUID()}` };
+  };
+
+  it('names a series with no displayName from the project metas', async () => {
+    const { deps, projectId } = setup([
+      { name: 'signup', displayName: 'Account created' },
+    ]);
+    const [result] = await applyEventDisplayNames(deps, projectId, [
+      eventItem(),
+    ]);
+    expect(result).toMatchObject({ displayName: 'Account created' });
+  });
+
+  it('keeps a displayName already set on the series', async () => {
+    const { deps, projectId } = setup([
+      { name: 'signup', displayName: 'Account created' },
+    ]);
+    const series = [eventItem({ displayName: 'Sign-ups' })];
+    const [result] = await applyEventDisplayNames(deps, projectId, series);
+    expect(result).toMatchObject({ displayName: 'Sign-ups' });
+  });
+
+  it('returns the same series array when no meta has a displayName', async () => {
+    const { deps, findMany, projectId } = setup([
+      { name: 'signup', displayName: null },
+    ]);
+    const series = [eventItem()];
+    expect(await applyEventDisplayNames(deps, projectId, series)).toBe(series);
+    expect(findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves an event with no meta unnamed', async () => {
+    const { deps, projectId } = setup([
+      { name: 'signup', displayName: 'Account created' },
+    ]);
+    const [result] = await applyEventDisplayNames(deps, projectId, [
+      eventItem({ name: 'purchase' }),
+    ]);
+    expect(result).not.toHaveProperty('displayName');
+  });
+
+  it('asks for the metas of the given project', async () => {
+    const { deps, findMany, projectId } = setup([]);
+    await applyEventDisplayNames(deps, projectId, [eventItem()]);
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany).toHaveBeenCalledWith({ where: { projectId } });
   });
 });
