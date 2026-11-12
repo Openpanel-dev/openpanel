@@ -7,6 +7,10 @@ import { ReportChartLoading } from '../common/loading';
 import { useReportChartContext } from '../context';
 import { Chart } from './chart';
 import { CohortTable } from './table';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportRetentionChart() {
@@ -105,10 +109,14 @@ function Empty() {
 }
 
 function Disabled() {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <AspectContainer>
-      <ReportChartEmpty title="Select 2 events">
-        We need two events to determine the retention rate.
+      <ReportChartEmpty title={translateUi('Select 2 events')}>
+        <DashboardText
+          i18nKey={'We need two events to determine the retention rate.'}
+        />{' '}
       </ReportChartEmpty>
     </AspectContainer>
   );

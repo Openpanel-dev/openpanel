@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const TABS = [
@@ -97,7 +98,9 @@ export function SessionProperties({ session }: { session: IServiceSession }) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Details</div>
+        <div className="title">
+          <DashboardText i18nKey={'Details'} />
+        </div>
         <WidgetButtons>
           {TABS.map((t) => (
             <button
@@ -115,7 +118,7 @@ export function SessionProperties({ session }: { session: IServiceSession }) {
         <KeyValueGrid className="border-0" columns={1} copyable data={items} />
       ) : (
         <div className="p-4 text-muted-foreground text-sm">
-          Nothing recorded for this session.
+          <DashboardText i18nKey={'Nothing recorded for this session.'} />{' '}
         </div>
       )}
     </Widget>

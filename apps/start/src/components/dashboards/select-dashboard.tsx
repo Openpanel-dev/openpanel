@@ -4,6 +4,10 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 export function SelectDashboard({
@@ -17,6 +21,8 @@ export function SelectDashboard({
   projectId: string;
   excludeDashboardId?: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [isCreatingNew, setIsCreatingNew] = useState(false);
@@ -62,13 +68,13 @@ export function SelectDashboard({
   return (
     <div className="space-y-3">
       <Label htmlFor={isCreatingNew ? newDashboardNameId : undefined}>
-        Dashboard
+        <DashboardText i18nKey={'Dashboard'} />{' '}
       </Label>
 
       {isCreatingNew ? (
         <div className="flex gap-2">
           <Button
-            aria-label="Back to dashboard selection"
+            aria-label={translateUi('Back to dashboard selection')}
             icon={ArrowLeftIcon}
             onClick={() => {
               setIsCreatingNew(false);
@@ -93,7 +99,7 @@ export function SelectDashboard({
               e.preventDefault();
               handleCreateDashboard();
             }}
-            placeholder="Enter dashboard name"
+            placeholder={translateUi('Enter dashboard name')}
             value={newDashboardName}
           />
           <Button
@@ -129,7 +135,7 @@ export function SelectDashboard({
             type="button"
             variant="outline"
           >
-            Create new dashboard
+            <DashboardText i18nKey={'Create new dashboard'} />{' '}
           </Button>
         </div>
       )}

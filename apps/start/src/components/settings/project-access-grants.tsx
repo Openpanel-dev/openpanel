@@ -7,6 +7,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 interface ProjectAccessGrantsProps {
   value: IProjectAccessGrant[];
@@ -26,6 +30,8 @@ export function ProjectAccessGrants({
   projects,
   isReadOnly = false,
 }: ProjectAccessGrantsProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const selectedIds = value.map((grant) => grant.projectId);
 
   const handleSelectionChange = (ids: string[]) => {
@@ -57,7 +63,7 @@ export function ProjectAccessGrants({
           value: project.id,
         }))}
         onChange={(ids) => handleSelectionChange(ids as string[])}
-        placeholder="Choose projects"
+        placeholder={translateUi('Choose projects')}
         value={selectedIds}
       />
 
@@ -74,7 +80,7 @@ export function ProjectAccessGrants({
               </span>
               {isReadOnly ? (
                 <span className="shrink-0 text-muted-foreground text-sm">
-                  Read-only
+                  <DashboardText i18nKey={'Read-only'} />{' '}
                 </span>
               ) : (
                 <Select
@@ -90,8 +96,12 @@ export function ProjectAccessGrants({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="write">Can edit</SelectItem>
-                    <SelectItem value="read">Read-only</SelectItem>
+                    <SelectItem value="write">
+                      <DashboardText i18nKey={'Can edit'} />
+                    </SelectItem>
+                    <SelectItem value="read">
+                      <DashboardText i18nKey={'Read-only'} />
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               )}

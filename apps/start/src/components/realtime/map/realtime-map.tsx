@@ -1,4 +1,8 @@
 import { select } from 'd3-selection';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import 'd3-transition';
 import type { D3ZoomEvent, ZoomBehavior, ZoomTransform } from 'd3-zoom';
 import { zoom, zoomIdentity, zoomTransform } from 'd3-zoom';
@@ -324,6 +328,8 @@ function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number) {
 }
 
 export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const dispatch = useDispatch();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -751,25 +757,29 @@ export function RealtimeMap({ projectId, markers }: RealtimeMapProps) {
         >
           <div className="font-medium">{hovered.marker.place.label}</div>
           <div className="text-muted-foreground">
-            {hovered.marker.place.count.toLocaleString()} online
+            {hovered.marker.place.count.toLocaleString()}{' '}
+            <DashboardText i18nKey={'online'} />{' '}
           </div>
         </div>
       ) : null}
 
       <div className="absolute right-4 bottom-4 flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm">
         <MapControlButton
-          label="Zoom in"
+          label={translateUi('Zoom in')}
           onClick={() => zoomBy(MAP_ZOOM_BUTTON_FACTOR)}
         >
           <PlusIcon className="size-4" />
         </MapControlButton>
         <MapControlButton
-          label="Zoom out"
+          label={translateUi('Zoom out')}
           onClick={() => zoomBy(1 / MAP_ZOOM_BUTTON_FACTOR)}
         >
           <MinusIcon className="size-4" />
         </MapControlButton>
-        <MapControlButton label="Show the whole world" onClick={resetZoom}>
+        <MapControlButton
+          label={translateUi('Show the whole world')}
+          onClick={resetZoom}
+        >
           <LocateFixedIcon className="size-4" />
         </MapControlButton>
       </div>
@@ -837,8 +847,10 @@ const MarkerList = memo(function MarkerList({
   onFocus: (marker: PlacedMarker | null) => void;
   onActivate: (marker: PlacedMarker) => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
-    <ul aria-label="Visitors online now" className="sr-only">
+    <ul aria-label={translateUi('Visitors online now')} className="sr-only">
       {markers.map((marker) => (
         <MarkerListItem
           key={marker.id}
@@ -868,7 +880,8 @@ const MarkerListItem = memo(function MarkerListItem({
         onFocus={() => onFocus(marker)}
         type="button"
       >
-        {marker.place.label}, {marker.place.count} online
+        {marker.place.label}, {marker.place.count}{' '}
+        <DashboardText i18nKey={'online'} />{' '}
       </button>
     </li>
   );

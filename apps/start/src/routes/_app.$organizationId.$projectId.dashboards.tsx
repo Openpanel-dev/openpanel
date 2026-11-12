@@ -16,6 +16,10 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -44,6 +48,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -94,22 +100,28 @@ function Component() {
       <PageHeader
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
-            <span className="max-sm:hidden">Create dashboard</span>
-            <span className="sm:hidden">Dashboard</span>
+            <span className="max-sm:hidden">
+              <DashboardText i18nKey={'Create dashboard'} />
+            </span>
+            <span className="sm:hidden">
+              <DashboardText i18nKey={'Dashboard'} />
+            </span>
           </Button>
         }
         className="mb-8"
-        description="Access all your dashboards here"
-        title="Dashboards"
+        description={translateUi('Access all your dashboards here')}
+        title={translateUi('Dashboards')}
       />
       {dashboards.length === 0 ? (
         <EmptyState
-          description="Put the reports you check most often on one page, then share it with your team or embed it."
+          description={translateUi(
+            'Put the reports you check most often on one page, then share it with your team or embed it.'
+          )}
           icon={LayoutPanelTopIcon}
-          title="No dashboards yet"
+          title={translateUi('No dashboards yet')}
         >
           <Button icon={PlusIcon} onClick={() => pushModal('AddDashboard')}>
-            Create dashboard
+            <DashboardText i18nKey={'Create dashboard'} />{' '}
           </Button>
         </EmptyState>
       ) : (
@@ -126,7 +138,8 @@ function Component() {
                   <div className="truncate font-medium">{item.name}</div>
                   <div className="truncate text-muted-foreground text-sm">
                     {item.reports.length}{' '}
-                    {item.reports.length === 1 ? 'report' : 'reports'} · Updated{' '}
+                    {item.reports.length === 1 ? 'report' : 'reports'}{' '}
+                    <DashboardText i18nKey={'· Updated'} />{' '}
                     {format(item.updatedAt, 'MMM d, HH:mm')}
                   </div>
                 </div>
@@ -141,7 +154,7 @@ function Component() {
                     type="button"
                   >
                     <Pencil size={16} />
-                    Edit
+                    <DashboardText i18nKey={'Edit'} />{' '}
                   </button>
                 </CardActionsItem>
                 <CardActionsItem asChild className="w-full">
@@ -151,7 +164,7 @@ function Component() {
                     type="button"
                   >
                     <Copy size={16} />
-                    Duplicate
+                    <DashboardText i18nKey={'Duplicate'} />{' '}
                   </button>
                 </CardActionsItem>
                 <CardActionsItem asChild className="w-full text-destructive">
@@ -166,7 +179,7 @@ function Component() {
                     type="button"
                   >
                     <Trash size={16} />
-                    Delete
+                    <DashboardText i18nKey={'Delete'} />{' '}
                   </button>
                 </CardActionsItem>
               </CardActions>

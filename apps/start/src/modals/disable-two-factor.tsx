@@ -6,11 +6,17 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export default function DisableTwoFactor() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const authClient = useAuthClient();
   const queryClient = useQueryClient();
@@ -33,20 +39,20 @@ export default function DisableTwoFactor() {
     <ModalContent>
       <ModalHeader
         text="Enter your password to confirm."
-        title="Disable two-factor authentication"
+        title={translateUi('Disable two-factor authentication')}
       />
       <Input
-        aria-label="Password"
+        aria-label={translateUi('Password')}
         autoComplete="current-password"
         autoFocus
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Your password"
+        placeholder={translateUi('Your password')}
         type="password"
         value={password}
       />
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           disabled={!password}
@@ -54,7 +60,7 @@ export default function DisableTwoFactor() {
           onClick={() => mutation.mutate()}
           variant="destructive"
         >
-          Disable
+          <DashboardText i18nKey={'Disable'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

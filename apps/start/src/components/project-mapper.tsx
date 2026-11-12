@@ -18,6 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 interface ProjectMapperProps {
   fields: FieldArrayWithId<any, 'projectMapper', 'id'>[];
@@ -38,10 +42,14 @@ export function ProjectMapper({
   watch,
   setValue,
 }: ProjectMapperProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="mb-0">Project Mapper (Optional)</Label>
+        <Label className="mb-0">
+          <DashboardText i18nKey={'Project Mapper (Optional)'} />
+        </Label>
         <Button
           onClick={() => append({ from: '', to: '' })}
           size="sm"
@@ -49,13 +57,16 @@ export function ProjectMapper({
           variant="outline"
         >
           <PlusIcon className="mr-1 h-4 w-4" />
-          Add Mapping
+          <DashboardText i18nKey={'Add Mapping'} />{' '}
         </Button>
       </div>
       {fields.length === 0 && (
         <p className="text-muted-foreground text-sm">
-          Map source project IDs to your OpenPanel projects. If you skip mapping
-          all data will be imported to your current project.
+          <DashboardText
+            i18nKey={
+              'Map source project IDs to your OpenPanel projects. If you skip mapping all data will be imported to your current project.'
+            }
+          />{' '}
         </p>
       )}
 
@@ -66,10 +77,10 @@ export function ProjectMapper({
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex-1">
                   <Label className="text-muted-foreground text-xs">
-                    From (Source Project ID)
+                    <DashboardText i18nKey={'From (Source Project ID)'} />{' '}
                   </Label>
                   <Input
-                    placeholder="e.g., abc123"
+                    placeholder={translateUi('e.g., abc123')}
                     size="sm"
                     {...register(`projectMapper.${index}.from`)}
                     className="mt-1"
@@ -77,7 +88,7 @@ export function ProjectMapper({
                 </div>
                 <div className="flex-1">
                   <Label className="text-muted-foreground text-xs">
-                    To (OpenPanel Project)
+                    <DashboardText i18nKey={'To (OpenPanel Project)'} />{' '}
                   </Label>
                   <Select
                     onValueChange={(value) =>
@@ -86,7 +97,9 @@ export function ProjectMapper({
                     value={watch(`projectMapper.${index}.to`)}
                   >
                     <SelectTrigger className="mt-1 w-full" size="sm">
-                      <SelectValue placeholder="Select project" />
+                      <SelectValue
+                        placeholder={translateUi('Select project')}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {projects.slice(0, 10).map((project) => (

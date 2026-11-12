@@ -11,6 +11,10 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const zForm = zCreateGroup.omit({ projectId: true, properties: true }).extend({
@@ -19,6 +23,8 @@ const zForm = zCreateGroup.omit({ projectId: true, properties: true }).extend({
 type IForm = z.infer<typeof zForm>;
 
 export default function AddGroup() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const trpc = useTRPC();
@@ -52,7 +58,7 @@ export default function AddGroup() {
 
   return (
     <ModalContent>
-      <ModalHeader title="Add group" />
+      <ModalHeader title={translateUi('Add group')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ properties, ...values }) => {
@@ -65,28 +71,30 @@ export default function AddGroup() {
         })}
       >
         <InputWithLabel
-          label="ID"
-          placeholder="acme-corp"
+          label={translateUi('ID')}
+          placeholder={translateUi('acme-corp')}
           {...register('id')}
           autoFocus
           error={formState.errors.id?.message}
         />
         <InputWithLabel
-          label="Name"
-          placeholder="Acme Corp"
+          label={translateUi('Name')}
+          placeholder={translateUi('Acme Corp')}
           {...register('name')}
           error={formState.errors.name?.message}
         />
         <InputWithLabel
-          label="Type"
-          placeholder="company"
+          label={translateUi('Type')}
+          placeholder={translateUi('company')}
           {...register('type')}
           error={formState.errors.type?.message}
         />
 
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">Properties</span>
+            <span className="font-medium text-sm">
+              <DashboardText i18nKey={'Properties'} />
+            </span>
             <Button
               onClick={() => append({ key: '', value: '' })}
               size="sm"
@@ -94,19 +102,19 @@ export default function AddGroup() {
               variant="outline"
             >
               <PlusIcon className="mr-1 size-3" />
-              Add
+              <DashboardText i18nKey={'Add'} />{' '}
             </Button>
           </div>
           {fields.map((field, index) => (
             <div className="flex gap-2" key={field.id}>
               <input
                 className="h-9 flex-1 rounded-md border bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="key"
+                placeholder={translateUi('key')}
                 {...register(`properties.${index}.key`)}
               />
               <input
                 className="h-9 flex-1 rounded-md border bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                placeholder="value"
+                placeholder={translateUi('value')}
                 {...register(`properties.${index}.value`)}
               />
               <Button
@@ -124,13 +132,13 @@ export default function AddGroup() {
 
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button
             disabled={!formState.isDirty || mutation.isPending}
             type="submit"
           >
-            Create
+            <DashboardText i18nKey={'Create'} />{' '}
           </Button>
         </DialogFooter>
       </form>

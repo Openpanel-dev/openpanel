@@ -3,6 +3,7 @@ import { PencilIcon, PlusIcon, Trash2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 
@@ -24,10 +25,15 @@ export function CustomEvents() {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead className="space-y-2">
-        <span className="title">Custom events</span>
+        <span className="title">
+          <DashboardText i18nKey={'Custom events'} />
+        </span>
         <p className="text-muted-foreground">
-          Name a group of events once, like "Used navigation", and pick it in
-          any report. Each event can be narrowed with its own filters.
+          <DashboardText
+            i18nKey={
+              'Name a group of events once, like "Used navigation", and pick it in any report. Each event can be narrowed with its own filters.'
+            }
+          />{' '}
         </p>
       </WidgetHead>
       <WidgetBody className="col gap-2">
@@ -72,7 +78,7 @@ export function CustomEvents() {
             onClick={() => pushModal('CustomEvent')}
             variant="outline"
           >
-            Add custom event
+            <DashboardText i18nKey={'Add custom event'} />{' '}
           </Button>
         </div>
       </WidgetBody>

@@ -16,6 +16,10 @@ import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
@@ -169,6 +173,8 @@ function Message({ children }: { children: React.ReactNode }) {
 }
 
 export default function BillingUsage({ organization }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const trpc = useTRPC();
   const usageQuery = useQuery(
@@ -267,17 +273,25 @@ export default function BillingUsage({ organization }: Props) {
       );
     }
     if (usageQuery.isError) {
-      return <Message>Issues loading usage data</Message>;
+      return (
+        <Message>
+          <DashboardText i18nKey={'Issues loading usage data'} />
+        </Message>
+      );
     }
     if (total === 0) {
-      return <Message>No events in this period</Message>;
+      return (
+        <Message>
+          <DashboardText i18nKey={'No events in this period'} />
+        </Message>
+      );
     }
     return null;
   };
   const state = renderState();
 
   if (state) {
-    return <UsageWidget title="Usage">{state}</UsageWidget>;
+    return <UsageWidget title={translateUi('Usage')}>{state}</UsageWidget>;
   }
 
   const innerRadius = (PIE_SIZE / 2 - DEFAULT_HOVER_OFFSET) * DONUT_HOLE;
@@ -287,7 +301,7 @@ export default function BillingUsage({ organization }: Props) {
       <UsageWidget
         className="lg:col-span-2"
         subtitle={windowLabel}
-        title="Events per project"
+        title={translateUi('Events per project')}
       >
         <ComposedChart
           animationDuration={0}
@@ -363,7 +377,7 @@ export default function BillingUsage({ organization }: Props) {
               size="sm"
               variant="outline"
             >
-              All projects
+              <DashboardText i18nKey={'All projects'} />{' '}
               <XIcon className="ml-1 size-3.5" />
             </Button>
           )
@@ -372,7 +386,7 @@ export default function BillingUsage({ organization }: Props) {
           windowLabel &&
           `${selectedProject?.name ?? 'All projects'} · ${windowLabel}`
         }
-        title="Events by name"
+        title={translateUi('Events by name')}
       >
         <div className="col items-center gap-4">
           <PieChart

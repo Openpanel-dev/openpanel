@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { XIcon } from 'lucide-react';
 import type * as React from 'react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/lib/utils';
 
 function Dialog({
@@ -91,7 +92,9 @@ function DialogContent({
             data-slot="dialog-close"
           >
             <XIcon />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">
+              <DashboardText i18nKey={'Close'} />
+            </span>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>

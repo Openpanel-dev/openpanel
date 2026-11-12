@@ -10,6 +10,7 @@ import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { XAxis } from '@/components/charts/x-axis';
 import { YAxis } from '@/components/charts/y-axis';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -124,7 +125,8 @@ export function Chart({ data }: Props) {
         className="pointer-events-none absolute top-2 right-3 font-medium text-xs"
         style={{ color: AVERAGE_COLOR }}
       >
-        Average ({round(averageRate, 2)} %)
+        <DashboardText i18nKey={'Average ('} />
+        {round(averageRate, 2)} %)
       </div>
     </div>
   );

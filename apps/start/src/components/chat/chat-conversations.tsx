@@ -3,6 +3,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { MessageSquarePlusIcon, Trash2Icon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -39,6 +43,8 @@ export function ChatConversations({
   onNew: () => void;
   className?: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -80,13 +86,13 @@ export function ChatConversations({
           variant="outline"
         >
           <MessageSquarePlusIcon className="size-4" />
-          New chat
+          <DashboardText i18nKey={'New chat'} />{' '}
         </Button>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-3">
         {conversations.length === 0 && (
           <p className="px-2 py-6 text-center text-muted-foreground text-sm">
-            Your chats will show up here.
+            <DashboardText i18nKey={'Your chats will show up here.'} />{' '}
           </p>
         )}
         {groups.map((group) => (
@@ -116,7 +122,7 @@ export function ChatConversations({
                     {title}
                   </button>
                   <button
-                    aria-label="Delete chat"
+                    aria-label={translateUi('Delete chat')}
                     className="rounded p-1 text-muted-foreground opacity-0 hover:text-destructive focus:opacity-100 group-hover:opacity-100"
                     onClick={() =>
                       showConfirm({

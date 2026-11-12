@@ -6,6 +6,7 @@ import { DeltaChip } from '@/components/delta-chip';
 import { ReportChart } from '@/components/report-chart';
 import { Badge } from '@/components/ui/badge';
 import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -155,7 +156,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
             </div>
             {primary.compare != null && (
               <div className="text-muted-foreground text-xs">
-                vs {fmt(primary.compare)}
+                <DashboardText i18nKey={'vs'} /> {fmt(primary.compare)}
               </div>
             )}
           </div>
@@ -186,11 +187,14 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
 
       <div>
         <div className="mb-2 flex items-center gap-2 font-medium text-sm">
-          <SparklesIcon className="size-4" /> Why did this happen?
+          <SparklesIcon className="size-4" />{' '}
+          <DashboardText i18nKey={'Why did this happen?'} />{' '}
         </div>
 
         {mutation.isPending && (
-          <p className="text-muted-foreground text-sm">Analyzing…</p>
+          <p className="text-muted-foreground text-sm">
+            <DashboardText i18nKey={'Analyzing…'} />
+          </p>
         )}
 
         {explanation && (
@@ -208,18 +212,21 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
             )}
             {explanation.relatedReference && (
               <p className="text-muted-foreground">
-                Possibly related: {explanation.relatedReference}
+                <DashboardText i18nKey={'Possibly related:'} />{' '}
+                {explanation.relatedReference}
               </p>
             )}
             <p className="text-3xs text-muted-foreground uppercase tracking-wide">
-              Confidence: {explanation.confidence}
+              <DashboardText i18nKey={'Confidence:'} /> {explanation.confidence}
             </p>
           </div>
         )}
 
         {!mutation.isPending && mutation.isSuccess && !explanation && (
           <p className="text-muted-foreground text-sm">
-            Couldn't generate an explanation for this one.
+            <DashboardText
+              i18nKey={"Couldn't generate an explanation for this one."}
+            />{' '}
           </p>
         )}
       </div>

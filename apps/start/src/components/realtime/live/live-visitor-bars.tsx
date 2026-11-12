@@ -3,6 +3,7 @@ import { Bar } from '@/components/charts/bar';
 import { BarChart } from '@/components/charts/bar-chart';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -39,12 +40,12 @@ export function LiveVisitorBars({ projectId }: { projectId: string }) {
     <div className="pointer-events-auto flex flex-col gap-2 rounded-xl border bg-card/80 p-3 shadow-sm backdrop-blur-md">
       <div className="flex items-baseline justify-between gap-2">
         <span className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">
-          Last 30 minutes
+          <DashboardText i18nKey={'Last 30 minutes'} />{' '}
         </span>
         <span className="font-semibold text-sm tabular-nums">
           {number.format(data?.totalSessions ?? 0)}
           <span className="ml-1 font-normal text-muted-foreground text-xs">
-            sessions
+            <DashboardText i18nKey={'sessions'} />{' '}
           </span>
         </span>
       </div>

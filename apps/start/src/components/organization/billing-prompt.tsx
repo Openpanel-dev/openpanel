@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button, LinkButton } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDate } from '@/utils/date';
 import { op } from '@/utils/op';
@@ -223,14 +224,14 @@ export default function BillingPrompt({
       if (isLoadingProducts) {
         return (
           <Button className="w-full" loading size="lg">
-            Loading plans
+            <DashboardText i18nKey={'Loading plans'} />{' '}
           </Button>
         );
       }
       return (
         <Button asChild className="w-full" size="lg">
           <a href="mailto:hello@openpanel.dev?subject=Custom plan">
-            Get a custom plan
+            <DashboardText i18nKey={'Get a custom plan'} />{' '}
           </a>
         </Button>
       );
@@ -281,7 +282,9 @@ export default function BillingPrompt({
               {number.short(eventsCount)}
             </div>
             <div className="text-muted-foreground text-sm">
-              Events tracked, all safe and stored
+              <DashboardText
+                i18nKey={'Events tracked, all safe and stored'}
+              />{' '}
             </div>
           </div>
           {(() => {
@@ -310,19 +313,22 @@ export default function BillingPrompt({
           {copy.action === 'checkout' &&
             (bestProductFit ? (
               <p className="text-muted-foreground text-sm">
-                Based on your usage, the{' '}
+                <DashboardText i18nKey={'Based on your usage, the'} />{' '}
                 <strong className="text-foreground">
                   {bestProductFit.name}
                 </strong>{' '}
-                plan covers you: up to{' '}
+                <DashboardText i18nKey={'plan covers you: up to'} />{' '}
                 {number.short(Number(bestProductFit.metadata.eventsLimit))}{' '}
-                events per month for {price}.
+                <DashboardText i18nKey={'events per month for'} /> {price}.
               </p>
             ) : (
               !isLoadingProducts && (
                 <p className="text-muted-foreground text-sm">
-                  Your usage is above our standard plans, so let's set you up
-                  with a custom one.
+                  <DashboardText
+                    i18nKey={
+                      "Your usage is above our standard plans, so let's set you up with a custom one."
+                    }
+                  />{' '}
                 </p>
               )
             ))}
@@ -336,13 +342,13 @@ export default function BillingPrompt({
               to="/$organizationId/billing"
               variant="outline"
             >
-              See all plans
+              <DashboardText i18nKey={'See all plans'} />{' '}
             </LinkButton>
             <a
               className="text-muted-foreground text-sm hover:underline"
               href="mailto:hello@openpanel.dev"
             >
-              Questions? Email us
+              <DashboardText i18nKey={'Questions? Email us'} />{' '}
             </a>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { useAiFilters } from '@/hooks/use-ai-filters';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getProfileName } from '@/utils/getters';
 
@@ -39,7 +40,11 @@ export function ProfileCell({
   deviceId: string;
 }) {
   if (!profileId || profileId === deviceId) {
-    return <span className="text-muted-foreground">Anonymous</span>;
+    return (
+      <span className="text-muted-foreground">
+        <DashboardText i18nKey={'Anonymous'} />
+      </span>
+    );
   }
   return (
     <ProjectLink
@@ -171,11 +176,11 @@ function useColumns(): ColumnDef<IServiceAiTrace>[] {
         cell: ({ row }) =>
           row.original.isError ? (
             <Badge variant="destructive">
-              <AlertTriangleIcon /> Error
+              <AlertTriangleIcon /> <DashboardText i18nKey={'Error'} />{' '}
             </Badge>
           ) : (
             <Badge variant="outline">
-              <CheckIcon /> OK
+              <CheckIcon /> <DashboardText i18nKey={'OK'} />{' '}
             </Badge>
           ),
       },
@@ -239,7 +244,7 @@ export function AiTracesTable({ projectId }: { projectId: string }) {
           onClick={() => query.fetchNextPage()}
           variant="outline"
         >
-          Load more
+          <DashboardText i18nKey={'Load more'} />{' '}
         </Button>
       )}
     </div>

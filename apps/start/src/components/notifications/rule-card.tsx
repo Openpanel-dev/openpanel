@@ -11,6 +11,7 @@ import { PingBadge } from '../ping';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -67,17 +68,27 @@ export function RuleCard({
       case 'events':
         return (
           <div className="row flex-wrap items-baseline gap-2">
-            <div>Get notified when</div>
+            <div>
+              <DashboardText i18nKey={'Get notified when'} />
+            </div>
             {rule.config.events.map((event) => (
               <EventBadge event={event} key={event.id} />
             ))}
-            <div>occurs</div>
+            <div>
+              <DashboardText i18nKey={'occurs'} />
+            </div>
           </div>
         );
       case 'funnel':
         return (
           <div className="col gap-4">
-            <div>Get notified when a session has completed this funnel</div>
+            <div>
+              <DashboardText
+                i18nKey={
+                  'Get notified when a session has completed this funnel'
+                }
+              />
+            </div>
             <div className="col gap-2">
               {rule.config.events.map((event, index) => (
                 <div
@@ -121,7 +132,7 @@ export function RuleCard({
             }}
             variant="ghost"
           >
-            Delete
+            <DashboardText i18nKey={'Delete'} />{' '}
           </Button>
           <Button
             onClick={() => {
@@ -131,7 +142,7 @@ export function RuleCard({
             }}
             variant="ghost"
           >
-            Edit
+            <DashboardText i18nKey={'Edit'} />{' '}
           </Button>
         </div>
       </IntegrationCardFooter>

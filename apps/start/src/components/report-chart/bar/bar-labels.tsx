@@ -7,6 +7,7 @@ import type { BarRow } from './chart';
 import { useChart } from '@/components/charts/chart-context';
 import { DeltaChip } from '@/components/delta-chip';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 /**
@@ -80,7 +81,9 @@ export function BarLabels({
                 {number.short(row.count)}
               </span>
               {comparesPrevious && !row.previous && row.count > 0 && (
-                <DeltaChip size="sm">New</DeltaChip>
+                <DeltaChip size="sm">
+                  <DashboardText i18nKey={'New'} />
+                </DeltaChip>
               )}
               {row.previousDiff?.diff != null && (
                 <DeltaChip

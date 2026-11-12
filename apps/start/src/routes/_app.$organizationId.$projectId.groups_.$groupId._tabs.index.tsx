@@ -10,6 +10,10 @@ import { PopularRoutes } from '@/components/profiles/popular-routes';
 import { ProfileActivity } from '@/components/profiles/profile-activity';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { createProjectTitle } from '@/utils/title';
@@ -35,6 +39,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId, groupId } = Route.useParams();
   const trpc = useTRPC();
 
@@ -75,7 +81,7 @@ function Component() {
               data={[]}
               id="totalEvents"
               isLoading={false}
-              label="Total Events"
+              label={translateUi('Total Events')}
               metric={{ current: m.totalEvents, previous: null }}
               unit=""
             />
@@ -83,7 +89,7 @@ function Component() {
               data={[]}
               id="uniqueMembers"
               isLoading={false}
-              label="Unique Members"
+              label={translateUi('Unique Members')}
               metric={{ current: m.uniqueProfiles, previous: null }}
               unit=""
             />
@@ -91,7 +97,7 @@ function Component() {
               data={[]}
               id="firstSeen"
               isLoading={false}
-              label="First Seen"
+              label={translateUi('First Seen')}
               metric={{
                 current: m.firstSeen ? new Date(m.firstSeen).getTime() : 0,
                 previous: null,
@@ -102,7 +108,7 @@ function Component() {
               data={[]}
               id="lastSeen"
               isLoading={false}
-              label="Last Seen"
+              label={translateUi('Last Seen')}
               metric={{
                 current: m.lastSeen ? new Date(m.lastSeen).getTime() : 0,
                 previous: null,
@@ -123,7 +129,9 @@ function Component() {
       <div className="col-span-1 md:col-span-2">
         <Widget className="w-full">
           <WidgetHead>
-            <div className="title">Group Information</div>
+            <div className="title">
+              <DashboardText i18nKey={'Group Information'} />
+            </div>
           </WidgetHead>
           <KeyValueGrid
             className="border-0"

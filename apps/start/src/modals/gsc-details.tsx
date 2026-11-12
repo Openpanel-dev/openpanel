@@ -11,6 +11,7 @@ import { OverviewWidgetTable } from '@/components/overview/overview-widget-table
 import { GSC_CLICKS_SERIES } from '@/components/page/gsc-clicks-chart';
 import { Skeleton } from '@/components/skeleton';
 import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
@@ -112,7 +113,9 @@ export default function GscDetails(props: Props) {
       <div className="col gap-6">
         {type === 'page' && (
           <div className="card p-4">
-            <h3 className="mb-4 font-medium text-sm">Views & Sessions</h3>
+            <h3 className="mb-4 font-medium text-sm">
+              <DashboardText i18nKey={'Views & Sessions'} />
+            </h3>
             {isLoading || pageTimeseriesQuery.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
@@ -130,7 +133,9 @@ export default function GscDetails(props: Props) {
         )}
 
         <div className="card p-4">
-          <h3 className="mb-4 font-medium text-sm">Clicks & Impressions</h3>
+          <h3 className="mb-4 font-medium text-sm">
+            <DashboardText i18nKey={'Clicks & Impressions'} />
+          </h3>
           {isLoading ? (
             <Skeleton className="h-40 w-full" />
           ) : (
@@ -150,7 +155,7 @@ export default function GscDetails(props: Props) {
         <div className="card overflow-hidden">
           <div className="border-b p-4">
             <h3 className="font-medium text-sm">
-              Top {breakdownLabel.toLowerCase()}s
+              <DashboardText i18nKey={'Top'} /> {breakdownLabel.toLowerCase()}s
             </h3>
           </div>
           {isLoading ? (

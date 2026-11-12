@@ -32,6 +32,10 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Label } from '@/components/ui/label';
 import { rememberOnboardingKeys } from '@/hooks/use-client-secret';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { readAttribution } from '@/utils/attribution';
 import { cn } from '@/utils/cn';
@@ -116,6 +120,8 @@ function toOrigin(value: string) {
 }
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const workspaceFieldId = useId();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -256,13 +262,17 @@ function Component() {
     <form className="col" onSubmit={form.handleSubmit(onSubmit, onInvalid)}>
       <OnboardingHeading
         className="mb-10"
-        description="A project is one website, app or service you want to track. You can add more later."
+        description={translateUi(
+          'A project is one website, app or service you want to track. You can add more later.'
+        )}
         title={hasWorkspaces ? 'Create a project' : 'Create your first project'}
       />
 
       {hasWorkspaces && (
         <div className="col mb-10 gap-3">
-          <Label className="mb-0 text-base">Workspace</Label>
+          <Label className="mb-0 text-base">
+            <DashboardText i18nKey={'Workspace'} />
+          </Label>
           <div className="grid grid-cols-2 gap-1 rounded-xl bg-def-200 p-1 dark:bg-def-300">
             {[
               { label: 'Use existing workspace', existing: true },
@@ -297,7 +307,7 @@ function Component() {
                 <WithLabel
                   error={formState.errors.organizationId?.message}
                   id={workspaceFieldId}
-                  label="Which workspace?"
+                  label={translateUi('Which workspace?')}
                 >
                   <Combobox
                     aria-describedby={
@@ -314,7 +324,7 @@ function Component() {
                       value: item.id,
                     }))}
                     onChange={field.onChange}
-                    placeholder="Select workspace"
+                    placeholder={translateUi('Select workspace')}
                     size="xl"
                     value={field.value}
                     variant="input"
@@ -330,14 +340,16 @@ function Component() {
         autoFocus
         className="mb-10"
         error={form.formState.errors.project?.message}
-        label="Project name"
-        placeholder="Acme"
+        label={translateUi('Project name')}
+        placeholder={translateUi('Acme')}
         size="xl"
         {...form.register('project')}
       />
 
       <div className="col mb-10 gap-3">
-        <Label className="mb-0 text-base">What are you tracking?</Label>
+        <Label className="mb-0 text-base">
+          <DashboardText i18nKey={'What are you tracking?'} />
+        </Label>
         <div className="grid gap-3 sm:grid-cols-3">
           {PROJECT_TYPES.map(({ key, label, description, Icon }) => {
             const active = selectedTypes[key];
@@ -380,12 +392,15 @@ function Component() {
           })}
         </div>
         <p className="text-muted-foreground text-sm">
-          Pick everything that applies. It only decides which install guides we
-          show first.
+          <DashboardText
+            i18nKey={
+              'Pick everything that applies. It only decides which install guides we show first.'
+            }
+          />{' '}
         </p>
         {typeError && (
           <p className="text-destructive text-sm">
-            Pick at least one thing to track
+            <DashboardText i18nKey={'Pick at least one thing to track'} />{' '}
           </p>
         )}
       </div>
@@ -394,10 +409,12 @@ function Component() {
         <div className="col gap-3 pb-10">
           <InputWithLabel
             error={form.formState.errors.domain?.message}
-            hint="Browser events are only accepted from this domain."
+            hint={translateUi(
+              'Browser events are only accepted from this domain.'
+            )}
             inputMode="url"
-            label="Website URL"
-            placeholder="acme.com"
+            label={translateUi('Website URL')}
+            placeholder={translateUi('acme.com')}
             size="xl"
             {...form.register('domain')}
             onBlur={(event) => {
@@ -434,7 +451,9 @@ function Component() {
               }}
               type="button"
             >
-              Also track other domains (staging, localhost…)
+              <DashboardText
+                i18nKey={'Also track other domains (staging, localhost…)'}
+              />{' '}
             </button>
           )}
           <AnimateHeight open={showCorsInput}>
@@ -444,7 +463,7 @@ function Component() {
               render={({ field }) => (
                 <WithLabel
                   error={form.formState.errors.cors?.message}
-                  label="Allowed domains"
+                  label={translateUi('Allowed domains')}
                 >
                   <TagInput
                     {...field}
@@ -452,7 +471,7 @@ function Component() {
                     onChange={(values: string[]) =>
                       field.onChange(values.map(toOrigin))
                     }
-                    placeholder="Add a domain and press Enter"
+                    placeholder={translateUi('Add a domain and press Enter')}
                     renderTag={(tag: string) =>
                       tag === '*' ? 'Any domain' : tag
                     }
@@ -469,7 +488,7 @@ function Component() {
         <div className="col mb-10 gap-3 rounded-xl border p-5">
           <div className="row items-center justify-between gap-4">
             <div className="text-muted-foreground text-sm">
-              Workspace{' '}
+              <DashboardText i18nKey={'Workspace'} />{' '}
               <span className="font-medium text-foreground">
                 {workspaceName || 'named after the project'}
               </span>{' '}
@@ -492,9 +511,9 @@ function Component() {
             <div className="grid gap-4 pt-3 sm:grid-cols-2">
               <InputWithLabel
                 error={form.formState.errors.organization?.message}
-                hint="Your team and billing live here."
-                label="Workspace name"
-                placeholder="Acme Inc"
+                hint={translateUi('Your team and billing live here.')}
+                label={translateUi('Workspace name')}
+                placeholder={translateUi('Acme Inc')}
                 size="xl"
                 {...form.register('organization', {
                   onChange: () => setWorkspaceEdited(true),
@@ -505,14 +524,14 @@ function Component() {
                 name="timezone"
                 render={({ field }) => (
                   <WithLabel
-                    hint="Used for daily and weekly reports."
-                    label="Timezone"
+                    hint={translateUi('Used for daily and weekly reports.')}
+                    label={translateUi('Timezone')}
                   >
                     <Combobox
                       className="w-full"
                       items={TIMEZONES}
                       onChange={field.onChange}
-                      placeholder="Select timezone"
+                      placeholder={translateUi('Select timezone')}
                       searchable
                       size="xl"
                       value={field.value}
@@ -532,7 +551,7 @@ function Component() {
           size="xl"
           type="submit"
         >
-          Create project
+          <DashboardText i18nKey={'Create project'} />{' '}
         </Button>
       </div>
     </form>

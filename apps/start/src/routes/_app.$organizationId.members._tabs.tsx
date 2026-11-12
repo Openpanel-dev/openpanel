@@ -8,6 +8,7 @@ import {
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { createOrganizationTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
@@ -37,6 +38,8 @@ export const Route = createFileRoute('/_app/$organizationId/members/_tabs')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const { activeTab, tabs } = usePageTabs([
     { id: 'members', label: 'Members' },
@@ -52,7 +55,10 @@ function Component() {
 
   return (
     <div className="container p-8">
-      <PageHeader description="Manage your members here" title="Members" />
+      <PageHeader
+        description={translateUi('Manage your members here')}
+        title={translateUi('Members')}
+      />
 
       <Tabs
         className="mt-2 mb-8"

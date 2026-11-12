@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { LoginNavbar } from './login-navbar';
 import { LogoSquare } from './logo';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 interface PublicPageCardProps {
   title: string;
@@ -32,13 +33,13 @@ export function PublicPageCard({
         {showFooter && (
           <div className="col max-w-sm gap-1 p-6 text-muted-foreground text-sm">
             <p>
-              Powered by{' '}
+              <DashboardText i18nKey={'Powered by'} />{' '}
               <a className="font-medium" href="https://openpanel.dev">
-                OpenPanel.dev
+                <DashboardText i18nKey={'OpenPanel.dev'} />{' '}
               </a>
               {' · '}
               <a href="https://dashboard.openpanel.dev/onboarding">
-                Try it for free today!
+                <DashboardText i18nKey={'Try it for free today!'} />{' '}
               </a>
             </p>
           </div>

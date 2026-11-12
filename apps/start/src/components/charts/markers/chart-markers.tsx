@@ -1,4 +1,6 @@
-'use client';
+import { TranslationText as DashboardText } from '@/i18n/provider';
+
+('use client');
 
 import { useCallback, useMemo } from 'react';
 import { chartCssVars, useChart, useChartHover } from '../chart-context';
@@ -76,7 +78,7 @@ export function MarkerTooltipContent({ markers }: MarkerTooltipContentProps) {
       })}
       {hiddenCount > 0 && (
         <div className="pl-7 text-chart-tooltip-muted text-xs">
-          +{hiddenCount} more...
+          +{hiddenCount} <DashboardText i18nKey={'more...'} />{' '}
         </div>
       )}
     </div>

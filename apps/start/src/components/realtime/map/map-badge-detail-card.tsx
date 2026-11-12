@@ -7,6 +7,7 @@ import { getBadgeOverlayPosition, getProfileDisplayName } from './map-utils';
 import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function MapBadgeDetailCard({
@@ -58,7 +59,7 @@ export function MapBadgeDetailCard({
         <div className="flex items-start justify-between gap-4 border-b p-4">
           <div className="min-w-0">
             <div className="mb-2 text-muted-foreground text-xs uppercase tracking-wide">
-              Online now
+              <DashboardText i18nKey={'Online now'} />{' '}
             </div>
             <div className="truncate text-lg" style={{ fontWeight: 600 }}>
               {marker.label}
@@ -67,7 +68,8 @@ export function MapBadgeDetailCard({
               className="mt-1 text-muted-foreground"
               style={{ fontSize: 13 }}
             >
-              {query.data?.summary.totalSessions ?? marker.count} sessions
+              {query.data?.summary.totalSessions ?? marker.count}{' '}
+              <DashboardText i18nKey={'sessions'} />{' '}
               {query.data?.summary.totalProfiles
                 ? ` • ${query.data.summary.totalProfiles} profiles`
                 : ''}
@@ -84,19 +86,25 @@ export function MapBadgeDetailCard({
 
         <div className="grid grid-cols-3 gap-2 border-b p-4 text-sm">
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Locations</div>
+            <div className="text-muted-foreground text-xs">
+              <DashboardText i18nKey={'Locations'} />
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalLocations ?? marker.locations.length}
             </div>
           </div>
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Countries</div>
+            <div className="text-muted-foreground text-xs">
+              <DashboardText i18nKey={'Countries'} />
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalCountries ?? 0}
             </div>
           </div>
           <div className="col gap-1 rounded-lg bg-def-200 p-3">
-            <div className="text-muted-foreground text-xs">Cities</div>
+            <div className="text-muted-foreground text-xs">
+              <DashboardText i18nKey={'Cities'} />
+            </div>
             <div className="font-semibold">
               {query.data?.summary.totalCities ?? 0}
             </div>
@@ -114,7 +122,9 @@ export function MapBadgeDetailCard({
             <>
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top referrers</div>
+                  <div className="mb-2 font-medium text-sm">
+                    <DashboardText i18nKey={'Top referrers'} />
+                  </div>
                   <div className="space-y-2">
                     {query.data.topReferrers.length > 0 ? (
                       query.data.topReferrers.map((item) => (
@@ -136,14 +146,16 @@ export function MapBadgeDetailCard({
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        <DashboardText i18nKey={'No data'} />{' '}
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top events</div>
+                  <div className="mb-2 font-medium text-sm">
+                    <DashboardText i18nKey={'Top events'} />
+                  </div>
                   <div className="space-y-2">
                     {query.data.topEvents.length > 0 ? (
                       query.data.topEvents.map((item) => (
@@ -157,14 +169,16 @@ export function MapBadgeDetailCard({
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        <DashboardText i18nKey={'No data'} />{' '}
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div className="col-span-2 rounded-xl border p-3">
-                  <div className="mb-2 font-medium text-sm">Top paths</div>
+                  <div className="mb-2 font-medium text-sm">
+                    <DashboardText i18nKey={'Top paths'} />
+                  </div>
                   <div className="space-y-2">
                     {query.data.topPaths.length > 0 ? (
                       query.data.topPaths.map((item) => (
@@ -180,7 +194,7 @@ export function MapBadgeDetailCard({
                       ))
                     ) : (
                       <div className="text-muted-foreground text-sm">
-                        No data
+                        <DashboardText i18nKey={'No data'} />{' '}
                       </div>
                     )}
                   </div>
@@ -188,7 +202,9 @@ export function MapBadgeDetailCard({
               </div>
 
               <div className="rounded-xl border p-3">
-                <div className="mb-3 font-medium text-sm">Recent sessions</div>
+                <div className="mb-3 font-medium text-sm">
+                  <DashboardText i18nKey={'Recent sessions'} />
+                </div>
                 <div className="space-y-3">
                   {query.data.recentProfiles.length > 0 ? (
                     query.data.recentProfiles.map((profile) => {
@@ -250,7 +266,7 @@ export function MapBadgeDetailCard({
                     })
                   ) : (
                     <div className="text-muted-foreground text-sm">
-                      No recent sessions
+                      <DashboardText i18nKey={'No recent sessions'} />{' '}
                     </div>
                   )}
                 </div>
@@ -258,7 +274,7 @@ export function MapBadgeDetailCard({
             </>
           ) : (
             <div className="text-muted-foreground text-sm">
-              Could not load badge details.
+              <DashboardText i18nKey={'Could not load badge details.'} />{' '}
             </div>
           )}
         </div>

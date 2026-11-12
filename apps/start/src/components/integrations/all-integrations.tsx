@@ -2,6 +2,7 @@ import { PlugIcon } from 'lucide-react';
 import { IntegrationCard, IntegrationCardFooter } from './integration-card';
 import { INTEGRATIONS } from './integrations';
 import { Button } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 
 export function AllIntegrations() {
@@ -24,7 +25,7 @@ export function AllIntegrations() {
               variant="outline"
             >
               <PlugIcon className="mr-2 size-4" />
-              Connect
+              <DashboardText i18nKey={'Connect'} />{' '}
             </Button>
           </IntegrationCardFooter>
         </IntegrationCard>

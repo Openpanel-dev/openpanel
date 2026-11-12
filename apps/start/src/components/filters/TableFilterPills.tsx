@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
@@ -78,6 +82,8 @@ export function TableFilterPills({
   className,
   nuqsOptions,
 }: TableFilterPillsProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const [filters, setFilters] = useTableFilters(urlKey, nuqsOptions);
   const cohorts = useCohorts(
@@ -101,7 +107,7 @@ export function TableFilterPills({
   return (
     <div className={cn('row flex-wrap items-center gap-2', className)}>
       <Button icon={FilterIcon} onClick={openSheet} size="sm" variant="outline">
-        Filters
+        <DashboardText i18nKey={'Filters'} />{' '}
         {filters.length > 0 && (
           <Badge className="ml-2 rounded-full px-1.5 py-0 text-xs">
             {filters.length}
@@ -152,7 +158,7 @@ export function TableFilterPills({
               </button>
             )}
             <button
-              aria-label="Remove filter"
+              aria-label={translateUi('Remove filter')}
               className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
               onClick={() => removeAt(index)}
               type="button"

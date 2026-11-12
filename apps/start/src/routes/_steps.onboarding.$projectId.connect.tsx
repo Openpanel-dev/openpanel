@@ -21,6 +21,10 @@ import {
   useClientSecret,
   useMcpToken,
 } from '@/hooks/use-client-secret';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { trackFunnel, useSecondsOnStep } from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
@@ -47,6 +51,8 @@ export const Route = createFileRoute('/_steps/onboarding/$projectId/connect')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { apiUrl, isSelfHosted } = useAppContext();
@@ -90,9 +96,11 @@ function Component() {
   if (!(project && client)) {
     return (
       <EmptyState
-        description="This project doesn't exist or isn't ready yet. Reload the page to try again."
+        description={translateUi(
+          "This project doesn't exist or isn't ready yet. Reload the page to try again."
+        )}
         icon={SearchXIcon}
-        title="Project not found"
+        title={translateUi('Project not found')}
         variant="page"
       />
     );
@@ -122,13 +130,16 @@ function Component() {
         className="lg:col-start-1"
         description={
           <>
-            Add the snippet to{' '}
-            <strong className="text-foreground">{project.name}</strong> and we
-            confirm the first event right here. Your keys stay on the side; you
-            can also do this later from the dashboard.
+            <DashboardText i18nKey={'Add the snippet to'} />{' '}
+            <strong className="text-foreground">{project.name}</strong>{' '}
+            <DashboardText
+              i18nKey={
+                'and we confirm the first event right here. Your keys stay on the side; you can also do this later from the dashboard.'
+              }
+            />{' '}
           </>
         }
-        title="Install OpenPanel"
+        title={translateUi('Install OpenPanel')}
       />
       <aside className={sidebarPlacement}>
         <FirstEventStatus
@@ -144,7 +155,7 @@ function Component() {
               size="lg"
               {...dashboard}
             >
-              Open dashboard
+              <DashboardText i18nKey={'Open dashboard'} />{' '}
             </LinkButton>
           )}
         </FirstEventStatus>
@@ -170,7 +181,9 @@ function Component() {
         />
         <div className="row items-center justify-between gap-4 border-t pt-8">
           {isVerified ? (
-            <span className="text-muted-foreground">You are all set.</span>
+            <span className="text-muted-foreground">
+              <DashboardText i18nKey={'You are all set.'} />
+            </span>
           ) : (
             <Link
               className="text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -182,7 +195,9 @@ function Component() {
               }
               {...dashboard}
             >
-              Skip for now, I will install later
+              <DashboardText
+                i18nKey={'Skip for now, I will install later'}
+              />{' '}
             </Link>
           )}
           <LinkButton
@@ -191,7 +206,7 @@ function Component() {
             variant={isVerified ? 'default' : 'outline'}
             {...dashboard}
           >
-            Open dashboard
+            <DashboardText i18nKey={'Open dashboard'} />{' '}
           </LinkButton>
         </div>
       </div>

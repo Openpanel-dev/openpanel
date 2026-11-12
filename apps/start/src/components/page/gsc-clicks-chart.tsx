@@ -6,6 +6,7 @@ import {
 } from '@/components/charts/op-line-chart';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
@@ -71,7 +72,9 @@ export function GscClicksChart({
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">Clicks & Impressions</h3>
+        <h3 className="font-medium text-sm">
+          <DashboardText i18nKey={'Clicks & Impressions'} />
+        </h3>
         <OPLineChartLegend series={GSC_CLICKS_SERIES} />
       </div>
       {isLoading ? (

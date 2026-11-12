@@ -1,5 +1,6 @@
 import { ServerCrashIcon } from 'lucide-react';
 import { useReportChartContext } from '../context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export function ReportChartError() {
@@ -16,7 +17,9 @@ export function ReportChartError() {
         strokeWidth={1.2}
       />
       <div className="font-medium text-muted-foreground text-sm">
-        There was an error loading this chart.
+        <DashboardText
+          i18nKey={'There was an error loading this chart.'}
+        />{' '}
       </div>
     </div>
   );

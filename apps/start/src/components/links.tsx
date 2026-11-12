@@ -1,5 +1,6 @@
 import { Link, type LinkComponentProps } from '@tanstack/react-router';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 type ProjectLinkBaseProps = Omit<
   LinkComponentProps,
@@ -41,7 +42,11 @@ export function ProjectLink({
   const path = to ?? href;
 
   if (typeof path !== 'string') {
-    return <p>ProjectLink</p>;
+    return (
+      <p>
+        <DashboardText i18nKey={'ProjectLink'} />
+      </p>
+    );
   }
 
   return (

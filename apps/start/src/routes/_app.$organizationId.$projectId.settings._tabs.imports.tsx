@@ -30,6 +30,10 @@ import {
 } from '@/components/ui/table';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -40,6 +44,8 @@ export const Route = createFileRoute(
 });
 
 function ImportsSettings() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -145,7 +151,7 @@ function ImportsSettings() {
                   variant="ghost"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Import Data
+                  <DashboardText i18nKey={'Import Data'} />{' '}
                 </Button>
               </IntegrationCardFooter>
             </IntegrationCard>
@@ -154,18 +160,32 @@ function ImportsSettings() {
       </div>
 
       <div>
-        <h3 className="mb-4 font-medium text-lg">Import History</h3>
+        <h3 className="mb-4 font-medium text-lg">
+          <DashboardText i18nKey={'Import History'} />
+        </h3>
 
         <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Provider</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Config</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>
+                  <DashboardText i18nKey={'Provider'} />
+                </TableHead>
+                <TableHead>
+                  <DashboardText i18nKey={'Created'} />
+                </TableHead>
+                <TableHead>
+                  <DashboardText i18nKey={'Status'} />
+                </TableHead>
+                <TableHead>
+                  <DashboardText i18nKey={'Progress'} />
+                </TableHead>
+                <TableHead>
+                  <DashboardText i18nKey={'Config'} />
+                </TableHead>
+                <TableHead className="text-right">
+                  <DashboardText i18nKey={'Actions'} />
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -173,9 +193,11 @@ function ImportsSettings() {
                 <TableRow>
                   <TableCell colSpan={6}>
                     <EmptyState
-                      description="Imports from other analytics tools show up here with their progress."
+                      description={translateUi(
+                        'Imports from other analytics tools show up here with their progress.'
+                      )}
                       icon={ImportIcon}
-                      title="No imports yet"
+                      title={translateUi('No imports yet')}
                       variant="inline"
                     />
                   </TableCell>
@@ -274,7 +296,9 @@ function ImportsSettings() {
                       }
                       tooltipClassName="max-w-xs"
                     >
-                      <Badge>Config</Badge>
+                      <Badge>
+                        <DashboardText i18nKey={'Config'} />
+                      </Badge>
                     </Tooltiper>
                   </TableCell>
                   <TableCell className="space-x-2 text-right">
@@ -284,7 +308,7 @@ function ImportsSettings() {
                         size="sm"
                         variant="outline"
                       >
-                        Retry
+                        <DashboardText i18nKey={'Retry'} />{' '}
                       </Button>
                     )}
                     <Button
@@ -292,7 +316,7 @@ function ImportsSettings() {
                       size="sm"
                       variant="ghost"
                     >
-                      Delete
+                      <DashboardText i18nKey={'Delete'} />{' '}
                     </Button>
                   </TableCell>
                 </TableRow>

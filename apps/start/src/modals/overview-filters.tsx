@@ -30,6 +30,10 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { useProfileValues } from '@/hooks/use-profile-values';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export interface OverviewFiltersProps {
@@ -57,6 +61,8 @@ export default function OverviewFilters({
   enableEventsFilter,
   mode,
 }: OverviewFiltersProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const [filters, setFilter, setFilters, removeFilter] =
     useEventQueryFilters(nuqsOptions);
@@ -85,24 +91,24 @@ export default function OverviewFilters({
   };
   return (
     <SheetContent className="[&>button.absolute]:hidden">
-      <ModalHeader title="Filters" />
+      <ModalHeader title={translateUi('Filters')} />
       <div className="flex flex-col gap-4">
-        <Heading icon={SparklesIcon} title="Ask AI" />
+        <Heading icon={SparklesIcon} title={translateUi('Ask AI')} />
         <OverviewAICommand className="w-full" />
         <Seperator />
-        <Heading icon={GlobeIcon} title="Origins" />
+        <Heading icon={GlobeIcon} title={translateUi('Origins')} />
         <OriginFilter />
         <Seperator />
         {enableEventsFilter && (
           <>
-            <Heading icon={GanttChartIcon} title="Events" />
+            <Heading icon={GanttChartIcon} title={translateUi('Events')} />
             <ComboboxEvents
               className="w-full"
               items={eventNames}
               maxDisplayItems={2}
               multiple
               onChange={setEvent}
-              placeholder="Select event"
+              placeholder={translateUi('Select event')}
               searchable
               size="lg"
               value={event}
@@ -111,12 +117,12 @@ export default function OverviewFilters({
           </>
         )}
       </div>
-      <Heading icon={SlidersHorizontal} title="Filters" />
+      <Heading icon={SlidersHorizontal} title={translateUi('Filters')} />
       <div className="flex flex-col gap-2">
         <div className={cn('rounded-lg border bg-card')}>
           {selectedFilters.length === 0 && (
             <div className="p-4 text-center text-muted-foreground text-sm">
-              No filters selected
+              <DashboardText i18nKey={'No filters selected'} />{' '}
             </div>
           )}
           {selectedFilters.map((filter) => {
@@ -210,7 +216,7 @@ export default function OverviewFilters({
               size="lg"
               variant="outline"
             >
-              Add filter
+              <DashboardText i18nKey={'Add filter'} />{' '}
             </Button>
           )}
         </PropertiesCombobox>
@@ -231,6 +237,8 @@ export function FilterOptionProfile({
     operator: IChartEventFilterOperator
   ) => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const values = useProfileValues(projectId, filter.name);
 
   return (
@@ -243,7 +251,7 @@ export function FilterOptionProfile({
           label: value,
         }))}
         onChange={(value) => setFilter(filter.name, value, filter.operator)}
-        placeholder={'Select a value'}
+        placeholder={translateUi('Select a value')}
         value={String(filter.value[0] ?? '')}
       />
       <Button

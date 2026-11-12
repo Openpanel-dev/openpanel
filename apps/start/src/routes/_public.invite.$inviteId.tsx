@@ -5,6 +5,10 @@ import { AuthHeading } from '@/components/auth/auth-shell';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { isSignedIn } from '@/utils/route-session';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
@@ -36,6 +40,8 @@ export const Route = createFileRoute('/_public/invite/$inviteId')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { inviteId } = Route.useParams();
   const trpc = useTRPC();
   const navigate = useNavigate();
@@ -56,8 +62,10 @@ function Component() {
   if (isError) {
     return (
       <InviteProblem
-        description="It may have been revoked or already accepted."
-        title="Invitation not found"
+        description={translateUi(
+          'It may have been revoked or already accepted.'
+        )}
+        title={translateUi('Invitation not found')}
       />
     );
   }
@@ -69,7 +77,7 @@ function Component() {
   if (invite.isExpired) {
     return (
       <InviteProblem
-        description="Ask the workspace owner for a new one."
+        description={translateUi('Ask the workspace owner for a new one.')}
         title={`The invitation to ${organizationName} has expired`}
       />
     );
@@ -96,7 +104,7 @@ function Component() {
           onClick={() => accept.mutate({ inviteId })}
           size="xl"
         >
-          Accept invitation
+          <DashboardText i18nKey={'Accept invitation'} />{' '}
         </Button>
       ) : (
         <Button
@@ -106,7 +114,7 @@ function Component() {
           size="xl"
           variant="outline"
         >
-          Sign out
+          <DashboardText i18nKey={'Sign out'} />{' '}
         </Button>
       )}
     </div>

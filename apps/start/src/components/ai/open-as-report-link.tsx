@@ -1,6 +1,7 @@
 import { ChartLineIcon } from 'lucide-react';
 import type { ReportDraft } from './ai-report-draft';
 import { ProjectLink } from '@/components/links';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 /** Opens the report editor prefilled with `draft`, so the chart can be saved, shared or alerted on. */
@@ -24,7 +25,7 @@ export function OpenAsReportLink({
       to="/reports"
     >
       <ChartLineIcon className="size-3.5" />
-      Open as report
+      <DashboardText i18nKey={'Open as report'} />{' '}
     </ProjectLink>
   );
 }

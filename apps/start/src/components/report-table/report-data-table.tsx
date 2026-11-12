@@ -27,6 +27,10 @@ import { isNumericFormat, useCellFormatter } from './format';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export const ROW_HEIGHT = 40;
@@ -271,7 +275,7 @@ export function ReportDataTable<Row>({
         </div>
         {tableRows.length === 0 && (
           <div className="flex h-20 items-center justify-center text-muted-foreground text-sm">
-            No rows match
+            <DashboardText i18nKey={'No rows match'} />{' '}
           </div>
         )}
         {virtualRows ? (
@@ -359,6 +363,8 @@ function Toolbar({
   onReset?: () => void;
   onDownload?: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   if (!(onSearch || onUnselectAll || onReset || onDownload)) {
     return null;
   }
@@ -370,7 +376,7 @@ function Toolbar({
           <Input
             className="pl-8"
             onChange={(event) => onSearch(event.target.value)}
-            placeholder="Search…"
+            placeholder={translateUi('Search…')}
             size="sm"
             value={search}
           />
@@ -384,7 +390,7 @@ function Toolbar({
             size="sm"
             variant="outline"
           >
-            Reset
+            <DashboardText i18nKey={'Reset'} />{' '}
           </Button>
         )}
         {onUnselectAll && (
@@ -394,7 +400,7 @@ function Toolbar({
             size="sm"
             variant="outline"
           >
-            Unselect all
+            <DashboardText i18nKey={'Unselect all'} />{' '}
           </Button>
         )}
         {onDownload && (

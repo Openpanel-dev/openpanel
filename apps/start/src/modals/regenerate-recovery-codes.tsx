@@ -6,11 +6,17 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export default function RegenerateRecoveryCodes() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const authClient = useAuthClient();
   const queryClient = useQueryClient();
@@ -35,7 +41,7 @@ export default function RegenerateRecoveryCodes() {
       <ModalContent>
         <ModalHeader
           text="Your old recovery codes are no longer valid."
-          title="New recovery codes"
+          title={translateUi('New recovery codes')}
         />
         <div className="col gap-2">
           <div className="grid grid-cols-2 gap-2 rounded-md border border-border bg-def-100 p-3 font-mono text-sm">
@@ -52,11 +58,13 @@ export default function RegenerateRecoveryCodes() {
             size="sm"
             variant="outline"
           >
-            Copy all
+            <DashboardText i18nKey={'Copy all'} />{' '}
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={() => popModal()}>Done</Button>
+          <Button onClick={() => popModal()}>
+            <DashboardText i18nKey={'Done'} />
+          </Button>
         </DialogFooter>
       </ModalContent>
     );
@@ -66,27 +74,27 @@ export default function RegenerateRecoveryCodes() {
     <ModalContent>
       <ModalHeader
         text="Enter your password to generate a fresh set of recovery codes."
-        title="Regenerate recovery codes"
+        title={translateUi('Regenerate recovery codes')}
       />
       <Input
-        aria-label="Password"
+        aria-label={translateUi('Password')}
         autoComplete="current-password"
         autoFocus
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Your password"
+        placeholder={translateUi('Your password')}
         type="password"
         value={password}
       />
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           disabled={!password}
           loading={mutation.isPending}
           onClick={() => mutation.mutate()}
         >
-          Regenerate
+          <DashboardText i18nKey={'Regenerate'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

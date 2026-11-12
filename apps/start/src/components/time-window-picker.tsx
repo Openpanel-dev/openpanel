@@ -20,6 +20,10 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { formatDate, formatDateTime } from '@/utils/date';
 import { shouldIgnoreKeypress } from '@/utils/should-ignore-keypress';
@@ -82,6 +86,8 @@ export function TimeWindowPicker({
   variant = 'outline',
   size,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isBelowSm } = useBreakpoint('sm');
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>();
@@ -228,9 +234,11 @@ export function TimeWindowPicker({
           <div className="flex flex-col sm:flex-row">
             <div className="col gap-2 border-b p-2 sm:w-44 sm:border-r sm:border-b-0">
               <div className="flex items-center gap-2 px-2 pt-1">
-                <span className="text-muted-foreground text-sm">Last</span>
+                <span className="text-muted-foreground text-sm">
+                  <DashboardText i18nKey={'Last'} />
+                </span>
                 <InputEnter
-                  aria-label="Number of days"
+                  aria-label={translateUi('Number of days')}
                   className="h-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   inputMode="numeric"
                   key={customDaysKey}
@@ -242,7 +250,9 @@ export function TimeWindowPicker({
                   type="number"
                   value=""
                 />
-                <span className="text-muted-foreground text-sm">days</span>
+                <span className="text-muted-foreground text-sm">
+                  <DashboardText i18nKey={'days'} />
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-x-2 gap-y-1.5 sm:flex sm:flex-col">
                 {PRESET_GROUPS.map((group) => (
@@ -310,7 +320,7 @@ export function TimeWindowPicker({
                     type="button"
                     variant="outline"
                   >
-                    Cancel
+                    <DashboardText i18nKey={'Cancel'} />{' '}
                   </Button>
                   <Button
                     disabled={!canApply}
@@ -318,7 +328,7 @@ export function TimeWindowPicker({
                     size="sm"
                     type="button"
                   >
-                    Apply
+                    <DashboardText i18nKey={'Apply'} />{' '}
                   </Button>
                 </div>
               </div>
@@ -328,7 +338,7 @@ export function TimeWindowPicker({
       </Popover>
       <div className="hidden items-center sm:flex">
         <Button
-          aria-label="Previous period"
+          aria-label={translateUi('Previous period')}
           className={cn(className, 'rounded-r-none px-2')}
           onClick={() => step('previous')}
           size={stepperSize}
@@ -338,7 +348,7 @@ export function TimeWindowPicker({
           <ChevronLeftIcon className="size-4" />
         </Button>
         <Button
-          aria-label="Next period"
+          aria-label={translateUi('Next period')}
           className={cn(className, '-ml-px rounded-l-none px-2')}
           disabled={!canStepNext}
           onClick={() => step('next')}

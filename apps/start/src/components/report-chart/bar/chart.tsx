@@ -10,6 +10,7 @@ import { BarChart } from '@/components/charts/bar-chart';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { useElementSize } from '@/hooks/use-element-size';
 import { useVisibleSeries } from '@/hooks/use-visible-series';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -106,7 +107,7 @@ export function Chart({ data }: Props) {
             className="flex items-center px-1 text-muted-foreground text-sm"
             style={{ height: MORE_ROW_HEIGHT }}
           >
-            +{hiddenCount} more
+            +{hiddenCount} <DashboardText i18nKey={'more'} />{' '}
           </div>
         )}
       </div>

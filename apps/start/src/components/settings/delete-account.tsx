@@ -4,6 +4,7 @@ import { TrashIcon } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -18,20 +19,29 @@ export default function DeleteAccount() {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead>
-        <span className="title">Delete account</span>
+        <span className="title">
+          <DashboardText i18nKey={'Delete account'} />
+        </span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
         <p>
-          Deleting your account will permanently remove your personal data.
-          Organizations you created that have no other admin will also be
-          deleted, along with their projects and events.
+          <DashboardText
+            i18nKey={
+              'Deleting your account will permanently remove your personal data. Organizations you created that have no other admin will also be deleted, along with their projects and events.'
+            }
+          />{' '}
         </p>
         {blocked && (
           <Alert variant="destructive">
-            <AlertTitle>Cancel your subscriptions first</AlertTitle>
+            <AlertTitle>
+              <DashboardText i18nKey={'Cancel your subscriptions first'} />
+            </AlertTitle>
             <AlertDescription>
-              These organizations you created have an active subscription.
-              Cancel each one before deleting your account:
+              <DashboardText
+                i18nKey={
+                  'These organizations you created have an active subscription. Cancel each one before deleting your account:'
+                }
+              />{' '}
               <ul className="mt-2 list-disc pl-5">
                 {blockers.map((organization) => (
                   <li key={organization.id}>
@@ -57,7 +67,7 @@ export default function DeleteAccount() {
             }}
             variant="destructive"
           >
-            Delete account
+            <DashboardText i18nKey={'Delete account'} />{' '}
           </Button>
         </div>
       </WidgetBody>

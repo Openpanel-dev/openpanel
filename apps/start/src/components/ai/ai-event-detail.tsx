@@ -14,6 +14,7 @@ import { ProjectLink } from '@/components/links';
 import Syntax from '@/components/syntax';
 import { Badge } from '@/components/ui/badge';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
@@ -38,7 +39,11 @@ export function AiEventBadges({ event }: { event: IServiceAiEvent }) {
       {event.stopReason && event.stopReason !== 'stop' && (
         <Badge variant="outline">{event.stopReason}</Badge>
       )}
-      {event.isStream && <Badge variant="outline">stream</Badge>}
+      {event.isStream && (
+        <Badge variant="outline">
+          <DashboardText i18nKey={'stream'} />
+        </Badge>
+      )}
     </div>
   );
 }
@@ -124,7 +129,7 @@ export function AiEventDetail({
               search={{ at: event.createdAt.toISOString() }}
               to="/ai/traces/$traceId"
             >
-              Open trace
+              <DashboardText i18nKey={'Open trace'} />{' '}
             </ProjectLink>
           )}
           {event.sessionId && (
@@ -133,7 +138,7 @@ export function AiEventDetail({
               params={{ sessionId: event.sessionId }}
               to="/sessions/$sessionId"
             >
-              Open session
+              <DashboardText i18nKey={'Open session'} />{' '}
             </ProjectLink>
           )}
         </div>
@@ -194,7 +199,7 @@ export function AiEventDetail({
           {event.tools !== null && (
             <section className="col gap-2">
               <h3 className="font-medium text-3xs text-muted-foreground uppercase tracking-wider">
-                Tools available
+                <DashboardText i18nKey={'Tools available'} />{' '}
               </h3>
               <AiContent value={event.tools} />
             </section>

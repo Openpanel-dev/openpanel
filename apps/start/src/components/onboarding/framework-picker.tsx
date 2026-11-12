@@ -9,6 +9,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 type ProjectType = 'website' | 'app' | 'backend';
@@ -69,6 +73,8 @@ export function FrameworkPicker({
   labelId,
   className,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { suggested, others } = frameworksFor(projectTypes);
   const selected = value?.key ?? (allowNone ? DETECT_OPTION : undefined);
 
@@ -89,13 +95,13 @@ export function FrameworkPicker({
         aria-labelledby={labelId}
         className={cn('w-full sm:w-64', className)}
       >
-        <SelectValue placeholder="Pick a framework" />
+        <SelectValue placeholder={translateUi('Pick a framework')} />
       </SelectTrigger>
       <SelectContent>
         {allowNone && (
           <SelectItem value={DETECT_OPTION}>
             <WandSparklesIcon className="size-4 shrink-0" />
-            Detect it for me
+            <DashboardText i18nKey={'Detect it for me'} />{' '}
           </SelectItem>
         )}
         <SelectGroup>
@@ -106,7 +112,9 @@ export function FrameworkPicker({
         </SelectGroup>
         {others.length > 0 && (
           <SelectGroup>
-            <SelectLabel>Other frameworks</SelectLabel>
+            <SelectLabel>
+              <DashboardText i18nKey={'Other frameworks'} />
+            </SelectLabel>
             {others.map((framework) => (
               <FrameworkItem framework={framework} key={framework.key} />
             ))}

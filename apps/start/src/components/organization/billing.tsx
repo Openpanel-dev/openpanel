@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import useWS from '@/hooks/use-ws';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, useOnPushModal } from '@/modals';
 import { formatDate } from '@/utils/date';
@@ -198,8 +199,11 @@ export default function Billing({ organization }: Props) {
       if (isOverLimit) {
         return (
           <p className="text-destructive">
-            Limit reached for this period. New events are not shown until the
-            next period starts.
+            <DashboardText
+              i18nKey={
+                'Limit reached for this period. New events are not shown until the next period starts.'
+              }
+            />{' '}
           </p>
         );
       }
@@ -210,16 +214,21 @@ export default function Billing({ organization }: Props) {
       if (projection.limitReachedAt) {
         return (
           <p className="text-destructive">
-            At {pace} the limit is reached around{' '}
-            {formatDate(projection.limitReachedAt)}, with about{' '}
-            {number.format(projection.projectedTotal)} events by period end.
+            <DashboardText i18nKey={'At'} /> {pace}{' '}
+            <DashboardText i18nKey={'the limit is reached around'} />{' '}
+            {formatDate(projection.limitReachedAt)}
+            <DashboardText i18nKey={', with about'} />{' '}
+            {number.format(projection.projectedTotal)}{' '}
+            <DashboardText i18nKey={'events by period end.'} />{' '}
           </p>
         );
       }
       return (
         <p className="text-muted-foreground">
-          At {pace} this period ends at about{' '}
-          {number.format(projection.projectedTotal)} events.
+          <DashboardText i18nKey={'At'} /> {pace}{' '}
+          <DashboardText i18nKey={'this period ends at about'} />{' '}
+          {number.format(projection.projectedTotal)}{' '}
+          <DashboardText i18nKey={'events.'} />{' '}
         </p>
       );
     };
@@ -253,10 +262,12 @@ export default function Billing({ organization }: Props) {
                 <div className="row mb-2 items-baseline justify-between gap-4">
                   <div className="font-semibold">
                     {number.format(organization.subscriptionPeriodEventsCount)}{' '}
-                    / {number.format(eventsLimit)} events
+                    / {number.format(eventsLimit)}{' '}
+                    <DashboardText i18nKey={'events'} />{' '}
                   </div>
                   <div className="text-muted-foreground">
-                    {number.format(eventsLeft)} left
+                    {number.format(eventsLeft)}{' '}
+                    <DashboardText i18nKey={'left'} />{' '}
                   </div>
                 </div>
                 <Progress
@@ -272,7 +283,7 @@ export default function Billing({ organization }: Props) {
                 <div className="col mt-2 gap-1">
                   {periodLabel && (
                     <p className="text-muted-foreground">
-                      Current period {periodLabel}
+                      <DashboardText i18nKey={'Current period'} /> {periodLabel}
                     </p>
                   )}
                   {renderProjection()}
@@ -308,7 +319,7 @@ export default function Billing({ organization }: Props) {
                         </clipPath>
                       </defs>
                     </svg>
-                    Customer portal
+                    <DashboardText i18nKey={'Customer portal'} />{' '}
                   </Button>
                   <div className="row gap-2">
                     {isPauseState && (
@@ -370,14 +381,17 @@ export default function Billing({ organization }: Props) {
               {organization.isTrial ? 'Free trial' : 'No active plan'}
             </Badge>
             {organization.isTrial && daysLeft !== null && (
-              <span className="font-semibold">{daysLeft} days left</span>
+              <span className="font-semibold">
+                {daysLeft} <DashboardText i18nKey={'days left'} />
+              </span>
             )}
           </div>
           {organization.isTrial && organization.subscriptionEndsAt ? (
             <p className="text-muted-foreground">
-              Your trial ends on {formatDate(organization.subscriptionEndsAt)}.
-              When it ends, your dashboards pause until you choose a plan — your
-              data keeps flowing in.
+              <DashboardText i18nKey={'Your trial ends on'} />{' '}
+              {formatDate(organization.subscriptionEndsAt)}. When it ends, your
+              dashboards pause until you choose a plan — your data keeps flowing
+              in.
             </p>
           ) : (
             renderStatus()
@@ -388,7 +402,9 @@ export default function Billing({ organization }: Props) {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
         <Widget className="w-full self-start">
           <WidgetHead>
-            <div className="title">Choose a plan</div>
+            <div className="title">
+              <DashboardText i18nKey={'Choose a plan'} />
+            </div>
           </WidgetHead>
           <WidgetBody className="col gap-4">
             <BillingPlanPicker

@@ -13,6 +13,10 @@ import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolb
 import { TableButtons } from '@/components/ui/table';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { createOrganizationTitle, PAGE_TITLES } from '@/utils/title';
@@ -39,6 +43,8 @@ export const Route = createFileRoute('/_app/$organizationId/')({
 });
 
 function OrganizationPage() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const { data: projects } = useQuery(
@@ -54,8 +60,8 @@ function OrganizationPage() {
       <div className="container p-8">
         <PageHeader
           className="mb-8"
-          description="All your projects in this workspace"
-          title="Projects"
+          description={translateUi('All your projects in this workspace')}
+          title={translateUi('Projects')}
         />
         <EmptyState
           description={
@@ -68,7 +74,7 @@ function OrganizationPage() {
         >
           {isAdmin && (
             <Button icon={PlusIcon} onClick={() => pushModal('AddProject')}>
-              Create project
+              <DashboardText i18nKey={'Create project'} />{' '}
             </Button>
           )}
         </EmptyState>
@@ -80,14 +86,14 @@ function OrganizationPage() {
     <div className="container p-8">
       <PageHeader
         className="mb-8"
-        description="All your projects in this workspace"
-        title="Projects"
+        description={translateUi('All your projects in this workspace')}
+        title={translateUi('Projects')}
       />
 
       <TableButtons>
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search projects"
+          placeholder={translateUi('Search projects')}
           value={search}
         />
       </TableButtons>

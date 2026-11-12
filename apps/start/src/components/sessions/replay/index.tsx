@@ -19,6 +19,7 @@ import {
   type ReplayRecordEvent,
   sortEventsByOffset,
 } from './replay-utils';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -92,7 +93,11 @@ function ReplayChunkLoader({
 
 function CurrentUrl({ segment }: { segment: PageSegment | undefined }) {
   if (!segment) {
-    return <span className="truncate text-muted-foreground">about:blank</span>;
+    return (
+      <span className="truncate text-muted-foreground">
+        <DashboardText i18nKey={'about:blank'} />
+      </span>
+    );
   }
   const host = segment.origin.replace(/^https?:\/\//, '');
   return (
@@ -136,7 +141,7 @@ function SkippingBadge() {
   return (
     <div className="fade-in-0 zoom-in-95 row absolute top-4 left-1/2 z-20 -translate-x-1/2 animate-in items-center gap-1.5 rounded-full bg-foreground/90 px-3 py-1.5 font-medium text-background text-xs shadow-lg backdrop-blur">
       <FastForwardIcon className="size-3.5 animate-pulse" fill="currentColor" />
-      Skipping idle time
+      <DashboardText i18nKey={'Skipping idle time'} />{' '}
     </div>
   );
 }
@@ -152,7 +157,7 @@ function StagePlaceholder({ status }: { status: StageStatus }) {
           <div className="relative flex-1 overflow-hidden">
             <div className="absolute inset-0 animate-pulse bg-def-100" />
             <div className="absolute inset-0 grid place-items-center text-muted-foreground text-sm">
-              Loading recording…
+              <DashboardText i18nKey={'Loading recording…'} />{' '}
             </div>
           </div>
         </div>

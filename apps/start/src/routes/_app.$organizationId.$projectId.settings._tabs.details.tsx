@@ -4,6 +4,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import DeleteProject from '@/components/settings/delete-project';
 import EditProjectDetails from '@/components/settings/edit-project-details';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export const Route = createFileRoute(
@@ -24,7 +25,11 @@ function Component() {
   }
 
   if (!query.data) {
-    return <div>Project not found</div>;
+    return (
+      <div>
+        <DashboardText i18nKey={'Project not found'} />
+      </div>
+    );
   }
 
   return (

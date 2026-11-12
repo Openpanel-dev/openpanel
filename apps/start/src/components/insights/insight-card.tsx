@@ -2,6 +2,7 @@ import { FilterIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -158,7 +159,8 @@ export function InsightCard({
               }}
               type="button"
             >
-              Filter <FilterIcon className="size-2.5" />
+              <DashboardText i18nKey={'Filter'} />{' '}
+              <FilterIcon className="size-2.5" />
             </button>
           </div>
         )}

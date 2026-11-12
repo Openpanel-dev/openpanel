@@ -3,6 +3,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { cva } from 'class-variance-authority';
 import { XIcon } from 'lucide-react';
 import * as React from 'react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const Sheet = SheetPrimitive.Root;
@@ -71,7 +72,9 @@ const SheetContent = React.forwardRef<
         onClick={onClose}
       >
         <XIcon className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only">
+          <DashboardText i18nKey={'Close'} />
+        </span>
       </SheetPrimitive.Close>
     </SheetPrimitive.Content>
   </SheetPortal>

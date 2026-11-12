@@ -4,9 +4,15 @@ import { addGlobalFilter } from '../reportSlice';
 import { GlobalFilterItem } from './filters/GlobalFilterItem';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { BuilderAddButton, SidebarSection } from './sidebar-section';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 
 export function ReportGlobalFilters() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const globalFilters = useSelector((state) => state.report.globalFilters);
   const dispatch = useDispatch();
 
@@ -46,7 +52,7 @@ export function ReportGlobalFilters() {
     >
       {(setOpen) => (
         <BuilderAddButton icon={FilterIcon} onClick={() => setOpen((p) => !p)}>
-          Add filter
+          <DashboardText i18nKey={'Add filter'} />{' '}
         </BuilderAddButton>
       )}
     </PropertiesCombobox>
@@ -54,8 +60,8 @@ export function ReportGlobalFilters() {
 
   return (
     <SidebarSection
-      description="Applied to every series in this report."
-      title="Global filters"
+      description={translateUi('Applied to every series in this report.')}
+      title={translateUi('Global filters')}
     >
       {globalFilters.map((filter) => (
         <GlobalFilterItem filter={filter} key={filter.id ?? filter.name} />

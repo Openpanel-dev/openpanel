@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Ping } from '@/components/ping';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -143,7 +144,7 @@ export default function ActivationBanner() {
             : 'Invite'}
       </Button>
       <Button onClick={dismiss} size="sm" variant="ghost">
-        Skip setup
+        <DashboardText i18nKey={'Skip setup'} />{' '}
       </Button>
     </>
   );
@@ -166,7 +167,7 @@ export default function ActivationBanner() {
         <div className="row @5xl:contents min-w-0 flex-wrap items-start justify-between gap-4">
           <div className="col min-w-0">
             <div className="row items-center gap-1.5 text-3xs text-muted-foreground uppercase tabular-nums tracking-wider">
-              Setup funnel
+              <DashboardText i18nKey={'Setup funnel'} />{' '}
               <span className="text-emerald-600 dark:text-emerald-500">
                 {doneCount}/{steps.length}
               </span>

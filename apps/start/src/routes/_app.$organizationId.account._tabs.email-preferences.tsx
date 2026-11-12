@@ -14,6 +14,7 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
@@ -84,12 +85,17 @@ function Component() {
     >
       <Widget className="w-full max-w-screen-md">
         <WidgetHead>
-          <span className="title">Email Preferences</span>
+          <span className="title">
+            <DashboardText i18nKey={'Email Preferences'} />
+          </span>
         </WidgetHead>
         <WidgetBody className="col gap-4">
           <p className="mb-4 text-muted-foreground text-sm">
-            Choose which types of emails you want to receive. Uncheck a category
-            to stop receiving those emails.
+            <DashboardText
+              i18nKey={
+                'Choose which types of emails you want to receive. Uncheck a category to stop receiving those emails.'
+              }
+            />{' '}
           </p>
 
           <div className="space-y-4">
@@ -127,7 +133,7 @@ function Component() {
             size="sm"
             type="submit"
           >
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </WidgetBody>
       </Widget>

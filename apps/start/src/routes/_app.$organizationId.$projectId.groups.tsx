@@ -9,6 +9,10 @@ import { Button } from '@/components/ui/button';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { ToolbarSelect } from '@/components/ui/toolbar-select';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -26,6 +30,8 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/groups')(
 );
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
@@ -58,12 +64,14 @@ function Component() {
         actions={
           <Button onClick={() => pushModal('AddGroup')}>
             <PlusIcon className="mr-2 size-4" />
-            Add group
+            <DashboardText i18nKey={'Add group'} />{' '}
           </Button>
         }
         className="mb-8"
-        description="Groups represent companies, teams, or other entities that events belong to."
-        title="Groups"
+        description={translateUi(
+          'Groups represent companies, teams, or other entities that events belong to.'
+        )}
+        title={translateUi('Groups')}
       />
 
       <GroupsTable
@@ -73,7 +81,7 @@ function Component() {
           types.length > 0 ? (
             <ToolbarSelect
               icon={TagIcon}
-              label="Type"
+              label={translateUi('Type')}
               onChange={(value) =>
                 setTypeFilter(value === ALL_TYPES ? '' : value)
               }

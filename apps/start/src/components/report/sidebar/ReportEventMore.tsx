@@ -9,6 +9,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export interface ReportEventMoreProps {
   onClick: (action: 'remove' | 'duplicate') => void;
@@ -28,7 +29,7 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => onClick('duplicate')}>
             <CopyIcon className="mr-2 h-4 w-4" />
-            Duplicate
+            <DashboardText i18nKey={'Duplicate'} />{' '}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
@@ -36,7 +37,7 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
             onClick={() => onClick('remove')}
           >
             <TrashIcon className="mr-2 h-4 w-4" />
-            Delete
+            <DashboardText i18nKey={'Delete'} />{' '}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

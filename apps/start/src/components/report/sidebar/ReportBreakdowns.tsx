@@ -12,9 +12,15 @@ import {
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 
 export function ReportBreakdowns() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const selectedBreakdowns = useSelector((state) => state.report.breakdowns);
   const chartType = useSelector((state) => state.report.chartType);
   const series = useSelector((state) => state.report.series);
@@ -55,14 +61,14 @@ export function ReportBreakdowns() {
           icon={PlusIcon}
           onClick={() => setOpen((prev) => !prev)}
         >
-          Add breakdown
+          <DashboardText i18nKey={'Add breakdown'} />{' '}
         </BuilderAddButton>
       )}
     </PropertiesCombobox>
   );
 
   return (
-    <SidebarSection title="Breakdown">
+    <SidebarSection title={translateUi('Breakdown')}>
       {selectedBreakdowns.length > 0 && (
         <BuilderList>
           {selectedBreakdowns.map((item, index) => {
@@ -104,7 +110,7 @@ export function ReportBreakdowns() {
                 {showStep && !item.name.startsWith('group.') && (
                   <div className="flex items-center justify-between gap-2 border-t px-3 py-2 pl-10">
                     <span className="text-muted-foreground text-sm">
-                      From step
+                      <DashboardText i18nKey={'From step'} />{' '}
                     </span>
                     <Combobox
                       align="end"
@@ -117,7 +123,7 @@ export function ReportBreakdowns() {
                           })
                         )
                       }
-                      placeholder="Select step"
+                      placeholder={translateUi('Select step')}
                       size="sm"
                       value={String(
                         item.step && item.step <= stepItems.length

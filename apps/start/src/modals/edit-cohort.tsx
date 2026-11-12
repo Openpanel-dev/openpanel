@@ -13,6 +13,10 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
@@ -33,6 +37,8 @@ interface EditCohortProps {
 }
 
 export default function EditCohort(props: EditCohortProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -59,7 +65,7 @@ export default function EditCohort(props: EditCohortProps) {
 
   return (
     <ModalContent className="max-w-3xl">
-      <ModalHeader title="Edit cohort" />
+      <ModalHeader title={translateUi('Edit cohort')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((data) => {
@@ -73,14 +79,14 @@ export default function EditCohort(props: EditCohortProps) {
         })}
       >
         <InputWithLabel
-          label="Name"
-          placeholder="Name of the cohort"
+          label={translateUi('Name')}
+          placeholder={translateUi('Name of the cohort')}
           {...register('name')}
         />
 
-        <WithLabel label="Description">
+        <WithLabel label={translateUi('Description')}>
           <Textarea
-            placeholder="Optional description"
+            placeholder={translateUi('Optional description')}
             {...register('description')}
           />
         </WithLabel>
@@ -98,12 +104,16 @@ export default function EditCohort(props: EditCohortProps) {
             )}
           />
           <Label className="mb-0 cursor-pointer text-sm" htmlFor="isStatic">
-            Freeze snapshot (don&apos;t auto-refresh)
+            <DashboardText
+              i18nKey={"Freeze snapshot (don't auto-refresh)"}
+            />{' '}
           </Label>
         </div>
 
         <div>
-          <Label className="mb-2 block">Cohort Criteria</Label>
+          <Label className="mb-2 block">
+            <DashboardText i18nKey={'Cohort Criteria'} />
+          </Label>
           <Controller
             control={control}
             name="definition"
@@ -118,10 +128,10 @@ export default function EditCohort(props: EditCohortProps) {
 
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Save changes
+            <DashboardText i18nKey={'Save changes'} />{' '}
           </Button>
         </DialogFooter>
       </form>

@@ -4,11 +4,17 @@ import { PromptCard } from '@/components/organization/prompt-card';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useCookieStore } from '@/hooks/use-cookie-store';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { op } from '@/utils/op';
 
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 
 export default function FeedbackPrompt() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isSelfHosted, isDemo } = useAppContext();
   // The chat page owns the bottom of the screen; the card would cover the composer.
   const onChatPage = useLocation().pathname.endsWith('/chat');
@@ -71,16 +77,19 @@ export default function FeedbackPrompt() {
       onClose={handleClose}
       show={shouldShow}
       subtitle="Help us improve OpenPanel with your insights"
-      title="Share Your Feedback"
+      title={translateUi('Share Your Feedback')}
     >
       <div className="col gap-4 px-6">
         <p className="text-foreground text-sm">
-          Your feedback helps us build features you actually need. Share your
-          thoughts, report bugs, or suggest improvements
+          <DashboardText
+            i18nKey={
+              'Your feedback helps us build features you actually need. Share your thoughts, report bugs, or suggest improvements'
+            }
+          />{' '}
         </p>
 
         <Button className="self-start" onClick={handleGiveFeedback}>
-          Give Feedback
+          <DashboardText i18nKey={'Give Feedback'} />{' '}
         </Button>
       </div>
     </PromptCard>

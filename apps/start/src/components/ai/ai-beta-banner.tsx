@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { FeedbackButton } from '@/components/feedback-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export const AI_DOCS_URL = 'https://openpanel.dev/docs/ai-observability';
@@ -20,18 +21,21 @@ export function AiBetaBanner({ className }: { className?: string }) {
   return (
     <Alert className={cn('border-chart-0/40 bg-chart-0/5', className)}>
       <FlaskConicalIcon className="size-4" />
-      <AlertTitle>AI observability is in beta</AlertTitle>
+      <AlertTitle>
+        <DashboardText i18nKey={'AI observability is in beta'} />
+      </AlertTitle>
       <AlertDescription className="col gap-3 text-muted-foreground">
         <p>
-          We are shaping this with the people who use it. How events are sent
-          and what these pages show may change before it is final, but events
-          you have already sent stay readable. Tell us what you are trying to
-          learn about your AI features and what is missing.
+          <DashboardText
+            i18nKey={
+              'We are shaping this with the people who use it. How events are sent and what these pages show may change before it is final, but events you have already sent stay readable. Tell us what you are trying to learn about your AI features and what is missing.'
+            }
+          />{' '}
         </p>
         <div className="row flex-wrap gap-2">
           <FeedbackButton className={ACTION_CLASS}>
             <MessageSquareIcon className="size-3.5" />
-            Give feedback
+            <DashboardText i18nKey={'Give feedback'} />{' '}
           </FeedbackButton>
           <a
             className={ACTION_CLASS}
@@ -40,7 +44,7 @@ export function AiBetaBanner({ className }: { className?: string }) {
             target="_blank"
           >
             <BookOpenIcon className="size-3.5" />
-            Read the docs
+            <DashboardText i18nKey={'Read the docs'} />{' '}
           </a>
         </div>
       </AlertDescription>

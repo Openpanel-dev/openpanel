@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { formatDate } from '@/utils/date';
 
 interface Props {
@@ -60,7 +61,7 @@ export default function DateRangerPicker({
       />
       <DialogFooter>
         <Button onClick={() => popModal()} type="button" variant="outline">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         {startDate && endDate && (
           <Button
@@ -80,7 +81,8 @@ export default function DateRangerPicker({
             }}
             type="button"
           >
-            Select {formatDate(startDate)} - {formatDate(endDate)}
+            <DashboardText i18nKey={'Select'} /> {formatDate(startDate)} -{' '}
+            {formatDate(endDate)}
           </Button>
         )}
       </DialogFooter>

@@ -28,6 +28,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { mapKeys } from '@/utils/object-to-zod-enums';
 
@@ -77,11 +78,15 @@ export function ReportPerUser({
           size={size}
           variant={variant}
         >
-          {perUserAggregations[value]} per user
+          {perUserAggregations[value]} <DashboardText
+            i18nKey={'per user'}
+          />{' '}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Value per user</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <DashboardText i18nKey={'Value per user'} />
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {items.map((item) => {

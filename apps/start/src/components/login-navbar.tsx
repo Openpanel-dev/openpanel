@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { LogoSquare } from './logo';
 import { Button } from './ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export function LoginNavbar({ className }: { className?: string }) {
@@ -26,21 +27,23 @@ export function LoginNavbar({ className }: { className?: string }) {
         <nav className="max-md:hidden">
           <ul className="row items-center gap-4 [&>li>a]:text-muted-foreground [&>li>a]:text-sm [&>li>a]:hover:underline">
             <li>
-              <a href="https://openpanel.dev">OpenPanel Cloud</a>
+              <a href="https://openpanel.dev">
+                <DashboardText i18nKey={'OpenPanel Cloud'} />
+              </a>
             </li>
             <li>
               <a href="https://openpanel.dev/compare/mixpanel-alternative">
-                Mixpanel alternative
+                <DashboardText i18nKey={'Mixpanel alternative'} />{' '}
               </a>
             </li>
             <li>
               <a href="https://openpanel.dev/compare/posthog-alternative">
-                Posthog alternative
+                <DashboardText i18nKey={'Posthog alternative'} />{' '}
               </a>
             </li>
             <li>
               <a href="https://openpanel.dev/articles/open-source-web-analytics">
-                Open source analytics
+                <DashboardText i18nKey={'Open source analytics'} />{' '}
               </a>
             </li>
           </ul>
@@ -69,7 +72,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                     href="https://openpanel.dev"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    OpenPanel Cloud
+                    <DashboardText i18nKey={'OpenPanel Cloud'} />{' '}
                   </a>
                 </li>
                 <li>
@@ -78,7 +81,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                     href="https://openpanel.dev/compare/mixpanel-alternative"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Posthog alternative
+                    <DashboardText i18nKey={'Posthog alternative'} />{' '}
                   </a>
                 </li>
                 <li>
@@ -87,7 +90,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                     href="https://openpanel.dev/compare/mixpanel-alternative"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Mixpanel alternative
+                    <DashboardText i18nKey={'Mixpanel alternative'} />{' '}
                   </a>
                 </li>
                 <li>
@@ -96,7 +99,7 @@ export function LoginNavbar({ className }: { className?: string }) {
                     href="https://openpanel.dev/articles/open-source-web-analytics"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Open source analytics
+                    <DashboardText i18nKey={'Open source analytics'} />{' '}
                   </a>
                 </li>
               </ul>

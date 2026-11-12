@@ -9,6 +9,10 @@ import { toast } from 'sonner';
 import { PublicPageCard } from '../public-page-card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ShareEnterPassword({
@@ -18,6 +22,8 @@ export function ShareEnterPassword({
   shareId: string;
   shareType?: 'overview' | 'dashboard' | 'report';
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.auth.signInShare.mutationOptions({
@@ -61,11 +67,13 @@ export function ShareEnterPassword({
       <form className="col gap-4" method="post" onSubmit={onSubmit}>
         <Input
           {...form.register('password')}
-          placeholder="Enter your password"
+          placeholder={translateUi('Enter your password')}
           size="large"
           type="password"
         />
-        <Button type="submit">Get access</Button>
+        <Button type="submit">
+          <DashboardText i18nKey={'Get access'} />
+        </Button>
       </form>
     </PublicPageCard>
   );

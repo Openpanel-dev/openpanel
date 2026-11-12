@@ -8,6 +8,10 @@ import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { handleError } from '@/trpc/client';
 
@@ -20,6 +24,8 @@ interface EditOrganizationProps {
 export default function EditOrganization({
   organization,
 }: EditOrganizationProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { register, handleSubmit, formState, reset, control } = useForm<IForm>({
     defaultValues: {
       id: organization.id,
@@ -54,12 +60,14 @@ export default function EditOrganization({
     >
       <Widget>
         <WidgetHead className="flex items-center justify-between">
-          <span className="title">Details</span>
+          <span className="title">
+            <DashboardText i18nKey={'Details'} />
+          </span>
         </WidgetHead>
         <WidgetBody className="col gap-4">
           <InputWithLabel
             className="flex-1"
-            label="Name"
+            label={translateUi('Name')}
             {...register('name')}
             defaultValue={organization?.name}
           />
@@ -67,7 +75,7 @@ export default function EditOrganization({
             control={control}
             name="timezone"
             render={({ field }) => (
-              <WithLabel label="Timezone">
+              <WithLabel label={translateUi('Timezone')}>
                 <Combobox
                   className="w-full"
                   items={['UTC', ...Intl.supportedValuesOf('timeZone')].map(
@@ -77,7 +85,7 @@ export default function EditOrganization({
                     })
                   )}
                   onChange={field.onChange}
-                  placeholder="Select timezone"
+                  placeholder={translateUi('Select timezone')}
                   value={field.value}
                   variant="input"
                 />
@@ -90,7 +98,7 @@ export default function EditOrganization({
             size="sm"
             type="submit"
           >
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </WidgetBody>
       </Widget>

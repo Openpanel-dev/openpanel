@@ -6,6 +6,7 @@ import { routeTree } from './routeTree.gen';
 import { getServerEnvs } from './server/get-envs';
 import { EmptyState } from '@/components/empty-state';
 import { LinkButton } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export const getRouter = async () => {
   const envs = await getServerEnvs();
@@ -31,7 +32,9 @@ export const getRouter = async () => {
         title="Page not found"
         variant="page"
       >
-        <LinkButton href="/">Go to home</LinkButton>
+        <LinkButton href="/">
+          <DashboardText i18nKey={'Go to home'} />
+        </LinkButton>
       </EmptyState>
     ),
     Wrap: (props: { children: React.ReactNode }) => {

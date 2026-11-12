@@ -3,6 +3,7 @@ import { useReplayContext } from './replay-context';
 import { ReplayEventItem, type ReplayItemState } from './replay-event-item';
 import type { EventWithOffset } from './replay-utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 // After the user scrolls the feed by hand, leave it alone for a moment.
 const MANUAL_SCROLL_PAUSE_MS = 4000;
@@ -52,7 +53,9 @@ export function ReplayEventFeed({
   return (
     <div className="col h-full min-h-0">
       <div className="row items-center justify-between border-b px-4 py-3">
-        <span className="font-semibold">Activity</span>
+        <span className="font-semibold">
+          <DashboardText i18nKey={'Activity'} />
+        </span>
         <span className="font-mono text-muted-foreground text-xs tabular-nums">
           {Math.max(0, currentIndex + 1)} / {events.length}
         </span>
@@ -87,7 +90,9 @@ export function ReplayEventFeed({
             ))}
           {!isLoading && events.length === 0 && (
             <div className="py-10 text-center text-muted-foreground text-sm">
-              No events were tracked during this recording.
+              <DashboardText
+                i18nKey={'No events were tracked during this recording.'}
+              />{' '}
             </div>
           )}
         </div>

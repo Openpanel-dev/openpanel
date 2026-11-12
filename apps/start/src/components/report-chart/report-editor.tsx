@@ -27,6 +27,7 @@ import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
@@ -95,7 +96,7 @@ export default function ReportEditor({
                   }
                   variant="outline"
                 >
-                  Share
+                  <DashboardText i18nKey={'Share'} />{' '}
                 </Button>
               )}
               <ReportSaveButton />

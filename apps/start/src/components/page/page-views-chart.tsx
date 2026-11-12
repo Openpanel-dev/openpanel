@@ -6,6 +6,7 @@ import {
 } from '@/components/charts/op-line-chart';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
@@ -54,7 +55,9 @@ export function PageViewsChart({
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">Views & Sessions</h3>
+        <h3 className="font-medium text-sm">
+          <DashboardText i18nKey={'Views & Sessions'} />
+        </h3>
         <OPLineChartLegend series={SERIES} />
       </div>
       {query.isLoading ? (

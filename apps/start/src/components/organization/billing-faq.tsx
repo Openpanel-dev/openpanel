@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Widget, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 const questions = [
   {
@@ -49,7 +50,9 @@ export function BillingFaq() {
   return (
     <Widget className="w-full">
       <WidgetHead className="flex items-center justify-between">
-        <span className="title">Frequently asked questions</span>
+        <span className="title">
+          <DashboardText i18nKey={'Frequently asked questions'} />
+        </span>
       </WidgetHead>
       <Accordion
         className="w-full max-w-screen-md self-center"

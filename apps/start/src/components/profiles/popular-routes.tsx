@@ -2,22 +2,30 @@ import { RouteIcon } from 'lucide-react';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
 import { EmptyState } from '@/components/empty-state';
 import { Widget } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 interface Props {
   data: { count: number; path: string }[];
 }
 
 export const PopularRoutes = ({ data }: Props) => {
+  const { t: translateUi } = useDashboardTranslation();
+
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Most visited pages</WidgetTitle>
+        <WidgetTitle>
+          <DashboardText i18nKey={'Most visited pages'} />
+        </WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
         <EmptyState
           icon={RouteIcon}
-          title="No pages visited yet"
+          title={translateUi('No pages visited yet')}
           variant="inline"
         />
       ) : (

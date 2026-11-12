@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -54,6 +58,8 @@ export function WebhookIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
 
   // Convert headers from Record to array format for form UI
@@ -151,8 +157,8 @@ export function WebhookIntegrationForm({
       onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. Zapier webhook"
+        label={translateUi('Name')}
+        placeholder={translateUi('Eg. Zapier webhook')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
@@ -164,13 +170,13 @@ export function WebhookIntegrationForm({
 
       <WithLabel
         info="Add custom HTTP headers to include with webhook requests"
-        label="Headers"
+        label={translateUi('Headers')}
       >
         <div className="col gap-2">
           {headersArray.fields.map((field, index) => (
             <div className="row gap-2" key={field.id}>
               <Input
-                placeholder="Header Name"
+                placeholder={translateUi('Header Name')}
                 {...headersForm.register(`headers.${index}.key`)}
                 className="flex-1"
               />
@@ -199,7 +205,7 @@ export function WebhookIntegrationForm({
             type="button"
             variant="outline"
           >
-            Add Header
+            <DashboardText i18nKey={'Add Header'} />{' '}
           </Button>
         </div>
       </WithLabel>
@@ -210,7 +216,7 @@ export function WebhookIntegrationForm({
         render={({ field }) => (
           <WithLabel
             info="Choose how to format the webhook payload"
-            label="Payload Format"
+            label={translateUi('Payload Format')}
           >
             <Combobox
               {...field}
@@ -226,7 +232,7 @@ export function WebhookIntegrationForm({
                 },
               ]}
               onChange={field.onChange}
-              placeholder="Select format"
+              placeholder={translateUi('Select format')}
               value={field.value ?? 'message'}
             />
           </WithLabel>
@@ -242,29 +248,41 @@ export function WebhookIntegrationForm({
               info={
                 <div className="prose dark:prose-invert max-w-none">
                   <p>
-                    Write a JavaScript function that transforms the event
-                    payload. The function receives <code>payload</code> as a
-                    parameter and should return an object.
+                    <DashboardText
+                      i18nKey={
+                        'Write a JavaScript function that transforms the event payload. The function receives'
+                      }
+                    />{' '}
+                    <code>payload</code>{' '}
+                    <DashboardText
+                      i18nKey={'as a parameter and should return an object.'}
+                    />{' '}
                   </p>
                   <p className="mt-2 font-semibold text-sm">
-                    Available in payload:
+                    <DashboardText i18nKey={'Available in payload:'} />{' '}
                   </p>
                   <ul className="text-sm">
                     <li>
-                      <code>payload.name</code> - Event name
+                      <code>payload.name</code>{' '}
+                      <DashboardText i18nKey={'- Event name'} />{' '}
                     </li>
                     <li>
-                      <code>payload.profileId</code> - User profile ID
+                      <code>payload.profileId</code>{' '}
+                      <DashboardText i18nKey={'- User profile ID'} />{' '}
                     </li>
                     <li>
-                      <code>payload.properties</code> - Full properties object
+                      <code>payload.properties</code>{' '}
+                      <DashboardText
+                        i18nKey={'- Full properties object'}
+                      />{' '}
                     </li>
                     <li>
-                      <code>payload.properties.your.property</code> - Nested
-                      property value
+                      <code>payload.properties.your.property</code>{' '}
+                      <DashboardText i18nKey={'- Nested property value'} />{' '}
                     </li>
                     <li>
-                      <code>payload.profile.firstName</code> - Profile property
+                      <code>payload.profile.firstName</code>{' '}
+                      <DashboardText i18nKey={'- Profile property'} />{' '}
                     </li>
                     <li>
                       <div className="mt-1 flex flex-wrap gap-x-2">
@@ -275,12 +293,12 @@ export function WebhookIntegrationForm({
                         <code>browser</code>
                         <code>path</code>
                         <code>createdAt</code>
-                        and more...
+                        <DashboardText i18nKey={'and more...'} />{' '}
                       </div>
                     </li>
                   </ul>
                   <p className="mt-2 font-semibold text-sm">
-                    Available helpers:
+                    <DashboardText i18nKey={'Available helpers:'} />{' '}
                   </p>
                   <ul className="text-sm">
                     <li>
@@ -290,7 +308,9 @@ export function WebhookIntegrationForm({
                     </li>
                   </ul>
                   <p className="mt-2 text-sm">
-                    <strong>Example:</strong>
+                    <strong>
+                      <DashboardText i18nKey={'Example:'} />
+                    </strong>
                   </p>
                   <pre className="mt-1 overflow-x-auto rounded bg-muted p-2 text-xs">
                     {`(payload) => ({
@@ -302,12 +322,18 @@ export function WebhookIntegrationForm({
 })`}
                   </pre>
                   <p className="mt-2 text-sm text-yellow-600 dark:text-yellow-400">
-                    <strong>Security:</strong> Network calls, file system
-                    access, and other dangerous operations are blocked.
+                    <strong>
+                      <DashboardText i18nKey={'Security:'} />
+                    </strong>{' '}
+                    <DashboardText
+                      i18nKey={
+                        'Network calls, file system access, and other dangerous operations are blocked.'
+                      }
+                    />{' '}
                   </p>
                 </div>
               }
-              label="JavaScript Transform"
+              label={translateUi('JavaScript Transform')}
             >
               <JsonEditor
                 language="javascript"

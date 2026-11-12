@@ -7,6 +7,7 @@ import { ProjectLink } from '@/components/links';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { getProfileName } from '@/utils/getters';
 
 function formatDuration(milliseconds: number): string {
@@ -147,9 +148,13 @@ export function useColumns() {
         return (
           <div className="text-center">
             {session.isBounce ? (
-              <span className="text-orange-600">Yes</span>
+              <span className="text-orange-600">
+                <DashboardText i18nKey={'Yes'} />
+              </span>
             ) : (
-              <span className="text-green-600">No</span>
+              <span className="text-green-600">
+                <DashboardText i18nKey={'No'} />
+              </span>
             )}
           </div>
         );

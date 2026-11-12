@@ -22,6 +22,7 @@ import {
 } from '@/components/charts/chart-tooltip';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { truncate } from '@/utils/truncate';
@@ -235,7 +236,9 @@ export default function OverviewUserJourney({
   return (
     <Widget className="col-span-6">
       <WidgetHead>
-        <div className="title">User Journey</div>
+        <div className="title">
+          <DashboardText i18nKey={'User Journey'} />
+        </div>
         <WidgetButtons>
           {stepOptions.map((option) => (
             <button
@@ -244,7 +247,7 @@ export default function OverviewUserJourney({
               onClick={() => setSteps(option)}
               type="button"
             >
-              {option} Steps
+              {option} <DashboardText i18nKey={'Steps'} />{' '}
             </button>
           ))}
         </WidgetButtons>
@@ -252,12 +255,14 @@ export default function OverviewUserJourney({
       <WidgetBody>
         {query.isLoading ? (
           <div className="flex h-96 items-center justify-center">
-            <div className="text-muted-foreground text-sm">Loading...</div>
+            <div className="text-muted-foreground text-sm">
+              <DashboardText i18nKey={'Loading...'} />
+            </div>
           </div>
         ) : sankeyData.nodes.length === 0 ? (
           <div className="flex h-96 items-center justify-center">
             <div className="text-muted-foreground text-sm">
-              No journey data available
+              <DashboardText i18nKey={'No journey data available'} />{' '}
             </div>
           </div>
         ) : (
@@ -338,18 +343,20 @@ export default function OverviewUserJourney({
 
                       <ChartTooltipItem color={color} innerClassName="gap-2">
                         <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
-                          <div className="text-muted-foreground">Sessions</div>
+                          <div className="text-muted-foreground">
+                            <DashboardText i18nKey={'Sessions'} />
+                          </div>
                           <div>{number.format(value)}</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 text-sm tabular-nums">
                           <div className="text-muted-foreground">
-                            % of total
+                            <DashboardText i18nKey={'% of total'} />{' '}
                           </div>
                           <div>{number.format(round(pctOfTotal, 1))} %</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 text-sm tabular-nums">
                           <div className="text-muted-foreground">
-                            % of source
+                            <DashboardText i18nKey={'% of source'} />{' '}
                           </div>
                           <div>{number.format(round(pctOfSource, 1))} %</div>
                         </div>
@@ -392,17 +399,21 @@ export default function OverviewUserJourney({
                         </div>
                         {typeof step === 'number' && (
                           <div className="shrink-0 text-muted-foreground">
-                            Step {step}
+                            <DashboardText i18nKey={'Step'} /> {step}
                           </div>
                         )}
                       </ChartTooltipHeader>
                       <ChartTooltipItem color={color} innerClassName="gap-2">
                         <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
-                          <div className="text-muted-foreground">Sessions</div>
+                          <div className="text-muted-foreground">
+                            <DashboardText i18nKey={'Sessions'} />
+                          </div>
                           <div>{number.format(value)}</div>
                         </div>
                         <div className="flex items-center justify-between gap-8 font-medium tabular-nums">
-                          <div className="text-muted-foreground">Share</div>
+                          <div className="text-muted-foreground">
+                            <DashboardText i18nKey={'Share'} />
+                          </div>
                           <div>{number.format(round(pct, 1))} %</div>
                         </div>
                       </ChartTooltipItem>
@@ -416,7 +427,11 @@ export default function OverviewUserJourney({
       </WidgetBody>
       <WidgetFooter>
         <div className="text-muted-foreground text-xs">
-          Shows the most common paths users take through your application
+          <DashboardText
+            i18nKey={
+              'Shows the most common paths users take through your application'
+            }
+          />{' '}
         </div>
       </WidgetFooter>
     </Widget>
