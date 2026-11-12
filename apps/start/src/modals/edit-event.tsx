@@ -37,7 +37,7 @@ export default function EditEvent({ id }: Props) {
   const [selectedColor, setColor] = useState(EventIconRecords.default!.color);
   const [conversion, setConversion] = useState(false);
   const [displayName, setDisplayName] = useState('');
-  const seededEventId = useRef<string | null>(null);
+  const displayNameEdited = useRef(false);
   const [step, setStep] = useState<'icon' | 'color'>('icon');
   useEffect(() => {
     if (event?.meta?.icon) {
@@ -49,9 +49,8 @@ export default function EditEvent({ id }: Props) {
     if (event?.meta?.conversion) {
       setConversion(event.meta.conversion);
     }
-    // Seeded once per event, so a refetch keeps what the user has typed.
-    if (event && seededEventId.current !== event.id) {
-      seededEventId.current = event.id;
+    // Follows the stored name until the user types, so a refetch keeps a draft.
+    if (event && !displayNameEdited.current) {
       setDisplayName(event.meta?.displayName ?? '');
     }
   }, [event]);
@@ -86,7 +85,10 @@ export default function EditEvent({ id }: Props) {
           <Input
             id="event-display-name"
             maxLength={EVENT_DISPLAY_NAME_MAX_LENGTH}
-            onChange={(e) => setDisplayName(e.target.value)}
+            onChange={(e) => {
+              displayNameEdited.current = true;
+              setDisplayName(e.target.value);
+            }}
             placeholder={event?.name}
             value={displayName}
           />

@@ -1,6 +1,23 @@
-import { beforeAll, describe, expect, mock, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import type { ChatToolContext } from '../context';
-import { buildReportConfig, summarizeChartData } from './charts';
+
+const getFunnel = mock(async (..._args: unknown[]) => ({
+  totalSessions: 0,
+  steps: [],
+}));
+const executeChart = mock(async (..._args: unknown[]) => ({ series: [] }));
+const executeAggregateChart = mock(async (..._args: unknown[]) => ({
+  series: [],
+}));
+mock.module('../../../chart/funnel.service', () => ({ getFunnel }));
+mock.module('../../../chart/chart.service', () => ({
+  executeChart,
+  executeAggregateChart,
+}));
+
+const { buildReportConfig, runReportConfig, summarizeChartData } = await import(
+  './charts'
+);
 
 const ctx = { projectId: 'p1', timezone: 'UTC' } as ChatToolContext;
 
@@ -152,26 +169,7 @@ describe('summarizeChartData', () => {
   });
 });
 
-const getFunnel = mock(async (..._args: unknown[]) => ({
-  totalSessions: 0,
-  steps: [],
-}));
-const executeChart = mock(async (..._args: unknown[]) => ({ series: [] }));
-const executeAggregateChart = mock(async (..._args: unknown[]) => ({
-  series: [],
-}));
-mock.module('../../../chart/funnel.service', () => ({ getFunnel }));
-mock.module('../../../chart/chart.service', () => ({
-  executeChart,
-  executeAggregateChart,
-}));
-
 describe('runReportConfig event display names', () => {
-  let runReportConfig: typeof import('./charts').runReportConfig;
-  beforeAll(async () => {
-    ({ runReportConfig } = await import('./charts'));
-  });
-
   const run = async (
     engine: ReturnType<typeof mock>,
     chartType: string,
