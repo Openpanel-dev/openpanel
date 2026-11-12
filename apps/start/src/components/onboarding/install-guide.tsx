@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { InstallManual } from './install-manual';
 import type { SnippetContext } from './install-snippets';
 import { InstallWithAi } from './install-with-ai';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
 
@@ -37,6 +38,8 @@ export function InstallGuide({
   context,
   defaultMethod = 'ai',
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [method, setMethod] = useState<InstallMethod>(defaultMethod);
 
   const select = (next: InstallMethod) => {
@@ -50,7 +53,7 @@ export function InstallGuide({
   return (
     <div className="col gap-6">
       <div
-        aria-label="Installation method"
+        aria-label={translateUi('Installation method')}
         className="grid grid-cols-2 gap-1 rounded-xl bg-def-200 p-1 dark:bg-def-300"
         role="tablist"
       >

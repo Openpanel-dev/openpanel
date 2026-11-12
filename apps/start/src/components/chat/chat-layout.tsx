@@ -3,6 +3,10 @@ import { type ReactNode, useState } from 'react';
 import { ChatConversations } from './chat-conversations';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 /**
  * The parts of the chat page that stay put while a conversation loads: the
@@ -21,6 +25,8 @@ export function ChatLayout({
   onNew: () => void;
   children: ReactNode;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [listOpen, setListOpen] = useState(false);
   const select = (id: string) => {
     setListOpen(false);
@@ -42,7 +48,9 @@ export function ChatLayout({
       />
       <Sheet onOpenChange={setListOpen} open={listOpen}>
         <SheetContent className="w-80 p-0" side="left">
-          <SheetTitle className="sr-only">Conversations</SheetTitle>
+          <SheetTitle className="sr-only">
+            <DashboardText i18nKey={'Conversations'} />
+          </SheetTitle>
           <ChatConversations
             activeId={activeId}
             activeTitle={activeTitle}
@@ -55,7 +63,7 @@ export function ChatLayout({
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <Button
-            aria-label="Conversations"
+            aria-label={translateUi('Conversations')}
             className="lg:hidden"
             onClick={() => setListOpen(true)}
             size="icon"

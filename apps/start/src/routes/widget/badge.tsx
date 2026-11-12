@@ -4,6 +4,7 @@ import { UsersIcon } from 'lucide-react';
 import { z } from 'zod';
 import { LogoSquare } from '@/components/logo';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const widgetSearchSchema = z.object({
@@ -17,7 +18,7 @@ export const Route = createFileRoute('/widget/badge')({
   // `error.message` — for a ZodError that is the raw issues array.
   errorComponent: () => (
     <div className="p-2 text-muted-foreground text-xs">
-      Missing or invalid widget link.
+      <DashboardText i18nKey={'Missing or invalid widget link.'} />{' '}
     </div>
   ),
   component: RouteComponent,
@@ -65,7 +66,7 @@ function BadgeWidget({ visitors, isLoading, color }: BadgeWidgetProps) {
 
       <div className="-mt-px flex min-w-0 flex-1 flex-col items-start gap-0.5">
         <div className="font-medium text-3xs text-white/80 uppercase tracking-wide">
-          ANALYTICS FROM
+          <DashboardText i18nKey={'ANALYTICS FROM'} />{' '}
         </div>
         <div className="font-semibold text-white">OpenPanel</div>
       </div>

@@ -1,6 +1,7 @@
 import { ShieldCheckIcon } from 'lucide-react';
 import { approvalPrompt } from '../tool-labels';
 import { Button } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export function ApprovalCard({
   toolName,
@@ -26,10 +27,10 @@ export function ApprovalCard({
       </div>
       <div className="mt-3 flex justify-end gap-2">
         <Button onClick={() => onRespond(false)} size="sm" variant="ghost">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button onClick={() => onRespond(true)} size="sm">
-          Confirm
+          <DashboardText i18nKey={'Confirm'} />{' '}
         </Button>
       </div>
     </div>

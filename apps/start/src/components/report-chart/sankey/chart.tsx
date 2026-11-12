@@ -11,6 +11,7 @@ import {
 } from '@/components/charts/sankey';
 import { useElementSize } from '@/hooks/use-element-size';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 import { truncate } from '@/utils/truncate';
 
@@ -170,7 +171,7 @@ export function Chart({ data }: { data: ReportSankeyData }) {
                       <span className="font-medium">{info.label}</span>
                       {info.step !== undefined && (
                         <span className="shrink-0 text-muted-foreground">
-                          Step {info.step}
+                          <DashboardText i18nKey={'Step'} /> {info.step}
                         </span>
                       )}
                     </div>

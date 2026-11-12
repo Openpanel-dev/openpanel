@@ -7,6 +7,10 @@ import { toast } from 'sonner';
 import { ButtonContainer } from '@/components/button-container';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { ModalHeader } from '@/modals/Modal/Container';
 import { cn } from '@/utils/cn';
@@ -44,6 +48,8 @@ export default function CancelSubscriptionFlow({
   onBack,
   onComplete,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>('reason');
@@ -168,7 +174,7 @@ export default function CancelSubscriptionFlow({
       <>
         <ModalHeader
           text="Before you go — what's the main reason? It genuinely helps us improve."
-          title="Cancel subscription"
+          title={translateUi('Cancel subscription')}
         />
         <div className="scrollbar-thin col min-h-0 flex-1 gap-4 overflow-y-auto">
           <div className="col shrink-0 divide-y divide-border overflow-hidden rounded-lg border">
@@ -194,7 +200,7 @@ export default function CancelSubscriptionFlow({
           <Textarea
             className="shrink-0"
             onChange={(event) => setComment(event.target.value)}
-            placeholder="Anything you want to add? (optional)"
+            placeholder={translateUi('Anything you want to add? (optional)')}
             value={comment}
           />
         </div>
@@ -211,7 +217,7 @@ export default function CancelSubscriptionFlow({
             }}
             variant="outline"
           >
-            Never mind
+            <DashboardText i18nKey={'Never mind'} />{' '}
           </Button>
           <Button
             disabled={!reason}
@@ -224,7 +230,7 @@ export default function CancelSubscriptionFlow({
             }}
             variant="destructive"
           >
-            Continue
+            <DashboardText i18nKey={'Continue'} />{' '}
           </Button>
         </ButtonContainer>
       </>
@@ -236,7 +242,7 @@ export default function CancelSubscriptionFlow({
       <>
         <ModalHeader
           text="Pause your subscription: billing stops at the end of your current period, we keep collecting your events, and everything is exactly where you left it when you come back."
-          title="Take a break instead?"
+          title={translateUi('Take a break instead?')}
         />
         <div className="scrollbar-thin col min-h-0 flex-1 gap-3 overflow-y-auto">
           <div className="row shrink-0 gap-2">
@@ -252,8 +258,11 @@ export default function CancelSubscriptionFlow({
             ))}
           </div>
           <p className="shrink-0 text-muted-foreground text-sm">
-            Billing automatically resumes after the pause — or resume earlier
-            any time from the billing page. You pay nothing while paused.
+            <DashboardText
+              i18nKey={
+                'Billing automatically resumes after the pause — or resume earlier any time from the billing page. You pay nothing while paused.'
+              }
+            />{' '}
           </p>
         </div>
         <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
@@ -290,7 +299,8 @@ export default function CancelSubscriptionFlow({
               });
             }}
           >
-            Pause for {pauseMonths} {pauseMonths === 1 ? 'month' : 'months'}
+            <DashboardText i18nKey={'Pause for'} /> {pauseMonths}{' '}
+            {pauseMonths === 1 ? 'month' : 'months'}
           </Button>
         </ButtonContainer>
       </>
@@ -301,14 +311,16 @@ export default function CancelSubscriptionFlow({
     <>
       <ModalHeader
         text="We'd love to keep you around. Stay on your current plan and get 30% off for the next 12 months, starting with your next billing cycle."
-        title="One last thing — 30% off for a year"
+        title={translateUi('One last thing — 30% off for a year')}
       />
       <div className="scrollbar-thin col min-h-0 flex-1 overflow-y-auto">
         <div className="row shrink-0 items-center gap-3 rounded-lg border bg-def-100 p-4">
           <span className="font-bold text-3xl text-emerald-600 tabular-nums dark:text-emerald-500">
             −30%
           </span>
-          <span className="text-muted-foreground">for the next 12 months</span>
+          <span className="text-muted-foreground">
+            <DashboardText i18nKey={'for the next 12 months'} />
+          </span>
         </div>
       </div>
       <ButtonContainer className="shrink-0 gap-2 [&>*]:flex-1">
@@ -324,7 +336,7 @@ export default function CancelSubscriptionFlow({
           }}
           variant="outline"
         >
-          Cancel subscription
+          <DashboardText i18nKey={'Cancel subscription'} />{' '}
         </Button>
         <Button
           disabled={isPending}
@@ -337,7 +349,7 @@ export default function CancelSubscriptionFlow({
             discountMutation.mutate({ organizationId: organization.id });
           }}
         >
-          Apply 30% discount
+          <DashboardText i18nKey={'Apply 30% discount'} />{' '}
         </Button>
       </ButtonContainer>
     </>

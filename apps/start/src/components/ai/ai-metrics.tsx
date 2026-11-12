@@ -21,6 +21,7 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
 import { Button } from '@/components/ui/button';
 import { useAiFilters } from '@/hooks/use-ai-filters';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getChartColor } from '@/utils/theme';
 
@@ -171,7 +172,9 @@ export function AiMetrics({ projectId }: { projectId: string }) {
           {query.isLoading && <Skeleton className="h-full w-full" />}
           {query.isError && (
             <div className="center-center h-full flex-col gap-3 text-center text-muted-foreground text-sm">
-              We could not load this data. Try again in a moment.
+              <DashboardText
+                i18nKey={'We could not load this data. Try again in a moment.'}
+              />{' '}
               <Button
                 icon={RotateCwIcon}
                 loading={query.isFetching}
@@ -179,7 +182,7 @@ export function AiMetrics({ projectId }: { projectId: string }) {
                 size="sm"
                 variant="outline"
               >
-                Try again
+                <DashboardText i18nKey={'Try again'} />{' '}
               </Button>
             </div>
           )}

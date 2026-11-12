@@ -6,6 +6,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import CopyInput from '@/components/forms/copy-input';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -53,14 +54,14 @@ export function useColumns() {
       return (
         <>
           <DropdownMenuItem onClick={() => clipboard(client.id)}>
-            Copy client ID
+            <DashboardText i18nKey={'Copy client ID'} />{' '}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => {
               pushModal('EditClient', client);
             }}
           >
-            Edit
+            <DashboardText i18nKey={'Edit'} />{' '}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -77,7 +78,7 @@ export function useColumns() {
             }}
             variant="destructive"
           >
-            Revoke
+            <DashboardText i18nKey={'Revoke'} />{' '}
           </DropdownMenuItem>
         </>
       );

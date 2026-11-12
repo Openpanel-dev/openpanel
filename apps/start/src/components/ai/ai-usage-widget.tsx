@@ -8,6 +8,7 @@ import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
 import { Skeleton } from '@/components/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Widget, WidgetBody } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { timeAgo } from '@/utils/date';
 
@@ -143,7 +144,9 @@ function UsageBody({
   return (
     <Widget className={className}>
       <WidgetHead>
-        <WidgetTitle icon={BotIcon}>AI usage</WidgetTitle>
+        <WidgetTitle icon={BotIcon}>
+          <DashboardText i18nKey={'AI usage'} />
+        </WidgetTitle>
       </WidgetHead>
       <WidgetBody className="col gap-3">
         {query.isLoading && <Skeleton className="h-16 w-full" />}
@@ -179,7 +182,7 @@ function UsageBody({
               search={tracesSearch(entity)}
               to="/ai/traces"
             >
-              View traces →
+              <DashboardText i18nKey={'View traces →'} />{' '}
             </ProjectLink>
           </>
         )}

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/lib/utils';
 
 // Utility function to round date to nearest 5-minute interval
@@ -168,7 +169,7 @@ export default function DateTimePicker({
       </div>
       <DialogFooter>
         <Button onClick={() => popModal()} variant="outline">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           onClick={() => {
@@ -176,7 +177,7 @@ export default function DateTimePicker({
             onChange(selectedDate);
           }}
         >
-          Confirm selection
+          <DashboardText i18nKey={'Confirm selection'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

@@ -16,6 +16,7 @@ import {
 } from '@/components/charts/op-tooltip';
 import { YAxis } from '@/components/charts/y-axis';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
 
@@ -98,13 +99,13 @@ function SingleFunnel({
       {comparison && previousConversion != null && (
         <div className="flex shrink-0 items-center justify-center gap-2 text-muted-foreground text-sm">
           <span>
-            Conversion{' '}
+            <DashboardText i18nKey={'Conversion'} />{' '}
             <span className="font-semibold text-foreground tabular-nums">
               {number.formatWithUnit(conversion / 100, '%')}
             </span>
           </span>
           <span>
-            previous{' '}
+            <DashboardText i18nKey={'previous'} />{' '}
             <span className="tabular-nums">
               {number.formatWithUnit(previousConversion / 100, '%')}
             </span>
@@ -223,7 +224,8 @@ function BreakdownBars({
           ))}
           {breakdowns.length > chrome.legendLimit && (
             <div className="text-muted-foreground">
-              +{breakdowns.length - chrome.legendLimit} more
+              +{breakdowns.length - chrome.legendLimit}{' '}
+              <DashboardText i18nKey={'more'} />{' '}
             </div>
           )}
         </div>

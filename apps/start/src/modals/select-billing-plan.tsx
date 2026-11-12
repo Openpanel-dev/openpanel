@@ -5,6 +5,7 @@ import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import BillingPlanPicker from '@/components/organization/billing-plan-picker';
 import CancelSubscriptionFlow from '@/components/organization/cancel-subscription-flow';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 
 interface Props {
   organization: IServiceOrganization;
@@ -17,6 +18,8 @@ export default function SelectBillingPlan({
   currentProduct,
   defaultInterval,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   // Internal router: the cancel flow renders inside this modal instead of
   // stacking another modal on top.
   const [view, setView] = useState<'plans' | 'cancel'>('plans');
@@ -25,7 +28,7 @@ export default function SelectBillingPlan({
     <ModalContent bodyClassName="flex flex-col overflow-hidden">
       {view === 'plans' ? (
         <>
-          <ModalHeader title="Select a billing plan" />
+          <ModalHeader title={translateUi('Select a billing plan')} />
           <BillingPlanPicker
             currentProduct={currentProduct}
             defaultInterval={defaultInterval}

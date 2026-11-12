@@ -10,6 +10,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { SheetContent } from '@/components/ui/sheet';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export interface TableFiltersProps {
@@ -44,6 +48,8 @@ export default function TableFilters({
   categories,
   title = 'Filters',
 }: TableFiltersProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [filters, setFilters] = useTableFilters(urlKey);
 
   const setFilter = (updated: IChartEventFilter) => {
@@ -92,12 +98,12 @@ export default function TableFilters({
   return (
     <SheetContent className="[&>button.absolute]:hidden">
       <ModalHeader title={title} />
-      <Heading icon={SlidersHorizontal} title="Filters" />
+      <Heading icon={SlidersHorizontal} title={translateUi('Filters')} />
       <div className="flex flex-col gap-2">
         <div className={cn('rounded-lg border bg-card')}>
           {filters.length === 0 && (
             <div className="p-4 text-center text-muted-foreground text-sm">
-              No filters selected
+              <DashboardText i18nKey={'No filters selected'} />{' '}
             </div>
           )}
           {filters.map((filter) => {
@@ -158,7 +164,7 @@ export default function TableFilters({
               size="lg"
               variant="outline"
             >
-              Add filter
+              <DashboardText i18nKey={'Add filter'} />{' '}
             </Button>
           )}
         </PropertiesCombobox>

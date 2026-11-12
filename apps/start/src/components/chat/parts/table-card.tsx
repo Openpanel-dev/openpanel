@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const COLLAPSED_ROWS = 8;
@@ -57,7 +58,8 @@ export function TableCard({
   if (rows.length === 0) {
     return (
       <div className="rounded-xl border bg-card px-4 py-3 text-muted-foreground text-sm">
-        {title}: no rows.
+        {title}
+        <DashboardText i18nKey={': no rows.'} />{' '}
       </div>
     );
   }
@@ -130,7 +132,8 @@ export function TableCard({
           onClick={() => setShowAll(true)}
           type="button"
         >
-          Show {hidden} more
+          <DashboardText i18nKey={'Show'} /> {hidden}{' '}
+          <DashboardText i18nKey={'more'} />{' '}
         </button>
       )}
     </div>

@@ -31,6 +31,7 @@ import {
 } from './types';
 import { useEventDrawer } from '@/components/events/use-event-drawer';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export function ChatMessage({
@@ -339,7 +340,9 @@ function Reasoning({ text, streaming }: { text: string; streaming: boolean }) {
   if (streaming) {
     return (
       <div>
-        <div className="op-shimmer font-medium text-sm">Thinking…</div>
+        <div className="op-shimmer font-medium text-sm">
+          <DashboardText i18nKey={'Thinking…'} />
+        </div>
         {latestLine && (
           <div className="mt-1 line-clamp-1 text-muted-foreground/80 text-sm italic">
             {latestLine}
@@ -361,7 +364,7 @@ function Reasoning({ text, streaming }: { text: string; streaming: boolean }) {
         <ChevronRightIcon
           className={cn('size-3 transition-transform', open && 'rotate-90')}
         />
-        Thought
+        <DashboardText i18nKey={'Thought'} />{' '}
       </button>
       {open && (
         <ChatMarkdown

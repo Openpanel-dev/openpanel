@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { showConfirm } from '@/modals';
 
@@ -56,18 +57,25 @@ export default function DeleteProject({ project }: Props) {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead>
-        <span className="title">Delete Project</span>
+        <span className="title">
+          <DashboardText i18nKey={'Delete Project'} />
+        </span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
         <p>
-          Deleting your project will remove it from your organization and all of
-          its data. It'll be permanently deleted after 24 hours.
+          <DashboardText
+            i18nKey={
+              "Deleting your project will remove it from your organization and all of its data. It'll be permanently deleted after 24 hours."
+            }
+          />{' '}
         </p>
         {project?.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Project scheduled for deletion</AlertTitle>
+            <AlertTitle>
+              <DashboardText i18nKey={'Project scheduled for deletion'} />
+            </AlertTitle>
             <AlertDescription>
-              This project will be deleted on{' '}
+              <DashboardText i18nKey={'This project will be deleted on'} />{' '}
               <span className="font-medium">
                 {
                   // add 1 hour and round to the nearest hour
@@ -82,8 +90,11 @@ export default function DeleteProject({ project }: Props) {
               {isOrgScheduledForDeletion && (
                 <>
                   {' '}
-                  The whole organization is scheduled for deletion. To keep this
-                  project, cancel the deletion from the organization settings.
+                  <DashboardText
+                    i18nKey={
+                      'The whole organization is scheduled for deletion. To keep this project, cancel the deletion from the organization settings.'
+                    }
+                  />{' '}
                 </>
               )}
             </AlertDescription>
@@ -99,7 +110,7 @@ export default function DeleteProject({ project }: Props) {
               }}
               variant="outline"
             >
-              Cancel deletion
+              <DashboardText i18nKey={'Cancel deletion'} />{' '}
             </Button>
           )}
           <Button
@@ -117,7 +128,7 @@ export default function DeleteProject({ project }: Props) {
             }}
             variant="destructive"
           >
-            Delete Project
+            <DashboardText i18nKey={'Delete Project'} />{' '}
           </Button>
         </div>
       </WidgetBody>

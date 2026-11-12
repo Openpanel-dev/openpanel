@@ -9,6 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 
 const PROVIDER_LABELS: Record<ChatModelEntry['provider'], string> = {
   openai: 'OpenAI',
@@ -30,6 +31,8 @@ export function ChatModelPicker({
   value: string | null;
   onChange: (id: string) => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const current = models.find((model) => model.id === value);
   const grouped: Record<string, ChatModelEntry[]> = {};
   for (const model of models) {
@@ -42,7 +45,7 @@ export function ChatModelPicker({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          aria-label="Select model"
+          aria-label={translateUi('Select model')}
           className="h-8 gap-1 px-2 text-muted-foreground text-xs"
           size="sm"
           variant="ghost"

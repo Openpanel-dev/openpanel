@@ -7,6 +7,10 @@ import { ReportChartLoading } from '../common/loading';
 import { SeriesWithTable } from '../common/series-with-table';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportDistributionChart() {
@@ -57,11 +61,16 @@ export function ReportDistributionChart() {
 }
 
 function Mixed() {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <AspectContainer>
-      <ReportChartEmpty title="These series can't share a chart">
-        Counts use fixed buckets and property values use bins. Change or remove
-        a series so they all use the same kind.
+      <ReportChartEmpty title={translateUi("These series can't share a chart")}>
+        <DashboardText
+          i18nKey={
+            'Counts use fixed buckets and property values use bins. Change or remove a series so they all use the same kind.'
+          }
+        />{' '}
       </ReportChartEmpty>
     </AspectContainer>
   );

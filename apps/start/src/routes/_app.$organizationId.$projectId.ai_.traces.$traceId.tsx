@@ -18,6 +18,7 @@ import {
   WidgetHead,
   WidgetTitle,
 } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { formatDateTime } from '@/utils/date';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
@@ -98,7 +99,7 @@ function Component() {
                 params={{ sessionId: first.sessionId }}
                 to="/sessions/$sessionId"
               >
-                Open session
+                <DashboardText i18nKey={'Open session'} />{' '}
               </ProjectLink>
             )}
             {first?.conversationId && (
@@ -107,7 +108,7 @@ function Component() {
                 search={{ conversation: first.conversationId }}
                 to="/ai/traces"
               >
-                Conversation
+                <DashboardText i18nKey={'Conversation'} />{' '}
               </ProjectLink>
             )}
           </div>
@@ -116,12 +117,16 @@ function Component() {
             <span>
               {totals.generations} {totals.generations === 1 ? 'call' : 'calls'}
             </span>
-            <span>{formatTokens(totals.tokens)} tokens</span>
+            <span>
+              {formatTokens(totals.tokens)} <DashboardText i18nKey={'tokens'} />
+            </span>
             <span>
               <AiCost cost={totals.cost} unpricedCalls={totals.unpricedCalls} />
             </span>
             {totals.errors > 0 && (
-              <span className="text-destructive">{totals.errors} errors</span>
+              <span className="text-destructive">
+                {totals.errors} <DashboardText i18nKey={'errors'} />
+              </span>
             )}
           </div>
           <span className="font-mono text-2xs text-muted-foreground">
@@ -133,7 +138,9 @@ function Component() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <Widget className="w-full self-start">
           <WidgetHead>
-            <WidgetTitle>Timeline</WidgetTitle>
+            <WidgetTitle>
+              <DashboardText i18nKey={'Timeline'} />
+            </WidgetTitle>
           </WidgetHead>
           <AiTraceTree
             events={events}

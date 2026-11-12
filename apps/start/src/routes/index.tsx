@@ -6,6 +6,10 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { isSignedIn } from '@/utils/route-session';
 import { createTitle } from '@/utils/title';
@@ -48,6 +52,8 @@ export const Route = createFileRoute('/')({
 });
 
 function LandingPage() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const logout = useLogout();
   const { data: organizations } = useSuspenseQuery(
@@ -61,8 +67,10 @@ function LandingPage() {
         <div className="col gap-4">
           <LogoSquare className="w-full max-w-14 md:max-w-24" />
           <PageHeader
-            description="The best web and product analytics tool out there (our honest opinion)."
-            title="Welcome to OpenPanel.dev"
+            description={translateUi(
+              'The best web and product analytics tool out there (our honest opinion).'
+            )}
+            title={translateUi('Welcome to OpenPanel.dev')}
           />
         </div>
 
@@ -91,7 +99,7 @@ function LandingPage() {
 
         <div className="row gap-4">
           <Button loading={logout.isPending} onClick={() => logout.mutate()}>
-            Log out
+            <DashboardText i18nKey={'Log out'} />{' '}
           </Button>
         </div>
       </div>

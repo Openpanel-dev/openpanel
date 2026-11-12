@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AiBreakdownWidget } from '@/components/ai/ai-breakdown-widget';
 import { AiMetrics } from '@/components/ai/ai-metrics';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/ai/_tabs/'
@@ -17,6 +18,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   return (
     <div className="grid grid-cols-6 gap-4">
@@ -25,31 +28,31 @@ function Component() {
         dimension="model"
         icon={CpuIcon}
         projectId={projectId}
-        title="Cost by model"
+        title={translateUi('Cost by model')}
       />
       <AiBreakdownWidget
         dimension="name"
         icon={LayersIcon}
         projectId={projectId}
-        title="Cost by feature"
+        title={translateUi('Cost by feature')}
       />
       <AiBreakdownWidget
         dimension="profile"
         icon={UsersIcon}
         projectId={projectId}
-        title="Top users"
+        title={translateUi('Top users')}
       />
       <AiBreakdownWidget
         dimension="group"
         icon={Building2Icon}
         projectId={projectId}
-        title="Top groups"
+        title={translateUi('Top groups')}
       />
       <AiBreakdownWidget
         dimension="provider"
         icon={ServerIcon}
         projectId={projectId}
-        title="Cost by provider"
+        title={translateUi('Cost by provider')}
       />
       <AiBreakdownWidget
         dimension="model"
@@ -57,7 +60,7 @@ function Component() {
         measure="errors"
         projectId={projectId}
         secondary="generations"
-        title="Errors by model"
+        title={translateUi('Errors by model')}
       />
     </div>
   );

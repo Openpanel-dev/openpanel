@@ -3,6 +3,10 @@ import type { SessionPageVisit } from './session-pages';
 import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
 import { Widget } from '@/components/widget';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const MS_PER_SECOND = 1000;
@@ -24,6 +28,8 @@ function StepBadge({ label, tone }: { label: string; tone: 'entry' | 'exit' }) {
 }
 
 export function SessionJourney({ visits }: { visits: SessionPageVisit[] }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const pages = visits.filter((visit) => visit.view !== null);
   if (pages.length === 0) {
     return null;
@@ -33,7 +39,9 @@ export function SessionJourney({ visits }: { visits: SessionPageVisit[] }) {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle icon={RouteIcon}>Journey</WidgetTitle>
+        <WidgetTitle icon={RouteIcon}>
+          <DashboardText i18nKey={'Journey'} />
+        </WidgetTitle>
       </WidgetHead>
       <ol className="row items-stretch overflow-x-auto p-4">
         {pages.map((page, index) => {
@@ -54,8 +62,12 @@ export function SessionJourney({ visits }: { visits: SessionPageVisit[] }) {
                   <span className="font-mono text-2xs text-muted-foreground tabular-nums">
                     {index + 1}
                   </span>
-                  {isFirst && <StepBadge label="Entry" tone="entry" />}
-                  {isLast && <StepBadge label="Exit" tone="exit" />}
+                  {isFirst && (
+                    <StepBadge label={translateUi('Entry')} tone="entry" />
+                  )}
+                  {isLast && (
+                    <StepBadge label={translateUi('Exit')} tone="exit" />
+                  )}
                 </div>
                 <span
                   className="truncate font-medium text-sm"

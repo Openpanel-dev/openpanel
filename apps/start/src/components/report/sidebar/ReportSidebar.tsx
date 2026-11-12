@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useSelector } from '@/redux';
 
 export function ReportSidebar() {
@@ -21,9 +22,13 @@ export function ReportSidebar() {
     <>
       <SheetHeader>
         <div className="flex flex-col gap-1">
-          <SheetTitle>Report builder</SheetTitle>
+          <SheetTitle>
+            <DashboardText i18nKey={'Report builder'} />
+          </SheetTitle>
           <SheetDescription>
-            What to measure, how to filter it and how to split it.
+            <DashboardText
+              i18nKey={'What to measure, how to filter it and how to split it.'}
+            />{' '}
           </SheetDescription>
         </div>
       </SheetHeader>
@@ -43,7 +48,9 @@ export function ReportSidebar() {
       </div>
       <SheetFooter>
         <SheetClose asChild>
-          <Button className="w-full">Done</Button>
+          <Button className="w-full">
+            <DashboardText i18nKey={'Done'} />
+          </Button>
         </SheetClose>
       </SheetFooter>
     </>

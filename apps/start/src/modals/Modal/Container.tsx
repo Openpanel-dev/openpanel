@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { popModal } from '..';
 import { Button } from '@/components/ui/button';
 import { DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 interface ModalContentProps extends DialogContentProps {
@@ -87,7 +88,9 @@ export function ModalHeader({
             variant="ghost"
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">
+              <DashboardText i18nKey={'Close'} />
+            </span>
           </Button>
         )}
       </div>

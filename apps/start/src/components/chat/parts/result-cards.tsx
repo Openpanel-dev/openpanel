@@ -9,6 +9,7 @@ import {
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, BookOpenIcon, PlusIcon, UserIcon } from 'lucide-react';
 import { openDialog } from '../use-chat-session';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export function NavigateCard({
   input,
@@ -59,7 +60,9 @@ export function DocsCard({ results }: { results: DocResult[] }) {
   }
   return (
     <div className="rounded-xl border bg-card px-4 py-2 text-sm">
-      <div className="mb-1 text-muted-foreground text-xs">From the docs</div>
+      <div className="mb-1 text-muted-foreground text-xs">
+        <DashboardText i18nKey={'From the docs'} />
+      </div>
       <ul className="space-y-1">
         {results.map((result) => (
           <li key={result.url}>
@@ -99,7 +102,7 @@ export function SearchCard({
   if (empty) {
     return (
       <div className="rounded-xl border bg-card px-4 py-2 text-muted-foreground text-sm">
-        Nothing matched.
+        <DashboardText i18nKey={'Nothing matched.'} />{' '}
       </div>
     );
   }
@@ -129,12 +132,12 @@ export function SearchCard({
           href={session.url}
         >
           <ArrowRightIcon className="size-3.5 text-muted-foreground" />
-          Open session
+          <DashboardText i18nKey={'Open session'} />{' '}
         </a>
       )}
       {eventNames.length > 0 && (
         <div className="mt-1 text-muted-foreground">
-          Events: {eventNames.join(', ')}
+          <DashboardText i18nKey={'Events:'} /> {eventNames.join(', ')}
         </div>
       )}
     </div>
@@ -154,14 +157,16 @@ export function PlanChangeCard({
         rel="noopener noreferrer"
         target="_blank"
       >
-        Continue to checkout
+        <DashboardText i18nKey={'Continue to checkout'} />{' '}
         <ArrowRightIcon className="size-3.5 text-muted-foreground" />
       </a>
     );
   }
   return (
     <div className="rounded-lg border bg-card px-3 py-2 text-sm">
-      Plan changed. Billing is prorated from today.
+      <DashboardText
+        i18nKey={'Plan changed. Billing is prorated from today.'}
+      />{' '}
     </div>
   );
 }

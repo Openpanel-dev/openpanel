@@ -48,6 +48,10 @@ import { useAppParams } from '@/hooks/use-app-params';
 import { useCustomEvents } from '@/hooks/use-custom-events';
 import { useDebounceFn } from '@/hooks/use-debounce-fn';
 import { useEventNames } from '@/hooks/use-event-names';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 
 // Matches a single uppercase letter that isn't part of a larger identifier,
@@ -125,6 +129,8 @@ function SortableReportSeriesItem({
 }
 
 export function ReportSeries() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const selectedSeries = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
@@ -219,7 +225,7 @@ export function ReportSeries() {
     chartType !== 'sankey';
 
   return (
-    <SidebarSection title="Metrics">
+    <SidebarSection title={translateUi('Metrics')}>
       <DndContext
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
@@ -260,7 +266,7 @@ export function ReportSeries() {
                               formula: value,
                             });
                           }}
-                          placeholder="eg: A+B"
+                          placeholder={translateUi('eg: A+B')}
                           value={event.formula}
                         />
                         {showDisplayNameInput && (
@@ -314,7 +320,11 @@ export function ReportSeries() {
                                         );
                                       }}
                                     />
-                                    Hide series {alphaId} from chart
+                                    <DashboardText i18nKey={'Hide series'} />{' '}
+                                    {alphaId}{' '}
+                                    <DashboardText
+                                      i18nKey={'from chart'}
+                                    />{' '}
                                   </label>
                                 );
                               })}
@@ -370,7 +380,7 @@ export function ReportSeries() {
                             })
                           );
                         }}
-                        placeholder="Select event"
+                        placeholder={translateUi('Select event')}
                         searchable
                         selectedCustomEventId={
                           (event as IChartEventItem & { type: 'event' })
@@ -466,7 +476,7 @@ export function ReportSeries() {
                     })
                   );
                 }}
-                placeholder="Select event"
+                placeholder={translateUi('Select event')}
                 searchable
                 size="sm"
                 value={''}
@@ -489,7 +499,7 @@ export function ReportSeries() {
                   type="button"
                   variant="ghost"
                 >
-                  Add Formula
+                  <DashboardText i18nKey={'Add Formula'} />{' '}
                 </Button>
               )}
             </div>

@@ -3,6 +3,7 @@ import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
@@ -21,6 +22,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   useRangePageContext('events');
 
@@ -40,8 +43,10 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        description="Paginate through your events, conversions and overall stats"
-        title="Events"
+        description={translateUi(
+          'Paginate through your events, conversions and overall stats'
+        )}
+        title={translateUi('Events')}
       />
 
       <Tabs

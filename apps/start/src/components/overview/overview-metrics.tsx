@@ -24,6 +24,10 @@ import { OverviewLiveHistogram } from './overview-live-histogram';
 import { OverviewMetricCard } from './overview-metric-card';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -89,6 +93,8 @@ export default function OverviewMetrics({
   projectId,
   shareId,
 }: OverviewMetricsProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { range, interval, metric, setMetric, startDate, endDate } =
     useOverviewOptions();
   const [filters] = useEventQueryFilters();
@@ -159,7 +165,7 @@ export default function OverviewMetrics({
                   : 'border-border text-muted-foreground hover:bg-def-100'
               )}
               onClick={() => setMockRevenue((p) => !p)}
-              title="Toggle mock revenue (dev only)"
+              title={translateUi('Toggle mock revenue (dev only)')}
               type="button"
             >
               <DollarSignIcon className="size-3" />
@@ -171,7 +177,9 @@ export default function OverviewMetrics({
           {overviewQuery.isLoading && <Skeleton className="h-full w-full" />}
           {overviewQuery.isError && (
             <div className="center-center h-full flex-col gap-3 text-center text-muted-foreground text-sm">
-              We could not load this data. Try again in a moment.
+              <DashboardText
+                i18nKey={'We could not load this data. Try again in a moment.'}
+              />{' '}
               <Button
                 icon={RotateCwIcon}
                 loading={overviewQuery.isFetching}
@@ -179,7 +187,7 @@ export default function OverviewMetrics({
                 size="sm"
                 variant="outline"
               >
-                Try again
+                <DashboardText i18nKey={'Try again'} />{' '}
               </Button>
             </div>
           )}

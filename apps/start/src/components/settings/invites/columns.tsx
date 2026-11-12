@@ -5,6 +5,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { clipboard } from '@/utils/clipboard';
@@ -85,7 +86,7 @@ export function useColumns(): ColumnDef<
               );
             }}
           >
-            Copy invite link
+            <DashboardText i18nKey={'Copy invite link'} />{' '}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive"
@@ -93,7 +94,7 @@ export function useColumns(): ColumnDef<
               revoke.mutate({ inviteId: row.original.id });
             }}
           >
-            Revoke invite
+            <DashboardText i18nKey={'Revoke invite'} />{' '}
           </DropdownMenuItem>
         </>
       );
@@ -116,10 +117,18 @@ function AccessCell({
   const access = row.original.projectAccess ?? [];
 
   if (row.original.projectScope === 'all') {
-    return <Badge variant={'secondary'}>All projects</Badge>;
+    return (
+      <Badge variant={'secondary'}>
+        <DashboardText i18nKey={'All projects'} />
+      </Badge>
+    );
   }
   if (access.length === 0) {
-    return <Badge variant={'secondary'}>No projects</Badge>;
+    return (
+      <Badge variant={'secondary'}>
+        <DashboardText i18nKey={'No projects'} />
+      </Badge>
+    );
   }
 
   return (
@@ -129,7 +138,7 @@ function AccessCell({
         if (!project) {
           return (
             <Badge className="mr-1" key={grant.projectId}>
-              Unknown
+              <DashboardText i18nKey={'Unknown'} />{' '}
             </Badge>
           );
         }

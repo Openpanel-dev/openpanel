@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -49,18 +50,25 @@ export default function DeleteOrganization({ organization }: Props) {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead>
-        <span className="title">Delete Organization</span>
+        <span className="title">
+          <DashboardText i18nKey={'Delete Organization'} />
+        </span>
       </WidgetHead>
       <WidgetBody className="space-y-4">
         <p>
-          Deleting this organization will remove it and all of its projects and
-          their data. It will be permanently deleted after 24 hours.
+          <DashboardText
+            i18nKey={
+              'Deleting this organization will remove it and all of its projects and their data. It will be permanently deleted after 24 hours.'
+            }
+          />{' '}
         </p>
         {organization.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Organization scheduled for deletion</AlertTitle>
+            <AlertTitle>
+              <DashboardText i18nKey={'Organization scheduled for deletion'} />
+            </AlertTitle>
             <AlertDescription>
-              This organization will be deleted on{' '}
+              <DashboardText i18nKey={'This organization will be deleted on'} />{' '}
               <span className="font-medium">
                 {format(
                   startOfHour(addHours(organization.deleteAt, 1)),
@@ -73,10 +81,15 @@ export default function DeleteOrganization({ organization }: Props) {
         )}
         {blockDeletion && !organization.deleteAt && (
           <Alert variant="destructive">
-            <AlertTitle>Cancel your subscription first</AlertTitle>
+            <AlertTitle>
+              <DashboardText i18nKey={'Cancel your subscription first'} />
+            </AlertTitle>
             <AlertDescription>
-              This organization has an active subscription. Cancel it from the
-              billing settings before you delete the organization.
+              <DashboardText
+                i18nKey={
+                  'This organization has an active subscription. Cancel it from the billing settings before you delete the organization.'
+                }
+              />{' '}
             </AlertDescription>
           </Alert>
         )}
@@ -91,7 +104,7 @@ export default function DeleteOrganization({ organization }: Props) {
               }}
               variant="outline"
             >
-              Cancel deletion
+              <DashboardText i18nKey={'Cancel deletion'} />{' '}
             </Button>
           )}
           <Button
@@ -105,7 +118,7 @@ export default function DeleteOrganization({ organization }: Props) {
             }}
             variant="destructive"
           >
-            Delete Organization
+            <DashboardText i18nKey={'Delete Organization'} />{' '}
           </Button>
         </div>
       </WidgetBody>

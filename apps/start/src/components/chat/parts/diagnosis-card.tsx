@@ -5,6 +5,7 @@ import {
   InfoIcon,
   XCircleIcon,
 } from 'lucide-react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 interface Finding {
   level: 'ok' | 'warn' | 'error' | 'info';
@@ -64,7 +65,9 @@ export function DiagnosisCard({ output }: { output: DiagnosisOutput }) {
     <div className="overflow-hidden rounded-xl border bg-card">
       <div className="flex items-center justify-between gap-2 border-b px-4 py-2">
         <div className="min-w-0">
-          <div className="font-medium text-sm">Tracking check</div>
+          <div className="font-medium text-sm">
+            <DashboardText i18nKey={'Tracking check'} />
+          </div>
           <div className="truncate text-muted-foreground text-xs">
             {output.url}
           </div>
@@ -90,7 +93,7 @@ export function DiagnosisCard({ output }: { output: DiagnosisOutput }) {
             className="text-primary underline underline-offset-2"
             to={settingsPath}
           >
-            Open project settings
+            <DashboardText i18nKey={'Open project settings'} />{' '}
           </Link>
         </div>
       )}

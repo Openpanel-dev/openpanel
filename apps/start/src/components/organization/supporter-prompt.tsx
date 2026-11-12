@@ -11,6 +11,10 @@ import { PromptCard } from '@/components/organization/prompt-card';
 import { LinkButton } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useCookieStore } from '@/hooks/use-cookie-store';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 const PERKS = [
   {
@@ -66,6 +70,8 @@ function PerkPoint({
 }
 
 export default function SupporterPrompt() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isSelfHosted, isDemo } = useAppContext();
   const [supporterPromptClosed, setSupporterPromptClosed] = useCookieStore(
     'supporter-prompt-closed',
@@ -82,7 +88,7 @@ export default function SupporterPrompt() {
       onClose={() => setSupporterPromptClosed(true)}
       show={!supporterPromptClosed}
       subtitle="Help us build the future of open analytics"
-      title="Support OpenPanel"
+      title={translateUi('Support OpenPanel')}
     >
       <div className="col gap-3 px-6">
         {PERKS.map((perk) => (
@@ -100,17 +106,17 @@ export default function SupporterPrompt() {
           className="w-full"
           href="https://buy.polar.sh/polar_cl_Az1CruNFzQB2bYdMOZmGHqTevW317knWqV44W1FqZmV"
         >
-          Become a Supporter
+          <DashboardText i18nKey={'Become a Supporter'} />{' '}
         </LinkButton>
         <p className="mt-4 text-center text-muted-foreground text-xs">
-          Starting at $20/month • Cancel anytime •{' '}
+          <DashboardText i18nKey={'Starting at $20/month • Cancel anytime •'} />{' '}
           <a
             className="text-primary underline-offset-4 hover:underline"
             href="https://openpanel.dev/supporter"
             rel="noreferrer"
             target="_blank"
           >
-            Learn more
+            <DashboardText i18nKey={'Learn more'} />{' '}
           </a>
         </p>
       </div>

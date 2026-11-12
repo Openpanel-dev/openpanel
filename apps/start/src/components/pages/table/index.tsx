@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -43,6 +44,8 @@ interface PagesTableProps {
 }
 
 export function PagesTable({ projectId }: PagesTableProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { range, interval, startDate, endDate } = useOverviewOptions();
   const { debouncedSearch, setSearch, search } = useSearchQueryState();
@@ -186,7 +189,7 @@ export function PagesTable({ projectId }: PagesTableProps) {
       <DataTableToolbarContainer>
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search pages"
+          placeholder={translateUi('Search pages')}
           value={search ?? ''}
         />
         <div className="flex items-center gap-2">

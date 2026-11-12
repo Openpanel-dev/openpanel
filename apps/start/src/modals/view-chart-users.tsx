@@ -16,6 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { IChartData } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -106,7 +110,9 @@ function ProfileList({ profiles }: { profiles: any[] }) {
   if (profiles.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">No users found</div>
+        <div className="text-muted-foreground">
+          <DashboardText i18nKey={'No users found'} />
+        </div>
       </div>
     );
   }
@@ -160,7 +166,9 @@ function ProfileListState({
   if (query.isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-muted-foreground">Loading users...</div>
+        <div className="text-muted-foreground">
+          <DashboardText i18nKey={'Loading users...'} />
+        </div>
       </div>
     );
   }
@@ -168,10 +176,15 @@ function ProfileListState({
   if (query.isError) {
     return (
       <div className="col items-center justify-center gap-1 py-8 text-center">
-        <div className="font-medium">Could not load users</div>
+        <div className="font-medium">
+          <DashboardText i18nKey={'Could not load users'} />
+        </div>
         <div className="text-muted-foreground text-sm">
-          Something went wrong running this query. Try again, or adjust the
-          report.
+          <DashboardText
+            i18nKey={
+              'Something went wrong running this query. Try again, or adjust the report.'
+            }
+          />{' '}
         </div>
       </div>
     );
@@ -187,6 +200,8 @@ interface ChartUsersViewProps {
 }
 
 function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const [selectedSerieId, setSelectedSerieId] = useState<string | null>(
     report.series[0]?.id || null
@@ -252,7 +267,7 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
         <div>
           <ModalHeader
             text={`Users who performed actions on ${new Date(date).toLocaleDateString()}`}
-            title="View Users"
+            title={translateUi('View Users')}
           />
           {report.series.length > 0 && (
             <div className="col md:row gap-2">
@@ -261,7 +276,7 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
                 value={selectedSerieId || ''}
               >
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Select Serie" />
+                  <SelectValue placeholder={translateUi('Select Serie')} />
                 </SelectTrigger>
                 <SelectContent>
                   {report.series.map((serie) => (
@@ -280,7 +295,9 @@ function ChartUsersView({ chartData, report, date }: ChartUsersViewProps) {
                   value={selectedBreakdownId || ''}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select Breakdown" />
+                    <SelectValue
+                      placeholder={translateUi('Select Breakdown')}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {matchingChartSeries
@@ -321,6 +338,8 @@ function FunnelUsersView({
   stepIndex,
   breakdownValues,
 }: FunnelUsersViewProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const [showDropoffs, setShowDropoffs] = useState(false);
 
@@ -370,7 +389,7 @@ function FunnelUsersView({
                 ? `Users who dropped off after step ${stepIndex + 1} of ${report.series.length}`
                 : `Users who completed step ${stepIndex + 1} of ${report.series.length} in the funnel`
             }
-            title="View Users"
+            title={translateUi('View Users')}
           />
           {!isLastStep && (
             <div className="flex items-center gap-2">
@@ -384,7 +403,7 @@ function FunnelUsersView({
                 onClick={() => setShowDropoffs(false)}
                 type="button"
               >
-                Completed
+                <DashboardText i18nKey={'Completed'} />{' '}
               </button>
               <button
                 className={cn(
@@ -396,7 +415,7 @@ function FunnelUsersView({
                 onClick={() => setShowDropoffs(true)}
                 type="button"
               >
-                Dropped Off
+                <DashboardText i18nKey={'Dropped Off'} />{' '}
               </button>
             </div>
           )}

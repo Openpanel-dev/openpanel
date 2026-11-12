@@ -10,6 +10,10 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { InputDateTime } from '@/components/ui/input-date-time';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
@@ -32,6 +36,8 @@ export default function EditReference({
   description,
   date,
 }: EditReferenceProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { handleSubmit, register, control, formState, reset } = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -63,28 +69,31 @@ export default function EditReference({
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit reference" />
+      <ModalHeader title={translateUi('Edit reference')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((values) => {
           mutation.mutate(values);
         })}
       >
-        <InputWithLabel label="Title" {...register('title')} />
-        <InputWithLabel label="Description" {...register('description')} />
+        <InputWithLabel label={translateUi('Title')} {...register('title')} />
+        <InputWithLabel
+          label={translateUi('Description')}
+          {...register('description')}
+        />
         <Controller
           control={control}
           name="datetime"
           render={({ field }) => (
-            <InputDateTime {...field} label="Date and time" />
+            <InputDateTime {...field} label={translateUi('Date and time')} />
           )}
         />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Update
+            <DashboardText i18nKey={'Update'} />{' '}
           </Button>
         </DialogFooter>
       </form>

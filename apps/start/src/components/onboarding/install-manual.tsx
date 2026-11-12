@@ -8,6 +8,7 @@ import {
   usesClientSecret,
 } from './install-snippets';
 import Syntax from '@/components/syntax';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { trackFunnel } from '@/utils/funnel-tracking';
 
 type ProjectType = 'website' | 'app' | 'backend';
@@ -41,7 +42,7 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
     <div className="col gap-6">
       <div className="row flex-wrap items-center gap-3">
         <span className="font-medium" id={frameworkLabelId}>
-          Framework
+          <DashboardText i18nKey={'Framework'} />{' '}
         </span>
         <FrameworkPicker
           labelId={frameworkLabelId}
@@ -77,15 +78,21 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
         ))}
         {snippets.length === 0 && (
           <p className="text-muted-foreground">
-            {framework.name} is a community SDK. Its guide covers installation
-            and usage.
+            {framework.name}{' '}
+            <DashboardText
+              i18nKey={
+                'is a community SDK. Its guide covers installation and usage.'
+              }
+            />{' '}
           </p>
         )}
         {secretMissing && (
           <p className="rounded-lg bg-def-200 p-3 text-muted-foreground text-sm dark:bg-def-300">
-            The client secret is only shown once, right after the client is
-            created. Replace YOUR_CLIENT_SECRET with the one you saved, or
-            create a new client under Settings → Clients.
+            <DashboardText
+              i18nKey={
+                'The client secret is only shown once, right after the client is created. Replace YOUR_CLIENT_SECRET with the one you saved, or create a new client under Settings → Clients.'
+              }
+            />{' '}
           </p>
         )}
         <a
@@ -100,8 +107,8 @@ export function InstallManual({ projectId, projectTypes, context }: Props) {
           rel="noreferrer"
           target="_blank"
         >
-          Full {framework.name} guide
-          <ExternalLinkIcon size={14} />
+          <DashboardText i18nKey={'Full'} /> {framework.name}{' '}
+          <DashboardText i18nKey={'guide'} /> <ExternalLinkIcon size={14} />
         </a>
       </div>
     </div>

@@ -6,6 +6,10 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { OverviewMetricCard } from '@/components/overview/overview-metric-card';
 import { MostEvents } from '@/components/profiles/most-events';
 import { PopularRoutes } from '@/components/profiles/popular-routes';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -42,6 +46,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId, cohortId } = Route.useParams();
   const trpc = useTRPC();
 
@@ -72,8 +78,11 @@ function Component() {
         <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-blue-900 text-sm">
           <InfoIcon className="size-4 shrink-0" />
           <span>
-            This cohort hasn&apos;t been computed yet. Membership will appear
-            within a minute.
+            <DashboardText
+              i18nKey={
+                "This cohort hasn't been computed yet. Membership will appear within a minute."
+              }
+            />{' '}
           </span>
         </div>
       )}
@@ -82,7 +91,11 @@ function Component() {
         <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900 text-sm">
           <InfoIcon className="size-4 shrink-0" />
           <span>
-            Capped at 10,000 members — consider narrowing the criteria.
+            <DashboardText
+              i18nKey={
+                'Capped at 10,000 members — consider narrowing the criteria.'
+              }
+            />{' '}
           </span>
         </div>
       )}
@@ -92,7 +105,7 @@ function Component() {
           data={[]}
           id="profileCount"
           isLoading={false}
-          label="Members"
+          label={translateUi('Members')}
           metric={{ current: c.profileCount, previous: null }}
           unit=""
         />
@@ -100,7 +113,7 @@ function Component() {
           data={[]}
           id="lastComputedAt"
           isLoading={false}
-          label="Last computed"
+          label={translateUi('Last computed')}
           metric={{
             current: c.lastComputedAt
               ? new Date(c.lastComputedAt).getTime()
@@ -113,7 +126,7 @@ function Component() {
           data={[]}
           id="createdAt"
           isLoading={false}
-          label="Created"
+          label={translateUi('Created')}
           metric={{
             current: new Date(c.createdAt).getTime(),
             previous: null,

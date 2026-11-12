@@ -4,6 +4,7 @@ import { CheckIcon, PartyPopperIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Ping } from '@/components/ping';
 import useWS from '@/hooks/use-ws';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { timeAgo } from '@/utils/date';
@@ -122,7 +123,8 @@ export function FirstEventStatus({
           ))}
           {events.length > SHOWN_EVENTS && (
             <li className="text-muted-foreground">
-              and {events.length - SHOWN_EVENTS} more
+              <DashboardText i18nKey={'and'} /> {events.length - SHOWN_EVENTS}{' '}
+              <DashboardText i18nKey={'more'} />{' '}
             </li>
           )}
         </ul>

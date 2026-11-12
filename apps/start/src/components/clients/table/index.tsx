@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { DataTableToolbar } from '@/components/ui/data-table/data-table-toolbar';
 import { useTable } from '@/components/ui/data-table/use-table';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -32,7 +33,7 @@ export const ClientsTable = ({ query }: Props) => {
           onClick={() => pushModal('AddClient')}
           responsive
         >
-          Create client
+          <DashboardText i18nKey={'Create client'} />{' '}
         </Button>
       </DataTableToolbar>
       <DataTable error={isError} loading={isLoading} table={table} />

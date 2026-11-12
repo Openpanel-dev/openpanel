@@ -5,6 +5,7 @@ import {
 import { Link } from '@tanstack/react-router';
 import { GaugeIcon } from 'lucide-react';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 const UPGRADABLE_TIERS: ReadonlySet<ChatLimitError['tier']> = new Set([
   'trial',
@@ -49,7 +50,7 @@ export function ChatLimitNotice({ limit }: { limit: ChatLimitError }) {
               params={{ organizationId }}
               to="/$organizationId/billing"
             >
-              Upgrade for a higher limit
+              <DashboardText i18nKey={'Upgrade for a higher limit'} />{' '}
             </Link>
           </>
         )}

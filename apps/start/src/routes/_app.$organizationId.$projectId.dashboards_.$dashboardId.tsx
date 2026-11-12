@@ -49,6 +49,10 @@ import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
 import { useTableFilters } from '@/hooks/use-table-filters';
 import { useTileViews } from '@/hooks/use-tile-views';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -107,6 +111,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const { organizationId, dashboardId, projectId } = Route.useParams();
   const trpc = useTRPC();
@@ -385,7 +391,7 @@ function Component() {
                 <Input
                   className="w-[180px] pl-8 sm:w-[220px]"
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search reports..."
+                  placeholder={translateUi('Search reports...')}
                   type="search"
                   value={search}
                 />
@@ -399,8 +405,12 @@ function Component() {
               search={{ dashboardId }}
               to={'/$organizationId/$projectId/reports'}
             >
-              <span className="max-sm:hidden">Create report</span>
-              <span className="sm:hidden">Report</span>
+              <span className="max-sm:hidden">
+                <DashboardText i18nKey={'Create report'} />
+              </span>
+              <span className="sm:hidden">
+                <DashboardText i18nKey={'Report'} />
+              </span>
             </LinkButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -416,7 +426,7 @@ function Component() {
                     }
                   >
                     <ShareIcon className="mr-2 size-4" />
-                    Share dashboard
+                    <DashboardText i18nKey={'Share dashboard'} />{' '}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
@@ -429,7 +439,7 @@ function Component() {
                     }
                   >
                     <RotateCcw className="mr-2 size-4" />
-                    Reset layout
+                    <DashboardText i18nKey={'Reset layout'} />{' '}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     disabled={dashboardDuplication.isPending}
@@ -438,7 +448,7 @@ function Component() {
                     }
                   >
                     <CopyIcon className="mr-2 size-4" />
-                    Duplicate dashboard
+                    <DashboardText i18nKey={'Duplicate dashboard'} />{' '}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() =>
@@ -452,7 +462,7 @@ function Component() {
                     variant="destructive"
                   >
                     <TrashIcon className="mr-2 size-4" />
-                    Delete dashboard
+                    <DashboardText i18nKey={'Delete dashboard'} />{' '}
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
@@ -460,7 +470,7 @@ function Component() {
           </>
         }
         className="mb-4"
-        description="View and manage your reports"
+        description={translateUi('View and manage your reports')}
         title={dashboard.name}
       />
 
@@ -468,7 +478,7 @@ function Component() {
         <div className="row mb-4 flex-wrap items-center gap-2">
           <TableFilterPills
             categories={DASHBOARD_FILTER_CATEGORIES}
-            title="Dashboard filters"
+            title={translateUi('Dashboard filters')}
             urlKey={DASHBOARD_FILTERS_URL_KEY}
           />
           {filtersChanged && (
@@ -478,7 +488,7 @@ function Component() {
                 size="sm"
                 variant="ghost"
               >
-                Reset
+                <DashboardText i18nKey={'Reset'} />{' '}
               </Button>
               <Button
                 icon={SaveIcon}
@@ -491,7 +501,7 @@ function Component() {
                 }
                 size="sm"
               >
-                Save filters
+                <DashboardText i18nKey={'Save filters'} />{' '}
               </Button>
             </div>
           )}
@@ -500,9 +510,11 @@ function Component() {
 
       {reports.length === 0 ? (
         <EmptyState
-          description="Reports you save to this dashboard show up here as tiles you can move and resize."
+          description={translateUi(
+            'Reports you save to this dashboard show up here as tiles you can move and resize.'
+          )}
           icon={ChartLineIcon}
-          title="No reports on this dashboard yet"
+          title={translateUi('No reports on this dashboard yet')}
         >
           <LinkButton
             from={Route.fullPath}
@@ -510,7 +522,7 @@ function Component() {
             search={{ dashboardId }}
             to={'/$organizationId/$projectId/reports'}
           >
-            Create report
+            <DashboardText i18nKey={'Create report'} />{' '}
           </LinkButton>
         </EmptyState>
       ) : reportsQuery.isLoading ? (
@@ -526,10 +538,10 @@ function Component() {
         <EmptyState
           description={`Nothing on this dashboard matches “${search}”.`}
           icon={SearchIcon}
-          title="No matching reports"
+          title={translateUi('No matching reports')}
         >
           <Button onClick={() => setSearch('')} variant="outline">
-            Clear search
+            <DashboardText i18nKey={'Clear search'} />{' '}
           </Button>
         </EmptyState>
       ) : (

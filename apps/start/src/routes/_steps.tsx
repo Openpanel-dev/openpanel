@@ -7,6 +7,10 @@ import {
 } from '@/components/onboarding/onboarding-shell';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/use-logout';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
@@ -46,7 +50,7 @@ function OnboardingLayout() {
           size="sm"
           variant="ghost"
         >
-          Sign out
+          <DashboardText i18nKey={'Sign out'} />{' '}
         </Button>
       </header>
       <main className={cn('mx-auto w-full px-6 pt-8 pb-24', width)}>
@@ -58,11 +62,17 @@ function OnboardingLayout() {
 }
 
 function StepIndicator({ current }: { current: number }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const currentIndex = current - 1;
   return (
-    <nav aria-label="Onboarding progress" className="col mb-8 gap-3">
+    <nav
+      aria-label={translateUi('Onboarding progress')}
+      className="col mb-8 gap-3"
+    >
       <div className="text-muted-foreground text-sm tabular-nums">
-        Step {current} of {STEP_NAMES.length}
+        <DashboardText i18nKey={'Step'} /> {current}{' '}
+        <DashboardText i18nKey={'of'} /> {STEP_NAMES.length}
       </div>
       <ol className="row gap-2">
         {STEP_NAMES.map((name, index) => (

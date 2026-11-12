@@ -7,6 +7,10 @@ import { Button } from '@/components/ui/button';
 import { fieldSurface } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { useDispatch } from '@/redux';
 import { cn } from '@/utils/cn';
@@ -36,6 +40,8 @@ function useBusyStatus(busy: boolean): string | null {
 
 /** The empty editor: say what you want and the model drafts a starting point from the project's events. */
 export function ReportPrompt() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const dispatch = useDispatch();
   const trpc = useTRPC();
@@ -75,10 +81,15 @@ export function ReportPrompt() {
   return (
     <div className="card flex flex-col items-center px-4 py-16 md:py-24">
       <div className="max-w-lg space-y-1 text-center">
-        <h2 className="font-semibold text-xl">Describe your report</h2>
+        <h2 className="font-semibold text-xl">
+          <DashboardText i18nKey={'Describe your report'} />
+        </h2>
         <p className="font-medium text-base text-muted-foreground">
-          Say what you want to see and we'll generate a good starting point. You
-          can adjust everything afterwards.
+          <DashboardText
+            i18nKey={
+              "Say what you want to see and we'll generate a good starting point. You can adjust everything afterwards."
+            }
+          />{' '}
         </p>
       </div>
 
@@ -91,7 +102,7 @@ export function ReportPrompt() {
       >
         <div className={cn(fieldSurface, 'rounded-2xl', busy && 'opacity-80')}>
           <textarea
-            aria-label="Describe the report"
+            aria-label={translateUi('Describe the report')}
             className="block w-full resize-none bg-transparent px-4 pt-4 pb-2 text-base text-foreground outline-none placeholder:text-muted-foreground/70"
             disabled={busy}
             onChange={(event) => setText(event.target.value)}
@@ -101,7 +112,9 @@ export function ReportPrompt() {
                 submit();
               }
             }}
-            placeholder="Unique visitors per day for the last 30 days, split by device"
+            placeholder={translateUi(
+              'Unique visitors per day for the last 30 days, split by device'
+            )}
             ref={textareaRef}
             rows={3}
             value={text}
@@ -114,7 +127,7 @@ export function ReportPrompt() {
               {status}
             </span>
             <Button
-              aria-label="Generate report"
+              aria-label={translateUi('Generate report')}
               className="size-8 shrink-0 rounded-full"
               disabled={!text.trim() || busy}
               size="icon"

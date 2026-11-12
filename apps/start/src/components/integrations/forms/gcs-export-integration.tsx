@@ -15,6 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -27,6 +31,8 @@ export function GCSExportIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
@@ -93,41 +99,45 @@ export function GCSExportIntegrationForm({
       onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. Production GCS Export"
+        label={translateUi('Name')}
+        placeholder={translateUi('Eg. Production GCS Export')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
 
       <div className="grid grid-cols-2 gap-4">
         <InputWithLabel
-          label="GCS Bucket"
-          placeholder="my-analytics-bucket"
+          label={translateUi('GCS Bucket')}
+          placeholder={translateUi('my-analytics-bucket')}
           {...form.register('config.bucket')}
           error={path(['config', 'bucket', 'message'], form.formState.errors)}
         />
         <InputWithLabel
-          label="Prefix"
-          placeholder="openpanel-exports"
+          label={translateUi('Prefix')}
+          placeholder={translateUi('openpanel-exports')}
           {...form.register('config.prefix')}
           error={path(['config', 'prefix', 'message'], form.formState.errors)}
         />
       </div>
 
       <div className="col gap-1.5">
-        <label className="font-medium text-sm">Format</label>
+        <label className="font-medium text-sm">
+          <DashboardText i18nKey={'Format'} />
+        </label>
         <Controller
           control={form.control}
           name="config.format"
           render={({ field }) => (
             <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select format" />
+                <SelectValue placeholder={translateUi('Select format')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="jsonl_gzip">JSONL (gzip)</SelectItem>
+                <SelectItem value="jsonl_gzip">
+                  <DashboardText i18nKey={'JSONL (gzip)'} />
+                </SelectItem>
                 <SelectItem disabled value="parquet">
-                  Parquet (coming soon)
+                  <DashboardText i18nKey={'Parquet (coming soon)'} />{' '}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -137,7 +147,7 @@ export function GCSExportIntegrationForm({
 
       <div className="col gap-1.5">
         <label className="font-medium text-sm">
-          Service Account Key (JSON)
+          <DashboardText i18nKey={'Service Account Key (JSON)'} />{' '}
         </label>
         <textarea
           className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -164,9 +174,17 @@ export function GCSExportIntegrationForm({
           </p>
         )}
         <p className="text-muted-foreground text-xs">
-          Paste the contents of your GCS service account JSON key file (a
-          document with <code>"type": "service_account"</code>). The service
-          account needs write access to the specified bucket.
+          <DashboardText
+            i18nKey={
+              'Paste the contents of your GCS service account JSON key file (a document with'
+            }
+          />{' '}
+          <code>"type": "service_account"</code>
+          <DashboardText
+            i18nKey={
+              '). The service account needs write access to the specified bucket.'
+            }
+          />{' '}
         </p>
       </div>
 

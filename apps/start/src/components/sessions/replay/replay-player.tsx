@@ -14,6 +14,7 @@ import {
   useReplayContext,
 } from './replay-context';
 import { getRecordedDimensions, type ReplayRecordEvent } from './replay-utils';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 import 'rrweb-player/dist/style.css';
@@ -288,7 +289,7 @@ export function ReplayPlayer({
   if (importError) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground text-sm">
-        Failed to load replay player.
+        <DashboardText i18nKey={'Failed to load replay player.'} />{' '}
       </div>
     );
   }

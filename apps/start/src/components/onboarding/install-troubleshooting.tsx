@@ -19,6 +19,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
@@ -62,15 +66,20 @@ export function InstallTroubleshootingDialog({
       }
     >
       <DialogTrigger className="text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline">
-        I'm not receiving events
+        <DashboardText i18nKey={"I'm not receiving events"} />{' '}
       </DialogTrigger>
       <DialogPortal>
         <DialogContent className="sm:max-w-2xl" showCloseButton>
           <DialogHeader>
-            <DialogTitle>Not seeing events?</DialogTitle>
+            <DialogTitle>
+              <DashboardText i18nKey={'Not seeing events?'} />
+            </DialogTitle>
             <DialogDescription>
-              The checks that solve most installs, in the order they usually
-              apply.
+              <DashboardText
+                i18nKey={
+                  'The checks that solve most installs, in the order they usually apply.'
+                }
+              />{' '}
             </DialogDescription>
           </DialogHeader>
           <InstallTroubleshooting context={context} project={project} />
@@ -88,6 +97,8 @@ export function InstallTroubleshooting({
   project: IServiceProjectWithClients;
   context: SnippetContext;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const updateProject = useMutation(
@@ -109,10 +120,15 @@ export function InstallTroubleshooting({
     <ol className="col gap-6">
       <li className="row flex-wrap items-center justify-between gap-3 rounded-xl bg-def-200 p-4 dark:bg-def-300">
         <div className="col gap-0.5">
-          <div className="font-medium">Let the assistant find it</div>
+          <div className="font-medium">
+            <DashboardText i18nKey={'Let the assistant find it'} />
+          </div>
           <p className="text-muted-foreground text-sm">
-            It fetches your site, reads the snippet and checks it against this
-            project's keys and allowed domains.
+            <DashboardText
+              i18nKey={
+                "It fetches your site, reads the snippet and checks it against this project's keys and allowed domains."
+              }
+            />{' '}
           </p>
         </div>
         <Link
@@ -132,33 +148,44 @@ export function InstallTroubleshooting({
           to="/$organizationId/$projectId/chat"
         >
           <SparklesIcon className="mr-2 size-4" />
-          Diagnose with the assistant
+          <DashboardText i18nKey={'Diagnose with the assistant'} />{' '}
         </Link>
       </li>
       <li className="col gap-2">
         <div className="font-medium">
-          1. Did the page or app actually load with the snippet?
+          <DashboardText
+            i18nKey={'1. Did the page or app actually load with the snippet?'}
+          />{' '}
         </div>
         <p className="text-muted-foreground">
-          Events are sent when a screen is viewed. Deploy or run the code, then
-          open it once and reload this page. Ad blockers can also stop the
-          request; try an incognito window without extensions.
+          <DashboardText
+            i18nKey={
+              'Events are sent when a screen is viewed. Deploy or run the code, then open it once and reload this page. Ad blockers can also stop the request; try an incognito window without extensions.'
+            }
+          />{' '}
         </p>
       </li>
       <li className="col gap-3">
         <div className="font-medium">
-          2. Is the client ID the one for this project?
+          <DashboardText
+            i18nKey={'2. Is the client ID the one for this project?'}
+          />{' '}
         </div>
-        <CopyInput label="Client ID" value={context.clientId} />
+        <CopyInput label={translateUi('Client ID')} value={context.clientId} />
       </li>
       {isWebsite && (
         <li className="col gap-3">
-          <div className="font-medium">3. Is your domain allowed?</div>
+          <div className="font-medium">
+            <DashboardText i18nKey={'3. Is your domain allowed?'} />
+          </div>
           <p className="text-muted-foreground">
-            Browser events are accepted only from these origins. Add every
-            domain your site runs on, including localhost while testing.
+            <DashboardText
+              i18nKey={
+                'Browser events are accepted only from these origins. Add every domain your site runs on, including localhost while testing.'
+              }
+            />{' '}
           </p>
-          <WithLabel label="Allowed domains">
+          <WithLabel label={translateUi('Allowed domains')}>
             <TagInput
               onChange={(values) => {
                 const cors = normalizeOrigins(values);
@@ -169,7 +196,7 @@ export function InstallTroubleshooting({
                 });
                 updateProject.mutate({ id: project.id, cors });
               }}
-              placeholder="Add a domain and press Enter"
+              placeholder={translateUi('Add a domain and press Enter')}
               renderTag={(tag) => (tag === '*' ? 'Any domain' : tag)}
               value={project.cors ?? []}
             />
@@ -178,11 +205,17 @@ export function InstallTroubleshooting({
       )}
       <li className="col gap-3">
         <div className="font-medium">
-          {isWebsite ? '4.' : '3.'} Send a test event from your terminal
+          {isWebsite ? '4.' : '3.'}{' '}
+          <DashboardText
+            i18nKey={'Send a test event from your terminal'}
+          />{' '}
         </div>
         <p className="text-muted-foreground">
-          This bypasses your code entirely. If it shows up above, the project is
-          fine and the problem is in the integration.
+          <DashboardText
+            i18nKey={
+              'This bypasses your code entirely. If it shows up above, the project is fine and the problem is in the integration.'
+            }
+          />{' '}
         </p>
         <Syntax
           code={curlSnippet(context, TEST_EVENT_NAME)}
@@ -196,7 +229,7 @@ export function InstallTroubleshooting({
         />
       </li>
       <li className="text-muted-foreground">
-        Still stuck? Write to{' '}
+        <DashboardText i18nKey={'Still stuck? Write to'} />{' '}
         <a
           className="underline"
           href="mailto:hello@openpanel.dev"
@@ -209,7 +242,7 @@ export function InstallTroubleshooting({
         >
           hello@openpanel.dev
         </a>{' '}
-        or join the{' '}
+        <DashboardText i18nKey={'or join the'} />{' '}
         <a
           className="underline"
           href="https://go.openpanel.dev/discord"
@@ -222,7 +255,7 @@ export function InstallTroubleshooting({
           rel="noreferrer"
           target="_blank"
         >
-          Discord
+          <DashboardText i18nKey={'Discord'} />{' '}
         </a>
         . We answer quickly.
       </li>

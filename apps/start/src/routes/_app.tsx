@@ -12,6 +12,10 @@ import { EventDrawer } from '@/components/events/event-drawer';
 import { Sidebar } from '@/components/sidebar';
 import { buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { isSignedIn } from '@/utils/route-session';
 
@@ -25,15 +29,19 @@ export const Route = createFileRoute('/_app')({
 });
 
 function AppLayout() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isMaintenance } = useAppContext();
   useChatShortcut();
 
   if (isMaintenance) {
     return (
       <EmptyState
-        description="We're doing maintenance right now. Check back in a little while."
+        description={translateUi(
+          "We're doing maintenance right now. Check back in a little while."
+        )}
         icon={ConstructionIcon}
-        title="Maintenance mode"
+        title={translateUi('Maintenance mode')}
         variant="page"
       >
         <a
@@ -42,7 +50,7 @@ function AppLayout() {
           rel="noopener noreferrer"
           target="_blank"
         >
-          Check out our status page
+          <DashboardText i18nKey={'Check out our status page'} />{' '}
         </a>
       </EmptyState>
     );

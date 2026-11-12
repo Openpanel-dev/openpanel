@@ -1,6 +1,7 @@
 import { ChevronDownIcon, WrenchIcon } from 'lucide-react';
 import { useState } from 'react';
 import Syntax from '@/components/syntax';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const COLLAPSE_AFTER_CHARS = 1500;
@@ -104,6 +105,8 @@ function ToolBlock({
 }
 
 function Part({ part }: { part: unknown }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   if (typeof part === 'string') {
     return <LongText text={part} />;
   }
@@ -126,7 +129,7 @@ function Part({ part }: { part: unknown }) {
     case 'function':
       return (
         <ToolBlock
-          label="Tool call"
+          label={translateUi('Tool call')}
           name={
             record.toolName ??
             record.name ??
@@ -141,7 +144,7 @@ function Part({ part }: { part: unknown }) {
     case 'tool-result':
       return (
         <ToolBlock
-          label="Tool result"
+          label={translateUi('Tool result')}
           name={record.toolName}
           payload={record.output ?? record.result}
         />

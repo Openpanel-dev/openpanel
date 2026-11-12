@@ -15,6 +15,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -46,6 +50,8 @@ export function S3ExportIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
@@ -132,22 +138,22 @@ export function S3ExportIntegrationForm({
       onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. Production S3 Export"
+        label={translateUi('Name')}
+        placeholder={translateUi('Eg. Production S3 Export')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
 
       <div className="grid grid-cols-2 gap-4">
         <InputWithLabel
-          label="S3 Bucket"
-          placeholder="my-analytics-bucket"
+          label={translateUi('S3 Bucket')}
+          placeholder={translateUi('my-analytics-bucket')}
           {...form.register('config.bucket')}
           error={path(['config', 'bucket', 'message'], form.formState.errors)}
         />
         <InputWithLabel
-          label="Prefix"
-          placeholder="openpanel-exports"
+          label={translateUi('Prefix')}
+          placeholder={translateUi('openpanel-exports')}
           {...form.register('config.prefix')}
           error={path(['config', 'prefix', 'message'], form.formState.errors)}
         />
@@ -155,14 +161,16 @@ export function S3ExportIntegrationForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col gap-1.5">
-          <label className="font-medium text-sm">Region</label>
+          <label className="font-medium text-sm">
+            <DashboardText i18nKey={'Region'} />
+          </label>
           <Controller
             control={form.control}
             name="config.region"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select region" />
+                  <SelectValue placeholder={translateUi('Select region')} />
                 </SelectTrigger>
                 <SelectContent>
                   {AWS_REGIONS.map((region) => (
@@ -177,19 +185,23 @@ export function S3ExportIntegrationForm({
         </div>
 
         <div className="col gap-1.5">
-          <label className="font-medium text-sm">Format</label>
+          <label className="font-medium text-sm">
+            <DashboardText i18nKey={'Format'} />
+          </label>
           <Controller
             control={form.control}
             name="config.format"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select format" />
+                  <SelectValue placeholder={translateUi('Select format')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="jsonl_gzip">JSONL (gzip)</SelectItem>
+                  <SelectItem value="jsonl_gzip">
+                    <DashboardText i18nKey={'JSONL (gzip)'} />
+                  </SelectItem>
                   <SelectItem disabled value="parquet">
-                    Parquet (coming soon)
+                    <DashboardText i18nKey={'Parquet (coming soon)'} />{' '}
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -199,19 +211,27 @@ export function S3ExportIntegrationForm({
       </div>
 
       <div className="col gap-1.5">
-        <label className="font-medium text-sm">Authentication Mode</label>
+        <label className="font-medium text-sm">
+          <DashboardText i18nKey={'Authentication Mode'} />
+        </label>
         <Controller
           control={form.control}
           name="config.authMode"
           render={({ field }) => (
             <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger>
-                <SelectValue placeholder="Select authentication mode" />
+                <SelectValue
+                  placeholder={translateUi('Select authentication mode')}
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="iam_role">IAM Role (AWS)</SelectItem>
+                <SelectItem value="iam_role">
+                  <DashboardText i18nKey={'IAM Role (AWS)'} />
+                </SelectItem>
                 <SelectItem value="access_key">
-                  Access Keys (R2, MinIO, Spaces)
+                  <DashboardText
+                    i18nKey={'Access Keys (R2, MinIO, Spaces)'}
+                  />{' '}
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -227,7 +247,7 @@ export function S3ExportIntegrationForm({
       {authMode === 'iam_role' && (
         <>
           <InputWithLabel
-            label="IAM Role ARN"
+            label={translateUi('IAM Role ARN')}
             placeholder="arn:aws:iam::123456789012:role/OpenPanelExportRole"
             {...form.register('config.roleArn')}
             error={path(
@@ -237,8 +257,10 @@ export function S3ExportIntegrationForm({
           />
 
           <InputWithLabel
-            label="External ID (optional)"
-            placeholder="Optional external ID for cross-account access"
+            label={translateUi('External ID (optional)')}
+            placeholder={translateUi(
+              'Optional external ID for cross-account access'
+            )}
             {...form.register('config.externalId')}
             error={path(
               ['config', 'externalId', 'message'],
@@ -251,7 +273,7 @@ export function S3ExportIntegrationForm({
       {authMode === 'access_key' && (
         <>
           <InputWithLabel
-            label="Endpoint URL (optional)"
+            label={translateUi('Endpoint URL (optional)')}
             placeholder="https://your-account-id.r2.cloudflarestorage.com"
             {...form.register('config.endpoint')}
             error={path(
@@ -260,13 +282,15 @@ export function S3ExportIntegrationForm({
             )}
           />
           <p className="-mt-2 text-muted-foreground text-xs">
-            Required for R2, MinIO, etc. Leave empty for AWS S3.
+            <DashboardText
+              i18nKey={'Required for R2, MinIO, etc. Leave empty for AWS S3.'}
+            />{' '}
           </p>
 
           <div className="grid grid-cols-2 gap-4">
             <InputWithLabel
-              label="Access Key ID"
-              placeholder="AKIAIOSFODNN7EXAMPLE"
+              label={translateUi('Access Key ID')}
+              placeholder={translateUi('AKIAIOSFODNN7EXAMPLE')}
               {...form.register('config.accessKeyId')}
               error={path(
                 ['config', 'accessKeyId', 'message'],
@@ -274,7 +298,7 @@ export function S3ExportIntegrationForm({
               )}
             />
             <InputWithLabel
-              label="Secret Access Key"
+              label={translateUi('Secret Access Key')}
               placeholder={
                 defaultValues?.id
                   ? 'Leave blank to keep the current key'
@@ -295,19 +319,27 @@ export function S3ExportIntegrationForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div className="col gap-1.5">
-          <label className="font-medium text-sm">Encryption</label>
+          <label className="font-medium text-sm">
+            <DashboardText i18nKey={'Encryption'} />
+          </label>
           <Controller
             control={form.control}
             name="config.encryption"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select encryption" />
+                  <SelectValue placeholder={translateUi('Select encryption')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SSE-S3">SSE-S3 (AES-256)</SelectItem>
-                  <SelectItem value="SSE-KMS">SSE-KMS</SelectItem>
-                  <SelectItem value="none">None</SelectItem>
+                  <SelectItem value="SSE-S3">
+                    <DashboardText i18nKey={'SSE-S3 (AES-256)'} />
+                  </SelectItem>
+                  <SelectItem value="SSE-KMS">
+                    <DashboardText i18nKey={'SSE-KMS'} />
+                  </SelectItem>
+                  <SelectItem value="none">
+                    <DashboardText i18nKey={'None'} />
+                  </SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -316,8 +348,8 @@ export function S3ExportIntegrationForm({
 
         {encryption === 'SSE-KMS' && (
           <InputWithLabel
-            label="KMS Key ID"
-            placeholder="arn:aws:kms:us-east-1:..."
+            label={translateUi('KMS Key ID')}
+            placeholder={translateUi('arn:aws:kms:us-east-1:...')}
             {...form.register('config.kmsKeyId')}
             error={path(
               ['config', 'kmsKeyId', 'message'],

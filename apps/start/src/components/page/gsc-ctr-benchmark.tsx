@@ -12,6 +12,7 @@ import {
 } from '@/components/charts/op-tooltip';
 import { YAxis } from '@/components/charts/y-axis';
 import { Skeleton } from '@/components/skeleton';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 
 // Industry average CTR by position (Google organic)
@@ -130,7 +131,9 @@ export function GscCtrBenchmark({ data, isLoading }: GscCtrBenchmarkProps) {
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">CTR vs Position</h3>
+        <h3 className="font-medium text-sm">
+          <DashboardText i18nKey={'CTR vs Position'} />
+        </h3>
         <OPLineChartLegend series={legend} />
       </div>
       {isLoading ? (

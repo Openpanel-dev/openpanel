@@ -6,11 +6,17 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const CONFIRMATION = 'DELETE';
 
 export default function ConfirmDeleteAccount() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const [confirmation, setConfirmation] = useState('');
 
@@ -31,11 +37,13 @@ export default function ConfirmDeleteAccount() {
     <ModalContent>
       <ModalHeader
         text="Your account and all of your personal data will be permanently deleted. Organizations you created that have no other admin will also be removed, along with their projects and events. This cannot be undone."
-        title="Delete account"
+        title={translateUi('Delete account')}
       />
       <div className="col gap-2">
         <label className="font-medium text-sm" htmlFor="confirm-delete-account">
-          Type <span className="font-bold">{CONFIRMATION}</span> to confirm
+          <DashboardText i18nKey={'Type'} />{' '}
+          <span className="font-bold">{CONFIRMATION}</span>{' '}
+          <DashboardText i18nKey={'to confirm'} />{' '}
         </label>
         <Input
           autoComplete="off"
@@ -48,7 +56,7 @@ export default function ConfirmDeleteAccount() {
       </div>
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           disabled={!canDelete}
@@ -56,7 +64,7 @@ export default function ConfirmDeleteAccount() {
           onClick={() => mutation.mutate()}
           variant="destructive"
         >
-          Delete account
+          <DashboardText i18nKey={'Delete account'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

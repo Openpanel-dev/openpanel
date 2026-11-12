@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useReportChartContext } from '../context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const icons = [
@@ -80,7 +81,7 @@ export function ReportChartLoading({ things }: { things?: boolean }) {
             isSlow && 'opacity-100'
           )}
         >
-          Stay calm, its coming 🙄
+          <DashboardText i18nKey={'Stay calm, its coming 🙄'} />{' '}
         </div>
       </div>
     </div>

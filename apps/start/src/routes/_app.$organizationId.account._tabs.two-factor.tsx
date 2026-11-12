@@ -4,6 +4,7 @@ import { ShieldAlertIcon, ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -21,13 +22,17 @@ function Component() {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead>
-        <span className="title">Two-factor authentication</span>
+        <span className="title">
+          <DashboardText i18nKey={'Two-factor authentication'} />
+        </span>
       </WidgetHead>
       <WidgetBody className="col gap-4">
         <p className="text-muted-foreground text-sm">
-          Protect your account with an authenticator app (Google Authenticator,
-          1Password, Authy, etc.). You'll be asked for a 6-digit code each time
-          you sign in with email and password.
+          <DashboardText
+            i18nKey={
+              "Protect your account with an authenticator app (Google Authenticator, 1Password, Authy, etc.). You'll be asked for a 6-digit code each time you sign in with email and password."
+            }
+          />{' '}
         </p>
 
         {status.data.enabled ? (
@@ -55,12 +60,18 @@ function DisabledView({
       <div className="col gap-2 rounded-md border border-border bg-def-100 px-4 py-3 text-sm">
         <div className="row items-center gap-2">
           <ShieldOffIcon className="size-4 text-muted-foreground" />
-          <span>Two-factor authentication is not available.</span>
+          <span>
+            <DashboardText
+              i18nKey={'Two-factor authentication is not available.'}
+            />
+          </span>
         </div>
         <p className="text-muted-foreground">
-          Your account signs in with Google or GitHub, which handle two-factor
-          authentication in their account settings. Enable it in your provider's
-          security settings.
+          <DashboardText
+            i18nKey={
+              "Your account signs in with Google or GitHub, which handle two-factor authentication in their account settings. Enable it in your provider's security settings."
+            }
+          />{' '}
         </p>
       </div>
     );
@@ -72,23 +83,30 @@ function DisabledView({
         <div className="col gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
           <div className="row items-center gap-2">
             <ShieldAlertIcon className="size-4 text-amber-500" />
-            <span>Set up two-factor authentication again</span>
+            <span>
+              <DashboardText
+                i18nKey={'Set up two-factor authentication again'}
+              />
+            </span>
           </div>
           <p className="text-muted-foreground">
-            We moved sign-in to a new system, and authenticator codes set up
-            before the move no longer work there. Two-factor is off until you
-            enable it again; remove the old OpenPanel entry from your
-            authenticator app first.
+            <DashboardText
+              i18nKey={
+                'We moved sign-in to a new system, and authenticator codes set up before the move no longer work there. Two-factor is off until you enable it again; remove the old OpenPanel entry from your authenticator app first.'
+              }
+            />{' '}
           </p>
         </div>
       )}
       <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
         <div className="row items-center gap-2 text-sm">
           <ShieldOffIcon className="size-4 text-muted-foreground" />
-          <span>Two-factor authentication is disabled.</span>
+          <span>
+            <DashboardText i18nKey={'Two-factor authentication is disabled.'} />
+          </span>
         </div>
         <Button onClick={() => pushModal('SetupTwoFactor')} size="sm">
-          Enable
+          <DashboardText i18nKey={'Enable'} />{' '}
         </Button>
       </div>
     </>
@@ -103,7 +121,9 @@ function EnabledView() {
           <div className="center-center size-10 rounded-full bg-emerald-500/10">
             <ShieldCheckIcon className="size-4 text-emerald-500" />
           </div>
-          <span>Two-factor authentication is enabled.</span>
+          <span>
+            <DashboardText i18nKey={'Two-factor authentication is enabled.'} />
+          </span>
         </div>
       </div>
 
@@ -113,14 +133,14 @@ function EnabledView() {
           size="sm"
           variant="outline"
         >
-          Regenerate recovery codes
+          <DashboardText i18nKey={'Regenerate recovery codes'} />{' '}
         </Button>
         <Button
           onClick={() => pushModal('DisableTwoFactor')}
           size="sm"
           variant="destructive"
         >
-          Disable
+          <DashboardText i18nKey={'Disable'} />{' '}
         </Button>
       </div>
     </>

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { UsersIcon } from 'lucide-react';
 import { ProjectLink } from '@/components/links';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface Props {
@@ -26,7 +27,7 @@ export const ProfileGroups = ({ projectId, groups }: Props) => {
     <div className="flex flex-wrap items-center gap-2">
       <span className="flex shrink-0 items-center gap-1.5 text-muted-foreground text-xs">
         <UsersIcon className="size-3.5" />
-        Groups
+        <DashboardText i18nKey={'Groups'} />{' '}
       </span>
       {query.data.map((group) => (
         <ProjectLink

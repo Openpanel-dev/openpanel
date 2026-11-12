@@ -23,6 +23,7 @@ import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { cohortMembersToCSV, downloadCSV } from '@/utils/csv-download';
@@ -115,7 +116,9 @@ function Component() {
       <PageContainer>
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
           <TargetIcon className="size-10 opacity-30" />
-          <p className="text-sm">Cohort not found</p>
+          <p className="text-sm">
+            <DashboardText i18nKey={'Cohort not found'} />
+          </p>
         </div>
       </PageContainer>
     );
@@ -128,7 +131,7 @@ function Component() {
           <div className="row gap-2">
             <Button onClick={handleDownload} size="sm" variant="outline">
               <DownloadIcon className="mr-2 size-4" />
-              Download
+              <DashboardText i18nKey={'Download'} />{' '}
             </Button>
             {!c.isStatic && (
               <Button
@@ -138,7 +141,7 @@ function Component() {
                 variant="outline"
               >
                 <RefreshCwIcon className="mr-2 size-4" />
-                Refresh
+                <DashboardText i18nKey={'Refresh'} />{' '}
               </Button>
             )}
             <Button
@@ -155,7 +158,7 @@ function Component() {
               variant="outline"
             >
               <PencilIcon className="mr-2 size-4" />
-              Edit
+              <DashboardText i18nKey={'Edit'} />{' '}
             </Button>
             <Button
               onClick={() =>
@@ -169,7 +172,7 @@ function Component() {
               variant="outline"
             >
               <Trash2Icon className="mr-2 size-4" />
-              Delete
+              <DashboardText i18nKey={'Delete'} />{' '}
             </Button>
           </div>
         }
@@ -180,7 +183,7 @@ function Component() {
             <span className="truncate">{c.name}</span>
             {c.isStatic && (
               <span className="rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
-                Static
+                <DashboardText i18nKey={'Static'} />{' '}
               </span>
             )}
           </div>

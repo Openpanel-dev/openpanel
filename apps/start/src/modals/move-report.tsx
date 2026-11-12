@@ -9,6 +9,10 @@ import { SelectDashboard } from '@/components/dashboards/select-dashboard';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type MoveReportProps = {
@@ -23,6 +27,8 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const queryClient = useQueryClient();
   const { projectId } = useAppParams();
 
@@ -48,7 +54,7 @@ export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Move report" />
+      <ModalHeader title={translateUi('Move report')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((values) => {
@@ -79,14 +85,14 @@ export default function MoveReport({ reportId, dashboardId }: MoveReportProps) {
             type="button"
             variant="outline"
           >
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button
             disabled={!formState.isValid || move.isPending}
             size="default"
             type="submit"
           >
-            Move
+            <DashboardText i18nKey={'Move'} />{' '}
           </Button>
         </DialogFooter>
       </form>

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { useAppContext } from '@/hooks/use-app-context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
@@ -105,7 +106,7 @@ export function SignInOAuth({
         variant="outline"
       >
         {provider === 'google' ? <GoogleIcon /> : <GithubIcon />}
-        {verb} with {PROVIDER_LABELS[provider]}
+        {verb} <DashboardText i18nKey={'with'} /> {PROVIDER_LABELS[provider]}
       </Button>
       {isLastUsed && <LastUsedBadge />}
     </div>

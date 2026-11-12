@@ -15,6 +15,10 @@ import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
 import { PasswordInput } from './password-input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { pushModal } from '@/modals';
@@ -30,6 +34,8 @@ export function SignInEmailForm({
   isLastUsed?: boolean;
   inviteId?: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const authClient = useAuthClient();
   const mutation = useMutation({
     mutationFn: (values: IForm) =>
@@ -89,7 +95,7 @@ export function SignInEmailForm({
         autoComplete="email"
         error={form.formState.errors.email?.message}
         inputMode="email"
-        label="Email"
+        label={translateUi('Email')}
         placeholder="you@company.com"
         size="xl"
         type="email"
@@ -107,12 +113,12 @@ export function SignInEmailForm({
             }}
             type="button"
           >
-            Forgot password?
+            <DashboardText i18nKey={'Forgot password?'} />{' '}
           </button>
         }
         error={form.formState.errors.password?.message}
-        label="Password"
-        placeholder="Your password"
+        label={translateUi('Password')}
+        placeholder={translateUi('Your password')}
         size="xl"
       />
       <div className="relative mt-1">
@@ -122,7 +128,7 @@ export function SignInEmailForm({
           size="xl"
           type="submit"
         >
-          Sign in
+          <DashboardText i18nKey={'Sign in'} />{' '}
         </Button>
         {isLastUsed && <LastUsedBadge />}
       </div>

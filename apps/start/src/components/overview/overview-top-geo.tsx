@@ -25,6 +25,7 @@ import {
 import { useOverviewOptions } from './useOverviewOptions';
 import { useOverviewWidgetV2 } from './useOverviewWidget';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { countries } from '@/translations/countries';
@@ -199,21 +200,23 @@ export default function OverviewTopGeo({
           <div className="flex-1" />
           <OverviewViewToggle />
           <span className="ml-2 pr-2 text-muted-foreground text-sm">
-            Geo data provided by{' '}
+            <DashboardText i18nKey={'Geo data provided by'} />{' '}
             <a
               className="hover:underline"
               href="https://www.maxmind.com"
               rel="noopener noreferrer nofollow"
               target="_blank"
             >
-              MaxMind
+              <DashboardText i18nKey={'MaxMind'} />{' '}
             </a>
           </span>
         </WidgetFooter>
       </Widget>
       <Widget className="col-span-6 md:col-span-3">
         <WidgetHead>
-          <div className="title">Map</div>
+          <div className="title">
+            <DashboardText i18nKey={'Map'} />
+          </div>
         </WidgetHead>
         <WidgetBody>
           <OverviewMap projectId={projectId} shareId={shareId} />

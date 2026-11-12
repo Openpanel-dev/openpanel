@@ -1,4 +1,6 @@
-'use client';
+import { TranslationText as DashboardText } from '@/i18n/provider';
+
+('use client');
 
 import type { SankeyNode as SankeyNodeType } from 'd3-sankey';
 import { motion, type Transition } from 'motion/react';
@@ -296,7 +298,7 @@ function AnimatedNode({
               opacity={valueOpacity}
               transition={valueEnter}
             >
-              {intFmt(value)} sessions
+              {intFmt(value)} <DashboardText i18nKey={'sessions'} />{' '}
             </NodeLabel>
           ) : null}
         </>

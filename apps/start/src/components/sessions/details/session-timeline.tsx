@@ -8,6 +8,10 @@ import { useEventDrawer } from '@/components/events/use-event-drawer';
 import { WidgetHead, WidgetTitle } from '@/components/overview/overview-widget';
 import { Widget } from '@/components/widget';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { formatTime } from '@/utils/date';
 
 const MS_PER_SECOND = 1000;
@@ -145,6 +149,8 @@ export function SessionTimeline({
   visits: SessionPageVisit[];
   sessionStart: Date;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { openEvent } = useEventDrawer();
   const open = (event: IServiceEvent) =>
     openEvent({ id: event.id, createdAt: event.createdAt });
@@ -153,13 +159,15 @@ export function SessionTimeline({
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle icon={ListTreeIcon}>Timeline</WidgetTitle>
+        <WidgetTitle icon={ListTreeIcon}>
+          <DashboardText i18nKey={'Timeline'} />
+        </WidgetTitle>
       </WidgetHead>
       {visits.length === 0 ? (
         <EmptyState
-          description="This session has no events in it."
+          description={translateUi('This session has no events in it.')}
           icon={ZapIcon}
-          title="No events"
+          title={translateUi('No events')}
           variant="inline"
         />
       ) : (

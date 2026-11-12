@@ -14,6 +14,7 @@ import SidebarOrganizationMenu, {
 import SidebarProjectMenu from './sidebar-project-menu';
 import { Button } from './ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -54,7 +55,9 @@ export function Sidebar() {
   return (
     <SidebarContainer organizations={organizations} projects={projects}>
       <ActionOrganizationCTAButton />
-      <SidebarSectionLabel className="mt-2">Organization</SidebarSectionLabel>
+      <SidebarSectionLabel className="mt-2">
+        <DashboardText i18nKey={'Organization'} />
+      </SidebarSectionLabel>
       <SidebarOrganizationMenu
         organization={organizations.find((o) => o.id === organizationId)!}
       />
@@ -141,9 +144,11 @@ export function SidebarContainer({
                 className="size-4 shrink-0 text-rose-500"
                 strokeWidth={1.75}
               />
-              <span className="flex-1 truncate">Support us</span>
+              <span className="flex-1 truncate">
+                <DashboardText i18nKey={'Support us'} />
+              </span>
               <span className="text-muted-foreground text-xs">
-                Pay what you want
+                <DashboardText i18nKey={'Pay what you want'} />{' '}
               </span>
             </a>
           )}
@@ -156,7 +161,7 @@ export function SidebarContainer({
               target="_blank"
             >
               <BookOpenIcon className="size-4" />
-              Docs
+              <DashboardText i18nKey={'Docs'} />{' '}
             </a>
             <div className="flex-1" />
             <ProfileToggle className={cn(SIDEBAR_FOOTER_BUTTON, 'size-8')} />
