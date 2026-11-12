@@ -257,12 +257,12 @@ export class OpenPanel {
     >('/track', payload, { keepalive: payload.type !== 'replay' });
     // An ai event is stored without a device or session, so its empty ids
     // must not replace the ones the other events resolved.
-    if (payload.type === 'ai') {
+    if (payload.type === 'ai' || !result) {
       return result;
     }
-    this.deviceId = result?.deviceId;
+    this.deviceId = result.deviceId;
     const hadSession = !!this.sessionId;
-    this.sessionId = result?.sessionId;
+    this.sessionId = result.sessionId;
 
     // Flush queued items (e.g. replay chunks) when sessionId first arrives
     if (!hadSession && this.sessionId) {
