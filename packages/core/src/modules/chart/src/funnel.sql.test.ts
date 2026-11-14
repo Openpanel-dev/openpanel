@@ -415,6 +415,48 @@ describe('funnel.sql / buildFunnelBase — group funnel', () => {
   });
 });
 
+// Session grouping aliases argMax(...) AS profile_id in the same SELECT that
+// puts step filters in WHERE. Unqualified has_profile predicates collide with
+// that alias (ClickHouse Code 184); they must use the events table qualifier.
+describe('funnel.sql / has_profile with session grouping', () => {
+  const hasProfile = (value: 'true' | 'false'): ISeriesItem =>
+    event({
+      id: 'A',
+      filters: [
+        {
+          id: 'hp',
+          name: 'has_profile',
+          operator: 'is',
+          value: [value],
+        },
+      ],
+    });
+
+  it('qualifies identified has_profile in the WHERE prefilter', async () => {
+    const statement = await chartStatement({
+      series: [hasProfile('true'), event({ id: 'B', name: 'sign_up' })],
+      funnelGroup: 'session_id',
+    });
+    const { sql } = render(statement);
+
+    expect(sql).toContain('argMax(profile_id, created_at) AS profile_id');
+    expect(sql).toContain('events.profile_id != events.device_id');
+    expect(sql).not.toContain('profile_id != device_id');
+  });
+
+  it('qualifies anonymous has_profile in the WHERE prefilter', async () => {
+    const statement = await chartStatement({
+      series: [hasProfile('false'), event({ id: 'B', name: 'sign_up' })],
+      funnelGroup: 'session_id',
+    });
+    const { sql } = render(statement);
+
+    expect(sql).toContain('argMax(profile_id, created_at) AS profile_id');
+    expect(sql).toContain('events.profile_id = events.device_id');
+    expect(sql).not.toContain('profile_id = device_id');
+  });
+});
+
 describe('funnel.sql / buildFunnelBase — group breakdowns', () => {
   it('adds the group array join for a group breakdown', async () => {
     const statement = await profilesStatement({
