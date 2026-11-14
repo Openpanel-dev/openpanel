@@ -142,10 +142,19 @@ export function getEventFiltersWhereClause(
     }
 
     if (name === 'has_profile') {
+      // Qualify when the caller passes an events alias so the predicate does
+      // not collide with an aggregate `AS profile_id` in the same SELECT
+      // (session-grouped funnels: argMax(...) AS profile_id + WHERE prefilter).
+      const profileId = eventsAlias
+        ? sql.id(`${eventsAlias}.profile_id`)
+        : sql.id('profile_id');
+      const deviceId = eventsAlias
+        ? sql.id(`${eventsAlias}.device_id`)
+        : sql.id('device_id');
       if (value.includes('true')) {
-        where[id] = sql`profile_id != device_id`;
+        where[id] = sql`${profileId} != ${deviceId}`;
       } else {
-        where[id] = sql`profile_id = device_id`;
+        where[id] = sql`${profileId} = ${deviceId}`;
       }
       return;
     }
