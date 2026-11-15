@@ -235,6 +235,51 @@ describe('getChartSql', () => {
     await explain(rendered);
   });
 
+  it('normalizes ISO bounds in WITH FILL the same way as the WHERE range', async () => {
+    for (const interval of [
+      'minute',
+      'hour',
+      'day',
+      'week',
+      'month',
+    ] as const) {
+      const rendered = await getChartSql({
+        event: event(),
+        breakdowns: [],
+        ...base,
+        interval,
+        startDate: '2025-01-15T00:00:00.000Z',
+        endDate: '2025-01-15T01:00:00.000Z',
+      });
+      const fill = rendered.text.slice(rendered.text.indexOf('WITH FILL'));
+
+      expect(rendered.text).toContain(
+        "created_at >= toDateTime('2025-01-15 00:00:00')"
+      );
+      expect(fill).toContain("toDateTime('2025-01-15 00:00:00')");
+      expect(fill).toContain("toDateTime('2025-01-15 01:00:00')");
+      expect(Object.values(rendered.params)).not.toContain(
+        '2025-01-15T00:00:00.000Z'
+      );
+      await explain(rendered);
+    }
+  });
+
+  it('converts offset ISO bounds in WITH FILL to UTC', async () => {
+    const rendered = await getChartSql({
+      event: event(),
+      breakdowns: [],
+      ...base,
+      interval: 'hour',
+      startDate: '2025-01-15T05:30:00+05:30',
+      endDate: '2025-01-15T06:30:00+05:30',
+    });
+    const fill = rendered.text.slice(rendered.text.indexOf('WITH FILL'));
+
+    expect(fill).toContain("toDateTime('2025-01-15 00:00:00')");
+    expect(fill).toContain("toDateTime('2025-01-15 01:00:00')");
+  });
+
   it('property metric (property_sum) with group join is unambiguous', async () => {
     const rendered = await getChartSql({
       event: event({

@@ -577,8 +577,10 @@ export function chartSeriesQuery(input: ChartSeriesQueryInput): SqlFragment {
   }
   const hasValidFillRange =
     hasDateRange && new Date(endDate) >= new Date(startDate);
+  // Same ClickHouse date format as the WHERE range. With the default `basic`
+  // cast mode, toDateTime(String) can reject ISO bounds like `...T00:00:00.000Z`.
   const fill = hasValidFillRange
-    ? sql`WITH FILL ${bucket.fill(startDate, endDate)}`
+    ? sql`WITH FILL ${bucket.fill(formatClickhouseDate(startDate), formatClickhouseDate(endDate))}`
     : sql.empty;
   body.select.date = bucket.select;
   groupBy.date = sql`date`;
