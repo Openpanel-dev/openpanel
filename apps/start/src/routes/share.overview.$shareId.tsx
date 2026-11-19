@@ -1,5 +1,9 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
+import { UnlinkIcon } from 'lucide-react';
+import { z } from 'zod';
 import { ShareEnterPassword } from '@/components/auth/share-enter-password';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { LazyComponent } from '@/components/lazy-component';
 import { LoginNavbar } from '@/components/login-navbar';
@@ -15,9 +19,6 @@ import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, notFound, useSearch } from '@tanstack/react-router';
-import { z } from 'zod';
 
 const shareSearchSchema = z.object({
   header: z.optional(z.number().or(z.string().or(z.boolean()))),
@@ -30,7 +31,7 @@ export const Route = createFileRoute('/share/overview/$shareId')({
     const share = await context.queryClient.ensureQueryData(
       context.trpc.share.overview.queryOptions({
         shareId: params.shareId,
-      }),
+      })
     );
 
     return { share };
@@ -58,10 +59,11 @@ export const Route = createFileRoute('/share/overview/$shareId')({
   },
   pendingComponent: FullPageLoadingState,
   errorComponent: () => (
-    <FullPageEmptyState
+    <EmptyState
+      description="This link doesn't point to a shared overview anymore. Ask whoever sent it for a new one."
+      icon={UnlinkIcon}
       title="Share not found"
-      description="The overview you are looking for does not exist."
-      className="min-h-[calc(100vh-theme(spacing.16))]"
+      variant="page"
     />
   ),
 });
@@ -73,7 +75,7 @@ function RouteComponent() {
   const shareQuery = useSuspenseQuery(
     trpc.share.overview.queryOptions({
       shareId,
-    }),
+    })
   );
 
   if (shareQuery.isLoading) {
@@ -105,7 +107,7 @@ function RouteComponent() {
         </div>
       )}
       <div className="sticky-header [animation-range:50px_100px]!">
-        <div className="p-4 col gap-2 mx-auto max-w-7xl">
+        <div className="col mx-auto max-w-7xl gap-2 p-4">
           <div className="row justify-between">
             <div className="flex gap-2">
               <OverviewRange />
@@ -114,7 +116,7 @@ function RouteComponent() {
               <LiveCounter projectId={projectId} shareId={shareId} />
             </div>
           </div>
-          <OverviewFiltersButtons />
+          <OverviewFiltersButtons filterModal={{ mode: 'events' }} />
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl grid-cols-6 gap-4 p-4">

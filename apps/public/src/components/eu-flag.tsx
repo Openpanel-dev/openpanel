@@ -27,8 +27,8 @@ export function EuFlag({ className }: { className?: string }) {
       {STARS.map((s, i) => (
         <polygon
           // biome-ignore lint/suspicious/noArrayIndexKey: static data
-          key={i}
           fill="#FFCC00"
+          key={i}
           points={star(s.x, s.y, 1.1, 0.45)}
         />
       ))}

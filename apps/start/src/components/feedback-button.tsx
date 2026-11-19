@@ -1,12 +1,34 @@
 import { useRouteContext } from '@tanstack/react-router';
-import { cn } from '@/lib/utils';
 import { op } from '@/utils/op';
 
-export function FeedbackButton({ className }: { className?: string }) {
+const PUBLIC_FEEDBACK_URL = 'https://feedback.openpanel.dev';
+
+export function FeedbackButton({
+  className,
+  children = 'Give feedback',
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   const context = useRouteContext({ strict: false });
+
+  // The widget is not loaded on a self-hosted install.
+  if (context.isSelfHosted !== false) {
+    return (
+      <a
+        className={className}
+        href={PUBLIC_FEEDBACK_URL}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {children}
+      </a>
+    );
+  }
+
   return (
     <button
-      className={cn('justify-start text-left text-[13px]', className)}
+      className={className}
       onClick={() => {
         op.track('feedback_button_clicked');
         if ('uj' in window && window.uj !== undefined) {
@@ -22,7 +44,7 @@ export function FeedbackButton({ className }: { className?: string }) {
       }}
       type="button"
     >
-      Give feedback
+      {children}
     </button>
   );
 }

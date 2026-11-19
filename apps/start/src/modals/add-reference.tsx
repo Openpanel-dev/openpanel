@@ -1,35 +1,38 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateReference } from '@openpanel/core/modules/reference/reference.constants';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
-
-import { zCreateReference } from '@openpanel/validation';
-
-import { InputDateTime } from '@/components/ui/input-date-time';
-import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { InputDateTime } from '@/components/ui/input-date-time';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type IForm = z.infer<typeof zCreateReference>;
 
 interface AddReferenceProps {
+  title?: string;
+  description?: string;
   datetime?: string;
 }
 
-export default function AddReference({ datetime }: AddReferenceProps = {}) {
+export default function AddReference({
+  title,
+  description,
+  datetime,
+}: AddReferenceProps = {}) {
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const { register, handleSubmit, formState, control } = useForm<IForm>({
     resolver: zodResolver(zCreateReference),
     defaultValues: {
-      title: '',
-      description: '',
+      title: title ?? '',
+      description: description ?? '',
       projectId,
       datetime: datetime || new Date().toISOString(),
     },
@@ -46,7 +49,7 @@ export default function AddReference({ datetime }: AddReferenceProps = {}) {
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -65,14 +68,14 @@ export default function AddReference({ datetime }: AddReferenceProps = {}) {
             <InputDateTime {...field} label="Date and time" />
           )}
         />
-        <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+        <DialogFooter>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Create
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

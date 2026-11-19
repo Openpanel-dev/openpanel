@@ -1,18 +1,20 @@
-"use client";
+'use client';
 
-import { type ReactNode, useCallback, useMemo } from "react";
-import { clipRevealTransition } from "./animation";
+import { type ReactNode, useCallback, useMemo } from 'react';
+import { clipRevealTransition } from './animation';
 import {
   defaultScatterColors,
   useChartHover,
   useChartStable,
-} from "./chart-context";
+  useYScale,
+} from './chart-context';
+import { useChartLegendHover } from './chart-legend-hover';
 import {
   getSeriesMarkerVisualExtent,
   SeriesPointMarker,
   type SeriesPointMarkerStyle,
   StaticSeriesPointMarker,
-} from "./series-point-marker";
+} from './series-point-marker';
 
 export interface SeriesMarkersProps extends SeriesPointMarkerStyle {
   dataKey: string;
@@ -61,7 +63,6 @@ export function SeriesMarkers({
   const {
     data,
     xScale,
-    yScale,
     innerWidth,
     enterTransition,
     animationDuration,
@@ -77,6 +78,7 @@ export function SeriesMarkers({
   }, [lines, dataKey]);
 
   const seriesConfig = lines[seriesIndex];
+  const yScale = useYScale(seriesConfig?.yAxisId);
   const seriesColor =
     defaultScatterColors[seriesIndex % defaultScatterColors.length] ??
     defaultScatterColors[0];
@@ -104,7 +106,7 @@ export function SeriesMarkers({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : null;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : null;
     },
     [dataKey, yScale]
   );
@@ -199,6 +201,7 @@ export function SeriesMarkers({
         enabled={fadeOnHover}
         inactiveBlur={inactiveBlur}
         inactiveOpacity={inactiveOpacity}
+        seriesIndex={seriesIndex}
       >
         {baseMarkers}
       </SeriesMarkersDimWrapper>
@@ -212,12 +215,13 @@ export function SeriesMarkers({
   );
 }
 
-SeriesMarkers.displayName = "SeriesMarkers";
+SeriesMarkers.displayName = 'SeriesMarkers';
 
 interface SeriesMarkersDimWrapperProps {
   enabled: boolean;
   inactiveOpacity: number;
   inactiveBlur: number;
+  seriesIndex: number;
   children: ReactNode;
 }
 
@@ -230,17 +234,21 @@ function SeriesMarkersDimWrapper({
   enabled,
   inactiveOpacity,
   inactiveBlur,
+  seriesIndex,
   children,
 }: SeriesMarkersDimWrapperProps) {
   const { tooltipData } = useChartHover();
-  const dimBase = enabled && tooltipData !== null;
+  const { hoveredIndex: legendHoveredIndex } = useChartLegendHover();
+  const isLegendDimmed =
+    legendHoveredIndex !== null && legendHoveredIndex !== seriesIndex;
+  const dimBase = enabled && (tooltipData !== null || isLegendDimmed);
   return (
     <g
       opacity={dimBase ? inactiveOpacity : 1}
       style={{
-        transition: "opacity 0.15s ease-in-out, filter 0.15s ease-in-out",
+        transition: 'opacity 0.15s ease-in-out, filter 0.15s ease-in-out',
         filter:
-          dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : "none",
+          dimBase && inactiveBlur > 0 ? `blur(${inactiveBlur}px)` : 'none',
       }}
     >
       {children}

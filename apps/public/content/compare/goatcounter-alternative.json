@@ -1,6 +1,7 @@
 {
   "slug": "goatcounter-alternative",
   "page_type": "alternative",
+  "category": "web",
   "seo": {
     "title": "Best GoatCounter Alternative 2026 - Open Source & Free",
     "description": "Looking for a GoatCounter alternative? OpenPanel adds product analytics, user identification, and mobile SDKs while staying open source and privacy-first. Free to self-host.",
@@ -24,12 +25,17 @@
     "founded": 2019,
     "headquarters": "Netherlands"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over GoatCounter?",
     "paragraphs": [
       "GoatCounter is a charming, minimalist web analytics tool created and maintained by solo developer Martin Tournoij. It's completely free for public sites, privacy-friendly, and refreshingly simple. For personal blogs and small projects that just need basic pageview counts, it's hard to beat. But its minimal feature set and solo-developer maintenance model mean it's not built for teams with growing analytics needs.",
       "OpenPanel shares GoatCounter's open-source spirit and privacy focus but adds the product analytics capabilities that growing teams require. User identification lets you track logged-in users across sessions, funnels help you understand conversion flows, and retention analysis shows whether users come back. These are features GoatCounter intentionally doesn't offer as part of its minimalist philosophy.",
-      "The technical architecture also differs significantly. GoatCounter stores data in SQLite or PostgreSQL, which works for small sites but isn't optimized for analytical queries at scale. OpenPanel uses ClickHouse \u2014 a column-oriented database purpose-built for analytics workloads \u2014 which means fast queries even as your data grows to millions of events.",
+      "The technical architecture also differs significantly. GoatCounter stores data in SQLite or PostgreSQL, which works for small sites but isn't optimized for analytical queries at scale. OpenPanel uses ClickHouse, a column-oriented database purpose-built for analytics workloads, which means fast queries even as your data grows to millions of events.",
       "If you've outgrown GoatCounter's simple pageview counting and need mobile app analytics via native SDKs, funnel analysis, or user-level insights, OpenPanel provides that depth while remaining open source and privacy-friendly."
     ]
   },
@@ -191,9 +197,9 @@
         "features": [
           {
             "name": "A/B Testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns",
             "competitor": false,
-            "notes": "GoatCounter is analytics-only, no experimentation"
+            "notes": "Track the variant as an event or profile property and break any report down by it. No experiment runner, no feature flags, no significance test."
           },
           {
             "name": "Custom Properties on Events",
@@ -217,7 +223,7 @@
             "name": "Email Reports",
             "openpanel": false,
             "competitor": false,
-            "notes": "Neither offers automated email reports. OpenPanel sends real-time alerts via Slack, Discord, webhook, and in-app instead."
+            "notes": "OpenPanel sends a weekly insights digest by email and real-time alerts to Slack, Discord, webhooks and email; no custom scheduled reports."
           },
           {
             "name": "Tracking Pixel (No-JS)",
@@ -357,27 +363,31 @@
     "items": [
       {
         "label": "SDK Size",
-        "openpanel": "2.3 KB (gzipped)",
+        "openpanel": "~3 KB gzipped",
         "competitor": "~3.5 KB",
         "notes": null
       },
       {
         "label": "Platforms",
         "openpanel": [
-          "JavaScript/TypeScript",
+          "JavaScript",
           "React",
           "Next.js",
           "Vue",
-          "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
+          "Nuxt",
+          "Astro",
+          "Remix",
+          "Express",
           "Node.js",
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
           "Python",
           "Ruby",
-          "Java",
           "Rust",
-          "PHP"
+          "Flutter (community)",
+          "PHP (community)"
         ],
         "competitor": [
           "JavaScript (browser)",
@@ -395,7 +405,7 @@
       },
       {
         "label": "Self Hosting",
-        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), guided setup wizard",
+        "openpanel": "Docker Compose (ClickHouse, Postgres, Redis), one-command install script",
         "competitor": "Single binary (~7MB) or Docker. SQLite or PostgreSQL. Built-in ACME/TLS support.",
         "notes": null
       },
@@ -447,7 +457,7 @@
     "steps": [
       {
         "title": "Install OpenPanel SDK",
-        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts (GoatCounter ~3.5KB, OpenPanel ~2.3KB gzipped), making the transition easy."
+        "description": "Add the OpenPanel SDK to your application. Both use lightweight scripts (GoatCounter ~3.5KB, OpenPanel ~3 KB gzipped), making the transition easy."
       },
       {
         "title": "Map Custom Events",
@@ -524,7 +534,7 @@
       },
       {
         "question": "Which has the smaller tracking script?",
-        "answer": "OpenPanel's script is slightly smaller at 2.3KB gzipped compared to GoatCounter's ~3.5KB. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel. GoatCounter also offers a JavaScript-free tracking pixel option."
+        "answer": "OpenPanel's script is slightly smaller at ~3 KB gzipped compared to GoatCounter's ~3.5KB. Both are significantly smaller than Google Analytics (45KB+) or Mixpanel. GoatCounter also offers a JavaScript-free tracking pixel option."
       },
       {
         "question": "Can GoatCounter track mobile apps?",
@@ -536,11 +546,11 @@
       },
       {
         "question": "How does self-hosting compare?",
-        "answer": "GoatCounter is extremely easy to self-host: a single ~7MB statically compiled Go binary with SQLite as default database. It includes built-in TLS/ACME certificate generation. OpenPanel runs a Docker Compose stack (ClickHouse, Postgres, Redis), but it's still simple: a one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes. GoatCounter is leaner; OpenPanel scales better."
+        "answer": "GoatCounter is extremely easy to self-host: a single ~7MB statically compiled Go binary with SQLite as default database. It includes built-in TLS/ACME certificate generation. OpenPanel runs a Docker Compose stack (ClickHouse, Postgres, Redis), but it's still simple: One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes. GoatCounter is leaner; OpenPanel scales better."
       },
       {
         "question": "What license does GoatCounter use?",
-        "answer": "GoatCounter uses EUPL 1.2 (European Union Public License), a copyleft license requiring derivative works to use compatible licenses. OpenPanel uses the AGPL-3.0 license, which is also copyleft — network-deployed modifications must be made available as open source. Both allow commercial use."
+        "answer": "GoatCounter uses EUPL 1.2 (European Union Public License), a copyleft license requiring derivative works to use compatible licenses. OpenPanel uses the AGPL-3.0 license, which is also copyleft, network-deployed modifications must be made available as open source. Both allow commercial use."
       }
     ]
   },

@@ -1,7 +1,15 @@
+import {
+  getCohortIds,
+  type IChartEventFilter,
+  type IChartEventFilterOperator,
+  operators,
+} from '@openpanel/core/modules/report/report.constants';
+import { FilterIcon, X } from 'lucide-react';
+import type { Options as NuqsOptions } from 'nuqs';
+import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
 import { Button } from '@/components/ui/button';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
-import { FilterOperatorSelect } from '@/components/report/sidebar/filters/FilterOperatorSelect';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
 import {
@@ -13,31 +21,27 @@ import { pushModal } from '@/modals';
 import type { OverviewFiltersProps } from '@/modals/overview-filters';
 import { getPropertyLabel } from '@/translations/properties';
 import { cn } from '@/utils/cn';
-import { operators } from '@openpanel/constants';
-import {
-  getCohortIds,
-  type IChartEventFilter,
-  type IChartEventFilterOperator,
-} from '@openpanel/validation';
-import { FilterIcon, X } from 'lucide-react';
-import type { Options as NuqsOptions } from 'nuqs';
+
+/** What the Filters modal offers when it is opened from a filter pill. */
+type FilterModalOptions = Omit<OverviewFiltersProps, 'nuqsOptions'>;
 
 interface OverviewFiltersButtonsProps {
   className?: string;
   nuqsOptions?: NuqsOptions;
+  filterModal?: FilterModalOptions;
 }
 
 export function OverviewFilterButton(props: OverviewFiltersProps) {
   return (
     <Button
-      variant="outline"
-      responsive
       icon={FilterIcon}
       onClick={() =>
         pushModal('OverviewFilters', {
           ...props,
         })
       }
+      responsive
+      variant="outline"
     >
       Filters
     </Button>
@@ -47,6 +51,7 @@ export function OverviewFilterButton(props: OverviewFiltersProps) {
 interface FilterPillProps {
   filter: IChartEventFilter;
   nuqsOptions?: NuqsOptions;
+  filterModal?: FilterModalOptions;
   onRemove: () => void;
   onChangeOperator: (operator: IChartEventFilterOperator) => void;
   onChangeValue: (value: string[]) => void;
@@ -55,6 +60,7 @@ interface FilterPillProps {
 interface CohortFilterPillProps {
   filter: IChartEventFilter;
   nuqsOptions?: NuqsOptions;
+  filterModal?: FilterModalOptions;
   onRemove: () => void;
   onChangeOperator: (operator: IChartEventFilterOperator) => void;
   onChangeCohorts: (cohortIds: string[]) => void;
@@ -63,6 +69,7 @@ interface CohortFilterPillProps {
 function CohortFilterPill({
   filter,
   nuqsOptions,
+  filterModal,
   onRemove,
   onChangeOperator,
   onChangeCohorts,
@@ -71,59 +78,60 @@ function CohortFilterPill({
   const cohorts = useCohorts({ projectId, includeCount: false });
   const selectedIds = getCohortIds(filter);
   const cohortItems = cohorts.map((c) => ({ value: c.id, label: c.name }));
-  const valueLabel =
-    selectedIds
-      .map((id) => cohorts.find((c) => c.id === id)?.name)
-      .filter(Boolean)
-      .join(', ');
+  const valueLabel = selectedIds
+    .map((id) => cohorts.find((c) => c.id === id)?.name)
+    .filter(Boolean)
+    .join(', ');
 
   return (
-    <div className="flex items-stretch text-sm border rounded-md overflow-hidden h-8">
+    <div className="flex h-8 items-stretch overflow-hidden rounded-md border text-sm">
       <button
+        className="cursor-pointer px-2 transition-colors hover:bg-accent"
+        onClick={() =>
+          pushModal('OverviewFilters', { ...filterModal, nuqsOptions })
+        }
         type="button"
-        onClick={() => pushModal('OverviewFilters', { nuqsOptions })}
-        className="px-2 hover:bg-accent transition-colors cursor-pointer"
       >
         Cohort
       </button>
       <DropdownMenuComposed
-        onChange={onChangeOperator}
         items={[
           { value: 'inCohort', label: 'In cohort' },
           { value: 'notInCohort', label: 'Not in cohort' },
         ]}
         label="Operator"
+        onChange={onChangeOperator}
       >
         <button
+          className="cursor-pointer border-l px-2 lowercase opacity-50 transition-colors hover:bg-accent hover:opacity-100"
           type="button"
-          className="px-2 opacity-50 lowercase hover:opacity-100 hover:bg-accent transition-colors border-l cursor-pointer"
         >
           {filter.operator === 'inCohort' ? 'in cohort' : 'not in cohort'}
         </button>
       </DropdownMenuComposed>
       <ComboboxAdvanced
         items={cohortItems}
-        value={selectedIds}
         onChange={(next) =>
           onChangeCohorts(
-            next.filter((id): id is string => typeof id === 'string'),
+            next.filter((id): id is string => typeof id === 'string')
           )
         }
+        value={selectedIds}
       >
         <button
+          className="max-w-40 cursor-pointer truncate border-l px-2 font-semibold transition-colors hover:bg-accent"
           type="button"
-          className="px-2 font-semibold hover:bg-accent transition-colors border-l cursor-pointer max-w-40 truncate"
         >
           {valueLabel || (
-            <span className="opacity-40 font-normal italic">pick cohort</span>
+            <span className="font-normal italic opacity-40">pick cohort</span>
           )}
         </button>
       </ComboboxAdvanced>
       <button
-        type="button"
-        onClick={onRemove}
-        className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
         aria-label="Remove filter"
+        className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
+        onClick={onRemove}
+        type="button"
       >
         <X className="size-3" />
       </button>
@@ -134,6 +142,7 @@ function CohortFilterPill({
 function FilterPill({
   filter,
   nuqsOptions,
+  filterModal,
   onRemove,
   onChangeOperator,
   onChangeValue,
@@ -149,21 +158,22 @@ function FilterPill({
     filter.operator === 'isNull' || filter.operator === 'isNotNull';
 
   return (
-    <div className="flex items-stretch text-sm border rounded-md overflow-hidden h-8">
+    <div className="flex h-8 items-stretch overflow-hidden rounded-md border text-sm">
       {/* Key — opens modal to change the property */}
       <button
+        className="cursor-pointer px-2 transition-colors hover:bg-accent"
+        onClick={() =>
+          pushModal('OverviewFilters', { ...filterModal, nuqsOptions })
+        }
         type="button"
-        onClick={() => pushModal('OverviewFilters', { nuqsOptions })}
-        className="px-2 hover:bg-accent transition-colors cursor-pointer"
       >
         {getPropertyLabel(filter.name)}
       </button>
 
-      {/* Operator dropdown */}
-      <FilterOperatorSelect value={filter.operator} onChange={onChangeOperator}>
+      <FilterOperatorSelect onChange={onChangeOperator} value={filter.operator}>
         <button
+          className="cursor-pointer border-l px-2 lowercase opacity-50 transition-colors hover:bg-accent hover:opacity-100"
           type="button"
-          className="px-2 opacity-50 lowercase hover:opacity-100 hover:bg-accent transition-colors border-l cursor-pointer"
         >
           {operators[filter.operator]}
         </button>
@@ -173,28 +183,27 @@ function FilterPill({
       {!noValueNeeded && (
         <ComboboxAdvanced
           items={potentialValues.map((v) => ({ value: v, label: v }))}
-          value={filter.value}
           onChange={onChangeValue}
+          value={filter.value}
         >
           <button
+            className="max-w-40 cursor-pointer truncate border-l px-2 font-semibold transition-colors hover:bg-accent"
             type="button"
-            className="px-2 font-semibold hover:bg-accent transition-colors border-l cursor-pointer max-w-40 truncate"
           >
             {filter.value.length > 0 ? (
               filter.value.join(', ')
             ) : (
-              <span className="opacity-40 font-normal italic">pick value</span>
+              <span className="font-normal italic opacity-40">pick value</span>
             )}
           </button>
         </ComboboxAdvanced>
       )}
 
-      {/* Remove */}
       <button
-        type="button"
-        onClick={onRemove}
-        className="px-2 hover:bg-destructive hover:text-destructive-foreground transition-colors border-l cursor-pointer"
         aria-label="Remove filter"
+        className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
+        onClick={onRemove}
+        type="button"
       >
         <X className="size-3" />
       </button>
@@ -205,12 +214,15 @@ function FilterPill({
 export function OverviewFiltersButtons({
   className,
   nuqsOptions,
+  filterModal,
 }: OverviewFiltersButtonsProps) {
   const [events, setEvents] = useEventQueryNamesFilter(nuqsOptions);
   const [filters, setFilter, setFilters, removeFilter] =
     useEventQueryFilters(nuqsOptions);
 
-  if (filters.length === 0 && events.length === 0) return null;
+  if (filters.length === 0 && events.length === 0) {
+    return null;
+  }
 
   const updateCohortFilter = (updated: IChartEventFilter) => {
     setFilters((prev) =>
@@ -224,8 +236,8 @@ export function OverviewFiltersButtons({
               ...(updated.cohortIds ? { cohortIds: updated.cohortIds } : {}),
               ...(updated.cohortId ? { cohortId: updated.cohortId } : {}),
             }
-          : f,
-      ),
+          : f
+      )
     );
   };
 
@@ -233,11 +245,11 @@ export function OverviewFiltersButtons({
     <div className={cn('flex flex-wrap gap-2', className)}>
       {events.map((event) => (
         <Button
+          icon={X}
           key={event}
+          onClick={() => setEvents((p) => p.filter((e) => e !== event))}
           size="sm"
           variant="outline"
-          icon={X}
-          onClick={() => setEvents((p) => p.filter((e) => e !== event))}
         >
           <strong className="font-semibold">{event}</strong>
         </Button>
@@ -248,13 +260,10 @@ export function OverviewFiltersButtons({
         if (isCohort) {
           return (
             <CohortFilterPill
-              key={filter.name}
               filter={filter}
+              filterModal={filterModal}
+              key={filter.name}
               nuqsOptions={nuqsOptions}
-              onRemove={() => removeFilter(filter.name)}
-              onChangeOperator={(operator) =>
-                updateCohortFilter({ ...filter, operator })
-              }
               onChangeCohorts={(cohortIds) =>
                 updateCohortFilter({
                   ...filter,
@@ -262,21 +271,26 @@ export function OverviewFiltersButtons({
                   cohortIds,
                 })
               }
+              onChangeOperator={(operator) =>
+                updateCohortFilter({ ...filter, operator })
+              }
+              onRemove={() => removeFilter(filter.name)}
             />
           );
         }
         return (
           <FilterPill
-            key={filter.name}
             filter={filter}
+            filterModal={filterModal}
+            key={filter.name}
             nuqsOptions={nuqsOptions}
-            onRemove={() => removeFilter(filter.name)}
             onChangeOperator={(operator) =>
               setFilter(filter.name, filter.value, operator)
             }
             onChangeValue={(value) =>
               setFilter(filter.name, value, filter.operator)
             }
+            onRemove={() => removeFilter(filter.name)}
           />
         );
       })}

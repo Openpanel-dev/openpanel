@@ -1,53 +1,62 @@
+import type { Metadata } from 'next';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
 import { HeroContainer } from '@/app/(home)/_sections/hero';
-import { Testimonials } from '@/app/(home)/_sections/testimonials';
 import { ArticleCard } from '@/components/article-card';
-import { Section, SectionHeader } from '@/components/section';
+import { SectionHeader } from '@/components/section';
+import { resolveArticleCover } from '@/lib/article-cover';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
 import { articleSource } from '@/lib/source';
-import type { Metadata } from 'next';
-import Image from 'next/image';
-import Link from 'next/link';
 
 export const metadata: Metadata = getPageMetadata({
   title: 'Articles',
   description:
-    'Read our latest articles and stay up to date with the latest news and updates.',
+    'Guides and comparisons on product analytics, web analytics, self-hosting and the tools around them.',
   url: url('/articles'),
   image: getOgImageUrl('/articles'),
 });
 
 export default async function Page() {
-  const articles = (await articleSource.getPages()).sort(
-    (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+  const [latest, ...rest] = (await articleSource.getPages()).sort(
+    (a, b) => b.data.date.getTime() - a.data.date.getTime()
   );
+
   return (
     <div>
-      <HeroContainer className="-mb-32">
+      <HeroContainer className="pb-10 md:pb-14">
         <SectionHeader
           as="h1"
-          align="center"
-          className="flex-1"
+          description="Guides and comparisons on product analytics, web analytics, self-hosting and the tools around them."
           title="Articles"
-          description="Read our latest articles and stay up to date with the latest news and updates."
         />
       </HeroContainer>
 
-      <Section className="container grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-        {articles.map((item) => (
+      <div className="col container gap-16 pb-8">
+        {latest && (
           <ArticleCard
-            key={item.url}
-            url={item.url}
-            title={item.data.title}
-            tag={item.data.tag}
-            cover={item.data.cover}
-            team={item.data.team}
-            date={item.data.date}
+            cover={resolveArticleCover(latest.data.cover)}
+            date={latest.data.date}
+            description={latest.data.description}
+            featured
+            tag={latest.data.tag}
+            title={latest.data.title}
+            url={latest.url}
           />
-        ))}
-      </Section>
-      <Testimonials />
+        )}
+        <ul className="grid grid-cols-1 gap-x-8 gap-y-12 sm:grid-cols-2 md:grid-cols-3">
+          {rest.map((item) => (
+            <li key={item.url}>
+              <ArticleCard
+                cover={resolveArticleCover(item.data.cover)}
+                date={item.data.date}
+                tag={item.data.tag}
+                title={item.data.title}
+                url={item.url}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
       <CtaBanner />
     </div>
   );

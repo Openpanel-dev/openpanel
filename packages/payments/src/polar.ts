@@ -1,5 +1,5 @@
-// src/polar.ts
 import { Polar } from '@polar-sh/sdk';
+
 export {
   validateEvent as validatePolarEvent,
   WebhookVerificationError as PolarWebhookVerificationError,
@@ -22,22 +22,19 @@ export async function getProducts() {
     isArchived: false,
     sorting: ['price_amount'],
   });
-  return products.result.items.filter((product) => {
-    return (
-      product.metadata.custom !== 'true' && product.metadata.custom !== true
-    );
-  });
+  return products.result.items.filter((product) => !isCustomProduct(product));
+}
+
+/** Made for one organization by `create-custom-pricing`; `metadata.organizationId` says which. */
+export function isCustomProduct(product: Pick<IPolarProduct, 'metadata'>) {
+  return product.metadata.custom === 'true' || product.metadata.custom === true;
 }
 
 export async function getProduct(id: string) {
   return polar.products.get({ id });
 }
 
-export async function createPortal({
-  customerId,
-}: {
-  customerId: string;
-}) {
+export async function createPortal({ customerId }: { customerId: string }) {
   return polar.customerSessions.create({
     customerId,
   });
@@ -57,14 +54,13 @@ export async function createCheckout({
     lastName: string | null;
     email: string;
   };
-  ipAddress: string;
+  ipAddress: string | undefined;
 }) {
   return polar.checkouts.create({
-    // productPriceId: priceId,
     products: [productId],
     successUrl: getSuccessUrl(
       process.env.DASHBOARD_URL || process.env.NEXT_PUBLIC_DASHBOARD_URL!,
-      organizationId,
+      organizationId
     ),
     customerEmail: user.email,
     customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),

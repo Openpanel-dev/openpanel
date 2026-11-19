@@ -1,3 +1,15 @@
+import { PopoverPortal } from '@radix-ui/react-popover';
+import {
+  CheckIcon,
+  ChevronDown,
+  GanttChartIcon,
+  LayersIcon,
+  type LucideIcon,
+  PlusIcon,
+} from 'lucide-react';
+import VirtualList from 'rc-virtual-list';
+import * as React from 'react';
+import { EventIcon } from '../events/event-icon';
 import type { ButtonProps } from '@/components/ui/button';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,11 +26,6 @@ import {
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { PopoverPortal } from '@radix-ui/react-popover';
-import { CheckIcon, ChevronsUpDown, GanttChartIcon } from 'lucide-react';
-import VirtualList from 'rc-virtual-list';
-import * as React from 'react';
-import { EventIcon } from '../events/event-icon';
 
 /**
  * Type-safe ComboboxEvents component that supports both single and multiple selection.
@@ -50,6 +57,9 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   className?: string;
   searchable?: boolean;
   size?: ButtonProps['size'];
+  variant?: ButtonProps['variant'];
+  /** Icon shown while nothing is selected. */
+  icon?: LucideIcon;
   label?: string;
   align?: 'start' | 'end' | 'center';
   portal?: boolean;
@@ -57,6 +67,92 @@ export interface ComboboxProps<T, TMultiple extends boolean = false> {
   disabled?: boolean;
   multiple?: TMultiple;
   maxDisplayItems?: number;
+  /** Listed above the events; picking one calls `onSelectCustomEvent`. */
+  customEvents?: CustomEventOption[];
+  selectedCustomEventId?: string;
+  onSelectCustomEvent?: (customEvent: CustomEventOption) => void;
+  /**
+   * Offer the typed name as an event when no known event matches, so a report
+   * can be built before the event is first tracked.
+   */
+  allowUnseenEvents?: boolean;
+}
+
+interface CustomEventOption {
+  id: string;
+  name: string;
+}
+
+type EventOption = RouterOutputs['chart']['events'][number];
+
+type Row =
+  | { key: string; kind: 'custom'; customEvent: CustomEventOption }
+  | { key: string; kind: 'event'; item: EventOption }
+  | { key: string; kind: 'unseen'; name: string }
+  | { key: string; kind: 'add'; name: string };
+
+/**
+ * Selected names missing from `items` (only possible with `allowUnseenEvents`)
+ * stay listed so they can be seen and toggled off. The add row comes last, so
+ * Enter keeps picking the first known match while a name is still being typed.
+ */
+export function getEventRows({
+  items,
+  customEvents,
+  search,
+  selectedValues,
+  allowUnseenEvents,
+}: {
+  items: EventOption[];
+  customEvents: CustomEventOption[];
+  search: string;
+  selectedValues: string[];
+  allowUnseenEvents: boolean;
+}): Row[] {
+  const matchesSearch = (name: string) =>
+    search === '' || name.toLowerCase().includes(search.toLowerCase());
+  const knownNames = new Set(items.map((item) => item.name));
+  const unseenSelectedNames = allowUnseenEvents
+    ? selectedValues.filter((name) => name !== '' && !knownNames.has(name))
+    : [];
+
+  const rows: Row[] = [
+    ...customEvents
+      .filter((customEvent) => matchesSearch(customEvent.name))
+      .map((customEvent) => ({
+        key: `custom:${customEvent.id}`,
+        kind: 'custom' as const,
+        customEvent,
+      })),
+    ...unseenSelectedNames.filter(matchesSearch).map((name) => ({
+      key: `unseen:${name}`,
+      kind: 'unseen' as const,
+      name,
+    })),
+    ...items
+      .filter((item) => matchesSearch(item.name))
+      .map((item) => ({
+        key: `event:${item.name}`,
+        kind: 'event' as const,
+        item,
+      })),
+  ];
+
+  const typedName = search.trim();
+  const isTypedNameTaken =
+    knownNames.has(typedName) ||
+    unseenSelectedNames.includes(typedName) ||
+    customEvents.some((customEvent) => customEvent.name === typedName);
+  if (allowUnseenEvents && typedName !== '' && !isTypedNameTaken) {
+    rows.push({ key: `add:${typedName}`, kind: 'add', name: typedName });
+  }
+
+  return rows;
+}
+
+/** cmdk trims and lowercases values, so a raw key would lose its casing. */
+export function toCommandValue(key: string): string {
+  return Array.from(key, (char) => char.codePointAt(0)?.toString(16)).join('-');
 }
 
 export function ComboboxEvents<
@@ -69,6 +165,8 @@ export function ComboboxEvents<
   className,
   searchable,
   size,
+  variant = 'input',
+  icon: PlaceholderIcon = GanttChartIcon,
   align = 'start',
   portal,
   error,
@@ -76,6 +174,10 @@ export function ComboboxEvents<
   items,
   multiple = false as TMultiple,
   maxDisplayItems = 2,
+  customEvents = [],
+  selectedCustomEventId,
+  onSelectCustomEvent,
+  allowUnseenEvents = false,
 }: ComboboxProps<T, TMultiple>) {
   const number = useNumber();
   const [open, setOpen] = React.useState(false);
@@ -89,8 +191,12 @@ export function ComboboxEvents<
   }, [value, multiple]);
 
   function find(value: string) {
+    // An unseen name may differ from a known event only by case.
+    if (allowUnseenEvents) {
+      return items.find((item) => item.name === value);
+    }
     return items.find(
-      (item) => item.name.toLowerCase() === value.toLowerCase(),
+      (item) => item.name.toLowerCase() === value.toLowerCase()
     );
   }
 
@@ -98,6 +204,18 @@ export function ComboboxEvents<
     selectedValues.length > 0 && selectedValues[0]
       ? find(selectedValues[0])
       : null;
+  const currentCustomEvent = customEvents.find(
+    (customEvent) => customEvent.id === selectedCustomEventId
+  );
+
+  const rows = getEventRows({
+    items,
+    customEvents,
+    search,
+    // A selected custom event puts its own name in `value`.
+    selectedValues: currentCustomEvent ? [] : selectedValues,
+    allowUnseenEvents,
+  });
 
   const handleSelection = (selectedValue: string) => {
     if (multiple) {
@@ -112,7 +230,27 @@ export function ComboboxEvents<
     }
   };
 
+  const renderTriggerIcon = () => {
+    if (currentCustomEvent) {
+      return <LayersIcon className="mr-2 shrink-0" size={16} />;
+    }
+    if (current?.meta) {
+      return (
+        <EventIcon
+          className="mr-2 shrink-0"
+          meta={current.meta}
+          name={current.name}
+          size="xs"
+        />
+      );
+    }
+    return <PlaceholderIcon className="mr-2 shrink-0" size={16} />;
+  };
+
   const renderTriggerContent = () => {
+    if (currentCustomEvent) {
+      return currentCustomEvent.name;
+    }
     if (selectedValues.length === 0) {
       return placeholder;
     }
@@ -129,86 +267,149 @@ export function ComboboxEvents<
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          disabled={disabled}
-          size={size}
-          variant="outline"
-          role="combobox"
           aria-expanded={open}
           className={cn(
             'justify-between',
             !!error && 'border-destructive',
-            className,
+            className
           )}
+          disabled={disabled}
+          role="combobox"
+          size={size}
+          variant={variant}
         >
           <div className="flex min-w-0 items-center">
-            {current?.meta ? (
-              <EventIcon
-                name={current.name}
-                meta={current.meta}
-                size="xs"
-                className="mr-2 shrink-0"
-              />
-            ) : (
-              <GanttChartIcon size={16} className="mr-2 shrink-0" />
-            )}
+            {renderTriggerIcon()}
             <span className="overflow-hidden text-ellipsis whitespace-nowrap">
               {renderTriggerContent()}
             </span>
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronDown className="ml-2 size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverPortal>
         <PopoverContent
-          className="w-full max-w-[33em] max-sm:max-w-[100vw] p-0"
           align={align}
+          className="w-full max-w-[33em] p-0 max-sm:max-w-[100vw]"
           portal={portal}
         >
           <Command shouldFilter={false}>
             {searchable === true && (
               <CommandInput
+                onValueChange={setSearch}
                 placeholder="Search event..."
                 value={search}
-                onValueChange={setSearch}
               />
             )}
 
             <CommandEmpty>Nothing selected</CommandEmpty>
             <VirtualList
-              height={300}
-              data={items.filter((item) => {
-                if (search === '') return true;
-                return item.name.toLowerCase().includes(search.toLowerCase());
-              })}
-              itemHeight={32}
-              itemKey="value"
               className="w-[33em] max-sm:max-w-[100vw]"
+              data={rows}
+              height={300}
+              itemHeight={32}
+              itemKey="key"
             >
-              {(item) => {
+              {(row) => {
+                const commandValue = toCommandValue(row.key);
+                if (row.kind === 'custom') {
+                  const isSelected =
+                    row.customEvent.id === selectedCustomEventId;
+                  return (
+                    <CommandItem
+                      className={cn(
+                        'gap-4 p-4 py-2.5',
+                        isSelected && 'bg-accent'
+                      )}
+                      key={row.key}
+                      onSelect={() => {
+                        onSelectCustomEvent?.(row.customEvent);
+                        setOpen(false);
+                      }}
+                      value={commandValue}
+                    >
+                      {isSelected ? (
+                        <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                      ) : (
+                        <LayersIcon className="h-4 w-4 flex-shrink-0" />
+                      )}
+                      <span className="flex-1 truncate font-medium">
+                        {row.customEvent.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Custom event
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                if (row.kind === 'add') {
+                  return (
+                    <CommandItem
+                      className="gap-4 p-4 py-2.5"
+                      key={row.key}
+                      onSelect={() => {
+                        handleSelection(row.name);
+                      }}
+                      value={commandValue}
+                    >
+                      <PlusIcon className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 truncate font-medium">
+                        Add "{row.name}"
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Not tracked yet
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                if (row.kind === 'unseen') {
+                  return (
+                    <CommandItem
+                      className="gap-4 bg-accent p-4 py-2.5"
+                      key={row.key}
+                      onSelect={() => {
+                        handleSelection(row.name);
+                      }}
+                      value={commandValue}
+                    >
+                      <CheckIcon className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1 truncate font-medium">
+                        {row.name}
+                      </span>
+                      <span className="text-muted-foreground text-xs">
+                        Not tracked yet
+                      </span>
+                    </CommandItem>
+                  );
+                }
+                const { item } = row;
+                const isSelected =
+                  !currentCustomEvent &&
+                  selectedValues.includes(item.name as T);
                 return (
                   <CommandItem
                     className={cn(
-                      'p-4 py-2.5 gap-4',
-                      selectedValues.includes(item.name as T) && 'bg-accent',
+                      'gap-4 p-4 py-2.5',
+                      isSelected && 'bg-accent'
                     )}
-                    key={item.name}
-                    value={item.name}
-                    onSelect={(currentValue) => {
+                    key={row.key}
+                    onSelect={() => {
                       handleSelection(item.name);
                     }}
+                    value={commandValue}
                   >
-                    {selectedValues.includes(item.name as T) ? (
+                    {isSelected ? (
                       <CheckIcon className="h-4 w-4 flex-shrink-0" />
                     ) : (
-                      <EventIcon name={item.name} meta={item.meta} size="sm" />
+                      <EventIcon meta={item.meta} name={item.name} size="sm" />
                     )}
-                    <span className="font-medium flex-1 truncate">
+                    <span className="flex-1 truncate font-medium">
                       {item.name === '*' ? 'Any events' : item.name}
                     </span>
-                    <span className="text-muted-foreground font-mono font-medium">
+                    <span className="font-medium text-muted-foreground tabular-nums">
                       {number.short(item.count)}
                     </span>
                   </CommandItem>

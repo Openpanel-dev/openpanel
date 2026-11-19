@@ -1,4 +1,4 @@
-import type { AppRouter } from '@openpanel/trpc';
+import type { AppRouter } from '@openpanel/core';
 import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import { createIsomorphicFn } from '@tanstack/react-start';
 import { getRequestHeaders } from '@tanstack/react-start/server';
@@ -44,8 +44,6 @@ function handleUnauthorized(error: unknown) {
 // server-side only. The client always uses the public `apiUrl` it was given.
 const getSsrApiUrlOverride = createIsomorphicFn()
   .server(() => {
-    // console.log('ENVS', process.env);
-    // console.log('API_URL_SSR', process.env.API_URL_SSR);
     return process.env.API_URL_SSR || undefined;
   })
   .client(() => undefined);
@@ -71,7 +69,6 @@ export const getIsomorphicHeaders = createIsomorphicFn()
 // Create a function that returns a tRPC client with optional cookies
 export function createTRPCClientWithHeaders(apiUrl: string) {
   const baseUrl = getSsrApiUrlOverride() || apiUrl;
-  console.log('baseUrl', baseUrl);
   return createTRPCClient<AppRouter>({
     links: [
       httpLink({
@@ -94,7 +91,13 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
                 status: response.status,
                 statusText: response.statusText,
                 body: text,
-                options: { ...options, headers: { ...(options?.headers as Record<string, string>), cookie: 'redacted' } },
+                options: {
+                  ...options,
+                  headers: {
+                    ...(options?.headers as Record<string, string>),
+                    cookie: 'redacted',
+                  },
+                },
               });
             }
 
@@ -106,7 +109,13 @@ export function createTRPCClientWithHeaders(apiUrl: string) {
                 url: url.toString(),
                 error: error instanceof Error ? error.message : String(error),
                 stack: error instanceof Error ? error.stack : undefined,
-                options: { ...options, headers: { ...(options?.headers as Record<string, string>), cookie: 'redacted' } },
+                options: {
+                  ...options,
+                  headers: {
+                    ...(options?.headers as Record<string, string>),
+                    cookie: 'redacted',
+                  },
+                },
               });
             }
             throw error;

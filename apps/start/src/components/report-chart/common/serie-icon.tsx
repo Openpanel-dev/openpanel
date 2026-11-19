@@ -1,3 +1,5 @@
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
+import { getLogo, type Logo } from '@openpanel/logos';
 import type { LucideProps } from 'lucide-react';
 import {
   ActivityIcon,
@@ -17,11 +19,9 @@ import {
   TvIcon,
 } from 'lucide-react';
 import { useState } from 'react';
-
-import { NOT_SET_VALUE } from '@openpanel/constants';
-
+import faviconDomains from './serie-icon.domains';
+import { useTheme } from '@/components/theme-provider';
 import { useAppContext } from '@/hooks/use-app-context';
-import iconsWithUrls from './serie-icon.urls';
 
 // ============================================================================
 // Types
@@ -38,11 +38,12 @@ type SerieIconProps = Omit<LucideProps, 'name' | 'fill'> & {
   fill?: boolean;
 };
 
-type IconType = 'lucide' | 'image' | 'flag';
-
+// `logo` is a static file shipped with the dashboard; `favicon` goes through
+// the api's proxy and needs the api origin prefixed at render time.
 type ResolvedIcon =
   | { type: 'lucide'; Icon: React.ComponentType<LucideProps> }
-  | { type: 'image'; url: string }
+  | { type: 'logo'; logo: Logo }
+  | { type: 'favicon'; path: string }
   | { type: 'flag'; code: string }
   | null;
 
@@ -254,7 +255,7 @@ const FLAG_CODES = new Set([
   'ci',
 ]);
 
-function getProxyImageUrl(url: string): string {
+function faviconPath(url: string): string {
   return `/misc/favicon?url=${encodeURIComponent(url)}`;
 }
 
@@ -266,9 +267,14 @@ function resolveIcon(name: string): ResolvedIcon {
     return { type: 'lucide', Icon: lucideIcon };
   }
 
-  const imageUrl = iconsWithUrls[key as keyof typeof iconsWithUrls];
-  if (imageUrl) {
-    return { type: 'image', url: getProxyImageUrl(imageUrl) };
+  const logo = getLogo(key);
+  if (logo) {
+    return { type: 'logo', logo };
+  }
+
+  const domainUrl = faviconDomains[key];
+  if (domainUrl) {
+    return { type: 'favicon', path: faviconPath(domainUrl) };
   }
 
   if (FLAG_CODES.has(key)) {
@@ -276,11 +282,11 @@ function resolveIcon(name: string): ResolvedIcon {
   }
 
   if (name.includes('http')) {
-    return { type: 'image', url: getProxyImageUrl(name) };
+    return { type: 'favicon', path: faviconPath(name) };
   }
 
   if (name.match(/^.+\.\w{2,3}$/)) {
-    return { type: 'image', url: getProxyImageUrl(`https://${name}`) };
+    return { type: 'favicon', path: faviconPath(`https://${name}`) };
   }
 
   return null;
@@ -289,13 +295,16 @@ function resolveIcon(name: string): ResolvedIcon {
 function IconWrapper({
   children,
   fill,
-}: { children: React.ReactNode; fill?: boolean }) {
+}: {
+  children: React.ReactNode;
+  fill?: boolean;
+}) {
   return (
     <div
       className={
         fill
-          ? 'relative size-full flex-shrink-0 [&_svg]:!rounded-[2px]'
-          : 'relative max-h-4 flex-shrink-0 [&_svg]:!rounded-[2px]'
+          ? '[&_svg]:!rounded-[2px] relative size-full flex-shrink-0'
+          : '[&_svg]:!rounded-[2px] relative max-h-4 flex-shrink-0'
       }
     >
       {children}
@@ -303,29 +312,37 @@ function IconWrapper({
   );
 }
 
-function ImageIcon({ url, fill }: { url: string; fill?: boolean }) {
-  const context = useAppContext();
+function LogoIcon({ logo, fill }: { logo: Logo; fill?: boolean }) {
+  const { theme } = useTheme();
+  const src = theme === 'dark' ? (logo.dark ?? logo.light) : logo.light;
+  return <ImageIcon fill={fill} src={src} />;
+}
+
+function FaviconIcon({ path, fill }: { path: string; fill?: boolean }) {
+  const { apiUrl } = useAppContext();
+  return <ImageIcon fill={fill} src={`${apiUrl?.replace(/\/$/, '')}${path}`} />;
+}
+
+function ImageIcon({ src, fill }: { src: string; fill?: boolean }) {
   const [hasError, setHasError] = useState(false);
 
   if (hasError) {
     return null;
   }
 
-  const fullUrl = context.apiUrl?.replace(/\/$/, '') + url;
-
   return (
     <IconWrapper fill={fill}>
       <img
-        src={fullUrl}
         alt=""
         className={
           fill
             ? 'size-full rounded-full object-cover'
-            : 'w-full max-h-4 rounded-[2px] object-contain'
+            : 'max-h-4 w-full rounded-[2px] object-contain'
         }
-        loading="lazy"
         decoding="async"
+        loading="lazy"
         onError={() => setHasError(true)}
+        src={src}
       />
     </IconWrapper>
   );
@@ -377,9 +394,11 @@ export function SerieIcon({ name: names, fill, ...props }: SerieIconProps) {
 
   switch (resolved.type) {
     case 'lucide':
-      return <LucideIconWrapper Icon={resolved.Icon} fill={fill} {...props} />;
-    case 'image':
-      return <ImageIcon url={resolved.url} fill={fill} />;
+      return <LucideIconWrapper fill={fill} Icon={resolved.Icon} {...props} />;
+    case 'logo':
+      return <LogoIcon fill={fill} logo={resolved.logo} />;
+    case 'favicon':
+      return <FaviconIcon fill={fill} path={resolved.path} />;
     case 'flag':
       return <FlagIcon code={resolved.code} fill={fill} />;
   }

@@ -1,0 +1,453 @@
+---
+title: "10 Best Web Analytics Tools in 2026 (Free and Paid)"
+description: "The 10 best web analytics tools compared on cookies, script size, self-hosting and price. Google Analytics, Plausible, Matomo, Umami, OpenPanel and more."
+tag: Comparison
+team: OpenPanel Team
+date: 2026-11-01
+updated: 2026-11-01
+cover: /content/cover-best-web-analytics.jpg
+---
+import { Faqs, FaqItem } from '@/components/faq';
+
+Every website needs an answer to three questions: how many people came, where they came from, and what they did. Ten years ago Google Analytics was the default answer. In 2026 the list is longer, and the differences are bigger than the dashboards suggest.
+
+This comparison is for people who have to pick one tool: marketers who want a cleaner replacement for GA4, developers who care what the script costs in page weight, founders who need pageviews today and funnels next quarter. It covers cloud and self-hosted tools alike. If you only want tools you can run yourself, read the [self-hosted web analytics comparison](/articles/self-hosted-web-analytics); if open source is the requirement, the [open source analytics survey](/articles/open-source-web-analytics) sorts the options by license.
+
+Three things separate the tools below. Whether they set cookies, which decides if you need a consent banner in the EU. How heavy the script is, from 1.3 KB to 155 KB gzipped. And whether you get web analytics only or product analytics too (funnels, retention, user profiles, session replay).
+
+## Quick comparison
+
+| Tool | Cookie-free | Script size (gzipped) | Self-host | Free tier | Paid from | Best for |
+|------|-------------|-----------------------|-----------|-----------|-----------|----------|
+| [OpenPanel](#openpanel) | Yes | 3.3 KB | Yes, AGPL-3.0 | No, 30-day trial | $2.50/mo (5k events) | Web and product analytics in one tool |
+| [Google Analytics 4](#google-analytics-4) | No | 155 KB | No | Yes | GA 360, quoted | Google Ads users and marketing teams |
+| [Plausible](#plausible) | Yes | 1.3 KB | Yes, AGPL-3.0 | No, 30-day trial | $9/mo (10k pageviews) | Content sites that want one simple page |
+| [Matomo](#matomo) | No, cookies by default | Varies | Yes, GPL-3.0 | Self-host only | €29/mo (50k hits) | Full GA replacement under your control |
+| [Umami](#umami) | Yes | 3.9 KB | Yes, MIT | Yes, 100k events | $20/mo (1M events) | Developers who want MIT-licensed analytics |
+| [Fathom](#fathom) | Yes | 2.1 KB | No | No, 7-day trial | $15/mo (100k pageviews) | Agencies tracking many small sites |
+| [Simple Analytics](#simple-analytics) | Yes | 4.8 KB | No | Yes, 1 month history | €20/mo (100k pageviews) | EU teams who want a Dutch host |
+| [PostHog](#posthog) | No, cookie + localStorage | 107 KB | Hobby only | Yes, 1M events | Usage-based | Product teams who also want flags and replay |
+| [Microsoft Clarity](#microsoft-clarity) | No | Not measured | No | Yes, unlimited | Free only | Free heatmaps and recordings next to GA |
+| [Pirsch](#pirsch) | Yes | 3.5 KB | Enterprise only | No, 30-day trial | $6/mo (10k pageviews) | Cheap, German-hosted traffic stats |
+
+Prices checked November 2026. Script sizes are what we downloaded from each vendor's CDN on 1 November 2026, gzipped. Matomo's size depends on enabled plugins; Clarity's tag only loads with a real project id.
+
+## How to choose a web analytics tool
+
+### Consent banners and GDPR
+
+A tool that stores an identifier in the browser needs consent under ePrivacy rules in most EU countries. GA4 keeps its client id in a two-year first-party cookie, Matomo sets a visitor cookie unless you call `disableCookies`, PostHog uses localStorage plus a cookie. All three need a banner, and visitors who decline are not counted. OpenPanel, Plausible, Umami, Fathom, Simple Analytics and Pirsch store nothing in the browser; they hash IP address and user agent with a salt that changes daily. Our [cookieless analytics](/articles/cookieless-analytics) article explains why that lets you skip the banner.
+
+### Script size and Core Web Vitals
+
+Plausible's script is 1.3 KB gzipped, Fathom's 2.1 KB, OpenPanel's 3.3 KB. The GA4 loader we downloaded was 155 KB and PostHog's `array.js` 107 KB. On a mid-range phone that is tens of milliseconds of main-thread work on every page, which lands on Interaction to Next Paint.
+
+### Sampling and data retention
+
+Free GA4 properties keep event data for 2 or 14 months, and Explorations sample once a query touches more than 10 million events. Clarity keeps recordings for 30 days. Simple Analytics' free plan shows one month of history. If you want to compare this November with last November, check retention before price.
+
+### Web analytics or product analytics
+
+Web analytics is about traffic: pages, referrers, countries, devices, campaigns. Product analytics is about users: which steps they complete, whether they come back, what one account did last week. Fathom, Simple Analytics and Pirsch stay on the traffic side, Plausible adds funnels on its top plan, Umami has added funnel and retention reports. OpenPanel and PostHog cover the whole range including user profiles and session replay. If you run a SaaS or an app, a traffic-only tool means a second tool later, with a second script and a second bill.
+
+### Self-hosting
+
+OpenPanel, Plausible, Matomo and Umami run on your own server, which removes the vendor from the data flow and the per-event bill in exchange for a server to maintain. Our [self-hosted web analytics](/articles/self-hosted-web-analytics) comparison covers deployment and server cost for each.
+
+---
+
+## OpenPanel
+
+**Best for: Teams that need web analytics and product analytics in one tool, cloud or self-hosted**
+
+[OpenPanel](/) gives you the traffic dashboard and, on the same events, [funnels](/features/funnels), retention, user profiles and [session replay](/features/session-replay). One 3.3 KB script, no cookies, Cloud data in the EU. The code is AGPL-3.0 (7,200 GitHub stars); self-hosting runs on Docker Compose with ClickHouse, Postgres and Redis behind a one-command setup script, and gets the same features one to two months after Cloud.
+
+![OpenPanel web analytics dashboard](/content/tools/openpanel.png)
+
+### Key features
+
+- Realtime web analytics: pages, referrers, UTM campaigns, devices, geography
+- Funnels, retention and user profiles on the same event data
+- Session replay in every plan, not metered separately
+- SDKs for web, React, Next.js, Vue, Nuxt, Astro, Remix, React Native, Swift, Kotlin and five server-side languages
+
+### Pricing
+
+By monthly events, every feature on every tier: $2.50 for 5,000, $5 for 10,000, $20 for 100,000, $90 for 1 million, $350 for 10 million. 30-day trial, no card, no free tier after it. Self-hosting is free. See [pricing](/pricing).
+
+### Pros
+
+- Web analytics, product analytics and replay in one cookie-free tool
+- Flat monthly tiers, nothing metered separately
+- Self-hosting is the full product
+
+### Cons
+
+- No free cloud tier; Umami and PostHog give you more for $0
+- No heatmaps, no Google Analytics import
+- Smaller community than Matomo or PostHog
+
+<ArticleCta
+  id="best-web-analytics-tools-openpanel"
+  title="Try OpenPanel on your own traffic"
+  description="Start a 30-day Cloud trial, no card needed. Add the 3.3 KB script, watch the realtime view fill up, then build a funnel on the same events. Or self-host it for free with Docker Compose."
+  secondary={{ text: 'See the web analytics features', href: '/features/web-analytics' }}
+/>
+
+---
+
+## Google Analytics 4
+
+**Best for: Teams that run Google Ads and want attribution in the same place**
+
+GA4 is still the most installed analytics tool on the web, and still free. If you spend on Google Ads, nothing else links campaigns, conversions and audiences as tightly. The costs are elsewhere: a 155 KB loader, a two-year first-party cookie that needs a banner in the EU, 2 or 14 months of retention, and sampled Explorations above 10 million events per query.
+
+### Key features
+
+- Event-based model with free BigQuery export
+- Google Ads, Search Console and Merchant Center integrations
+- Explorations: funnels, path analysis, segment overlap
+- Audiences you can push back into Google Ads
+
+### Pricing
+
+Free. GA 360, the enterprise tier with unsampled queries and up to 50 months of retention, is sold through Google sales and resellers. Google does not publish the price; third-party reports put the entry point around $50,000 a year.
+
+### Pros
+
+- Free with no traffic cap
+- Deepest Google Ads and Search Console integration
+- The tool agencies and hires already know
+
+### Cons
+
+- Consent banner in the EU, and the declines are invisible
+- 155 KB script
+- 14-month retention and sampled Explorations
+
+Compare with OpenPanel: [Google Analytics vs OpenPanel](/compare/google-analytics-alternative)
+
+---
+
+## Plausible
+
+**Best for: Content sites and blogs that want the whole picture on one page**
+
+[Plausible](https://plausible.io) is the simplest serious tool here. One page shows visitors, sources, pages, countries, devices and goals, and that page is the product. The script is 1.3 KB gzipped, the smallest we measured, tracking is cookie-free, and the company (Plausible Insights OÜ, Estonia) keeps data in the EU. The code is AGPL-3.0 with 29,700 GitHub stars, but the self-hosted Community Edition ships twice a year without funnels or user journeys.
+
+![Plausible dashboard](/content/tools/plausible.png)
+
+### Key features
+
+- Single-page dashboard with realtime visitors
+- Goals, custom events and custom properties
+- Funnels (2 to 8 steps) and user journeys on the Business plan
+- Google Search Console integration and Google Analytics import
+
+### Pricing
+
+By monthly pageviews. At 10,000: Starter $9, Growth $14, Business $19. At 100,000: $19, $29, $39. At 1 million: $69, $104, $139. Funnels need Business. 30-day trial, no card, no free tier. The Community Edition is free to self-host.
+
+### Pros
+
+- Smallest script on the list
+- Nothing to learn; the dashboard is the manual
+- GA import keeps your history when you switch
+
+### Cons
+
+- No user-level data, retention or replay, by design
+- Funnels locked to the Business plan
+- Community Edition lags Cloud and lacks funnels
+
+Compare with OpenPanel: [Plausible vs OpenPanel](/compare/plausible-alternative)
+
+---
+
+## Matomo
+
+**Best for: Organisations that want everything GA offers, on servers they control**
+
+[Matomo](https://matomo.org) started as Piwik in 2007 and is the closest thing to Google Analytics you can run yourself. It also behaves like GA by default: it sets a first-party visitor cookie, so you need consent unless you call `disableCookies`, which lowers returning-visitor accuracy. It runs on PHP and MySQL, and the premium plugins cost money even on your own server.
+
+![Matomo dashboard](/content/tools/matomo.png)
+
+### Key features
+
+- Campaigns, goals, ecommerce, site search, segments, custom dimensions
+- Heatmaps, recordings, funnels and A/B testing (premium on-premise, included in Cloud)
+- Google Analytics importer and built-in tag manager
+- Consent manager, anonymisation and erasure requests for GDPR
+
+### Pricing
+
+On-premise is free under GPL-3.0 with unlimited hits; premium plugins come separately or in bundles from €275 (Matomo's pricing page lists the bundles without a billing period). Cloud starts at €29 a month for 50,000 hits, hosted in Frankfurt, with 24 months of raw data retention and the premium features included.
+
+### Pros
+
+- Most complete feature set of any self-hostable tool
+- Nearly 20 years of development, large plugin library
+- Imports GA history
+
+### Cons
+
+- Cookies by default means a banner, or lower accuracy without one
+- Heatmaps, funnels and recordings cost extra even when self-hosted
+- PHP and MySQL are heavier to run than Docker-only tools
+
+Compare with OpenPanel: [Matomo vs OpenPanel](/compare/matomo-alternative)
+
+---
+
+## Umami
+
+**Best for: Developers who want MIT-licensed analytics they can deploy anywhere**
+
+[Umami](https://umami.is) is the most-starred project on this list, 39,800 GitHub stars under MIT. It is a Node.js app with Postgres or MySQL behind it, easy to self-host on a $5 VPS. The tracker is 3.9 KB gzipped and sets no cookies. Umami has grown past pageviews and now has funnel, retention and journey reports; session replay and heatmaps exist too, but only on the $200 Cloud plan.
+
+![Umami dashboard](/content/tools/umami.png)
+
+### Key features
+
+- Realtime dashboard with pages, referrers, devices and locations
+- Reports: funnels, retention, journeys, goals, revenue, attribution
+- Unlimited websites on one self-hosted instance
+- API and MCP access on paid Cloud plans
+
+### Pricing
+
+Self-hosting is free with no limits. Cloud Hobby is $0 for 100,000 events a month, one website and 6 months of retention. Pro is $20 a month for 1 million events, 20 websites and 2 years of retention, then $0.00003 per extra event. Business is $200 a month for 10 million events, 5 years of retention and 5,000 session replays.
+
+### Pros
+
+- MIT license, the most permissive here
+- Lightest self-hosting footprint of the four self-hostable tools
+- Free Cloud tier for one small site
+
+### Cons
+
+- Free Cloud tier is now 100,000 events and one website
+- No Search Console integration or GA import
+- Replay and heatmaps only at $200 a month
+
+Compare with OpenPanel: [Umami vs OpenPanel](/compare/umami-alternative)
+
+---
+
+## Fathom
+
+**Best for: Agencies and indie makers tracking dozens of small sites on one bill**
+
+[Fathom](https://usefathom.com) is a cloud-only, cookie-free tool from Canada with a 2.1 KB script. Every plan includes 50 sites, which is why agencies like it: one subscription covers a client roster. EU visitor data is processed in the EU automatically. Events can carry a value, so you see revenue per source. There are no funnels, no user profiles and no self-hosted version.
+
+![Fathom dashboard](/content/tools/fathom.png)
+
+### Key features
+
+- Cookie-free tracking, no consent banner
+- Events with value and currency
+- 50 sites on every plan, more in packs of 50 for $10 a month
+- GA4 importer and Google Search Console integration
+
+### Pricing
+
+$15 a month for 100,000 pageviews, $25 for 200,000, $45 for 500,000, $60 for 1 million, $200 for 10 million. 7-day trial that requires a card. No free plan.
+
+### Pros
+
+- 50 sites included at $15
+- 2.1 KB script
+- Revenue on events without extra setup
+
+### Cons
+
+- Cloud only
+- No funnels, retention or user-level data
+- 7-day trial that needs a card
+
+Compare with OpenPanel: [Fathom vs OpenPanel](/compare/fathom-alternative)
+
+---
+
+## Simple Analytics
+
+**Best for: EU teams that want a Dutch-owned, EU-hosted tool with a free plan**
+
+[Simple Analytics](https://www.simpleanalytics.com) is built by Simple Analytics B.V. in the Netherlands, with data stored in the EU. It is cookie-free and collects no personal data; the 4.8 KB script is the heaviest of the privacy tools, still 30 times smaller than GA4's. The free plan is unusual: unlimited pageviews under fair use, 5 websites, one user, but only the latest month of history and a required badge.
+
+### Key features
+
+- Cookie-free, no personal data collected
+- Events and goals, including multi-step funnels
+- Scheduled email reports and filtered shared views
+- AI assistant, CSV export and API
+
+### Pricing
+
+Free forever for hobby sites: unlimited pageviews (fair use), 5 sites, one user, one month of history. Self-serve plans start at €20 a month at 100,000 pageviews and scale to 2.5 million; each extra user is €20 a month. Enterprise is quoted.
+
+### Pros
+
+- Free plan with no pageview cap
+- EU company and EU servers; no US transfer unless you opt into AI features
+- Friendly dashboard for non-technical users
+
+### Cons
+
+- Free plan keeps one month of history
+- €20 per user adds up for teams
+- No retention or user profiles, cloud only
+
+Compare with OpenPanel: [Simple Analytics vs OpenPanel](/compare/simple-analytics-alternative)
+
+---
+
+## PostHog
+
+**Best for: Product teams that want web analytics as one tab in a larger engineering platform**
+
+[PostHog](https://posthog.com) added a web analytics dashboard next to its product analytics, session replay, feature flags, experiments, surveys and error tracking, and the first 1 million events a month are free. It is also the heaviest tool here after GA4: the `array.js` we downloaded was 107 KB gzipped, and the default persistence is localStorage plus a first-party cookie, so you need consent in the EU unless you switch persistence to `memory`. Self-hosting is a hobby deployment PostHog does not support for production.
+
+![PostHog dashboard](/content/tools/posthog.png)
+
+### Key features
+
+- Web analytics plus full product analytics: funnels, retention, paths, cohorts
+- Session replay, heatmaps, feature flags, experiments, surveys, error tracking
+- HogQL, SQL against your events from the dashboard
+- Hobby self-hosting with Docker Compose
+
+### Pricing
+
+Usage-based per product. Product analytics: 1 million events free a month, then $0.00005 per event to 2 million and $0.0000343 from 2 to 15 million, so 10 million events cost about $324. Session replay: 5,000 recordings free, then $0.005 each. Flags, surveys and error tracking each have their own meter.
+
+### Pros
+
+- 1 million free events a month
+- Flags, experiments and replay without a second vendor
+- SQL access to raw events
+
+### Cons
+
+- 107 KB script, about 30 times the privacy tools
+- Cookies and localStorage by default, so a banner in the EU
+- Each product metered separately; the bill is hard to predict
+
+Compare with OpenPanel: [PostHog vs OpenPanel](/compare/posthog-alternative)
+
+---
+
+## Microsoft Clarity
+
+**Best for: Free session recordings and heatmaps alongside a traffic tool**
+
+[Microsoft Clarity](https://clarity.microsoft.com) is a behaviour tool, not a traffic tool. It records sessions, renders heatmaps, flags rage clicks and dead clicks, and summarises what it saw with Copilot, free with no traffic limit. It does not replace referrer, campaign and conversion reporting; its Google Analytics integration exists because the two are meant to run together. Recordings are kept for 30 days, and since October 2025 Clarity requires a consent signal from EEA, UK and Swiss visitors before it sets its `_clck` and `_clsk` cookies.
+
+### Key features
+
+- Recordings for up to 100,000 sessions a day per project
+- Click, scroll and area heatmaps, capped at 100,000 pageviews each
+- Rage click, dead click and quick-back detection, Copilot summaries
+- Google Analytics integration that links recordings to GA sessions
+
+### Pricing
+
+Free, with no paid tier.
+
+### Pros
+
+- Free recordings and heatmaps with no traffic cap
+- Pairs with any traffic tool
+- Rage click and dead click detection out of the box
+
+### Cons
+
+- Not a web analytics tool on its own
+- 30-day retention on recordings
+- Cookies, Microsoft hosting, no EU-only option
+
+Compare with OpenPanel: [Microsoft Clarity vs OpenPanel](/compare/microsoft-clarity-alternative)
+
+---
+
+## Pirsch
+
+**Best for: Developers who want cheap, cookie-free stats hosted in Germany, with a backend SDK**
+
+[Pirsch](https://pirsch.io) is made by Emvi Software GmbH and hosted on Hetzner servers in Germany. It is cookie-free: visitors are counted with a hash of IP address, user agent, date and a per-site salt, so nobody is recognisable for longer than 24 hours. The script is 3.5 KB gzipped, and Pirsch began as a Go library for server-side tracking, which sidesteps ad blockers. At $6 a month it is the cheapest paid tool here.
+
+![Pirsch dashboard](/content/tools/pirsch.png)
+
+### Key features
+
+- Cookie-free tracking with a daily-rotating visitor hash
+- Official JavaScript, Go and PHP SDKs for server-side tracking
+- Goals, events, UTM campaigns and a Google Search Console integration
+- Funnels and A/B testing on Plus
+
+### Pricing
+
+Standard: $6 a month for 10,000 pageviews and 50 websites. Plus: $12 a month with unlimited websites, funnels and A/B testing. Enterprise: custom pricing, and the only way to self-host. 30-day trial, no card, no free plan.
+
+### Pros
+
+- Cheapest paid entry on the list
+- Backend tracking from day one
+- German company, German hosting
+
+### Cons
+
+- Self-hosting only on an Enterprise contract
+- No user-level data or retention
+- Small team compared with Plausible or Matomo
+
+Compare with OpenPanel: [Pirsch vs OpenPanel](/compare/pirsch-analytics-alternative)
+
+---
+
+## Which web analytics tool should you pick?
+
+- Choose Google Analytics 4 if you spend on Google Ads and attribution matters more than page weight or consent rates.
+- Choose Plausible if you run a content site, want one dashboard page and the smallest script, and can live without user-level data.
+- Choose OpenPanel if you need traffic reports and funnels, retention or replay for the same visitors, cookie-free, with the option to self-host later.
+- Choose Matomo if you need the full GA feature set on your own servers and have someone to run PHP and MySQL.
+- Choose Umami if you want MIT-licensed analytics on a cheap VPS in ten minutes.
+- Choose Fathom if you manage many small sites and want them on one $15 plan.
+- Choose Simple Analytics if an EU-owned host and a free plan with no pageview cap matter more than history.
+- Choose PostHog if you want feature flags and experiments from the same vendor and fit under 1 million events.
+- Add Microsoft Clarity to any of the above for free recordings and heatmaps.
+- Choose Pirsch if $6 a month, German hosting and server-side tracking are the brief.
+
+<Faqs>
+<FaqItem question="What is a web analytics tool?">
+A web analytics tool records visits to a website and reports on them: how many people came, which pages they viewed, where they arrived from, what devices and countries they used, and which goals they completed. It runs from a small JavaScript snippet on every page, or in some tools a server-side SDK. Product analytics tools go further and follow identified users over time, with funnels, retention and session replay.
+</FaqItem>
+
+<FaqItem question="Is Google Analytics still free in 2026?">
+Yes. GA4 standard properties are free with no traffic cap. The limits are elsewhere: 2 or 14 months of event retention, sampled Explorations above 10 million events per query, and a two-year cookie that needs a consent banner in the EU. GA 360 is quoted by Google sales; third-party reports put it around $50,000 a year.
+</FaqItem>
+
+<FaqItem question="What is the best free web analytics tool?">
+Google Analytics is free with no cap but needs a consent banner. Umami Cloud is free for 100,000 events a month on one site, and self-hosting Umami is free without limits. PostHog is free for 1 million events a month. Simple Analytics' free plan has no pageview cap but keeps one month of history. Cloudflare Web Analytics is free and cookie-free, but keeps unsampled data for only 7 days.
+</FaqItem>
+
+<FaqItem question="What is the best Google Analytics alternative?">
+For a content site, Plausible: a 1.3 KB script, no cookies, GA import, from $9 a month. For GA's full feature list on your own servers, Matomo. For a product that needs funnels, retention and replay on the same visitors, OpenPanel, cookie-free at $20 a month for 100,000 events. Our [Google Analytics alternative](/compare/google-analytics-alternative) page covers the switch.
+</FaqItem>
+
+<FaqItem question="Do cookie-free analytics tools comply with GDPR without a consent banner?">
+Cookie-free tools (OpenPanel, Plausible, Umami, Fathom, Simple Analytics, Pirsch) store nothing in the browser and hash the IP address with a daily salt, so no identifier persists across days. That is why they are generally run without a banner for analytics. Regulators differ at the edges, so check with your DPO and read our [cookieless analytics](/articles/cookieless-analytics) article.
+</FaqItem>
+
+<FaqItem question="Which web analytics tool is best for a small website?">
+For free, Umami's Hobby plan (100,000 events, one site) or a self-hosted Umami. For a few dollars, Pirsch at $6 or Plausible at $9 give you a cookie-free dashboard with no setup beyond pasting a snippet. If the small site is the front door of a product, OpenPanel's $2.50 tier covers 5,000 events and includes funnels and replay, so you do not switch tools when the product grows.
+</FaqItem>
+
+<FaqItem question="What is the best open source web analytics tool?">
+Four tools here are open source: Umami (MIT, 39,800 stars), Plausible (AGPL-3.0, 29,700), Matomo (GPL-3.0, 22,000) and OpenPanel (AGPL-3.0, 7,200). Umami is the easiest to deploy with the most permissive license, Matomo has the most features, Plausible's Community Edition lags Cloud and omits funnels, and OpenPanel is the one with product analytics and session replay in the self-hosted version. See our [self-hosted web analytics](/articles/self-hosted-web-analytics) comparison.
+</FaqItem>
+
+<FaqItem question="What is the difference between web analytics and product analytics?">
+Web analytics counts traffic: pageviews, sessions, referrers, campaigns, devices, countries. Product analytics follows users: which steps of a signup flow they complete, whether they return in week 2, what one account did, what a session looked like in replay. Fathom, Simple Analytics and Pirsch do web analytics; Plausible and Umami add funnels. PostHog and OpenPanel do the full set, and OpenPanel does it without cookies.
+</FaqItem>
+</Faqs>

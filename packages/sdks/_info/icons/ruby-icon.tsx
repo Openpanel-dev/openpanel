@@ -3,16 +3,14 @@ import type { IconProps } from './types';
 export function RubyIcon({ className }: IconProps) {
   return (
     <svg
+      className={className}
       fill="#000000"
       version="1.1"
-      xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 512 512"
-      className={className}
+      xmlns="http://www.w3.org/2000/svg"
     >
       <g id="5151e0c8492e5103c096af88a51e4c6f">
         <path
-          fill="currentColor"
-          display="inline"
           d="M365.281,386.936l108.635,96.416l-213.754-16.794c41.878-25.3,76.426-55.513,102.294-79.567
         c0.426,0.083,0.879,0.129,1.332,0.129C364.283,387.119,364.782,387.06,365.281,386.936z M485.518,444.55l20.008-262.045
         c-9.898,25.284-25.557,54.73-45.857,86.172L485.518,444.55z M372.547,380.983l108.384,96.196l-28.936-196.865
@@ -39,6 +37,8 @@ export function RubyIcon({ className }: IconProps) {
         c14.234,18.62,33.252,26.935,61.528,26.935c2.848,0,5.806-0.078,8.978-0.233l-4.995-12.412
         C78.996,467.845,48.152,391.248,34.284,361.407z M506.144,60.604c-2.056-6.289-4.68-12.096-7.811-17.306
         c-12.632-21.015-34.452-34.461-64.871-39.976l-67.961,37.531L506.144,60.604z"
+          display="inline"
+          fill="currentColor"
         />
       </g>
     </svg>

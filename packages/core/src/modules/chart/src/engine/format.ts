@@ -1,0 +1,165 @@
+import { average, max, min, round, slug, sum } from '@openpanel/shared';
+import type { FinalChart } from '../../../report/report.constants';
+import { alphabetIds } from '../../../report/report.constants';
+import { getPreviousMetric } from '../../../report/src/previous-metric';
+import type { ConcreteSeries } from './types';
+
+/**
+ * Format concrete series into FinalChart format (backward compatible)
+ * TODO: Migrate frontend to use cleaner ChartResponse format
+ */
+export function format(
+  concreteSeries: ConcreteSeries[],
+  definitions: Array<{
+    id?: string;
+    type: 'event' | 'formula';
+    displayName?: string;
+    formula?: string;
+    name?: string;
+    hideSeries?: string[];
+  }>,
+  includeAlphaIds: boolean,
+  previousSeries: ConcreteSeries[] | null = null,
+  limit: number | undefined = undefined
+): FinalChart {
+  // Collect definition indices that should be hidden from the chart.
+  // A formula can opt to hide any of the series it references (by alpha ID)
+  // so the chart only shows the formula result without the input series.
+  const hiddenDefinitionIndices = new Set<number>();
+  for (const definition of definitions) {
+    if (definition.type !== 'formula' || !definition.hideSeries?.length) {
+      continue;
+    }
+    for (const alphaId of definition.hideSeries) {
+      const index = alphabetIds.indexOf(
+        alphaId as (typeof alphabetIds)[number]
+      );
+      if (index >= 0) {
+        hiddenDefinitionIndices.add(index);
+      }
+    }
+  }
+
+  const visibleConcreteSeries =
+    hiddenDefinitionIndices.size > 0
+      ? concreteSeries.filter(
+          (cs) => !hiddenDefinitionIndices.has(cs.definitionIndex)
+        )
+      : concreteSeries;
+
+  const series = visibleConcreteSeries.map((cs) => {
+    const definition = definitions[cs.definitionIndex];
+    const alphaId = includeAlphaIds
+      ? alphabetIds[cs.definitionIndex]
+      : undefined;
+
+    let displayName: string[];
+
+    const names = cs.name.slice(0);
+    if (cs.definition.displayName) {
+      names.splice(0, 1, cs.definition.displayName);
+    }
+    if (alphaId) {
+      displayName = [`(${alphaId}) ${names[0]}`, ...names.slice(1)];
+    } else {
+      displayName = names;
+    }
+
+    const counts = cs.data.map((d) => d.count);
+    const metrics = {
+      sum: sum(counts),
+      average: round(average(counts), 2),
+      min: min(counts),
+      max: max(counts),
+      count: cs.data.find((item) => !!item.total_count)?.total_count,
+    };
+
+    const eventName =
+      definition?.type === 'formula'
+        ? definition.displayName || definition.formula || 'Formula'
+        : definition?.name || cs.context.event || 'unknown';
+
+    const previousSerie = previousSeries?.find(
+      (ps) =>
+        ps.definitionIndex === cs.definitionIndex &&
+        ps.name.slice(1).join(':::') === cs.name.slice(1).join(':::')
+    );
+
+    return {
+      id: slug(cs.id),
+      names: displayName,
+      event: {
+        id: definition?.id,
+        name: eventName,
+        breakdowns: cs.context.breakdowns,
+      },
+      metrics: {
+        ...metrics,
+        ...(previousSerie
+          ? {
+              previous: {
+                sum: getPreviousMetric(
+                  metrics.sum,
+                  sum(previousSerie.data.map((d) => d.count))
+                ),
+                average: getPreviousMetric(
+                  metrics.average,
+                  round(average(previousSerie.data.map((d) => d.count)), 2)
+                ),
+                min: getPreviousMetric(
+                  metrics.min,
+                  min(previousSerie.data.map((d) => d.count))
+                ),
+                max: getPreviousMetric(
+                  metrics.max,
+                  max(previousSerie.data.map((d) => d.count))
+                ),
+                count: getPreviousMetric(
+                  metrics.count ?? 0,
+                  previousSerie.data.find((item) => !!item.total_count)
+                    ?.total_count ?? null
+                ),
+              },
+            }
+          : {}),
+      },
+      // The key is OMITTED rather than set to `undefined` when there is no
+      // previous point. superjson records one metadata entry per `undefined`,
+      // each carrying its full path string, so a 12-month three-breakdown
+      // chart spent ~77 MB and several seconds encoding 1.69 M entries whose
+      // entire content was "this field is undefined". Reading
+      // `data[i].previous` still yields `undefined` either way, and superjson
+      // already erased the key over the wire, so no consumer can tell.
+      data: cs.data.map((item, index) => {
+        const previousPoint = previousSerie?.data[index];
+        if (!previousPoint) {
+          return { date: item.date, count: item.count };
+        }
+        return {
+          date: item.date,
+          count: item.count,
+          previous: getPreviousMetric(item.count, previousPoint.count ?? null),
+        };
+      }),
+    };
+  });
+
+  series.sort((a, b) => b.metrics.sum - a.metrics.sum);
+
+  // Calculate global metrics (excluding hidden series)
+  const allValues = visibleConcreteSeries.flatMap((cs) =>
+    cs.data.map((d) => d.count)
+  );
+  const globalMetrics = {
+    sum: sum(allValues),
+    average: round(average(allValues), 2),
+    min: min(allValues),
+    max: max(allValues),
+    count: undefined as number | undefined,
+  };
+
+  return {
+    series: limit ? series.slice(0, limit) : series,
+    metrics: globalMetrics,
+  };
+}

@@ -1,5 +1,9 @@
-import { useTRPC } from '@/integrations/trpc/react';
-
+import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import { toast } from 'sonner';
+import { popModal } from '.';
+import { ModalHeader } from './Modal/Container';
 import { IntegrationCardContent } from '@/components/integrations/integration-card';
 import {
   CLIENT_INTEGRATIONS,
@@ -7,13 +11,7 @@ import {
 } from '@/components/integrations/integrations';
 import { SheetContent } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
-import type { IIntegrationConfig } from '@openpanel/validation';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useQueryState } from 'nuqs';
-import { toast } from 'sonner';
-import { popModal } from '.';
-import { ModalHeader } from './Modal/Container';
+import { useTRPC } from '@/integrations/trpc/react';
 
 interface Props {
   id?: string;
@@ -29,8 +27,8 @@ export default function AddIntegration(props: Props) {
       },
       {
         enabled: !!props.id,
-      },
-    ),
+      }
+    )
   );
 
   const integration = INTEGRATIONS.find((i) => i.type === props.type);
@@ -53,7 +51,7 @@ export default function AddIntegration(props: Props) {
     popModal();
     client.invalidateQueries(trpc.integration.list.pathFilter());
     client.invalidateQueries(
-      trpc.integration.get.queryFilter({ id: props.id }),
+      trpc.integration.get.queryFilter({ id: props.id })
     );
     navigate({
       to: '/$organizationId/$projectId/integrations/installed',

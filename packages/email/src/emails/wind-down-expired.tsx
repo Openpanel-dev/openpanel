@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Button } from '../components/button';
 import { Layout } from '../components/layout';
@@ -54,7 +53,9 @@ export function WindDownExpired({
   const mcpPitch = (
     <Text>
       A lot has shipped since your trial — including our{' '}
-      <Link href={withUtm('https://openpanel.dev/docs/mcp', 'wind-down-expired')}>
+      <Link
+        href={withUtm('https://openpanel.dev/docs/mcp', 'wind-down-expired')}
+      >
         MCP server
       </Link>
       : connect Claude, Cursor, or any MCP client and ask questions about this
@@ -76,7 +77,9 @@ export function WindDownExpired({
         {greeting}
         <Text>
           Your OpenPanel tracking is still running
-          {trialEndedDate ? `, even though your trial ended ${trialEndedDate}` : ''}
+          {trialEndedDate
+            ? `, even though your trial ended ${trialEndedDate}`
+            : ''}
           .
           {recentEventsCount
             ? ` You've sent ${formatEvents(recentEventsCount)} events in the last 30 days and we've recorded every one of them.`

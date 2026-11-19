@@ -1,12 +1,12 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { ReportChartLoading } from '../common/loading';
+import { SeriesWithTable } from '../common/series-with-table';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportAreaChart() {
   const { isLazyLoading, shareId } = useReportChartContext();
@@ -22,8 +22,8 @@ export function ReportAreaChart() {
       {
         placeholderData: keepPreviousData,
         enabled: !isLazyLoading,
-      },
-    ),
+      }
+    )
   );
 
   if (
@@ -43,9 +43,10 @@ export function ReportAreaChart() {
   }
 
   return (
-    <AspectContainer>
-      <Chart data={res.data} />
-    </AspectContainer>
+    <SeriesWithTable
+      chart={(series) => <Chart data={res.data} series={series} />}
+      data={res.data}
+    />
   );
 }
 

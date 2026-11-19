@@ -1,18 +1,19 @@
-import type { IServiceEvent } from '@openpanel/db';
+import type { IServiceEvent } from '@openpanel/core';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
 import type { Table } from '@tanstack/react-table';
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2Icon } from 'lucide-react';
+import { CalendarIcon, Loader2Icon, ZapIcon } from 'lucide-react';
 import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 import { last } from 'ramda';
 import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
 import EventListener from '../event-listener';
+import { useEventDrawer } from '../use-event-drawer';
 import { useColumns } from './columns';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
 import {
   OverviewFilterButton,
   OverviewFiltersButtons,
@@ -22,12 +23,11 @@ import { Button } from '@/components/ui/button';
 import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { DataTableToolbarContainer } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import { useAppParams } from '@/hooks/use-app-params';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
-type Props = {
+interface Props {
   query: UseInfiniteQueryResult<
     TRPCInfiniteData<
       RouterInputs['event']['events'],
@@ -36,7 +36,7 @@ type Props = {
     unknown
   >;
   showEventListener?: boolean;
-};
+}
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceEvent[];
 const ROW_HEIGHT = 40;
@@ -165,7 +165,6 @@ const VirtualizedEventsTable = ({
       className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
     >
-      {/* Table Header */}
       <div
         className="sticky top-0 z-10 border-b bg-card"
         style={{
@@ -181,7 +180,7 @@ const VirtualizedEventsTable = ({
           const width = `${column.getSize()}px`;
           return (
             <div
-              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-[10px] text-foreground uppercase"
+              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-3xs text-foreground uppercase"
               key={column.id}
               style={{
                 width,
@@ -194,13 +193,15 @@ const VirtualizedEventsTable = ({
       </div>
 
       {!isLoading && data.length === 0 && (
-        <FullPageEmptyState
-          description={"Start sending events and you'll see them here"}
+        <EmptyState
+          className="py-16"
+          description="Nothing matches this date range and filters. Events appear within seconds of your site or app sending them."
+          icon={ZapIcon}
           title="No events"
+          variant="inline"
         />
       )}
 
-      {/* Table Body */}
       <div
         className="relative w-full"
         style={{
@@ -240,13 +241,13 @@ export const EventsTable = ({ query, showEventListener = false }: Props) => {
   const { isLoading } = query;
   const columns = useColumns();
 
-  const handleRowClick = useCallback((row: any) => {
-    pushModal('EventDetails', {
-      id: row.original.id,
-      createdAt: row.original.createdAt,
-      projectId: row.original.projectId,
-    });
-  }, []);
+  const { openEvent } = useEventDrawer();
+  const handleRowClick = useCallback(
+    (row: any) => {
+      openEvent({ id: row.original.id, createdAt: row.original.createdAt });
+    },
+    [openEvent]
+  );
 
   const data = useMemo(() => {
     if (isLoading) {
@@ -335,7 +336,6 @@ function EventsTableToolbar({
   table: Table<IServiceEvent>;
   showEventListener: boolean;
 }) {
-  const { projectId } = useAppParams();
   const [startDate, setStartDate] = useQueryState(
     'startDate',
     parseAsIsoDateTime
@@ -368,7 +368,10 @@ function EventsTableToolbar({
             : 'Date range'}
         </Button>
         <OverviewFilterButton enableEventsFilter />
-        <OverviewFiltersButtons className="justify-end p-0" />
+        <OverviewFiltersButtons
+          className="justify-end p-0"
+          filterModal={{ enableEventsFilter: true }}
+        />
       </div>
       <DataTableViewOptions table={table} />
     </DataTableToolbarContainer>

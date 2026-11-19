@@ -1,5 +1,6 @@
-import { useTRPC } from '@/integrations/trpc/react';
+import { isOrganizationAdminRole } from '@openpanel/core/modules/organization/organization.constants';
 import { useQuery } from '@tanstack/react-query';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function useOrganizationAccess(organizationId: string | undefined) {
   const trpc = useTRPC();
@@ -12,6 +13,6 @@ export function useOrganizationAccess(organizationId: string | undefined) {
 
   return {
     role: data?.role ?? null,
-    isAdmin: data?.role === 'org:admin',
+    isAdmin: !!data && isOrganizationAdminRole(data.role),
   };
 }

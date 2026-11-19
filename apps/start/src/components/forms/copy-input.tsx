@@ -1,26 +1,29 @@
+import { CopyIcon } from 'lucide-react';
+import { Label } from '../ui/label';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
-import { CopyIcon } from 'lucide-react';
 
-import { Label } from '../ui/label';
-
-type Props = {
+interface Props {
   label: React.ReactNode;
   value: string;
   className?: string;
-};
+  onCopy?: () => void;
+}
 
-const CopyInput = ({ label, value, className }: Props) => {
+const CopyInput = ({ label, value, className, onCopy }: Props) => {
   return (
     <button
-      type="button"
       className={cn('w-full min-w-0 text-left', className)}
-      onClick={() => clipboard(value)}
+      onClick={() => {
+        clipboard(value);
+        onCopy?.();
+      }}
+      type="button"
     >
       {!!label && <Label>{label}</Label>}
-      <div className="font-mono flex items-center justify-between gap-2 rounded bg-muted p-2 px-3">
+      <div className="flex items-center justify-between gap-2 rounded bg-muted p-2 px-3 tabular-nums">
         <span className="min-w-0 flex-1 truncate">{value}</span>
-        <CopyIcon size={16} className="shrink-0" />
+        <CopyIcon className="shrink-0" size={16} />
       </div>
     </button>
   );

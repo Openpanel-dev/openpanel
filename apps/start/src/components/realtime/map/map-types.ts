@@ -1,55 +1,30 @@
-import type { Coordinate, CoordinateCluster } from './coordinates';
-import type { MapBadgeDisplayMarker } from './realtime-map-badge-slice';
+import type { RouterOutputs } from '@/trpc/client';
 
-export type DisplayMarker = MapBadgeDisplayMarker;
-
-export type ContinentBucket =
-  | 'north-america'
-  | 'south-america'
-  | 'europe'
-  | 'africa'
-  | 'asia'
-  | 'oceania'
-  | 'unknown';
-
-export type MapProjection = (
-  point: [number, number]
-) => [number, number] | null;
-
-export interface ZoomMovePosition {
-  zoom: number;
-}
-
-export interface ZoomMoveEndPosition {
-  coordinates: [number, number];
-  zoom: number;
-}
-
-export interface GeographyFeature {
-  rsmKey: string;
-  properties: {
-    name?: string;
-  };
-}
-
-export interface DisplayMarkerCache {
-  markers: CoordinateCluster[];
-  projection: MapProjection | null;
-  viewportCenter: [number, number];
-  zoom: number;
-  size: { width: number; height: number } | null;
-  result: DisplayMarker[];
-}
-
-export interface MapSidebarConfig {
-  width: number;
-  position: 'left' | 'right';
-}
+export type RealtimeMapPoint = RouterOutputs['realtime']['coordinates'][number];
 
 export interface RealtimeMapProps {
   projectId: string;
-  markers: Coordinate[];
-  sidebarConfig?: MapSidebarConfig;
+  markers: RealtimeMapPoint[];
 }
 
-export interface MapCanvasProps extends RealtimeMapProps {}
+export interface MapLocation {
+  city?: string;
+  country?: string;
+  lat: number;
+  long: number;
+}
+
+/** What a clicked dot hands to the detail panel; must stay serializable. */
+export interface MapBadgeDisplayMarker {
+  id: string;
+  label: string;
+  count: number;
+  detailScope: 'coordinate';
+  locations: MapLocation[];
+  screenPoint: {
+    x: number;
+    y: number;
+  };
+}
+
+export type DisplayMarker = MapBadgeDisplayMarker;

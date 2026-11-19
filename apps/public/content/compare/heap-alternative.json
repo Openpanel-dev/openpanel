@@ -1,14 +1,15 @@
 {
   "slug": "heap-alternative",
   "page_type": "alternative",
+  "category": "product",
   "seo": {
-    "title": "Best Heap Alternatives 2026 — After the Contentsquare Acquisition",
+    "title": "Best Heap Alternatives 2026, After the Contentsquare Acquisition",
     "description": "Heap was acquired by Contentsquare in 2023. If you're re-evaluating, OpenPanel is an open-source alternative with transparent pricing from $2.50/month, full self-hosting, and no sales call required.",
     "noindex": false
   },
   "hero": {
     "heading": "Best Heap Alternative",
-    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and AGPL-3.0 licensed open source code\u2014giving you control over your analytics.",
+    "subheading": "Looking for Heap's product analytics without the black-box pricing and vendor lock-in? OpenPanel offers transparent event-based pricing, full self-hosting, and AGPL-3.0 licensed open source code, giving you control over your analytics.",
     "badges": [
       "Open-source",
       "Transparent pricing",
@@ -24,13 +25,18 @@
     "founded": 2013,
     "headquarters": "San Francisco, CA"
   },
+  "meta": {
+    "author": "Carl-Gerhard Lindesvärd",
+    "updated": "2026-11-01",
+    "prices_checked": "2026-11-01"
+  },
   "overview": {
     "title": "Why consider OpenPanel over Heap?",
     "paragraphs": [
       "Heap was acquired by Contentsquare in September 2023. For many teams, that acquisition raised real questions: Will pricing change? Will the product roadmap shift to serve Contentsquare's enterprise customers? Will independent support continue? These concerns, combined with Heap's opaque pricing model and cloud-only architecture, have driven a wave of teams to evaluate alternatives.",
-      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency \u2014 both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at just $2.50 per month, compared to Heap's sales-required pricing that reportedly starts at $3,600 per year. And unlike Heap, OpenPanel is fully self-hostable and open source \u2014 no acquisition can change that.",
-      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker Compose deployment \u2014 a one-command ./setup wizard walks you through configuration and brings the whole stack up in minutes, something Heap doesn't provide at all. Being open source under the AGPL-3.0 license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
-      "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host \u2014 OpenPanel gives you solid product analytics with full ownership of your data."
+      "OpenPanel takes a different approach with explicit event tracking, giving you precise control over what you measure and how. While you lose Heap's retroactive analysis capability, you gain transparency, both in your data collection and your costs. OpenPanel's pricing is publicly listed and event-based, starting at $2.50 per month after a 30-day trial, compared to Heap's Pro and Premier plans, which are quoted by sales. And unlike Heap, OpenPanel is fully self-hostable and open source, no acquisition can change that.",
+      "For teams that value data sovereignty, OpenPanel offers full self-hosting via a simple Docker Compose deployment, One install command walks you through the setup and brings the Docker Compose stack (ClickHouse, Postgres, Redis) up in minutes, something Heap doesn't provide at all. Being open source under the AGPL-3.0 license means you can inspect every line of code, contribute improvements, and avoid the vendor lock-in risk that comes with Heap's proprietary, now-Contentsquare-owned platform.",
+      "If you prefer intentional, controlled analytics over autocapture-everything, want transparent pricing without sales calls, and need the option to self-host, OpenPanel gives you solid product analytics with full ownership of your data."
     ]
   },
   "summary_comparison": {
@@ -163,9 +169,9 @@
           },
           {
             "name": "A/B testing",
-            "openpanel": true,
+            "openpanel": "Variant breakdowns",
             "competitor": false,
-            "notes": null
+            "notes": "Track the variant as an event or profile property and break any report down by it. No experiment runner, no feature flags, no significance test."
           },
           {
             "name": "Session replay",
@@ -216,7 +222,7 @@
           },
           {
             "name": "EU data residency",
-            "openpanel": "Via self-hosting",
+            "openpanel": "EU cloud or self-hosting",
             "competitor": "Premier plan only",
             "notes": null
           }
@@ -233,9 +239,9 @@
           },
           {
             "name": "Data warehouse export",
-            "openpanel": "Coming 2026",
+            "openpanel": true,
             "competitor": true,
-            "notes": "Heap Connect exports to major warehouses. OpenPanel has an export API today, with native data-warehouse export (S3/GCS) on the roadmap for 2026."
+            "notes": "OpenPanel exports raw events to S3 or GCS as JSONL (no direct BI connectors). Heap Connect exports to major warehouses."
           },
           {
             "name": "Segment integration",
@@ -259,7 +265,7 @@
     "items": [
       {
         "label": "SDK size (JS)",
-        "openpanel": "~2.3 KB gzipped",
+        "openpanel": "~3 KB gzipped",
         "competitor": "Larger (autocapture overhead)",
         "notes": "OpenPanel's lighter SDK means faster page loads"
       },
@@ -270,19 +276,20 @@
           "React",
           "Next.js",
           "Vue",
+          "Nuxt",
           "Astro",
           "Remix",
           "Express",
-          "React Native",
-          "Flutter",
-          "iOS",
-          "Android",
           "Node.js",
+          "React Native",
+          "Swift (iOS)",
+          "Kotlin (Android)",
+          "Java",
           "Python",
           "Ruby",
-          "Java",
           "Rust",
-          "PHP"
+          "Flutter (community)",
+          "PHP (community)"
         ],
         "competitor": [
           "JavaScript",
@@ -301,7 +308,7 @@
       },
       {
         "label": "Self-hosted deployment",
-        "openpanel": "Docker Compose, guided setup wizard",
+        "openpanel": "Docker Compose, one-command install script",
         "competitor": "Not available",
         "notes": null
       },
@@ -328,7 +335,7 @@
     },
     "competitor": {
       "model": "Session-based, opaque",
-      "description": "Free tier: 10K sessions/month, 6 months data retention. Growth/Pro/Premier plans require custom quotes from sales. Reports suggest Growth plans start around $3,600/year.",
+      "description": "Free: 10K sessions a month, 6 months of history, 1 project, no heatmaps or replay. Growth: per-session pricing shown after you install the snippet, 12 months of history. Pro and Premier: custom session pricing through sales. Overages are not throttled, but you must upgrade to see your data again.",
       "free_tier": "Yes (10K sessions/month)",
       "pricing_url": "https://heap.io/pricing"
     }
@@ -375,7 +382,7 @@
     "items": [
       {
         "title": "Teams needing transparent pricing",
-        "description": "Heap's pricing is opaque and requires sales calls. OpenPanel offers transparent event-based pricing so you always know what you'll pay.",
+        "description": "Heap publishes no prices; Pro and Premier are quoted by sales. OpenPanel offers transparent event-based pricing so you always know what you'll pay.",
         "icon": "dollar"
       },
       {
@@ -418,7 +425,7 @@
       },
       {
         "question": "Why is Heap's pricing not public?",
-        "answer": "Heap only shows its Free tier publicly. Growth, Pro, and Premier plans require contacting sales for custom quotes. Reports suggest Growth plans start around $3,600/year, with costs scaling significantly at higher volumes."
+        "answer": "Heap shows limits but no prices. The Free plan is 10K sessions a month; Growth pricing appears only after you sign up and install the snippet; Pro and Premier are custom session pricing through sales."
       },
       {
         "question": "What happened to Heap? Was it acquired?",

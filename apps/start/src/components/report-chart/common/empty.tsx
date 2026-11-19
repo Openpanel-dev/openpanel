@@ -1,12 +1,7 @@
-import { cn } from '@/utils/cn';
-import {
-  ArrowUpLeftIcon,
-  BirdIcon,
-  CornerLeftUpIcon,
-  Forklift,
-  ForkliftIcon,
-} from 'lucide-react';
+import { ChartLineIcon, ChartNoAxesColumnIcon } from 'lucide-react';
 import { useReportChartContext } from '../context';
+import { EmptyState } from '@/components/empty-state';
+import { cn } from '@/utils/cn';
 
 export function ReportChartEmpty({
   title = 'No data',
@@ -19,44 +14,27 @@ export function ReportChartEmpty({
     isEditMode,
     report: { series },
   } = useReportChartContext();
+  const hasSeries = series && series.length > 0;
 
-  if (!series || series.length === 0) {
+  if (!hasSeries) {
     return (
-      <div className="card p-4 center-center h-full w-full flex-col relative">
-        <div className="row gap-2 items-end absolute top-4 left-4">
-          <CornerLeftUpIcon
-            strokeWidth={1.2}
-            className="size-8 animate-pulse text-muted-foreground"
-          />
-          <div className="text-muted-foreground">Start here</div>
-        </div>
-        <ForkliftIcon
-          strokeWidth={1.2}
-          className="mb-4 size-1/3 max-w-40 animate-pulse text-muted-foreground"
-        />
-        <div className="font-medium text-muted-foreground">
-          Ready when you're
-        </div>
-        <div className="text-muted-foreground mt-2">
-          Pick atleast one event to start visualize
-        </div>
-      </div>
+      <EmptyState
+        className="card h-full w-full"
+        description="Pick at least one event and the chart draws itself here."
+        icon={ChartLineIcon}
+        title="Ready when you are"
+        variant="inline"
+      />
     );
   }
 
   return (
-    <div
-      className={cn(
-        'center-center h-full w-full flex-col',
-        isEditMode && 'card p-4',
-      )}
-    >
-      <BirdIcon
-        strokeWidth={1.2}
-        className="mb-4 size-1/3 animate-pulse text-muted-foreground"
-      />
-      <div className="font-medium text-muted-foreground">{title}</div>
-      <div className="text-muted-foreground mt-2">{children}</div>
-    </div>
+    <EmptyState
+      className={cn('h-full w-full', isEditMode && 'card')}
+      description={children}
+      icon={ChartNoAxesColumnIcon}
+      title={title}
+      variant="inline"
+    />
   );
 }

@@ -1,23 +1,16 @@
-import type { LucideIcon } from 'lucide-react';
-import { Loader2Icon } from 'lucide-react';
+import { Spinner } from '@/components/ui/spinner';
 
-import { FullPageEmptyState } from './full-page-empty-state';
-
-const FullPageLoadingState = ({
-  title = 'Fetching...',
-  description = 'Please wait while we fetch your data...',
-}: { title?: string; description?: string }) => {
+const FullPageLoadingState = ({ title = 'Loading…' }: { title?: string }) => {
   return (
-    <FullPageEmptyState
-      className="min-h-[calc(100vh-theme(spacing.16))]"
-      title={title}
-      description={description}
-      icon={
-        ((props) => (
-          <Loader2Icon {...props} className="animate-spin" />
-        )) as LucideIcon
-      }
-    />
+    <div
+      aria-busy
+      className="flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center gap-3 p-8 text-center lg:min-h-dvh"
+    >
+      <Spinner aria-hidden size="md" />
+      <p className="text-muted-foreground text-sm" role="status">
+        {title}
+      </p>
+    </div>
   );
 };
 

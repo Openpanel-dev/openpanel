@@ -1,5 +1,3 @@
-import React from 'react';
-
 type IllustrationProps = {
   className?: string;
 };
@@ -12,15 +10,8 @@ export function DataOwnershipIllustration({
       {/* Main layout */}
       <div className="relative grid aspect-2/1 grid-cols-5 gap-3">
         {/* Left: your server card */}
-        <div
-          className="
-            col-span-3 rounded-2xl border border-border bg-card/80
-            p-3 sm:p-4 shadow-xl backdrop-blur
-            transition-all duration-300
-            group-hover:-translate-y-1 group-hover:-translate-x-0.5
-          "
-        >
-          <div className="flex items-center justify-between text-xs text-foreground">
+        <div className="col-span-3 rounded-2xl border border-border bg-card/80 p-3 shadow-xl backdrop-blur transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-1 sm:p-4">
+          <div className="flex items-center justify-between text-foreground text-xs">
             <span>Your server</span>
             <span className="flex items-center gap-1 rounded-full bg-card/80 px-2 py-0.5 text-[10px] text-blue-300">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
@@ -31,15 +22,15 @@ export function DataOwnershipIllustration({
           {/* "Server" visual */}
           <div className="mt-3 space-y-2">
             <div className="flex gap-1.5">
-              <div className="flex-1 rounded-xl bg-card/80 border border-border px-3 py-2">
+              <div className="flex-1 rounded-xl border border-border bg-card/80 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">Region</p>
-                <p className="text-xs font-medium text-foreground">
+                <p className="font-medium text-foreground text-xs">
                   EU / Custom
                 </p>
               </div>
-              <div className="flex-1 rounded-xl bg-card/80 border border-border px-3 py-2">
+              <div className="flex-1 rounded-xl border border-border bg-card/80 px-3 py-2">
                 <p className="text-[10px] text-muted-foreground">Retention</p>
-                <p className="text-xs font-medium text-foreground">
+                <p className="font-medium text-foreground text-xs">
                   Configurable
                 </p>
               </div>
@@ -74,15 +65,8 @@ export function DataOwnershipIllustration({
         </div>
 
         {/* Right: third-party contrast */}
-        <div
-          className="
-            col-span-2 rounded-2xl border border-border/80 bg-card/40
-            p-3 text-[11px] text-muted-foreground
-            transition-all duration-300
-            group-hover:translate-y-1 group-hover:translate-x-0.5 group-hover:opacity-70
-          "
-        >
-          <p className="text-xs text-muted-foreground mb-2">or use our cloud</p>
+        <div className="col-span-2 rounded-2xl border border-border/80 bg-card/40 p-3 text-[11px] text-muted-foreground transition-all duration-300 group-hover:translate-x-0.5 group-hover:translate-y-1 group-hover:opacity-70">
+          <p className="mb-2 text-muted-foreground text-xs">or use our cloud</p>
 
           <ul className="space-y-1.5">
             <li className="flex items-center gap-1.5">

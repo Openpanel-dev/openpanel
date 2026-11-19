@@ -27,19 +27,20 @@ type OpenPanelComponentProps = Omit<OpenPanelOptions, 'filter'> & {
   strategy?: 'beforeInteractive' | 'afterInteractive' | 'lazyOnload' | 'worker';
 };
 
-const stringify = (obj: unknown) => {
-  if (typeof obj === 'object' && obj !== null && obj !== undefined) {
-    const entries = Object.entries(obj).map(([key, value]) => {
-      if (key === 'filter') {
-        return `"${key}":${value}`;
-      }
-      return `"${key}":${JSON.stringify(value)}`;
-    });
-    return `{${entries.join(',')}}`;
-  }
+// `<` is escaped so a value containing `</script>` cannot end the inline script.
+function toScriptJson(value: unknown) {
+  return JSON.stringify(value).replace(/</g, '\\u003c');
+}
 
-  return JSON.stringify(obj);
-};
+// `filter` is the developer's own function source, so it is the one value
+// inserted as code; everything else is data.
+function initOptionsSource({
+  filter,
+  ...options
+}: Record<string, unknown> & { filter?: string }) {
+  const data = toScriptJson(options);
+  return filter ? `Object.assign(${data},{filter:${filter}})` : data;
+}
 
 export function OpenPanelComponent({
   profileId,
@@ -49,28 +50,26 @@ export function OpenPanelComponent({
   strategy = 'afterInteractive',
   ...options
 }: OpenPanelComponentProps) {
-  const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
+  const methods: { name: OpenPanelMethodNames; source: string }[] = [
     {
       name: 'init',
-      value: {
+      source: initOptionsSource({
         ...options,
         sdk: 'nextjs',
         sdkVersion: process.env.NEXTJS_VERSION!,
-      },
+      }),
     },
   ];
   if (profileId) {
     methods.push({
       name: 'identify',
-      value: {
-        profileId,
-      },
+      source: toScriptJson({ profileId }),
     });
   }
   if (globalProperties) {
     methods.push({
       name: 'setGlobalProperties',
-      value: globalProperties,
+      source: toScriptJson(globalProperties),
     });
   }
 
@@ -89,7 +88,7 @@ export function OpenPanelComponent({
           __html: `${getInitSnippet()}
           ${methods
             .map((method) => {
-              return `window.op('${method.name}', ${stringify(method.value)});`;
+              return `window.op('${method.name}', ${method.source});`;
             })
             .join('\n')}`,
         }}
@@ -106,7 +105,7 @@ export function IdentifyComponent(props: IdentifyComponentProps) {
   return (
     <Script
       dangerouslySetInnerHTML={{
-        __html: `window.op('identify', ${JSON.stringify(props)});`,
+        __html: `window.op('identify', ${toScriptJson(props)});`,
       }}
     />
   );
@@ -116,7 +115,7 @@ export function SetGlobalPropertiesComponent(props: Record<string, unknown>) {
   return (
     <Script
       dangerouslySetInnerHTML={{
-        __html: `window.op('setGlobalProperties', ${JSON.stringify(props)});`,
+        __html: `window.op('setGlobalProperties', ${toScriptJson(props)});`,
       }}
     />
   );

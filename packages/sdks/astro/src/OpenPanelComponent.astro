@@ -11,7 +11,8 @@ type Props = Omit<OpenPanelOptions, 'filter'> & {
   globalProperties?: Record<string, unknown>;
 };
 
-const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } = Astro.props;
+const { profileId, cdnUrl, scriptUrl, globalProperties, ...options } =
+  Astro.props;
 
 const CDN_URL = 'https://openpanel.dev/op1.js';
 
@@ -35,7 +36,7 @@ const methods: { name: OpenPanelMethodNames; value: unknown }[] = [
     value: {
       ...options,
       sdk: 'astro',
-      sdkVersion: '1.4.1',
+      sdkVersion: '1.4.4',
     },
   },
 ];

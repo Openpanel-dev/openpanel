@@ -1,8 +1,14 @@
-#!/bin/bash
+#!/bin/sh
+# The setup scripts were replaced by the `openpanel` CLI.
+cat >&2 <<'MSG'
+This script was replaced by the openpanel CLI.
 
-git pull
+  Install it:   curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
 
-echo "Updating services"
-docker compose up -d --pull always --remove-orphans
+  New install:  openpanel init
+  Upgrade:      openpanel upgrade     (repairs an existing install for the new version)
+  Check:        openpanel doctor
 
-echo "Done"
+Docs: https://openpanel.dev/docs/self-hosting/self-hosting
+MSG
+exit 1

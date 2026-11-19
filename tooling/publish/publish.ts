@@ -10,7 +10,6 @@ import { generateReadme } from './generate-readme';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Types
 interface PackageJson {
   name: string;
   version: string;
@@ -22,6 +21,8 @@ interface PackageJson {
     transformPackageJson?: boolean;
     transformEnvs?: boolean;
     docPath?: string;
+    /** Extra entry points published as `<name>/<subpath>` (a `<subpath>.ts` next to index). */
+    subpaths?: string[];
   };
 }
 
@@ -33,15 +34,22 @@ export interface PackageInfo extends PackageJson {
 interface PublishConfig {
   registry: string;
   clear: boolean;
+  // Stage for a maintainer's 2FA approval (`npm stage approve`) instead of
+  // publishing outright; what CI does under a stage-only trusted publisher.
+  stage: boolean;
+  // Prereleases go under their own dist-tag so `latest` keeps pointing at a
+  // stable version.
+  distTag?: string;
 }
 
-// Utility functions
+const PRERELEASE_DIST_TAG = 'rc';
+
 const workspacePath = (relativePath: string) =>
   resolve(__dirname, '../../', relativePath);
 
 const savePackageJson = (absPath: string, data: PackageJson) => {
   fs.writeFileSync(absPath, JSON.stringify(data, null, 2), 'utf-8');
-  execSync(`npx biome format ${absPath} --fix`);
+  execSync(`bunx biome format ${absPath} --fix`);
 };
 
 const exit = (message: string, error?: unknown) => {
@@ -76,7 +84,6 @@ const getNextVersion = (version: string, type: ReleaseType): string => {
     : nextVersion;
 };
 
-// Core functions
 const loadPackages = (
   releaseType: ReleaseType
 ): Record<string, PackageInfo> => {
@@ -160,15 +167,16 @@ const updatePackageJsonForRelease = (
           require: './dist/index.cjs',
           types: './dist/index.d.ts',
         },
-        ...(name === '@openpanel/nextjs'
-          ? {
-              './server': {
-                import: './dist/server.js',
-                require: './dist/server.cjs',
-                types: './dist/server.d.ts',
-              },
-            }
-          : {}),
+        ...Object.fromEntries(
+          (packages[name]!.config?.subpaths ?? []).map((subpath) => [
+            `./${subpath}`,
+            {
+              import: `./dist/${subpath}.js`,
+              require: `./dist/${subpath}.cjs`,
+              types: `./dist/${subpath}.d.ts`,
+            },
+          ])
+        ),
       },
     };
   }
@@ -242,7 +250,7 @@ const buildPackages = (
       continue;
     }
     console.log(`🔨 Building ${dep}`);
-    const cmd = `pnpm build ${versionEnvs.join(' ')}`;
+    const cmd = `bun run build ${versionEnvs.join(' ')}`;
     console.log(`  Running: ${cmd}`);
     execSync(cmd, {
       cwd: workspacePath(packages[dep]!.localPath),
@@ -259,14 +267,17 @@ const publishPackages = (
     execSync('rm -rf ~/.local/share/verdaccio/storage/@openpanel');
   }
 
+  const publishCommand = config.stage ? 'npm stage publish' : 'npm publish';
   for (const dep of dependents) {
-    console.log(`🚀 Publishing ${dep} to ${config.registry}`);
     console.log(
-      `📦 Install: pnpm install ${dep} --registry ${config.registry}`
+      `🚀 ${config.stage ? 'Staging' : 'Publishing'} ${dep} to ${config.registry}`
     );
-    execSync(`npm publish --access=public --registry ${config.registry}`, {
-      cwd: workspacePath(packages[dep]!.localPath),
-    });
+    execSync(
+      `${publishCommand} --access=public --registry ${config.registry}`,
+      {
+        cwd: workspacePath(packages[dep]!.localPath),
+      }
+    );
 
     if (dep === '@openpanel/web') {
       execSync(
@@ -336,7 +347,6 @@ const restoreAndUpdateLocal = (
 };
 
 function main() {
-  // Main execution
   const args = arg({
     '--name': String,
     '--publish': Boolean,
@@ -344,6 +354,7 @@ function main() {
     '--skip-git': Boolean,
     '--type': String,
     '--clear': Boolean,
+    '--stage': Boolean,
   });
 
   if (!args['--skip-git']) {
@@ -389,6 +400,10 @@ function main() {
         ? 'https://registry.npmjs.org'
         : 'http://localhost:4873',
       clear: args['--clear'] ?? false,
+      stage: args['--stage'] ?? false,
+      distTag: args['--type']!.startsWith('pre')
+        ? PRERELEASE_DIST_TAG
+        : undefined,
     };
 
     publishPackages(packages, dependents, config);

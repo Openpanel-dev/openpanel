@@ -1,84 +1,125 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { zSignUpEmail } from '@openpanel/validation';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-
-import { useRouter } from '@tanstack/react-router';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import {
+  INVITE_HEADER,
+  zSignUpEmail,
+} from '@openpanel/core/modules/auth/auth.constants';
+import { useMutation } from '@tanstack/react-query';
+import {
+  type SubmitErrorHandler,
+  type SubmitHandler,
+  useForm,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
+import { PasswordInput } from './password-input';
+import { unwrap, useAuthClient } from '@/integrations/auth/client';
+import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
 const validator = zSignUpEmail;
 type IForm = z.infer<typeof validator>;
 
 export function SignUpEmailForm({
   inviteId,
-}: { inviteId: string | undefined }) {
-  const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.auth.signUpEmail.mutationOptions({
-      async onSuccess() {
-        toast.success('Successfully signed up');
-        window.location.href = '/';
-      },
-      onError(error) {
-        toast.error(error.message);
-      },
-    }),
-  );
+}: {
+  inviteId: string | undefined;
+}) {
+  const authClient = useAuthClient();
+  const mutation = useMutation({
+    mutationFn: ({ firstName, lastName, email, password }: IForm) =>
+      unwrap(
+        authClient.signUp.email(
+          {
+            email,
+            password,
+            name: `${firstName} ${lastName}`,
+            firstName,
+            lastName,
+          },
+          { headers: inviteId ? { [INVITE_HEADER]: inviteId } : undefined }
+        )
+      ),
+    onSuccess() {
+      trackFunnel('auth_signup_succeeded', {
+        provider: 'email',
+        hasInvite: Boolean(inviteId),
+      });
+      toast.success('Successfully signed up');
+      window.location.href = '/';
+    },
+    onError(error) {
+      trackFunnel('auth_signup_failed', {
+        provider: 'email',
+        reason: failureReason(error),
+      });
+      toast.error(error.message);
+    },
+  });
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
   });
   const onSubmit: SubmitHandler<IForm> = (values) => {
-    mutation.mutate({
-      ...values,
-      inviteId,
+    trackFunnel('auth_provider_clicked', { page: 'signup', provider: 'email' });
+    mutation.mutate(values);
+  };
+  const onInvalid: SubmitErrorHandler<IForm> = (errors) => {
+    trackFunnel('auth_form_invalid', {
+      page: 'signup',
+      fields: Object.keys(errors),
     });
   };
   return (
-    <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <div className="row gap-4 w-full flex-1">
+    <form
+      className="col gap-5"
+      method="post"
+      onSubmit={form.handleSubmit(onSubmit, onInvalid)}
+    >
+      <div className="grid gap-4 sm:grid-cols-2">
         <InputWithLabel
+          autoComplete="given-name"
           label="First name"
-          className="flex-1"
+          placeholder="Ada"
+          size="xl"
           type="text"
           {...form.register('firstName')}
           error={form.formState.errors.firstName?.message}
         />
         <InputWithLabel
+          autoComplete="family-name"
           label="Last name"
-          className="flex-1"
+          placeholder="Lovelace"
+          size="xl"
           type="text"
           {...form.register('lastName')}
           error={form.formState.errors.lastName?.message}
         />
       </div>
       <InputWithLabel
+        autoComplete="email"
+        inputMode="email"
         label="Email"
-        className="w-full"
+        placeholder="you@company.com"
+        size="xl"
         type="email"
         {...form.register('email')}
         error={form.formState.errors.email?.message}
       />
-      <div className="row gap-4 w-full">
-        <InputWithLabel
-          label="Password"
-          className="flex-1"
-          type="password"
-          {...form.register('password')}
-          error={form.formState.errors.password?.message}
-        />
-        <InputWithLabel
-          label="Confirm password"
-          className="flex-1"
-          type="password"
-          {...form.register('confirmPassword')}
-          error={form.formState.errors.confirmPassword?.message}
-        />
-      </div>
-      <Button type="submit" className="w-full" size="lg">
+      <PasswordInput
+        autoComplete="new-password"
+        hint="At least 8 characters"
+        label="Password"
+        placeholder="Pick a strong password"
+        size="xl"
+        {...form.register('password')}
+        error={form.formState.errors.password?.message}
+      />
+      <Button
+        className="mt-1 w-full"
+        loading={mutation.isPending}
+        size="xl"
+        type="submit"
+      >
         Create account
       </Button>
     </form>

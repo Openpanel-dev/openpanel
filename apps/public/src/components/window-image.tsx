@@ -1,9 +1,13 @@
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { FeatureCardContainer } from './feature-card';
+import { isVisualMockName, VisualMock } from './visual-mock';
+import { cn } from '@/lib/utils';
 
 interface WindowImageProps {
+  // Name of a VisualMock; when set, no image is rendered.
+  mock?: string;
   src?: string;
+  // Content files still carry a dark variant; the site only renders the light one.
   srcDark?: string;
   srcLight?: string;
   alt: string;
@@ -12,33 +16,40 @@ interface WindowImageProps {
 }
 
 export function WindowImage({
+  mock,
   src,
-  srcDark,
   srcLight,
   alt,
   caption,
   className,
 }: WindowImageProps) {
-  // If src is provided, use it for both (backward compatibility)
-  // Otherwise, use srcDark and srcLight
-  const darkSrc = srcDark || src;
-  const lightSrc = srcLight || src;
-
-  if (!darkSrc || !lightSrc) {
-    throw new Error(
-      'WindowImage requires either src or both srcDark and srcLight',
+  if (mock && isVisualMockName(mock)) {
+    return (
+      <figure className={cn('col gap-4', className)}>
+        <VisualMock name={mock} />
+        {caption && (
+          <figcaption className="mx-auto max-w-lg text-center text-muted-foreground text-sm">
+            {caption}
+          </figcaption>
+        )}
+      </figure>
     );
+  }
+
+  const imageSrc = srcLight || src;
+
+  if (!imageSrc) {
+    throw new Error('WindowImage requires src or srcLight');
   }
 
   return (
     <FeatureCardContainer
       className={cn([
-        'overflow-hidden rounded-lg border border-border bg-foreground/10 shadow-lg/5 relative z-10 [@media(min-width:1100px)]:-mx-16 p-4 md:p-16',
+        'relative z-10 overflow-hidden rounded-lg border border-border bg-foreground/10 p-4 shadow-lg/5 md:p-16 [@media(min-width:1100px)]:-mx-16',
         className,
       ])}
     >
-      <div className="rounded-lg overflow-hidden p-2 bg-card/80 border col gap-2 relative">
-        {/* Window controls */}
+      <div className="col relative gap-2 overflow-hidden rounded-lg border bg-card/80 p-2">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <div className="size-2 rounded-full bg-red-500" />
@@ -46,25 +57,18 @@ export function WindowImage({
             <div className="size-2 rounded-full bg-green-500" />
           </div>
         </div>
-        <div className="relative w-full border rounded-md overflow-hidden">
+        <div className="relative w-full overflow-hidden rounded-md border">
           <Image
-            src={darkSrc}
             alt={alt}
-            width={1200}
+            className="h-auto w-full"
             height={800}
-            className="hidden dark:block w-full h-auto"
-          />
-          <Image
-            src={lightSrc}
-            alt={alt}
+            src={imageSrc}
             width={1200}
-            height={800}
-            className="dark:hidden w-full h-auto"
           />
         </div>
       </div>
       {caption && (
-        <figcaption className="text-center text-sm text-muted-foreground max-w-lg mx-auto">
+        <figcaption className="mx-auto max-w-lg text-center text-muted-foreground text-sm">
           {caption}
         </figcaption>
       )}

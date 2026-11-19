@@ -1,4 +1,4 @@
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
 import type { IPolarProduct } from '@openpanel/payments';
 import { useState } from 'react';
 import { popModal } from '.';
@@ -22,7 +22,7 @@ export default function SelectBillingPlan({
   const [view, setView] = useState<'plans' | 'cancel'>('plans');
 
   return (
-    <ModalContent className="!flex !flex-col !overflow-hidden">
+    <ModalContent bodyClassName="flex flex-col overflow-hidden">
       {view === 'plans' ? (
         <>
           <ModalHeader title="Select a billing plan" />

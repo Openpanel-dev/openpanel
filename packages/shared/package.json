@@ -1,0 +1,33 @@
+{
+  "name": "@openpanel/shared",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ipaddr.js": "2.5.0",
+    "lru-cache": "11.5.1",
+    "luxon": "3.7.2",
+    "mathjs": "12.3.2",
+    "nanoid": "5.1.6",
+    "ramda": "0.29.1",
+    "slugify": "1.6.6",
+    "superjson": "2.2.2",
+    "ua-parser-js": "2.0.6",
+    "undici": "8.10.0"
+  },
+  "devDependencies": {
+    "@openpanel/tsconfig": "workspace:*",
+    "@types/luxon": "3.7.1",
+    "@types/node": "catalog:",
+    "@types/ramda": "0.31.0",
+    "typescript": "catalog:"
+  }
+}

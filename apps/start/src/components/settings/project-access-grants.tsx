@@ -1,3 +1,4 @@
+import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
 import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import {
   Select,
@@ -6,24 +7,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { IProjectAccessGrant } from '@openpanel/validation';
 
 interface ProjectAccessGrantsProps {
   value: IProjectAccessGrant[];
   onChange: (value: IProjectAccessGrant[]) => void;
   projects: { id: string; name: string }[];
+  /** A viewer reads every project in scope, so the per-project level is moot. */
+  isReadOnly?: boolean;
 }
 
 /**
  * Picks the projects a member may reach and, for each, whether they may change
- * anything in it. The level used to be hardcoded server-side, so `read` was
- * assigned to people who were meant to have `write` - and nothing enforced it
- * either way. Both halves are real now, so it has to be chooseable.
+ * anything in it.
  */
 export function ProjectAccessGrants({
   value,
   onChange,
   projects,
+  isReadOnly = false,
 }: ProjectAccessGrantsProps) {
   const selectedIds = value.map((grant) => grant.projectId);
 
@@ -35,56 +36,65 @@ export function ProjectAccessGrants({
             projectId,
             // Write is the default: restricting someone is the deliberate act.
             level: 'write' as const,
-          },
-      ),
+          }
+      )
     );
   };
 
   const handleLevelChange = (projectId: string, level: 'read' | 'write') => {
     onChange(
       value.map((grant) =>
-        grant.projectId === projectId ? { ...grant, level } : grant,
-      ),
+        grant.projectId === projectId ? { ...grant, level } : grant
+      )
     );
   };
 
   return (
     <div className="col gap-2">
       <ComboboxAdvanced
-        placeholder="Restrict access to projects"
-        value={selectedIds}
-        onChange={(ids) => handleSelectionChange(ids as string[])}
         items={projects.map((project) => ({
           label: project.name,
           value: project.id,
         }))}
+        onChange={(ids) => handleSelectionChange(ids as string[])}
+        placeholder="Choose projects"
+        value={selectedIds}
       />
 
       {value.length > 0 && (
         <div className="col divide-y rounded-lg border">
           {value.map((grant) => (
             <div
-              key={grant.projectId}
               className="row items-center justify-between gap-2 p-2"
+              key={grant.projectId}
             >
               <span className="truncate text-sm">
                 {projects.find((project) => project.id === grant.projectId)
                   ?.name ?? grant.projectId}
               </span>
-              <Select
-                value={grant.level}
-                onValueChange={(level) =>
-                  handleLevelChange(grant.projectId, level as 'read' | 'write')
-                }
-              >
-                <SelectTrigger className="w-36 shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="write">Can edit</SelectItem>
-                  <SelectItem value="read">Read-only</SelectItem>
-                </SelectContent>
-              </Select>
+              {isReadOnly ? (
+                <span className="shrink-0 text-muted-foreground text-sm">
+                  Read-only
+                </span>
+              ) : (
+                <Select
+                  onValueChange={(level) =>
+                    handleLevelChange(
+                      grant.projectId,
+                      level as 'read' | 'write'
+                    )
+                  }
+                  value={grant.level}
+                >
+                  <SelectTrigger className="w-36 shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="write">Can edit</SelectItem>
+                    <SelectItem value="read">Read-only</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           ))}
         </div>

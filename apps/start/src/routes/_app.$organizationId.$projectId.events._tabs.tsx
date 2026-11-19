@@ -1,12 +1,12 @@
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePageTabs } from '@/hooks/use-page-tabs';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
+import { usePageTabs } from '@/hooks/use-page-tabs';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/events/_tabs',
+  '/_app/$organizationId/$projectId/events/_tabs'
 )({
   component: Component,
   head: () => {
@@ -31,7 +31,6 @@ function Component() {
   ]);
 
   const handleTabChange = (tabId: string) => {
-    console.log('tabId', tabId, tabs[0].id === tabId);
     router.navigate({
       from: Route.fullPath,
       to: tabId,
@@ -41,14 +40,14 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        title="Events"
         description="Paginate through your events, conversions and overall stats"
+        title="Events"
       />
 
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
         className="mt-2 mb-8"
+        onValueChange={handleTabChange}
+        value={activeTab}
       >
         <TabsList>
           {tabs.map((tab) => (

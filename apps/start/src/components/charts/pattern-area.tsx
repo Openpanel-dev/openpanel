@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { curveMonotoneX } from "@visx/curve";
-import { AreaClosed } from "@visx/shape";
-import { useChartStable } from "./chart-context";
+import { curveMonotoneX } from '@visx/curve';
+import { AreaClosed } from '@visx/shape';
+import { useChartStable } from './chart-context';
 
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
@@ -27,23 +27,23 @@ export function PatternArea({
   fill,
   curve = curveMonotoneX,
 }: PatternAreaProps) {
-  const { data, xScale, yScale, xAccessor } = useChartStable();
+  const { renderData, xScale, yScale, xAccessor } = useChartStable();
 
   return (
     <AreaClosed
       curve={curve}
-      data={data}
+      data={renderData}
       fill={fill}
       x={(d) => xScale(xAccessor(d)) ?? 0}
       y={(d) => {
         const v = d[dataKey];
-        return typeof v === "number" ? (yScale(v) ?? 0) : 0;
+        return typeof v === 'number' ? (yScale(v) ?? 0) : 0;
       }}
       yScale={yScale}
     />
   );
 }
 
-PatternArea.displayName = "PatternArea";
+PatternArea.displayName = 'PatternArea';
 
 export default PatternArea;

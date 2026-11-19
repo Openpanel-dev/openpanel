@@ -1,21 +1,11 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import type React from 'react';
-import {
-  Bar,
-  BarChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { z } from 'zod';
 import { AnimatedNumber } from '@/components/animated-number';
-import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
+import { Bar } from '@/components/charts/bar';
+import { BarChart } from '@/components/charts/bar-chart';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { LogoSquare } from '@/components/logo';
 import { Ping } from '@/components/ping';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
@@ -27,6 +17,17 @@ import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
+const DEFAULT_BAR_COLOR = getChartColor(0);
+const BAR_RADIUS = 4;
+const BAR_GAP = 0.25;
+const NO_MARGIN = { top: 0, right: 0, bottom: 0, left: 0 };
+const TOOLTIP_MIN_WIDTH = 120;
+
+type HistogramPoint =
+  RouterOutputs['widget']['realtimeData']['histogram'][number] & {
+    [key: string]: unknown;
+  };
+
 const widgetSearchSchema = z.object({
   shareId: z.string(),
   limit: z.number().default(10),
@@ -34,6 +35,14 @@ const widgetSearchSchema = z.object({
 });
 
 export const Route = createFileRoute('/widget/realtime')({
+  // Embedded in someone else's page, so this stays small. Without it a
+  // missing `shareId` fell through to the root handler, which prints
+  // `error.message` — for a ZodError that is the raw issues array.
+  errorComponent: () => (
+    <div className="p-2 text-muted-foreground text-xs">
+      Missing or invalid widget link.
+    </div>
+  ),
   component: RouteComponent,
   validateSearch: widgetSearchSchema,
 });
@@ -86,7 +95,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
 
   // WebSocket subscription for real-time updates
   useWS<number>(
-    `/live/visitors/${data.projectId}`,
+    `/live/visitors/${data.projectId}?shareId=${shareId}`,
     () => {
       if (!document.hidden) {
         queryClient.refetchQueries(
@@ -102,8 +111,9 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
     }
   );
 
-  const maxDomain =
-    Math.max(...data.histogram.map((item) => item.sessionCount), 1) * 1.2;
+  const barColor = color || DEFAULT_BAR_COLOR;
+  const firstMinute = data.histogram[0]?.time;
+  const lastMinute = data.histogram.at(-1)?.time;
 
   const grids = (() => {
     const countries = data.countries.length > 0 ? 1 : 0;
@@ -121,7 +131,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
 
   return (
     <div className="flex h-screen w-full flex-col bg-background text-foreground">
-      {/* Header with live counter */}
       <div className="p-6 pb-3">
         <div className="flex h-4 w-full items-center justify-between">
           <div className="flex w-full items-center gap-3">
@@ -134,42 +143,46 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
         </div>
 
         <div className="row">
-          <div className="h-18 font-bold font-mono text-6xl text-foreground">
+          <div className="h-18 font-bold text-5xl text-foreground tabular-nums">
             <AnimatedNumber value={data.liveCount} />
           </div>
         </div>
 
         <div className="-mt-4 flex h-20 w-full flex-col">
-          <div className="flex-1">
-            <ResponsiveContainer height="100%" width="100%">
-              <BarChart
-                data={data.histogram}
-                margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
-              >
-                <Tooltip
-                  content={CustomTooltip}
-                  cursor={{ fill: 'var(--def-100)', radius: 4 }}
-                />
-                <XAxis
-                  axisLine={false}
-                  dataKey="time"
-                  interval="preserveStartEnd"
-                  tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
-                  tickLine={false}
-                  ticks={[
-                    data.histogram[0].time,
-                    data.histogram[data.histogram.length - 1].time,
-                  ]}
-                />
-                <YAxis domain={[0, maxDomain]} hide />
-                <Bar
-                  dataKey="sessionCount"
-                  fill={color || 'var(--chart-0)'}
-                  isAnimationActive={false}
-                  radius={[4, 4, 4, 4]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="min-h-0 flex-1">
+            <BarChart
+              animationDuration={0}
+              aspectRatio="auto"
+              barGap={BAR_GAP}
+              className="h-full"
+              data={data.histogram}
+              margin={NO_MARGIN}
+              xDataKey="time"
+            >
+              <Bar
+                animate={false}
+                dataKey="sessionCount"
+                fill={barColor}
+                lineCap={BAR_RADIUS}
+              />
+              <OPChartTooltip<HistogramPoint>
+                datePill={false}
+                minWidth={TOOLTIP_MIN_WIDTH}
+                rows={(point) => [
+                  {
+                    color: barColor,
+                    label: 'Visitors',
+                    value: point.sessionCount,
+                  },
+                ]}
+                showDots={false}
+                title={(point) => point.time}
+              />
+            </BarChart>
+          </div>
+          <div className="row justify-between pt-1 text-2xs text-muted-foreground">
+            <span>{firstMinute}</span>
+            <span>{lastMinute}</span>
           </div>
         </div>
       </div>
@@ -179,7 +192,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
         data.paths.length > 0) && (
         <div className="hide-scrollbar flex flex-1 flex-col gap-6 overflow-auto border-t p-6">
           <div className={cn('grid grid-cols-1 gap-6', grids)}>
-            {/* Countries */}
             {data.countries.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -224,7 +236,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               </div>
             )}
 
-            {/* Referrers */}
             {data.referrers.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -263,7 +274,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
               </div>
             )}
 
-            {/* Paths */}
             {data.paths.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
@@ -304,29 +314,6 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
     </div>
   );
 }
-
-// Custom tooltip component that uses portals to escape overflow hidden
-const CustomTooltip = ({ active, payload }: any) => {
-  const number = useNumber();
-
-  if (!(active && payload && payload.length)) {
-    return null;
-  }
-
-  const data = payload[0].payload;
-
-  return (
-    <ChartTooltipContainer className="max-w-[100px]">
-      <ChartTooltipHeader>
-        <div>{data.time}</div>
-      </ChartTooltipHeader>
-      <ChartTooltipItem color={getChartColor(0)} innerClassName="row gap-1">
-        <div className="flex-1">Visitors</div>
-        <div>{number.short(data.sessionCount)}</div>
-      </ChartTooltipItem>
-    </ChartTooltipContainer>
-  );
-};
 
 function RowItem({
   children,
@@ -441,7 +428,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
 
   return (
     <div className="flex h-screen w-full animate-pulse flex-col bg-background text-foreground">
-      {/* Header with live counter */}
       <div className="border-b p-6 pb-3">
         <div className="flex h-4 w-full items-center justify-between">
           <div className="flex w-full items-center gap-3">
@@ -454,7 +440,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
         </div>
 
         <div className="row">
-          <div className="row flex h-18 items-center gap-1 py-4 font-bold font-mono text-6xl">
+          <div className="row flex h-18 items-center gap-1 py-4 font-bold text-5xl tabular-nums">
             <div className="h-full w-6 rounded bg-muted" />
             <div className="h-full w-6 rounded bg-muted" />
           </div>
@@ -478,9 +464,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
       </div>
 
       <div className="hide-scrollbar flex flex-1 flex-col gap-6 overflow-auto p-6">
-        {/* Countries, Referrers, and Paths skeleton */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {/* Countries skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               COUNTRY
@@ -492,7 +476,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
             </div>
           </div>
 
-          {/* Referrers skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               REFERRER
@@ -504,7 +487,6 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
             </div>
           </div>
 
-          {/* Paths skeleton */}
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
               PATH

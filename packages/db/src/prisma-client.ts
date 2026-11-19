@@ -15,6 +15,10 @@ const getPrismaClient = () => {
   // emit: 'event' keeps the engine from writing prisma:error lines straight
   // to stderr, so they flow through pino to the OTLP pipeline instead.
   const client = new PrismaClient({
+    // Prisma's default error format splices file, line and a source snippet
+    // into messages that reach API clients verbatim. `minimal` keeps our
+    // source layout out of a 500.
+    errorFormat: 'minimal',
     log: [
       { emit: 'event', level: 'error' },
       { emit: 'event', level: 'warn' },
@@ -93,7 +97,6 @@ const getPrismaClient = () => {
               return org.subscriptionEndsAt;
             }
 
-            // Hedge against edge cases :D
             return new Date(Date.now() + 1000 * 60 * 60 * 24);
           },
         },

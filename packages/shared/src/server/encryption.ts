@@ -1,0 +1,153 @@
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
+
+const ENCRYPTION_PREFIX = 'enc:';
+const ALGORITHM = 'aes-256-gcm';
+const IV_LENGTH = 12; // 96 bits for GCM
+const AUTH_TAG_LENGTH = 16; // 128 bits
+const ENCODING = 'base64';
+
+/** The hex ENCRYPTION_KEY as it arrives from the config loader. */
+export type EncryptionKey = string | undefined;
+
+/**
+ * Single symmetric key for all at-rest encryption (TOTP secrets, GSC tokens,
+ * integration credentials). Must be 32 bytes (64 hex characters).
+ * Generate with: openssl rand -hex 32
+ *
+ * Validated here rather than at boot: a deployment that never encrypts
+ * anything has always been allowed to run without the key, and only the first
+ * call that needs it fails.
+ */
+function getEncryptionKey(keyHex: EncryptionKey): Buffer {
+  if (!keyHex) {
+    throw new Error('ENCRYPTION_KEY environment variable is not set');
+  }
+
+  if (keyHex.length !== 64) {
+    throw new Error(
+      'ENCRYPTION_KEY must be 32 bytes (64 hex characters). Generate with: openssl rand -hex 32'
+    );
+  }
+
+  return Buffer.from(keyHex, 'hex');
+}
+
+// Plain variant: base64(iv + authTag + ciphertext), no prefix, for TOTP secrets and GSC tokens. Format-stable so existing ciphertext keeps decrypting.
+
+export function encrypt(key: EncryptionKey, plaintext: string): string {
+  const encryptionKey = getEncryptionKey(key);
+  const iv = randomBytes(IV_LENGTH);
+  const cipher = createCipheriv(ALGORITHM, encryptionKey, iv);
+  const encrypted = Buffer.concat([
+    cipher.update(plaintext, 'utf8'),
+    cipher.final(),
+  ]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, encrypted]).toString(ENCODING);
+}
+
+export function decrypt(key: EncryptionKey, ciphertext: string): string {
+  const encryptionKey = getEncryptionKey(key);
+  const buf = Buffer.from(ciphertext, ENCODING);
+  const iv = buf.subarray(0, IV_LENGTH);
+  const tag = buf.subarray(IV_LENGTH, IV_LENGTH + AUTH_TAG_LENGTH);
+  const encrypted = buf.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
+  // Bun's setAuthTag validates the tag length up front (Node defers to
+  // final()), so a too-short/malformed ciphertext needs an explicit guard
+  // here to produce the same "malformed input" failure on both runtimes.
+  if (tag.length !== AUTH_TAG_LENGTH) {
+    throw new Error(
+      `Invalid encrypted value: expected a ${AUTH_TAG_LENGTH}-byte auth tag, got ${tag.length}`
+    );
+  }
+  const decipher = createDecipheriv(ALGORITHM, encryptionKey, iv);
+  decipher.setAuthTag(tag);
+  // Concatenate first, decode once: GCM is a stream cipher, so update() can end
+  // mid-way through a multi-byte UTF-8 sequence and a per-chunk toString would
+  // turn the split character into replacement chars.
+  return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString(
+    'utf8'
+  );
+}
+
+// Credential variant: enc:base64(iv + ciphertext + authTag). The prefix makes it idempotent and lets a plaintext value pass
+// through unchanged, which the integration test-connection flow relies on (it builds adapters from the raw, unsaved config).
+
+export function isEncrypted(value: string): boolean {
+  return value.startsWith(ENCRYPTION_PREFIX);
+}
+
+export function encryptCredential(
+  key: EncryptionKey,
+  plaintext: string
+): string {
+  if (!plaintext) {
+    return plaintext;
+  }
+  if (isEncrypted(plaintext)) {
+    return plaintext;
+  }
+
+  const encryptionKey = getEncryptionKey(key);
+  const iv = randomBytes(IV_LENGTH);
+
+  const cipher = createCipheriv(ALGORITHM, encryptionKey, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  const ciphertext = Buffer.concat([
+    cipher.update(plaintext, 'utf8'),
+    cipher.final(),
+  ]);
+
+  const authTag = cipher.getAuthTag();
+
+  // Combine: IV (12 bytes) + ciphertext (variable) + authTag (16 bytes)
+  const combined = Buffer.concat([iv, ciphertext, authTag]);
+
+  return ENCRYPTION_PREFIX + combined.toString('base64');
+}
+
+export function decryptCredential(
+  key: EncryptionKey,
+  ciphertext: string
+): string {
+  if (!ciphertext) {
+    return ciphertext;
+  }
+  // If not encrypted, return as-is (allows for graceful migration)
+  if (!isEncrypted(ciphertext)) {
+    return ciphertext;
+  }
+
+  const encryptionKey = getEncryptionKey(key);
+
+  const combined = Buffer.from(
+    ciphertext.slice(ENCRYPTION_PREFIX.length),
+    'base64'
+  );
+
+  if (combined.length < IV_LENGTH + AUTH_TAG_LENGTH) {
+    throw new Error('Invalid encrypted credential: too short');
+  }
+
+  const iv = combined.subarray(0, IV_LENGTH);
+  const authTag = combined.subarray(combined.length - AUTH_TAG_LENGTH);
+  const encryptedData = combined.subarray(
+    IV_LENGTH,
+    combined.length - AUTH_TAG_LENGTH
+  );
+
+  const decipher = createDecipheriv(ALGORITHM, encryptionKey, iv, {
+    authTagLength: AUTH_TAG_LENGTH,
+  });
+
+  decipher.setAuthTag(authTag);
+
+  const decrypted = Buffer.concat([
+    decipher.update(encryptedData),
+    decipher.final(),
+  ]);
+
+  return decrypted.toString('utf8');
+}

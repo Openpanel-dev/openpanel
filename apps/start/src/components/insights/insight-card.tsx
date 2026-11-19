@@ -1,21 +1,10 @@
-import { countries } from '@/translations/countries';
-import type { RouterOutputs } from '@/trpc/client';
-import { cn } from '@/utils/cn';
-import type { InsightPayload } from '@openpanel/validation';
-import { pushModal } from '@/modals';
-import {
-  ArrowDown,
-  ArrowUp,
-  FilterIcon,
-  RotateCcwIcon,
-  SparklesIcon,
-} from 'lucide-react';
-import { last } from 'ramda';
+import { FilterIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
 import { DeltaChip } from '../delta-chip';
 import { SerieIcon } from '../report-chart/common/serie-icon';
-import { Badge } from '../ui/badge';
-import { Button } from '../ui/button';
+import { pushModal } from '@/modals';
+import type { RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 
 function formatWindowKind(windowKind: string): string {
   switch (windowKind) {
@@ -46,7 +35,7 @@ export function InsightCard({
 
   // Pick what to display: prefer share if available (geo/devices), else primaryMetric
   const [metricIndex, setMetricIndex] = useState(
-    availableMetrics.findIndex(([key]) => key === payload?.primaryMetric),
+    availableMetrics.findIndex(([key]) => key === payload?.primaryMetric)
   );
   const currentMetricKey = availableMetrics[metricIndex][0];
   const currentMetricEntry = availableMetrics[metricIndex][1];
@@ -66,8 +55,12 @@ export function InsightCard({
 
   // Format metric values
   const formatValue = (value: number | null): string => {
-    if (value == null) return '-';
-    if (metricUnit === 'ratio') return `${(value * 100).toFixed(1)}%`;
+    if (value == null) {
+      return '-';
+    }
+    if (metricUnit === 'ratio') {
+      return `${(value * 100).toFixed(1)}%`;
+    }
     return Math.round(value).toLocaleString();
   };
 
@@ -84,7 +77,7 @@ export function InsightCard({
       dimensions[0]?.key === 'device'
     ) {
       return (
-        <span className="capitalize flex items-center gap-2">
+        <span className="flex items-center gap-2 capitalize">
           <SerieIcon name={dimensions[0]?.value} /> {insight.displayName}
         </span>
       );
@@ -104,122 +97,95 @@ export function InsightCard({
     return insight.displayName;
   };
 
+  const openDetails = () => pushModal('InsightDetails', { insight });
+
   return (
     <div
       className={cn(
-        'card p-4 h-full flex flex-col hover:bg-def-50 transition-colors group/card',
-        className,
+        'card group/card flex h-full cursor-pointer flex-col p-3 transition-colors hover:bg-def-50',
+        className
       )}
+      onClick={openDetails}
+      onKeyDown={(event) => {
+        // The metric and filter buttons handle their own keys.
+        if (event.target !== event.currentTarget) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openDetails();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <div
-        className={cn(
-          'row justify-between h-4 items-center',
-          onFilter && 'group-hover/card:hidden',
-        )}
-      >
-        <Badge variant="outline" className="-ml-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 truncate font-semibold text-sm">
+          {renderTitle()}
+        </div>
+        <div
+          className={cn(
+            'shrink-0 text-2xs text-muted-foreground',
+            onFilter && 'group-focus-within/card:hidden group-hover/card:hidden'
+          )}
+        >
           {formatWindowKind(insight.windowKind)}
-        </Badge>
-        {/* Severity: subtle dot instead of big pill */}
-        {insight.severityBand && (
-          <div className="flex items-center gap-1 shrink-0">
-            <span
-              className={cn(
-                'h-2 w-2 rounded-full',
-                insight.severityBand === 'severe'
-                  ? 'bg-red-500'
-                  : insight.severityBand === 'moderate'
-                    ? 'bg-yellow-500'
-                    : 'bg-blue-500',
-              )}
-            />
-            <span className="text-[11px] text-muted-foreground capitalize">
-              {insight.severityBand}
-            </span>
+        </div>
+        {onFilter && (
+          <div className="hidden shrink-0 items-center gap-2 group-focus-within/card:flex group-hover/card:flex">
+            {availableMetrics.length > 1 && (
+              <button
+                className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMetricIndex((metricIndex + 1) % availableMetrics.length);
+                }}
+                type="button"
+              >
+                <RotateCcwIcon className="size-2.5" />
+                {metricKeyToLabel(
+                  availableMetrics[
+                    (metricIndex + 1) % availableMetrics.length
+                  ][0]
+                )}
+              </button>
+            )}
+            <button
+              className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground"
+              onClick={(event) => {
+                event.stopPropagation();
+                onFilter();
+              }}
+              type="button"
+            >
+              Filter <FilterIcon className="size-2.5" />
+            </button>
           </div>
         )}
       </div>
-      {onFilter && (
-        <div className="row group-hover/card:flex hidden h-4 justify-between gap-2">
-          {availableMetrics.length > 1 ? (
-            <button
-              type="button"
-              className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
-              onClick={() =>
-                setMetricIndex((metricIndex + 1) % availableMetrics.length)
-              }
-            >
-              <RotateCcwIcon className="size-2" />
-              Show{' '}
-              {metricKeyToLabel(
-                availableMetrics[
-                  (metricIndex + 1) % availableMetrics.length
-                ][0],
-              )}
-            </button>
-          ) : (
-            <div />
-          )}
-          <button
-            type="button"
-            className="text-[11px] text-muted-foreground capitalize flex items-center gap-1"
-            onClick={onFilter}
-          >
-            Filter <FilterIcon className="size-2" />
-          </button>
-        </div>
-      )}
-      <div className="font-semibold text-sm leading-snug line-clamp-2 mt-2">
-        {renderTitle()}
-      </div>
 
-      {/* AI plain-language summary (Tier-1 enrichment) */}
       {insight.aiSummary && (
-        <p className="text-xs text-muted-foreground leading-snug line-clamp-3 mt-1">
+        <p className="mt-1 line-clamp-2 text-muted-foreground text-xs">
           {insight.aiSummary}
         </p>
       )}
 
-      {/* Metric row */}
-      <div className="mt-auto pt-2">
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-[11px] text-muted-foreground mb-1">
-              {metricLabel}
-            </div>
-
-            <div className="col gap-1">
-              <div className="text-2xl font-semibold tracking-tight">
-                {formatValue(currentValue)}
-              </div>
-
-              {/* Inline compare, smaller */}
-              {compareValue != null && (
-                <div className="text-xs text-muted-foreground">
-                  vs {formatValue(compareValue)}
-                </div>
-              )}
-            </div>
+      <div className="mt-auto pt-3">
+        <div className="flex items-baseline gap-2">
+          <div className="font-semibold text-xl tabular-nums tracking-tight">
+            {formatValue(currentValue)}
           </div>
-
-          {/* Delta chip */}
           <DeltaChip
-            variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
             size="sm"
+            variant={isIncrease ? 'inc' : isDecrease ? 'dec' : 'default'}
           >
             {deltaText}
           </DeltaChip>
         </div>
-
-        <Button
-          className="-ml-2 mt-2 h-7 self-start px-2 text-muted-foreground text-xs"
-          icon={SparklesIcon}
-          onClick={() => pushModal('InsightDetails', { insight })}
-          size="sm"
-          variant="ghost"
-        >
-          Why did this happen?
-        </Button>
+        <div className="mt-0.5 text-2xs text-muted-foreground">
+          {metricLabel}
+          {compareValue != null && ` · vs ${formatValue(compareValue)}`}
+        </div>
       </div>
     </div>
   );

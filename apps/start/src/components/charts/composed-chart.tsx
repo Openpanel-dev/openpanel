@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { ParentSize } from "@visx/responsive";
-import type { Transition } from "motion/react";
+import { ParentSize } from '@visx/responsive';
+import type { Transition } from 'motion/react';
 import {
   Children,
   isValidElement,
@@ -9,13 +9,13 @@ import {
   type ReactNode,
   useMemo,
   useRef,
-} from "react";
-import { cn } from "@/lib/utils";
-import { Area, type AreaProps } from "./area";
-import type { LineConfig, Margin } from "./chart-context";
-import { Line, type LineProps } from "./line";
-import { SeriesBar, type SeriesBarProps } from "./series-bar";
-import { TimeSeriesChartInner } from "./time-series-chart-shell";
+} from 'react';
+import { Area, type AreaProps } from './area';
+import type { LineConfig, Margin } from './chart-context';
+import { Line, type LineProps } from './line';
+import { SeriesBar, type SeriesBarProps } from './series-bar';
+import { TimeSeriesChartInner } from './time-series-chart-shell';
+import { cn } from '@/lib/utils';
 
 export interface ComposedChartProps {
   /** Data array — each row typically has a date and multiple numeric series */
@@ -41,15 +41,19 @@ export interface ComposedChartProps {
   stacked?: boolean;
   /** Gap in px between stacked segments. Default: 0 */
   stackGap?: number;
+  /** Formats the x-axis and crosshair date labels. Default: `shortDateFmt`. */
+  formatDateLabel?: (date: Date) => string;
+  /** Fixed y domain per `yAxisId`; axes not listed keep their data-driven domain. */
+  yDomains?: Record<string, [number, number]>;
 }
 
 const DEFAULT_MARGIN: Margin = { top: 40, right: 40, bottom: 40, left: 40 };
 
 function getChildComponentName(child: ReactElement): string {
   const childType = child.type as { displayName?: string; name?: string };
-  return typeof child.type === "function"
-    ? childType.displayName || childType.name || ""
-    : "";
+  return typeof child.type === 'function'
+    ? childType.displayName || childType.name || ''
+    : '';
 }
 
 function upsertLineConfig(lines: LineConfig[], config: LineConfig): void {
@@ -68,7 +72,7 @@ function tryAppendSeriesBar(
   barDataKeys: string[]
 ): boolean {
   const name = getChildComponentName(child);
-  if (!(child.type === SeriesBar || name === "SeriesBar")) {
+  if (!(child.type === SeriesBar || name === 'SeriesBar')) {
     return false;
   }
   const props = child.props as SeriesBarProps;
@@ -78,23 +82,25 @@ function tryAppendSeriesBar(
   barDataKeys.push(props.dataKey);
   upsertLineConfig(lines, {
     dataKey: props.dataKey,
-    stroke: props.stroke || props.fill || "var(--chart-line-primary)",
+    stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
     strokeWidth: 0,
+    yAxisId: props.yAxisId,
   });
   return true;
 }
 
 function tryAppendLine(child: ReactElement, lines: LineConfig[]): boolean {
   const name = getChildComponentName(child);
-  if (!(child.type === Line || name === "Line")) {
+  if (!(child.type === Line || name === 'Line')) {
     return false;
   }
   const props = child.props as LineProps;
   if (props.dataKey) {
     upsertLineConfig(lines, {
       dataKey: props.dataKey,
-      stroke: props.stroke || "var(--chart-line-primary)",
+      stroke: props.stroke || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2.5,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -102,15 +108,16 @@ function tryAppendLine(child: ReactElement, lines: LineConfig[]): boolean {
 
 function tryAppendArea(child: ReactElement, lines: LineConfig[]): boolean {
   const name = getChildComponentName(child);
-  if (!(child.type === Area || name === "Area")) {
+  if (!(child.type === Area || name === 'Area')) {
     return false;
   }
   const props = child.props as AreaProps;
   if (props.dataKey) {
     upsertLineConfig(lines, {
       dataKey: props.dataKey,
-      stroke: props.stroke || props.fill || "var(--chart-line-primary)",
+      stroke: props.stroke || props.fill || 'var(--chart-line-primary)',
       strokeWidth: props.strokeWidth ?? 2,
+      yAxisId: props.yAxisId,
     });
   }
   return true;
@@ -150,7 +157,7 @@ function computeComposedYScaleDomainMax(
     let barSum = 0;
     for (const k of barDataKeys) {
       const v = d[k];
-      if (typeof v === "number") {
+      if (typeof v === 'number') {
         barSum += v;
       }
     }
@@ -160,7 +167,7 @@ function computeComposedYScaleDomainMax(
         continue;
       }
       const v = d[line.dataKey];
-      if (typeof v === "number") {
+      if (typeof v === 'number') {
         rowMaxOther = Math.max(rowMaxOther, v);
       }
     }
@@ -186,6 +193,8 @@ interface ChartInnerProps {
   barGap?: number;
   stacked?: boolean;
   stackGap?: number;
+  formatDateLabel?: (date: Date) => string;
+  yDomains?: Record<string, [number, number]>;
 }
 
 function ChartInner({
@@ -205,6 +214,8 @@ function ChartInner({
   barGap,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
+  yDomains,
 }: ChartInnerProps) {
   const { lines, barDataKeys } = useMemo(
     () => extractComposedSeries(children),
@@ -226,7 +237,7 @@ function ChartInner({
       for (const key of barDataKeys) {
         pointOffsets.set(key, cumulative);
         const v = d[key];
-        if (typeof v === "number") {
+        if (typeof v === 'number') {
           cumulative += v;
         }
       }
@@ -258,12 +269,14 @@ function ChartInner({
       containerRef={containerRef}
       data={data}
       enterTransition={enterTransition}
+      formatDateLabel={formatDateLabel}
       height={height}
       lines={lines}
       margin={margin}
       revealSignature={revealSignature}
       width={width}
       xDataKey={xDataKey}
+      yDomains={yDomains}
       yScaleDomainMax={yScaleDomainMax}
     >
       {children}
@@ -273,29 +286,31 @@ function ChartInner({
 
 export function ComposedChart({
   data,
-  xDataKey = "date",
+  xDataKey = 'date',
   margin: marginProp,
   animationDuration = 1100,
   animationEasing,
   enterTransition,
   revealSignature,
-  aspectRatio = "2 / 1",
-  className = "",
+  aspectRatio = '2 / 1',
+  className = '',
   children,
   barSize,
   maxBarSize,
   barGap = 4,
   stacked = false,
   stackGap = 0,
+  formatDateLabel,
+  yDomains,
 }: ComposedChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const margin = { ...DEFAULT_MARGIN, ...marginProp };
 
   return (
     <div
-      className={cn("relative w-full", className)}
+      className={cn('relative w-full', className)}
       ref={containerRef}
-      style={{ aspectRatio, touchAction: "none" }}
+      style={{ aspectRatio, touchAction: 'pan-y' }}
     >
       <ParentSize debounceTime={10}>
         {({ width, height }) => (
@@ -307,6 +322,7 @@ export function ComposedChart({
             containerRef={containerRef}
             data={data}
             enterTransition={enterTransition}
+            formatDateLabel={formatDateLabel}
             height={height}
             margin={margin}
             maxBarSize={maxBarSize}
@@ -315,6 +331,7 @@ export function ComposedChart({
             stackGap={stackGap}
             width={width}
             xDataKey={xDataKey}
+            yDomains={yDomains}
           >
             {children}
           </ChartInner>
@@ -324,6 +341,6 @@ export function ComposedChart({
   );
 }
 
-ComposedChart.displayName = "ComposedChart";
+ComposedChart.displayName = 'ComposedChart';
 
 export default ComposedChart;

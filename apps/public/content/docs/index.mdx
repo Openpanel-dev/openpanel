@@ -3,90 +3,35 @@ title: What is OpenPanel?
 description: OpenPanel is an open-source web and product analytics platform that combines the power of Mixpanel with the ease of Plausible. Whether you're tracking website visitors or analyzing user behavior in your app, OpenPanel provides the insights you need without the complexity.
 ---
 
-import { UserIcon,HardDriveIcon } from 'lucide-react'
+import { UserIcon, HardDriveIcon } from 'lucide-react'
 
-## ✨ Key Features
+## What is OpenPanel?
 
-- **🔍 Advanced Analytics**: [Funnels](/features/funnels), cohorts, user profiles, and session history
-- **🎬 Session Replay**: [Record and replay user sessions](/features/session-replay) with privacy controls built in
-- **📊 Real-time Dashboards**: Live data updates and interactive charts
-- **🎯 A/B Testing**: Built-in variant testing with detailed breakdowns
-- **🔔 Smart Notifications**: Event and funnel-based alerts
-- **🌍 Privacy-First**: Cookieless tracking and GDPR compliance
-- **🚀 Developer-Friendly**: Comprehensive SDKs and API access
-- **📦 Self-Hosted**: Full control over your data and infrastructure
-- **💸 Transparent Pricing**: No hidden costs
-- **🛠️ Custom Dashboards**: Flexible chart creation and [data visualization](/features/data-visualization)
-- **📱 Multi-Platform**: Web, mobile (iOS/Android), and server-side tracking
-- **🤖 MCP Server**: [Ask your AI about your users](/features/mcp) — connect Claude, Cursor, or any MCP client
-- **💰 Revenue Tracking**: [Monitor purchases and subscriptions](/features/revenue-tracking) alongside product events
-- **🔌 Integrations**: [Google Search Console](/features/integrations), and more
+OpenPanel is open-source web and product analytics. One script gives you the traffic numbers you would get from Plausible or Google Analytics, and the same events power product reports like [funnels](/features/funnels), [retention](/features/retention), user profiles and [session replay](/features/session-replay).
 
-## 📊 Analytics Platform Comparison
+Tracking is cookie-less by default, and the code is AGPL licensed on [GitHub](https://github.com/Openpanel-dev/openpanel).
 
-| Feature                                | OpenPanel | Mixpanel | GA4       | Plausible |
-|----------------------------------------|-----------|----------|-----------|-----------|
-| ✅ Open-source                         | ✅         | ❌        | ❌        | ✅         |
-| 🧩 Self-hosting supported              | ✅         | ❌        | ❌        | ✅         |
-| 🔒 Cookieless by default               | ✅         | ❌        | ❌        | ✅         |
-| 🔁 Real-time dashboards                | ✅         | ✅        | ❌        | ✅         |
-| 🔍 Funnels & cohort analysis           | ✅         | ✅        | ✅*       | ✅***         |
-| 👤 User profiles & session history     | ✅         | ✅        | ❌        | ❌         |
-| 🎬 Session replay                      | ✅         | ✅****    | ❌        | ❌         |
-| 📈 Custom dashboards & charts          | ✅         | ✅        | ✅        | ❌         |
-| 💬 Event & funnel notifications        | ✅         | ✅        | ❌        | ❌         |
-| 🌍 GDPR-compliant tracking             | ✅         | ✅        | ❌**      | ✅         |
-| 📦 SDKs (Web, Swift, Kotlin, ReactNative) | ✅      | ✅        | ✅        | ❌         |
-| 💸 Transparent pricing                 | ✅         | ❌        | ✅*       | ✅         |
-| 🚀 Built for developers                | ✅         | ✅        | ❌        | ✅         |
-| 🔧 A/B testing & variant breakdowns    | ✅         | ✅        | ❌        | ❌         |
+## Cloud or self-hosted
 
-✅* GA4 has a free tier but often requires BigQuery (paid) for raw data access.
-
-❌** GA4 has faced GDPR bans in several EU countries due to data transfers to US-based servers.
-
-✅*** Plausible has simple goals
-
-✅**** Mixpanel session replay is limited to 5k sessions/month on free and 20k on paid. OpenPanel has no limit.
-
-## 🚀 Quick Start
-
-Before you can start tracking your events you'll need to create an account or spin up your own instance of OpenPanel.
+Both run the same product. OpenPanel Cloud is hosted in the EU and starts with a 30-day free trial. Self-hosting is free and runs with Docker Compose.
 
 <Cards>
   <Card
     href="https://dashboard.openpanel.dev/onboarding"
     title="Create an account"
     icon={<UserIcon />}
-    description="Create your account and workspace"
+    description="Start a 30-day trial on OpenPanel Cloud"
   />
   <Card
     href="/docs/self-hosting/self-hosting"
-    title="Self-hosted OpenPanel"
+    title="Self-host OpenPanel"
     icon={<HardDriveIcon />}
-    description="Get full control and start self-host"
+    description="Run it on your own servers"
   />
 </Cards>
 
-1. **[Install OpenPanel](/docs/get-started/install-openpanel)** - Add the script tag or use one of our SDKs
-2. **[Track Events](/docs/get-started/track-events)** - Start measuring user actions
-3. **[Identify Users](/docs/get-started/identify-users)** - Connect events to specific users
-4. **[Track Revenue](/docs/revenue-tracking)** - Monitor purchases and subscriptions
+## Get help
 
-## 🔒 Privacy First
-
-OpenPanel is built with privacy in mind:
-- **No cookies required** - Cookieless tracking by default
-- **GDPR and CCPA compliant** - Built for privacy regulations
-- **Self-hosting option** - Full control over your data
-- **Transparent data handling** - You own your data
-
-## 🌐 Open Source
-
-OpenPanel is fully open-source and available on [GitHub](https://github.com/Openpanel-dev/openpanel). We believe in transparency and community-driven development.
-
-## 💬 Need Help?
-
-- Join our [Discord community](https://go.openpanel.dev/discord)
-- Check our [GitHub issues](https://github.com/Openpanel-dev/openpanel/issues)
-- Email us at [hello@openpanel.dev](mailto:hello@openpanel.dev)
+- Ask in the [Discord community](https://go.openpanel.dev/discord)
+- Report a bug in [GitHub issues](https://github.com/Openpanel-dev/openpanel/issues)
+- Email [hello@openpanel.dev](mailto:hello@openpanel.dev)

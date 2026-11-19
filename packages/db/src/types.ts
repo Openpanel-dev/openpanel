@@ -1,19 +1,22 @@
-import type {
-  CohortDefinition,
-  IImportConfig,
-  IProjectAccessGrant,
-  IIntegrationConfig,
-  INotificationRuleConfig,
-  IProjectFilters,
-  IWidgetOptions,
-  InsightPayload,
-} from '@openpanel/validation';
+// Type-only `db -> core` edge: `import type` creates no runtime cycle.
 import type {
   IClickhouseBotEvent,
   IClickhouseEvent,
-} from './services/event.service';
-import type { INotificationPayload } from './services/notification.service';
-import type { IClickhouseProfile } from './services/profile.service';
+  IClickhouseProfile,
+  INotificationPayload,
+} from '@openpanel/core';
+import type { CohortDefinition } from '@openpanel/core/modules/cohort/cohort.constants';
+import type { IImportConfig } from '@openpanel/core/modules/import/import.constants';
+import type { InsightPayload } from '@openpanel/core/modules/insight/insight.constants';
+import type { IIntegrationConfig } from '@openpanel/core/modules/integration/integration.constants';
+import type { INotificationRuleConfig } from '@openpanel/core/modules/notification/notification.constants';
+import type { IOrganizationAttributionStored } from '@openpanel/core/modules/onboarding/onboarding.constants';
+import type { IProjectAccessGrant } from '@openpanel/core/modules/organization/organization.constants';
+import type { IProjectFilters } from '@openpanel/core/modules/project/project.constants';
+import type {
+  ICustomEventItem,
+  IWidgetOptions,
+} from '@openpanel/core/modules/report/report.constants';
 
 declare global {
   namespace PrismaJson {
@@ -23,18 +26,19 @@ declare global {
     type IPrismaNotificationPayload = INotificationPayload;
     type IPrismaProjectFilters = IProjectFilters[];
     type IPrismaInviteProjectAccess = IProjectAccessGrant[];
+    type IPrismaOrganizationAttribution = IOrganizationAttributionStored;
     type IPrismaProjectInsightPayload = InsightPayload;
     type IPrismaWidgetOptions = IWidgetOptions;
     type IPrismaClickhouseEvent = IClickhouseEvent;
     type IPrismaClickhouseProfile = IClickhouseProfile;
     type IPrismaClickhouseBotEvent = IClickhouseBotEvent;
     type IPrismaCohortDefinition = CohortDefinition;
-    // Each ChatMessage row stores one Better Agent `ConversationItem`
-    // (message, tool call, or tool result) as JSON. Typed as `unknown[]`
-    // here to avoid pulling `@better-agent/core` into @openpanel/db's
-    // dependency graph; the real shape is narrowed at the API boundary
-    // in apps/api/src/agents/persistence.ts.
+    type IPrismaCustomEventItems = ICustomEventItem[];
+    // One ChatMessage row is one AI SDK `UIMessage`: `parts` is its parts
+    // array. Typed loosely so `ai` stays out of @openpanel/db; the assistant
+    // module narrows it.
     type IPrismaUIMessageParts = unknown[];
+    type IPrismaChatMessageMetadata = Record<string, unknown>;
     type IPrismaSubscriptionStatus =
       | 'incomplete'
       | 'incomplete_expired'
@@ -60,7 +64,7 @@ declare global {
     };
     // Steps of the wind-down sequence, in order. The column stores the last
     // step whose email was sent; `blocked` and `final_warning` also mean
-    // ingestion is rejected. See apps/worker/src/jobs/cron.wind-down.ts.
+    // ingestion is rejected.
     type IPrismaWindDownStep =
       | 'expired_notice'
       | 'stopping_soon'

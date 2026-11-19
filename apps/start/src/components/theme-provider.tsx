@@ -1,15 +1,17 @@
-import { useCookieStore } from '@/hooks/use-cookie-store';
-import { mapKeys } from '@openpanel/validation';
-import { ScriptOnce, useRouteContext } from '@tanstack/react-router';
+import { ScriptOnce } from '@tanstack/react-router';
 import { createIsomorphicFn } from '@tanstack/react-start';
-import { type ReactNode, createContext, use, useEffect, useState } from 'react';
+import { createContext, type ReactNode, use, useEffect } from 'react';
 import { z } from 'zod';
+import { useCookieStore } from '@/hooks/use-cookie-store';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 const UserThemeSchema = z.enum(['light', 'dark', 'system']).catch('system');
 const AppThemeSchema = z.enum(['light', 'dark']).catch('light');
 
 const clientOnly = <T extends (...args: any[]) => void>(fn: T) => {
-  if (typeof window === 'undefined') return (() => {}) as unknown as T;
+  if (typeof window === 'undefined') {
+    return (() => {}) as unknown as T;
+  }
   return fn;
 };
 
@@ -109,11 +111,13 @@ type ThemeProviderProps = {
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [userTheme, setUserTheme] = useCookieStore<UserTheme>(
     'ui-theme',
-    'system',
+    'system'
   );
 
   useEffect(() => {
-    if (userTheme !== 'system') return;
+    if (userTheme !== 'system') {
+      return;
+    }
     return setupPreferredListener();
   }, [userTheme]);
 

@@ -1,11 +1,5 @@
-import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
-import {
-  isHourIntervalEnabledByRange,
-  isMinuteIntervalEnabledByRange,
-} from '@openpanel/constants';
-import { ClockIcon } from 'lucide-react';
 import { ReportInterval } from '../report/ReportInterval';
-import { Combobox } from '../ui/combobox';
+import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 
 export function OverviewInterval() {
   const { interval, setInterval, range, startDate, endDate } =
@@ -13,12 +7,12 @@ export function OverviewInterval() {
 
   return (
     <ReportInterval
+      chartType="linear"
+      endDate={endDate}
       interval={interval}
       onChange={setInterval}
       range={range}
-      chartType="linear"
       startDate={startDate}
-      endDate={endDate}
     />
   );
 }

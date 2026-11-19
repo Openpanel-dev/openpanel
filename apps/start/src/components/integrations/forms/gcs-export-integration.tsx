@@ -1,3 +1,10 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateGCSExportIntegration } from '@openpanel/core/modules/integration/integration.constants';
+import { useMutation } from '@tanstack/react-query';
+import { mergeDeepRight, path } from 'ramda';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,13 +17,6 @@ import {
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateGCSExportIntegration } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { path, mergeDeepRight } from 'ramda';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type IForm = z.infer<typeof zCreateGCSExportIntegration>;
 
@@ -42,7 +42,7 @@ export function GCSExportIntegrationForm({
           serviceAccountKey: '',
         },
       },
-      defaultValues ?? {},
+      defaultValues ?? {}
     ),
     resolver: zodResolver(zCreateGCSExportIntegration),
   });
@@ -53,7 +53,7 @@ export function GCSExportIntegrationForm({
       onError(error) {
         toast.error(error.message || 'Failed to create integration');
       },
-    }),
+    })
   );
 
   const testMutation = useMutation(
@@ -68,7 +68,7 @@ export function GCSExportIntegrationForm({
       onError(error) {
         toast.error(error.message || 'Failed to test connection');
       },
-    }),
+    })
   );
 
   const handleSubmit = (values: IForm) => {
@@ -81,7 +81,7 @@ export function GCSExportIntegrationForm({
 
   const handleTest = () => {
     const values = form.getValues();
-    if (!values.config.bucket || !values.config.serviceAccountKey) {
+    if (!(values.config.bucket && values.config.serviceAccountKey)) {
       return toast.error('Bucket and Service Account Key are required');
     }
     testMutation.mutate(values);
@@ -89,8 +89,8 @@ export function GCSExportIntegrationForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit, handleError)}
       className="col gap-4"
+      onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
         label="Name"
@@ -115,10 +115,10 @@ export function GCSExportIntegrationForm({
       </div>
 
       <div className="col gap-1.5">
-        <label className="text-sm font-medium">Format</label>
+        <label className="font-medium text-sm">Format</label>
         <Controller
-          name="config.format"
           control={form.control}
+          name="config.format"
           render={({ field }) => (
             <Select onValueChange={field.onChange} value={field.value}>
               <SelectTrigger className="w-48">
@@ -126,7 +126,7 @@ export function GCSExportIntegrationForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="jsonl_gzip">JSONL (gzip)</SelectItem>
-                <SelectItem value="parquet" disabled>
+                <SelectItem disabled value="parquet">
                   Parquet (coming soon)
                 </SelectItem>
               </SelectContent>
@@ -136,11 +136,11 @@ export function GCSExportIntegrationForm({
       </div>
 
       <div className="col gap-1.5">
-        <label className="text-sm font-medium">
+        <label className="font-medium text-sm">
           Service Account Key (JSON)
         </label>
         <textarea
-          className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring min-h-32 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-32 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           placeholder={
             defaultValues?.id
               ? 'Leave blank to keep the current key'
@@ -152,13 +152,13 @@ export function GCSExportIntegrationForm({
         />
         {!!path(
           ['config', 'serviceAccountKey', 'message'],
-          form.formState.errors,
+          form.formState.errors
         ) && (
           <p className="text-destructive text-xs">
             {
               path(
                 ['config', 'serviceAccountKey', 'message'],
-                form.formState.errors,
+                form.formState.errors
               ) as any
             }
           </p>
@@ -172,14 +172,14 @@ export function GCSExportIntegrationForm({
 
       <div className="row gap-4">
         <Button
+          disabled={testMutation.isPending}
+          onClick={handleTest}
           type="button"
           variant="outline"
-          onClick={handleTest}
-          disabled={testMutation.isPending}
         >
           {testMutation.isPending ? 'Testing...' : 'Test connection'}
         </Button>
-        <Button type="submit" className="flex-1" disabled={mutation.isPending}>
+        <Button className="flex-1" disabled={mutation.isPending} type="submit">
           {mutation.isPending
             ? 'Saving...'
             : defaultValues?.id

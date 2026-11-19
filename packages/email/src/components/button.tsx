@@ -1,12 +1,15 @@
 import { Button as EmailButton } from '@react-email/components';
-// biome-ignore lint/style/useImportType: <explanation>
-import React from 'react';
+import type React from 'react';
 
 export function Button({
   href,
   children,
   style,
-}: { href: string; children: React.ReactNode; style?: React.CSSProperties }) {
+}: {
+  href: string;
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+}) {
   return (
     <EmailButton
       href={href}

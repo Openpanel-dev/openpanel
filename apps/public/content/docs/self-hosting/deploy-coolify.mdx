@@ -5,6 +5,9 @@ description: Deploy OpenPanel using Coolify's one-click service
 
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 import { Callout } from 'fumadocs-ui/components/callout';
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
 
 [Coolify](https://coolify.io) is an open-source, self-hosted platform that simplifies deploying applications. OpenPanel is available as a one-click service in Coolify, making deployment quick and easy.
 
@@ -134,15 +137,6 @@ To update OpenPanel in Coolify:
 <Callout>
 Database migrations run automatically when the API service starts, so updates are seamless.
 </Callout>
-
-### Scaling
-
-You can scale the worker service in Coolify:
-
-1. Navigate to your OpenPanel service
-2. Edit the `opworker` service configuration
-3. Adjust the replica count
-4. Save and redeploy
 
 ## Troubleshooting
 

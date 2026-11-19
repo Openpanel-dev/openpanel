@@ -1,19 +1,16 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { InputDateTime } from '@/components/ui/input-date-time';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { IServiceReference } from '@openpanel/core';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { IServiceReference } from '@openpanel/db';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { InputDateTime } from '@/components/ui/input-date-time';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
   id: z.string().min(1),
@@ -53,15 +50,15 @@ export default function EditReference({
         toast('Success', { description: 'Reference updated.' });
         reset();
         queryClient.invalidateQueries(
-          trpc.reference.getReferences.pathFilter(),
+          trpc.reference.getReferences.pathFilter()
         );
         queryClient.invalidateQueries(
-          trpc.reference.getChartReferences.pathFilter(),
+          trpc.reference.getChartReferences.pathFilter()
         );
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -82,14 +79,14 @@ export default function EditReference({
             <InputDateTime {...field} label="Date and time" />
           )}
         />
-        <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+        <DialogFooter>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Update
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

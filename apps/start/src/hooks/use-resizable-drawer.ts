@@ -40,17 +40,25 @@ export function useResizableDrawer({
 
   // Hydrate from localStorage on mount (avoids SSR mismatch).
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return;
+    if (!raw) {
+      return;
+    }
     const n = Number(raw);
-    if (Number.isNaN(n)) return;
+    if (Number.isNaN(n)) {
+      return;
+    }
     setWidth(Math.min(maxWidth, Math.max(minWidth, n)));
   }, [storageKey, minWidth, maxWidth]);
 
   // Persist on idle (debounced).
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      return;
+    }
     const t = window.setTimeout(() => {
       window.localStorage.setItem(storageKey, String(width));
     }, 300);
@@ -65,14 +73,16 @@ export function useResizableDrawer({
       dragRef.current = { startX: e.clientX, startWidth: width };
 
       const onMove = (ev: MouseEvent) => {
-        if (!dragRef.current) return;
+        if (!dragRef.current) {
+          return;
+        }
         const dx =
           edge === 'left'
             ? dragRef.current.startX - ev.clientX
             : ev.clientX - dragRef.current.startX;
         const next = Math.min(
           maxWidth,
-          Math.max(minWidth, dragRef.current.startWidth + dx),
+          Math.max(minWidth, dragRef.current.startWidth + dx)
         );
         setWidth(next);
       };
@@ -90,7 +100,7 @@ export function useResizableDrawer({
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup', onUp);
     },
-    [width, minWidth, maxWidth, edge],
+    [width, minWidth, maxWidth, edge]
   );
 
   return {

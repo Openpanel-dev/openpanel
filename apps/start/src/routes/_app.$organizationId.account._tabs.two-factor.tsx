@@ -1,14 +1,14 @@
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { ShieldAlertIcon, ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { ShieldCheckIcon, ShieldOffIcon } from 'lucide-react';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/account/_tabs/two-factor',
+  '/_app/$organizationId/account/_tabs/two-factor'
 )({
   component: Component,
   pendingComponent: FullPageLoadingState,
@@ -16,42 +16,48 @@ export const Route = createFileRoute(
 
 function Component() {
   const trpc = useTRPC();
-  const status = useSuspenseQuery(trpc.auth.totpStatus.queryOptions());
+  const status = useSuspenseQuery(trpc.auth.twoFactorStatus.queryOptions());
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead>
         <span className="title">Two-factor authentication</span>
       </WidgetHead>
       <WidgetBody className="col gap-4">
-        <p className="text-sm text-muted-foreground leading-normal">
+        <p className="text-muted-foreground text-sm">
           Protect your account with an authenticator app (Google Authenticator,
           1Password, Authy, etc.). You'll be asked for a 6-digit code each time
           you sign in with email and password.
         </p>
 
         {status.data.enabled ? (
-          <EnabledView
-            enabledAt={status.data.enabledAt!}
-            remainingRecoveryCodes={status.data.remainingRecoveryCodes}
-          />
+          <EnabledView />
         ) : (
-          <DisabledView hasEmailProvider={status.data.hasEmailProvider} />
+          <DisabledView
+            hasPassword={status.data.hasPassword}
+            wasReset={status.data.wasReset}
+          />
         )}
       </WidgetBody>
     </Widget>
   );
 }
 
-function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
-  if (!hasEmailProvider) {
+function DisabledView({
+  hasPassword,
+  wasReset,
+}: {
+  hasPassword: boolean;
+  wasReset: boolean;
+}) {
+  if (!hasPassword) {
     return (
       <div className="col gap-2 rounded-md border border-border bg-def-100 px-4 py-3 text-sm">
         <div className="row items-center gap-2">
           <ShieldOffIcon className="size-4 text-muted-foreground" />
           <span>Two-factor authentication is not available.</span>
         </div>
-        <p className="text-muted-foreground leading-normal">
+        <p className="text-muted-foreground">
           Your account signs in with Google or GitHub, which handle two-factor
           authentication in their account settings. Enable it in your provider's
           security settings.
@@ -61,55 +67,58 @@ function DisabledView({ hasEmailProvider }: { hasEmailProvider: boolean }) {
   }
 
   return (
-    <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
-      <div className="row items-center gap-2 text-sm">
-        <ShieldOffIcon className="size-4 text-muted-foreground" />
-        <span>Two-factor authentication is disabled.</span>
+    <>
+      {wasReset && (
+        <div className="col gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm">
+          <div className="row items-center gap-2">
+            <ShieldAlertIcon className="size-4 text-amber-500" />
+            <span>Set up two-factor authentication again</span>
+          </div>
+          <p className="text-muted-foreground">
+            We moved sign-in to a new system, and authenticator codes set up
+            before the move no longer work there. Two-factor is off until you
+            enable it again; remove the old OpenPanel entry from your
+            authenticator app first.
+          </p>
+        </div>
+      )}
+      <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
+        <div className="row items-center gap-2 text-sm">
+          <ShieldOffIcon className="size-4 text-muted-foreground" />
+          <span>Two-factor authentication is disabled.</span>
+        </div>
+        <Button onClick={() => pushModal('SetupTwoFactor')} size="sm">
+          Enable
+        </Button>
       </div>
-      <Button size="sm" onClick={() => pushModal('SetupTwoFactor')}>
-        Enable
-      </Button>
-    </div>
+    </>
   );
 }
 
-function EnabledView({
-  enabledAt,
-  remainingRecoveryCodes,
-}: {
-  enabledAt: Date;
-  remainingRecoveryCodes: number;
-}) {
+function EnabledView() {
   return (
     <>
       <div className="row items-center justify-between rounded-md border border-border bg-def-100 px-4 py-3">
         <div className="row items-center gap-2">
-          <div className="size-10 bg-emerald-500/10 rounded-full center-center">
-          <ShieldCheckIcon className="size-4 text-emerald-500" />
+          <div className="center-center size-10 rounded-full bg-emerald-500/10">
+            <ShieldCheckIcon className="size-4 text-emerald-500" />
           </div>
-          <div className="col gap-1">
-            <span>Two-factor authentication is enabled.</span>
-            <span className="text-xs text-muted-foreground">
-              Enabled {new Date(enabledAt).toLocaleString()} ·{' '}
-              {remainingRecoveryCodes} recovery code
-              {remainingRecoveryCodes === 1 ? '' : 's'} remaining
-            </span>
-          </div>
+          <span>Two-factor authentication is enabled.</span>
         </div>
       </div>
 
       <div className="row gap-2">
         <Button
+          onClick={() => pushModal('RegenerateRecoveryCodes')}
           size="sm"
           variant="outline"
-          onClick={() => pushModal('RegenerateRecoveryCodes')}
         >
           Regenerate recovery codes
         </Button>
         <Button
+          onClick={() => pushModal('DisableTwoFactor')}
           size="sm"
           variant="destructive"
-          onClick={() => pushModal('DisableTwoFactor')}
         >
           Disable
         </Button>

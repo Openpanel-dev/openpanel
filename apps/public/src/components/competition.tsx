@@ -45,31 +45,31 @@ export function Competition() {
 
   if (!mounted) {
     return (
-      <span className="block truncate leading-tight -mt-1" style={{ color }}>
+      <span className="-mt-1 block truncate leading-tight" style={{ color }}>
         {word}
       </span>
     );
   }
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence initial={false} mode="wait">
       <motion.div
+        className="-mt-1 block truncate leading-tight"
         key={word}
-        className="block truncate leading-tight -mt-1"
         style={{ color }}
       >
         {word?.split('').map((char, index) => (
           <motion.span
-            key={`${word}-${char}-${index.toString()}`}
-            initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -10, opacity: 0 }}
+            initial={{ y: 10, opacity: 0 }}
+            key={`${word}-${char}-${index.toString()}`}
+            style={{ display: 'inline-block', whiteSpace: 'pre' }}
             transition={{
               duration: 0.15,
               delay: index * 0.015,
               ease: 'easeOut',
             }}
-            style={{ display: 'inline-block', whiteSpace: 'pre' }}
           >
             {char}
           </motion.span>

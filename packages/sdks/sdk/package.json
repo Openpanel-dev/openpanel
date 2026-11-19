@@ -1,21 +1,27 @@
 {
   "name": "@openpanel/sdk",
-  "version": "1.3.1-local",
+  "version": "1.3.4-local",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Openpanel-dev/openpanel.git",
+    "directory": "packages/sdks/sdk"
+  },
   "module": "index.ts",
   "config": {
     "docPath": "apps/public/content/docs/(tracking)/sdks/javascript.mdx"
   },
   "scripts": {
     "build": "rm -rf dist && tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {},
   "devDependencies": {
     "@openpanel/tsconfig": "workspace:*",
-    "@openpanel/validation": "workspace:*",
     "@types/node": "catalog:",
-    "tsup": "^7.2.0",
+    "bun-types": "1.4.0",
+    "tsup": "7.3.0",
     "typescript": "catalog:"
   }
 }

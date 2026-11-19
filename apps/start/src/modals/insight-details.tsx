@@ -1,3 +1,7 @@
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import { useMutation } from '@tanstack/react-query';
+import { SparklesIcon } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { DeltaChip } from '@/components/delta-chip';
 import { ReportChart } from '@/components/report-chart';
 import { Badge } from '@/components/ui/badge';
@@ -5,10 +9,6 @@ import { SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import type { IReportInput } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { SparklesIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 type Insight = RouterOutputs['insight']['list'][number];
 type Explanation = RouterOutputs['insight']['explain'];
@@ -35,7 +35,7 @@ function SeverityDot({ band }: { band: string }) {
             ? 'bg-red-500'
             : band === 'moderate'
               ? 'bg-yellow-500'
-              : 'bg-blue-500',
+              : 'bg-blue-500'
         )}
       />
       <span className="text-muted-foreground text-xs capitalize">{band}</span>
@@ -57,7 +57,9 @@ function buildInsightReport(insight: Insight): IReportInput | null {
       operator: 'is' as const,
       value: [d.value],
     }));
-  if (filters.length === 0) return null;
+  if (filters.length === 0) {
+    return null;
+  }
 
   const range = insight.windowKind === 'yesterday' ? '7d' : '30d';
 
@@ -84,8 +86,8 @@ function buildInsightReport(insight: Insight): IReportInput | null {
 }
 
 /**
- * Phase 5: the insight detail sheet — the full insight, its primary metric, a
- * trend chart, and the on-demand AI "why" explanation. Opened via
+ * The insight detail sheet — the full insight, its primary metric, a trend
+ * chart, and the on-demand AI "why" explanation. Opened via
  * `pushModal('InsightDetails', { insight })`; the explanation is fetched once
  * on open.
  */
@@ -96,10 +98,9 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
   const mutation = useMutation(
     trpc.insight.explain.mutationOptions({
       onSuccess: (data) => setExplanation(data),
-    }),
+    })
   );
 
-  // Fetch the explanation once when the sheet opens.
   // biome-ignore lint/correctness/useExhaustiveDependencies: run once on mount
   useEffect(() => {
     mutation.mutate({ insightId: insight.id });
@@ -129,18 +130,18 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
         <div className="flex flex-col gap-2 pr-8">
           <div className="flex items-center gap-2">
             <Badge variant="outline">{formatWindow(insight.windowKind)}</Badge>
-            {insight.severityBand && <SeverityDot band={insight.severityBand} />}
+            {insight.severityBand && (
+              <SeverityDot band={insight.severityBand} />
+            )}
           </div>
-          <SheetTitle className="text-lg leading-snug">
+          <SheetTitle className="text-lg">
             {insight.displayName || insight.title}
           </SheetTitle>
         </div>
       </SheetHeader>
 
       {insight.aiSummary && (
-        <p className="text-muted-foreground leading-normal">
-          {insight.aiSummary}
-        </p>
+        <p className="text-muted-foreground">{insight.aiSummary}</p>
       )}
 
       {primary && (
@@ -161,7 +162,11 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
           <DeltaChip
             size="sm"
             variant={
-              direction === 'up' ? 'inc' : direction === 'down' ? 'dec' : 'default'
+              direction === 'up'
+                ? 'inc'
+                : direction === 'down'
+                  ? 'dec'
+                  : 'default'
             }
           >
             {deltaText}
@@ -189,7 +194,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
         )}
 
         {explanation && (
-          <div className="flex flex-col gap-3 text-sm leading-normal">
+          <div className="flex flex-col gap-3 text-sm">
             <p>{explanation.summary}</p>
             {explanation.drivers.length > 0 && (
               <ul className="flex flex-col gap-2">
@@ -206,7 +211,7 @@ export default function InsightDetails({ insight }: { insight: Insight }) {
                 Possibly related: {explanation.relatedReference}
               </p>
             )}
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            <p className="text-3xs text-muted-foreground uppercase tracking-wide">
               Confidence: {explanation.confidence}
             </p>
           </div>

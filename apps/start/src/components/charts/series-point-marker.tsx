@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import type { Variants } from "motion/react";
-import { motion } from "motion/react";
-import { memo } from "react";
-import { DEFAULT_CHART_ENTER_TRANSITION } from "./animation";
+import type { Variants } from 'motion/react';
+import { motion } from 'motion/react';
+import { memo } from 'react';
+import { DEFAULT_CHART_ENTER_TRANSITION } from './animation';
 
 export interface SeriesPointMarkerStyle {
   /** Fill color for the inner circle */
@@ -54,7 +54,7 @@ function MarkerCircles({
   outlineColor,
   radius,
 }: MarkerCirclesProps) {
-  const resolvedStroke = stroke ?? fill ?? "currentColor";
+  const resolvedStroke = stroke ?? fill ?? 'currentColor';
   const resolvedOutlineColor = outlineColor ?? resolvedStroke;
   const ringOuter = strokeWidth > 0 ? radius + ringGap + strokeWidth : radius;
   const outlineRadius = outlineWidth > 0 ? ringOuter + outlineWidth / 2 : 0;
@@ -155,7 +155,7 @@ export function SeriesPointMarker({
     },
     visible: {
       opacity: 1,
-      filter: "blur(0px)",
+      filter: 'blur(0px)',
       scale: 1,
       transition: {
         delay: revealDelay,
@@ -190,11 +190,11 @@ export function SeriesPointMarker({
 export function getSeriesMarkerVisualExtent(
   style: Pick<
     SeriesPointMarkerStyle,
-    | "radius"
-    | "strokeWidth"
-    | "ringGap"
-    | "outlineWidth"
-    | "showActiveHighlight"
+    | 'radius'
+    | 'strokeWidth'
+    | 'ringGap'
+    | 'outlineWidth'
+    | 'showActiveHighlight'
   >
 ): number {
   const radius = style.radius ?? 5;

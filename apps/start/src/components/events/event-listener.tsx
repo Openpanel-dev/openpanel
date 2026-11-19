@@ -33,7 +33,7 @@ export default function EventListener({
     <Tooltip>
       <TooltipTrigger asChild>
         <button
-          className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-3 font-medium leading-none"
+          className="flex h-8 items-center gap-2 rounded-md border border-border bg-card px-3 font-medium"
           onClick={() => {
             counter.set(0);
             onRefresh();

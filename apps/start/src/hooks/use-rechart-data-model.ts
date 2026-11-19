@@ -1,6 +1,6 @@
+import { useMemo } from 'react';
 import type { IChartData } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
-import { useMemo } from 'react';
 
 export type IRechartPayloadItem = {
   id: string;
@@ -43,7 +43,7 @@ export function useRechartDataModel(series: IChartData['series']) {
                   }
                   return acc2;
                 },
-                {} as Record<string, any>,
+                {} as Record<string, any>
               ),
             };
           }, {}),

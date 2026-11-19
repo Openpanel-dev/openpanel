@@ -1,20 +1,19 @@
+import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
-import { type VariantProps, cva } from 'class-variance-authority';
 
 const tagVariants = cva(
-  'shadow-sm px-4 gap-2 center-center border self-auto text-xs rounded-full h-7',
+  'center-center h-7 gap-2 self-auto rounded-full border px-4 text-xs shadow-sm',
   {
     variants: {
       variant: {
-        light:
-          'bg-background-light dark:bg-background-dark text-muted-foreground',
-        dark: 'bg-foreground-light dark:bg-foreground-dark text-muted border-background/10 shadow-background/5',
+        light: 'bg-background-light text-muted-foreground',
+        dark: 'border-background/10 bg-foreground-light text-muted shadow-background/5',
       },
     },
     defaultVariants: {
       variant: 'light',
     },
-  },
+  }
 );
 
 interface TagProps

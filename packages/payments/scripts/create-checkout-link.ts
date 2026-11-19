@@ -4,7 +4,6 @@ import inquirer from 'inquirer';
 import inquirerAutocomplete from 'inquirer-autocomplete-prompt';
 import { getSuccessUrl } from '..';
 
-// Register the autocomplete prompt
 inquirer.registerPrompt('autocomplete', inquirerAutocomplete);
 
 interface Answers {
@@ -14,7 +13,6 @@ interface Answers {
 }
 
 async function promptForInput(polar: Polar) {
-  // Get all organizations first
   const organizations = await db.organization.findMany({
     select: {
       id: true,
@@ -22,7 +20,6 @@ async function promptForInput(polar: Polar) {
     },
   });
 
-  // Fetch all products from Polar
   let products: any[] = [];
   try {
     const productsResponse = await polar.products.list({
@@ -31,13 +28,15 @@ async function promptForInput(polar: Polar) {
       sorting: ['price_amount'],
     });
     products = productsResponse.result.items;
-    
+
     if (products.length === 0) {
       console.warn('Warning: No products found in Polar');
     }
   } catch (error) {
     console.error('Error fetching products from Polar:', error);
-    throw new Error('Failed to fetch products. Please check your API key and try again.');
+    throw new Error(
+      'Failed to fetch products. Please check your API key and try again.'
+    );
   }
 
   const answers = await inquirer.prompt<Answers>([
@@ -50,7 +49,7 @@ async function promptForInput(polar: Polar) {
           .filter(
             (product) =>
               product.name.toLowerCase().includes(input.toLowerCase()) ||
-              product.id.toLowerCase().includes(input.toLowerCase()),
+              product.id.toLowerCase().includes(input.toLowerCase())
           )
           .map((product) => {
             const price = product.prices[0];
@@ -73,7 +72,7 @@ async function promptForInput(polar: Polar) {
           .filter(
             (org) =>
               org.name.toLowerCase().includes(input.toLowerCase()) ||
-              org.id.toLowerCase().includes(input.toLowerCase()),
+              org.id.toLowerCase().includes(input.toLowerCase())
           )
           .map((org) => ({
             name: `${org.name} (${org.id})`,
@@ -103,11 +102,11 @@ async function promptForInput(polar: Polar) {
               },
             },
           });
-          
-          if (!org || !org.members || org.members.length === 0) {
+
+          if (!(org && org.members) || org.members.length === 0) {
             return [{ name: 'No members found', value: '', disabled: true }];
           }
-          
+
           return org.members
             .filter(
               (member) =>
@@ -116,7 +115,7 @@ async function promptForInput(polar: Polar) {
                   .includes(input.toLowerCase()) ||
                 member.user?.firstName
                   ?.toLowerCase()
-                  .includes(input.toLowerCase()),
+                  .includes(input.toLowerCase())
             )
             .map((member) => ({
               name: `${
@@ -141,7 +140,6 @@ async function main() {
   try {
     console.log('Creating checkout link...');
 
-    // First, get environment and API key to initialize Polar client
     const { isProduction, polarApiKey } = await inquirer.prompt([
       {
         type: 'list',
@@ -158,7 +156,9 @@ async function main() {
         name: 'polarApiKey',
         message: 'Enter your Polar API key:',
         validate: (input: string) => {
-          if (!input) return 'API key is required';
+          if (!input) {
+            return 'API key is required';
+          }
           return true;
         },
       },
@@ -220,7 +220,7 @@ async function main() {
         isProduction
           ? 'https://dashboard.openpanel.dev'
           : 'http://localhost:3000',
-        organization.id,
+        organization.id
       ),
       customerEmail: user.email,
       customerName: [user.firstName, user.lastName].filter(Boolean).join(' '),

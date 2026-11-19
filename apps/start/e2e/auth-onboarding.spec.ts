@@ -1,0 +1,938 @@
+// One brand-new user from sign-up to account deletion: onboarding (project,
+// connect, verify), the account pages, two-factor and password reset.
+//
+// The tests run in order and hand each other the user through a state file
+// rather than module variables: a failed test restarts the worker, and the
+// tests that document a known bug are expected to fail without taking the rest
+// of the journey down with them.
+
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import type { BrowserContext, Page } from '@playwright/test';
+import {
+  apiUrl,
+  authPost,
+  FRESH_CONTEXT,
+  gotoHydrated,
+  hasHorizontalOverflow,
+  SHOTS_DIR,
+  submitSignIn,
+  toast,
+  totpCode,
+  trackEvent,
+  waitForHydration,
+  waitForSignInSlot,
+  watchIssues,
+  wrongTotpCode,
+} from './auth-helpers';
+import { expect, test } from './fixtures';
+
+test.use({ storageState: FRESH_CONTEXT });
+// The dev server hydrates slowly when several suites share it.
+test.describe.configure({ timeout: 120_000 });
+
+const STATE_FILE = 'test-results/auth/onboarding-state.json';
+const RUN_ID = Date.now();
+const MOBILE_VIEWPORT = { width: 390, height: 844 };
+const DESKTOP_VIEWPORT = { width: 1280, height: 720 };
+const RECOVERY_CODE_COUNT = 10;
+const RECOVERY_CODE_PATTERN = /\b[A-Za-z0-9]{5}-[A-Za-z0-9]{5}\b/g;
+const TOTP_SECRET_PATTERN = /[A-Z2-7]{32,}/;
+const SESSION_COOKIE = 'openpanel.session_token';
+const RECOVERY_PLACEHOLDER = 'AbCdE-fGhIj';
+const FRAMEWORK_COUNT = 17;
+const WEBSITE_FRAMEWORK_COUNT = 8;
+const EVENT_ARRIVAL_TIMEOUT_MS = 45_000;
+
+interface ProjectState {
+  id: string;
+  clientId: string;
+  clientSecret: string;
+}
+
+interface JourneyState {
+  email: string;
+  password: string;
+  cookies: Awaited<ReturnType<BrowserContext['cookies']>>;
+  organizationId?: string;
+  organizationName?: string;
+  webProject?: ProjectState;
+  serverProject?: ProjectState;
+  totpSecret?: string;
+  recoveryCodes?: string[];
+  deleted?: boolean;
+}
+
+function readState(): JourneyState {
+  if (!existsSync(STATE_FILE)) {
+    throw new Error(
+      'The sign-up test did not create the user; see its failure.'
+    );
+  }
+  return JSON.parse(readFileSync(STATE_FILE, 'utf8')) as JourneyState;
+}
+
+function writeState(patch: Partial<JourneyState>): JourneyState {
+  const next = { ...(existsSync(STATE_FILE) ? readState() : {}), ...patch };
+  writeFileSync(STATE_FILE, JSON.stringify(next, null, 2));
+  return next as JourneyState;
+}
+
+/** Continue as the journey's user: its cookies, and the feedback card already dismissed. */
+async function continueAsUser(
+  context: BrowserContext,
+  baseURL: string | undefined
+): Promise<JourneyState> {
+  const state = readState();
+  await context.addCookies([
+    ...state.cookies,
+    {
+      name: 'feedback-prompt-seen',
+      value: new Date().toISOString(),
+      url: baseURL ?? '',
+    },
+  ]);
+  return state;
+}
+
+async function rememberCookies(context: BrowserContext): Promise<void> {
+  writeState({ cookies: await context.cookies() });
+}
+
+function otpInput(scope: Page | ReturnType<Page['getByRole']>) {
+  return scope.locator('input[data-input-otp]');
+}
+
+/** better-auth keeps the token in the identifier of a `verifications` row. */
+function resetTokenFor(email: string): string {
+  const databaseUrl = (process.env.DATABASE_URL ?? '').split('?')[0] ?? '';
+  return execFileSync('psql', [
+    databaseUrl,
+    '-Atc',
+    `select substring(v.identifier from length('reset-password:') + 1) from verifications v join users u on u.id = v.value where u.email = '${email}' and v.identifier like 'reset-password:%' order by v."createdAt" desc limit 1`,
+  ])
+    .toString()
+    .trim();
+}
+
+function canReadDatabase(): boolean {
+  if (!process.env.DATABASE_URL) {
+    return false;
+  }
+  try {
+    execFileSync('psql', ['--version']);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+test('sign-up validates every field before it calls the API', async ({
+  page,
+}) => {
+  const issues = watchIssues(page);
+  let signUpRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/api/auth/sign-up/email')) {
+      signUpRequests += 1;
+    }
+  });
+  await gotoHydrated(page, '/onboarding');
+  await expect(
+    page.getByRole('heading', { name: 'Create your account' })
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+    'href',
+    '/login'
+  );
+
+  const fieldErrors = page.locator('[data-slot="field-error"]');
+  const submit = page.getByRole('button', { name: 'Create account' });
+  await submit.click();
+  await expect(fieldErrors).toHaveCount(4);
+
+  await page.getByLabel('First name').fill('E2E');
+  await page.getByLabel('Last name').fill('Auth');
+  await page.getByLabel('Email').fill(`e2e-auth-${RUN_ID}@example.com`);
+  await page.getByLabel('Password', { exact: true }).fill('short');
+  await submit.click();
+  await expect(fieldErrors).toHaveCount(1);
+  await expect(fieldErrors.first()).toContainText('8');
+  await page.screenshot({ path: `${SHOTS_DIR}/sign-up-validation.png` });
+
+  expect(signUpRequests).toBe(0);
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('sign up creates the account and opens the project step', async ({
+  page,
+  context,
+}) => {
+  const issues = watchIssues(page);
+  const email = `e2e-auth-${RUN_ID}@example.com`;
+  const password = `pw-${RUN_ID}-first`;
+  await gotoHydrated(page, '/onboarding');
+  await page.getByLabel('First name').fill('E2E');
+  await page.getByLabel('Last name').fill('Auth');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Password', { exact: true }).press('Enter');
+
+  // No organization yet: `/` forwards to the project step.
+  await expect(page).toHaveURL(/\/onboarding\/project$/, { timeout: 20_000 });
+  const cookies = await context.cookies();
+  expect(
+    cookies.find((cookie) => cookie.name === SESSION_COOKIE)
+  ).toMatchObject({
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+  });
+  writeState({ email, password, cookies });
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('signing up again with the same email is refused', async ({ page }) => {
+  const state = readState();
+  await gotoHydrated(page, '/onboarding');
+  await page.getByLabel('First name').fill('E2E');
+  await page.getByLabel('Last name').fill('Twin');
+  await page.getByLabel('Email').fill(state.email);
+  await page.getByLabel('Password', { exact: true }).fill('another-password');
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(toast(page, 'User already exists')).toBeVisible();
+  await expect(page).toHaveURL(/\/onboarding$/);
+});
+
+test('the project step validates the workspace, the name, the type and the domain', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  let projectRequests = 0;
+  page.on('request', (request) => {
+    if (request.url().includes('/trpc/onboarding.project')) {
+      projectRequests += 1;
+    }
+  });
+  await gotoHydrated(page, '/onboarding/project');
+  await expect(
+    page.getByRole('heading', { name: 'Create your first project' })
+  ).toBeVisible();
+  // Nothing to reuse yet, so there is no workspace switch.
+  await expect(
+    page.getByRole('button', { name: 'Use existing workspace' })
+  ).toHaveCount(0);
+
+  const fieldErrors = page.locator('[data-slot="field-error"]');
+  const create = page.getByRole('button', { name: 'Create project' });
+  await create.click();
+  await expect(
+    page.getByText('Pick at least one thing to track')
+  ).toBeVisible();
+  // The project name, and the workspace name that follows it.
+  await expect(fieldErrors).toHaveCount(2);
+
+  await page.getByLabel('Project name').fill('ab');
+  await page.getByRole('button', { name: /^Website/ }).click();
+  await create.click();
+  // Too short a name, and a website needs its URL.
+  await expect(fieldErrors).toHaveCount(2);
+  await page.screenshot({
+    path: `${SHOTS_DIR}/onboarding-project-invalid.png`,
+  });
+
+  // App and backend projects have no domain to ask for.
+  await page.getByRole('button', { name: /^Website/ }).click();
+  await expect(page.getByLabel('Website URL')).toBeHidden();
+  await page.getByRole('button', { name: /^App/ }).click();
+  await create.click();
+  await expect(fieldErrors).toHaveCount(1);
+
+  expect(projectRequests).toBe(0);
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('the timezone picker searches and keeps the choice', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await continueAsUser(context, baseURL);
+  await gotoHydrated(page, '/onboarding/project');
+  await page.getByRole('button', { name: 'Change' }).click();
+  const timezone = page.getByRole('combobox').first();
+  // Defaults to the browser's zone.
+  await expect(timezone).toHaveText(/\w+\/\w+|UTC/);
+  await timezone.click();
+  await page.getByPlaceholder(/search/i).fill('Tokyo');
+  await expect(page.getByRole('option')).toHaveCount(1);
+  await page.getByRole('option', { name: 'Asia/Tokyo' }).click();
+  await expect(timezone).toHaveText('Asia/Tokyo');
+
+  await timezone.click();
+  await page.getByPlaceholder(/search/i).fill('UTC');
+  await page.getByRole('option', { name: 'UTC', exact: true }).click();
+  await expect(timezone).toHaveText('UTC');
+
+  await timezone.click();
+  await page.getByPlaceholder(/search/i).fill('no-such-zone');
+  await expect(page.getByRole('option')).toHaveCount(0);
+});
+
+test('a website project leads to the connect step with its one-time credentials', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  const organizationName = `E2E auth ${RUN_ID}`;
+  await gotoHydrated(page, '/onboarding/project');
+  await page.getByLabel('Project name').fill(`E2E auth web ${RUN_ID}`);
+  await page.getByRole('button', { name: /^Website/ }).click();
+
+  // A bare host becomes an origin, and that origin is allowed by default.
+  const domain = `e2e-auth-${RUN_ID}.example.com`;
+  await page.getByLabel('Website URL').fill(domain);
+  await page.getByLabel('Website URL').blur();
+  await expect(page.getByLabel('Website URL')).toHaveValue(`https://${domain}`);
+  await page.getByText('Also track other domains').click();
+  await expect(page.locator(`[data-tag="https://${domain}"]`)).toBeVisible();
+
+  // The workspace is named after the project until it is edited.
+  await page.getByRole('button', { name: 'Change' }).click();
+  await expect(page.getByLabel('Workspace name')).toHaveValue(
+    `E2E auth web ${RUN_ID}`
+  );
+  await page.getByLabel('Workspace name').fill(organizationName);
+  await page.getByRole('combobox').first().click();
+  await page.getByPlaceholder(/search/i).fill('UTC');
+  await page.getByRole('option', { name: 'UTC', exact: true }).click();
+  await page.screenshot({
+    path: `${SHOTS_DIR}/onboarding-project-website.png`,
+    fullPage: true,
+  });
+
+  const created = page.waitForResponse((response) =>
+    response.url().includes('/trpc/onboarding.project')
+  );
+  await page.getByRole('button', { name: 'Create project' }).click();
+  const client = (await (await created).json()).result.data.json;
+  await expect(page).toHaveURL(
+    new RegExp(`/onboarding/${client.projectId}/connect$`)
+  );
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
+  writeState({
+    organizationId: client.organizationId,
+    organizationName,
+    webProject: {
+      id: client.projectId,
+      clientId: client.id,
+      clientSecret: client.secret,
+    },
+  });
+
+  // The secret and the MCP token are only known right after creation. The
+  // token belongs to a separate read-only client, so it is not derived from
+  // the write client's secret.
+  await expect(page.getByText(client.id).first()).toBeVisible();
+  await expect(page.getByText(client.secret)).toBeVisible();
+  // The assistant card is collapsed until asked for.
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await page.getByRole('button', { name: /Connect an AI assistant/ }).click();
+  await expect(page.getByText(client.mcpToken)).toBeVisible();
+  expect(client.mcpToken).not.toBe(btoa(`${client.id}:${client.secret}`));
+
+  // Manual setup starts with the script tag for a website, with the real client id.
+  await page.getByRole('tab', { name: 'Manual setup' }).click();
+  await expect(page.locator('code').first()).toContainText(
+    `clientId: '${client.id}'`
+  );
+  await page.screenshot({
+    path: `${SHOTS_DIR}/onboarding-connect.png`,
+    fullPage: true,
+  });
+
+  // The framework dropdown suggests the website SDKs first and lists the rest.
+  const frameworkSelect = page.getByRole('combobox', { name: 'Framework' });
+  await frameworkSelect.click();
+  await expect(
+    page.getByRole('group', { name: 'For websites' }).getByRole('option')
+  ).toHaveCount(WEBSITE_FRAMEWORK_COUNT);
+  await expect(page.getByRole('option')).toHaveCount(FRAMEWORK_COUNT);
+
+  // Each framework shows its own snippet and links to its guide.
+  await page.getByRole('option', { name: 'Next.js' }).click();
+  await expect(page.locator('code').first()).toContainText('@openpanel/nextjs');
+  await expect(
+    page.getByRole('link', { name: 'Full Next.js guide' })
+  ).toHaveAttribute('href', 'https://openpanel.dev/docs/sdks/nextjs');
+  await frameworkSelect.click();
+  await page.getByRole('option', { name: 'iOS (swift)' }).click();
+  await expect(page.locator('code').last()).toContainText(
+    `clientSecret: "${client.secret}"`
+  );
+
+  // The secret is stored hashed: after a reload in a new tab it cannot be shown again.
+  await page.evaluate(() => sessionStorage.clear());
+  await page.reload();
+  await waitForHydration(page);
+  await expect(page.getByText(client.id).first()).toBeVisible();
+  await expect(page.getByText(client.secret)).toHaveCount(0);
+  await expect(page.getByText(client.mcpToken)).toHaveCount(0);
+  await expect(page.getByText('Secrets are shown once')).toBeVisible();
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('the AI prompt carries the client id and the chosen framework guide', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const project = state.webProject;
+  if (!project) {
+    throw new Error('The website project was not created; see its failure.');
+  }
+  await gotoHydrated(page, `/onboarding/${project.id}/connect`);
+  const prompt = page.locator('pre');
+  await expect(prompt).toContainText(`Client ID: ${project.clientId}`);
+  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks');
+
+  await page.getByRole('combobox', { name: 'Framework (optional)' }).click();
+  await page.getByRole('option', { name: 'Next.js' }).click();
+  await expect(prompt).toContainText('https://openpanel.dev/docs/sdks/nextjs');
+  await expect(
+    page.getByRole('link', { name: 'Open in Cursor' })
+  ).toHaveAttribute('href', /^cursor:\/\//);
+});
+
+test('the install step turns green when the first event arrives', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const project = state.webProject;
+  if (!project) {
+    throw new Error('The website project was not created; see its failure.');
+  }
+  const issues = watchIssues(page);
+  await gotoHydrated(page, `/onboarding/${project.id}/connect`);
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Skip for now, I will install later' })
+  ).toBeVisible();
+  // Troubleshooting lives behind a quiet link inside the listener.
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const troubleshooting = page.getByRole('dialog', {
+    name: 'Not seeing events?',
+  });
+  await expect(
+    troubleshooting.getByText('Is the client ID the one for this project?')
+  ).toBeVisible();
+  await expect(
+    troubleshooting.getByText(project.clientId).first()
+  ).toBeVisible();
+  await expect(troubleshooting.locator('code').last()).toContainText(
+    `openpanel-client-id: ${project.clientId}`
+  );
+  await page.screenshot({
+    path: `${SHOTS_DIR}/onboarding-connect-waiting.png`,
+    fullPage: true,
+  });
+  await page.keyboard.press('Escape');
+  await expect(troubleshooting).toHaveCount(0);
+
+  expect(
+    trackEvent(
+      { id: project.clientId, secret: project.clientSecret },
+      'e2e_auth_first_event'
+    )
+  ).toBe('200');
+  await expect(page.getByText('Connected! Events are coming in.')).toBeVisible({
+    timeout: EVENT_ARRIVAL_TIMEOUT_MS,
+  });
+  await expect(page.getByText('e2e_auth_first_event')).toBeVisible();
+  await expect(
+    page.getByRole('link', { name: 'Skip for now, I will install later' })
+  ).toHaveCount(0);
+  await page.screenshot({
+    path: `${SHOTS_DIR}/onboarding-connect-connected.png`,
+  });
+
+  await page.getByRole('link', { name: 'Open dashboard' }).first().click();
+  await expect(page).toHaveURL(
+    new RegExp(`/${state.organizationId}/${project.id}$`)
+  );
+  expect(issues.unexpected()).toEqual([]);
+});
+test('an app and backend project can be added to the existing workspace', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  await gotoHydrated(page, '/onboarding/project');
+  // With a workspace in hand, reusing it is the default.
+  await expect(
+    page.getByRole('button', { name: 'Use existing workspace' })
+  ).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('combobox', { name: 'Which workspace?' }).click();
+  await page.getByRole('option', { name: state.organizationName }).click();
+  await page.getByLabel('Project name').fill(`E2E auth server ${RUN_ID}`);
+  await page.getByRole('button', { name: /^App/ }).click();
+  await page.getByRole('button', { name: /^Backend \/ API/ }).click();
+  await expect(page.getByLabel('Website URL')).toBeHidden();
+
+  const created = page.waitForResponse((response) =>
+    response.url().includes('/trpc/onboarding.project')
+  );
+  await page.getByRole('button', { name: 'Create project' }).click();
+  const client = (await (await created).json()).result.data.json;
+  expect(client.organizationId).toBe(state.organizationId);
+  await expect(page.getByText('Listening for your first event')).toBeVisible();
+  writeState({
+    serverProject: {
+      id: client.projectId,
+      clientId: client.id,
+      clientSecret: client.secret,
+    },
+  });
+
+  // Server platforms get the secret in their snippets while it is known.
+  await page.getByRole('tab', { name: 'Manual setup' }).click();
+  await expect(page.locator('code').last()).toContainText(
+    `clientSecret: '${client.secret}'`
+  );
+  await page.getByRole('button', { name: "I'm not receiving events" }).click();
+  const example = page.getByRole('dialog').locator('code').last();
+  await expect(example).toContainText('"name":"openpanel_test_event"');
+  await expect(example).toContainText(
+    `openpanel-client-secret: ${client.secret}`
+  );
+  await page.keyboard.press('Escape');
+
+  await page
+    .getByRole('link', { name: 'Skip for now, I will install later' })
+    .click();
+  await expect(page).toHaveURL(
+    new RegExp(`/${state.organizationId}/${client.projectId}$`)
+  );
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('the onboarding steps fit a phone screen', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  await page.setViewportSize(MOBILE_VIEWPORT);
+  for (const [name, path] of [
+    ['project', '/onboarding/project'],
+    ['connect', `/onboarding/${state.webProject?.id}/connect`],
+    ['account', `/${state.organizationId}/account`],
+    ['two-factor', `/${state.organizationId}/account/two-factor`],
+  ] as const) {
+    await gotoHydrated(page, path);
+    expect(await hasHorizontalOverflow(page), path).toBe(false);
+    await page.screenshot({
+      path: `${SHOTS_DIR}/mobile-${name}.png`,
+      fullPage: true,
+    });
+  }
+});
+
+test('the profile tab edits the name and keeps it after a reload', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  // `/account` finds the organization by itself.
+  await gotoHydrated(page, '/account');
+  await expect(page).toHaveURL(new RegExp(`/${state.organizationId}/account$`));
+  await expect(page.getByLabel('Email')).toHaveValue(state.email);
+  await expect(page.getByLabel('Email')).toBeDisabled();
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+
+  await page.getByLabel('First name').fill('Renamed');
+  await page.getByLabel('Last name').fill('Tester');
+  await expect(save).toBeEnabled();
+  await page.getByLabel('Last name').press('Enter');
+  await expect(toast(page, 'Profile updated')).toBeVisible();
+  await expect(save).toBeDisabled();
+
+  await page.reload();
+  await expect(page.getByLabel('First name')).toHaveValue('Renamed');
+  await expect(page.getByLabel('Last name')).toHaveValue('Tester');
+  await page.screenshot({ path: `${SHOTS_DIR}/account-profile.png` });
+  expect(issues.unexpected()).toEqual([]);
+});
+
+// Open defect: the form's own schema accepts '', the API does not, and the
+// toast prints the raw Zod issues.
+test('an empty first name is refused with a readable message', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  await gotoHydrated(page, `/${state.organizationId}/account`);
+  await page.getByLabel('First name').fill('');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Issues').or(toast(page, /./))).toBeVisible();
+  await expect(page.getByText('"code": "too_small"')).toHaveCount(0);
+});
+
+test('email preferences save per category and survive a reload', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  await gotoHydrated(page, `/${state.organizationId}/account`);
+  await page.getByRole('tab', { name: 'Email preferences' }).click();
+  await expect(page).toHaveURL(/\/account\/email-preferences$/);
+
+  const switches = page.getByRole('switch');
+  await expect(switches.first()).toBeChecked();
+  const categories = await switches.count();
+  expect(categories).toBeGreaterThan(1);
+  const save = page.getByRole('button', { name: 'Save' });
+  await expect(save).toBeDisabled();
+
+  await switches.first().click();
+  await switches.last().click();
+  await save.click();
+  await expect(toast(page, 'Email preferences updated')).toBeVisible();
+
+  await page.reload();
+  await expect(switches.first()).not.toBeChecked();
+  await expect(switches.last()).not.toBeChecked();
+  await expect(switches.nth(1)).toBeChecked();
+  await page.screenshot({ path: `${SHOTS_DIR}/account-email-preferences.png` });
+
+  await switches.first().click();
+  await switches.last().click();
+  await save.click();
+  await expect(toast(page, 'Email preferences updated')).toBeVisible();
+  await page.reload();
+  await expect(switches.first()).toBeChecked();
+  expect(issues.unexpected()).toEqual([]);
+});
+
+/** Opens the setup modal and gets past its password step. */
+async function startTwoFactorSetup(page: Page, password: string) {
+  await page.getByRole('button', { name: 'Enable' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByPlaceholder('Your password').fill(password);
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
+  const secret = (await dialog.innerText()).match(TOTP_SECRET_PATTERN)?.[0];
+  if (!secret) {
+    throw new Error('The setup modal did not show a secret to type manually.');
+  }
+  return { dialog, secret };
+}
+
+test('a mistyped code while enabling two-factor keeps the setup open', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  await gotoHydrated(page, `/${state.organizationId}/account/two-factor`);
+  const { dialog, secret } = await startTwoFactorSetup(page, state.password);
+  await otpInput(dialog).fill(wrongTotpCode(secret));
+  await dialog.getByRole('button', { name: 'Enable' }).click();
+  await expect(toast(page, /invalid/i)).toBeVisible();
+  await expect(dialog.getByAltText('Authenticator QR code')).toBeVisible();
+  await expect(page).toHaveURL(/\/account\/two-factor$/);
+});
+
+test('two-factor can be enabled and its recovery codes regenerated', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  await gotoHydrated(page, `/${state.organizationId}/account`);
+  await page.getByRole('tab', { name: 'Two-factor auth' }).click();
+  await expect(page).toHaveURL(/\/account\/two-factor$/);
+  await expect(
+    page.getByText('Two-factor authentication is disabled.')
+  ).toBeVisible();
+
+  const { dialog, secret } = await startTwoFactorSetup(page, state.password);
+  const enable = dialog.getByRole('button', { name: 'Enable' });
+  await expect(enable).toBeDisabled();
+  await page.screenshot({ path: `${SHOTS_DIR}/two-factor-setup.png` });
+
+  await otpInput(dialog).fill(totpCode(secret));
+  await enable.click();
+  await expect(dialog.getByText('Save your recovery codes')).toBeVisible();
+  const firstCodes: string[] =
+    (await dialog.innerText()).match(RECOVERY_CODE_PATTERN) ?? [];
+  expect(new Set(firstCodes).size).toBe(RECOVERY_CODE_COUNT);
+  await expect(dialog.getByRole('button', { name: 'Download' })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'Copy all' })).toBeVisible();
+  await page.screenshot({ path: `${SHOTS_DIR}/two-factor-recovery-codes.png` });
+  writeState({ totpSecret: secret, recoveryCodes: firstCodes });
+
+  await dialog.getByRole('button', { name: "I've saved my codes" }).click();
+  await expect(
+    page.getByText('Two-factor authentication is enabled.')
+  ).toBeVisible();
+  // Enabling issues a new session; keep the one later tests continue with.
+  await rememberCookies(context);
+
+  await page.getByRole('button', { name: 'Regenerate recovery codes' }).click();
+  const regenerate = dialog.getByRole('button', { name: 'Regenerate' });
+  await expect(regenerate).toBeDisabled();
+  await dialog.getByPlaceholder('Your password').fill(state.password);
+  await regenerate.click();
+  await expect(dialog.getByText('New recovery codes')).toBeVisible();
+  const newCodes =
+    (await dialog.innerText()).match(RECOVERY_CODE_PATTERN) ?? [];
+  expect(new Set(newCodes).size).toBe(RECOVERY_CODE_COUNT);
+  expect(newCodes.some((code) => firstCodes.includes(code))).toBe(false);
+  writeState({ recoveryCodes: newCodes });
+  await dialog.getByRole('button', { name: 'Done' }).click();
+  await expect(dialog).toBeHidden();
+  await page.screenshot({ path: `${SHOTS_DIR}/two-factor-enabled.png` });
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('a mistyped code on /verify says so and lets the visitor try again', async ({
+  page,
+}) => {
+  const state = readState();
+  test.skip(!state.totpSecret, 'two-factor was not enabled');
+  await gotoHydrated(page, '/login');
+  await submitSignIn(page, state);
+  await expect(page).toHaveURL(/\/verify$/);
+  await waitForHydration(page);
+  await otpInput(page).fill(wrongTotpCode(state.totpSecret ?? ''));
+  await expect(toast(page, /invalid/i)).toBeVisible();
+  await expect(page).toHaveURL(/\/verify$/);
+});
+
+test('signing in asks for the authenticator code', async ({
+  page,
+  context,
+}) => {
+  const state = readState();
+  test.skip(!state.totpSecret, 'two-factor was not enabled');
+  const issues = watchIssues(page);
+
+  // Without a pending challenge there is nothing to verify.
+  await gotoHydrated(page, '/verify');
+  await expect(
+    page.getByRole('heading', { name: 'Two-factor authentication' })
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Verify' })).toBeDisabled();
+  await expect(
+    page.getByRole('link', { name: 'Sign in with a different account' })
+  ).toHaveAttribute('href', '/login');
+
+  await page.goto('/login');
+  await waitForHydration(page);
+  await submitSignIn(page, state);
+  await expect(page).toHaveURL(/\/verify$/);
+  // The password alone is not a session.
+  expect((await context.cookies()).map((cookie) => cookie.name)).not.toContain(
+    SESSION_COOKIE
+  );
+  await page.goto(`/${state.organizationId}`);
+  await expect(page).toHaveURL(/\/login$/);
+
+  await gotoHydrated(page, '/verify');
+  await page.screenshot({ path: `${SHOTS_DIR}/two-factor-verify.png` });
+  await page
+    .getByRole('button', { name: 'Use a recovery code instead' })
+    .click();
+  await expect(page.getByPlaceholder(RECOVERY_PLACEHOLDER)).toBeVisible();
+  await page
+    .getByRole('button', { name: 'Use authenticator app instead' })
+    .click();
+  // Six digits submit by themselves.
+  await otpInput(page).fill(totpCode(state.totpSecret ?? ''));
+  await expect(page).toHaveURL(new RegExp(`/${state.organizationId}$`), {
+    timeout: 20_000,
+  });
+  expect((await context.cookies()).map((cookie) => cookie.name)).toContain(
+    SESSION_COOKIE
+  );
+  expect(issues.unexpected([/two-factor\/verify/])).toEqual([]);
+});
+
+test('a recovery code signs in once and is then used up', async ({
+  page,
+  context,
+  request,
+}) => {
+  const state = readState();
+  const recoveryCode = state.recoveryCodes?.[0];
+  test.skip(!recoveryCode, 'two-factor was not enabled');
+  const issues = watchIssues(page);
+  await gotoHydrated(page, '/login');
+  await submitSignIn(page, state);
+  await expect(page).toHaveURL(/\/verify$/);
+  await waitForHydration(page);
+  await page
+    .getByRole('button', { name: 'Use a recovery code instead' })
+    .click();
+  await page.getByPlaceholder(RECOVERY_PLACEHOLDER).fill(recoveryCode ?? '');
+  await page.getByPlaceholder(RECOVERY_PLACEHOLDER).press('Enter');
+  await expect(page).toHaveURL(new RegExp(`/${state.organizationId}$`), {
+    timeout: 20_000,
+  });
+  await rememberCookies(context);
+
+  // The same code is refused the second time, on a fresh password sign-in.
+  await waitForSignInSlot();
+  const signIn = await authPost(request, '/sign-in/email', {
+    email: state.email,
+    password: state.password,
+  });
+  expect((await signIn.json()).twoFactorRedirect).toBe(true);
+  const reuse = await authPost(request, '/two-factor/verify-backup-code', {
+    code: recoveryCode,
+  });
+  expect(reuse.status()).toBeGreaterThanOrEqual(400);
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('two-factor can be disabled with the password', async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  test.skip(!state.totpSecret, 'two-factor was not enabled');
+  const issues = watchIssues(page);
+  await gotoHydrated(page, `/${state.organizationId}/account/two-factor`);
+  await page.getByRole('button', { name: 'Disable' }).click();
+  const dialog = page.getByRole('dialog');
+  const disable = dialog.getByRole('button', { name: 'Disable' });
+  await expect(disable).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).toBeHidden();
+
+  await page.getByRole('button', { name: 'Disable' }).click();
+  await dialog.getByPlaceholder('Your password').fill(state.password);
+  await disable.click();
+  await expect(toast(page, 'Two-factor authentication disabled')).toBeVisible();
+  await expect(
+    page.getByText('Two-factor authentication is disabled.')
+  ).toBeVisible();
+  writeState({ totpSecret: undefined, recoveryCodes: undefined });
+  await rememberCookies(context);
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('a reset link sets a new password and works only once', async ({
+  page,
+  request,
+}) => {
+  test.skip(
+    !canReadDatabase(),
+    'needs psql and DATABASE_URL to read the token'
+  );
+  const state = readState();
+  const issues = watchIssues(page);
+  await gotoHydrated(page, '/login');
+  await page.getByLabel('Email').fill(state.email);
+  await page.getByRole('button', { name: 'Forgot password?' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.getByPlaceholder('Your email address')).toHaveValue(
+    state.email
+  );
+  await dialog.getByRole('button', { name: 'Continue' }).click();
+  await expect(
+    toast(page, 'You should receive an email shortly!')
+  ).toBeVisible();
+
+  const token = resetTokenFor(state.email);
+  expect(token.length).toBeGreaterThan(0);
+  const newPassword = `pw-${RUN_ID}-second`;
+  await gotoHydrated(page, `/reset-password?token=${token}`);
+  await page.getByLabel('New password').fill(newPassword);
+  await page.getByRole('button', { name: 'Reset password' }).click();
+  await expect(toast(page, 'Password reset successfully')).toBeVisible();
+  await expect(page).toHaveURL(/\/login$/);
+  writeState({ password: newPassword });
+
+  await waitForHydration(page);
+  const response = await submitSignIn(page, {
+    email: state.email,
+    password: newPassword,
+  });
+  expect(response.status()).toBe(200);
+  await expect(page).toHaveURL(new RegExp(`/${state.organizationId}$`), {
+    timeout: 20_000,
+  });
+
+  const reuse = await authPost(request, '/reset-password', {
+    token,
+    newPassword: 'yet-another-password',
+  });
+  expect(reuse.status()).toBe(400);
+  expect(issues.unexpected()).toEqual([]);
+});
+
+test('deleting the account needs the typed confirmation and ends the session', async ({
+  page,
+  context,
+  baseURL,
+  request,
+}) => {
+  const state = await continueAsUser(context, baseURL);
+  const issues = watchIssues(page);
+  const sessionCookie = state.cookies.find(
+    (cookie) => cookie.name === SESSION_COOKIE
+  );
+  try {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await gotoHydrated(page, `/${state.organizationId}/account`);
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    const dialog = page.getByRole('dialog');
+    const confirm = dialog.getByRole('button', { name: 'Delete account' });
+    await expect(confirm).toBeDisabled();
+    await dialog.getByPlaceholder('DELETE').fill('delete');
+    await expect(confirm).toBeDisabled();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+    await expect(dialog).toBeHidden();
+
+    await page.getByRole('button', { name: 'Delete account' }).click();
+    await dialog.getByPlaceholder('DELETE').fill('DELETE');
+    await page.screenshot({ path: `${SHOTS_DIR}/account-delete-confirm.png` });
+    await confirm.click();
+    await expect(page).toHaveURL(/\/login$/, { timeout: 20_000 });
+    writeState({ deleted: true });
+  } finally {
+    if (!readState().deleted) {
+      // Never leave the throwaway user behind when the modal is what broke.
+      await request.post(`${apiUrl()}/trpc/user.delete`, {
+        data: {},
+        headers: { cookie: `${SESSION_COOKIE}=${sessionCookie?.value}` },
+      });
+    }
+  }
+
+  const session = await request.get(`${apiUrl()}/trpc/auth.session`, {
+    headers: { cookie: `${SESSION_COOKIE}=${sessionCookie?.value}` },
+  });
+  expect((await session.json()).result.data.json.userId).toBeNull();
+  expect(issues.unexpected()).toEqual([]);
+});

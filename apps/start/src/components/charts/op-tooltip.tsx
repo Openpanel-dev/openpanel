@@ -1,16 +1,19 @@
-import { getPreviousMetric } from '@openpanel/common';
-import type { IInterval } from '@openpanel/validation';
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { type ReactNode, useMemo } from 'react';
-import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { getPreviousMetric } from '../../utils/previous-metric';
 import { PreviousDiffIndicatorPure } from '../report-chart/common/previous-diff-indicator';
 import { useChart } from './chart-context';
 import type { ChartMarker } from './markers/marker-group';
-import type { OPReferrerSpikeItem } from './op-referrer-spikes';
+import { OPDatePill } from './op-date-pill';
 import { type OPReferenceItem, toChartMarkers } from './op-references';
+import type { OPReferrerSpikeItem } from './op-referrer-spikes';
 import { ChartTooltip, type ChartTooltipProps } from './tooltip/chart-tooltip';
+import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
 import { cn } from '@/utils/cn';
+
+const TOOLTIP_MIN_WIDTH = 168;
 
 export type OPTooltipUnit =
   | 'currency'
@@ -29,6 +32,8 @@ export interface OPTooltipRow {
   value?: number | null;
   /** How to format `value`. Default: 'count' (locale string). */
   unit?: OPTooltipUnit;
+  /** Formats `value` and `previous`; wins over `unit`. */
+  format?: (value: number) => string;
   /** Optional previous-period value — shown as "(prev)" next to value */
   previous?: number | null;
   /** Whether higher previous is better (e.g. bounce rate is inverted) */
@@ -58,7 +63,7 @@ export interface OPChartTooltipProps<T extends Record<string, unknown>>
   rows: (point: T) => OPTooltipRow[];
   /** Render extra content below the rows (e.g. referrer breakdown). */
   extra?: (point: T) => ReactNode;
-  /** Min width of the tooltip card. Default 200. */
+  /** Min width of the tooltip card. Default 168. */
   minWidth?: number;
   /** When set, references matching the hovered date are listed below the rows. */
   references?: OPReferenceItem[] | null;
@@ -66,6 +71,8 @@ export interface OPChartTooltipProps<T extends Record<string, unknown>>
   referencesLimit?: number;
   /** Auto-detected referrer spikes; the matching bucket's spike is shown below. */
   spikes?: OPReferrerSpikeItem[] | null;
+  /** Show the hovered date (or category) in a pill on the x axis. Default: true. */
+  datePill?: boolean;
 }
 
 export function OPChartTooltip<T extends Record<string, unknown>>({
@@ -73,10 +80,11 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   title,
   rows,
   extra,
-  minWidth = 200,
+  minWidth = TOOLTIP_MIN_WIDTH,
   references,
   referencesLimit = 3,
   spikes,
+  datePill = true,
   ...rest
 }: OPChartTooltipProps<T>) {
   const referenceMarkers = useMemo(
@@ -85,22 +93,26 @@ export function OPChartTooltip<T extends Record<string, unknown>>({
   );
 
   return (
-    <ChartTooltip
-      {...rest}
-      content={({ point }) => (
-        <OPTooltipBody
-          extra={extra ? extra(point as T) : null}
-          interval={interval}
-          minWidth={minWidth}
-          point={point as T}
-          referenceMarkers={referenceMarkers}
-          referencesLimit={referencesLimit}
-          rows={rows(point as T)}
-          spikes={spikes ?? null}
-          title={title ? title(point as T) : undefined}
-        />
-      )}
-    />
+    <>
+      <ChartTooltip
+        {...rest}
+        content={({ point }) => (
+          <OPTooltipBody
+            extra={extra ? extra(point as T) : null}
+            interval={interval}
+            minWidth={minWidth}
+            point={point as T}
+            referenceMarkers={referenceMarkers}
+            referencesLimit={referencesLimit}
+            rows={rows(point as T)}
+            spikes={spikes ?? null}
+            title={title ? title(point as T) : undefined}
+          />
+        )}
+        showDatePill={false}
+      />
+      {datePill && <OPDatePill interval={interval} />}
+    </>
   );
 }
 
@@ -151,7 +163,7 @@ function OPTooltipBody<T extends Record<string, unknown>>({
   return (
     <OPTooltipCard style={{ minWidth }}>
       {resolvedTitle != null && (
-        <div className="flex justify-between gap-8 text-muted-foreground">
+        <div className="flex justify-between gap-6 text-muted-foreground text-xs">
           <div>{resolvedTitle}</div>
         </div>
       )}
@@ -200,20 +212,20 @@ function useReferencesForHoveredPoint(
 }
 
 function useSpikeForHoveredPoint(
-  spikes: OPReferrerSpikeItem[] | null,
+  spikes: OPReferrerSpikeItem[] | null
 ): OPReferrerSpikeItem | null {
   const { tooltipData, data, xAccessor } = useChart();
 
   const nearestIndices = useMemo(
     () =>
       computeNearestIndices(spikes ?? [], data, xAccessor, (s) =>
-        typeof s.date === 'string' ? new Date(s.date) : s.date,
+        typeof s.date === 'string' ? new Date(s.date) : s.date
       ),
-    [spikes, data, xAccessor],
+    [spikes, data, xAccessor]
   );
 
   return useMemo(() => {
-    if (!tooltipData || !spikes || spikes.length === 0) {
+    if (!(tooltipData && spikes) || spikes.length === 0) {
       return null;
     }
     const hoveredIndex = tooltipData.index;
@@ -235,7 +247,7 @@ function computeNearestIndices<T>(
   items: T[],
   data: Record<string, unknown>[],
   xAccessor: (d: Record<string, unknown>) => Date,
-  getDate: (item: T) => Date,
+  getDate: (item: T) => Date
 ): number[] {
   if (items.length === 0 || data.length === 0) {
     return [];
@@ -251,7 +263,9 @@ function computeNearestIndices<T>(
     let minDiff = Number.POSITIVE_INFINITY;
     for (let i = 0; i < dataTimes.length; i++) {
       const t = dataTimes[i]!;
-      if (Number.isNaN(t)) continue;
+      if (Number.isNaN(t)) {
+        continue;
+      }
       const diff = Math.abs(t - target);
       if (diff < minDiff) {
         minDiff = diff;
@@ -273,16 +287,18 @@ function OPAnnotationsBlock({
 }) {
   const visibleRefs = references.slice(0, referencesLimit);
   const hiddenRefs = Math.max(0, references.length - referencesLimit);
-  if (visibleRefs.length === 0 && !spike) return null;
+  if (visibleRefs.length === 0 && !spike) {
+    return null;
+  }
 
   return (
     <div className="col mt-1 gap-2 border-border border-t pt-2">
       {visibleRefs.map((marker) => (
         <OPAnnotationRow
-          key={marker.title}
-          icon={marker.icon}
-          title={marker.title}
           description={marker.description}
+          icon={marker.icon}
+          key={marker.title}
+          title={marker.title}
         />
       ))}
       {hiddenRefs > 0 && (
@@ -318,9 +334,9 @@ function OPSpikeAnnotation({ spike }: { spike: OPReferrerSpikeItem }) {
 
   return (
     <OPAnnotationRow
+      description={description}
       icon={<SerieIcon fill name={spike.referrer_name} />}
       title={`Spike from ${spike.referrer_name}`}
-      description={description}
     />
   );
 }
@@ -342,15 +358,13 @@ function OPAnnotationRow({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-foreground text-foreground">
+      <div className="mt-px flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-full border border-foreground text-foreground">
         {icon}
       </div>
       <div className="col min-w-0 flex-1 gap-0.5">
-        <div className="truncate font-medium text-sm leading-tight">
-          {title}
-        </div>
+        <div className="truncate font-medium">{title}</div>
         {description && (
-          <div className="truncate text-muted-foreground text-xs leading-snug">
+          <div className="truncate text-muted-foreground text-xs">
             {description}
           </div>
         )}
@@ -370,10 +384,7 @@ export function OPTooltipCard({
 }) {
   return (
     <div
-      className={cn(
-        'col gap-2 rounded-xl border border-border/60 p-3 text-foreground shadow-xl',
-        className
-      )}
+      className={cn('col gap-1.5 p-2.5 text-foreground text-sm', className)}
       style={style}
     >
       {children}
@@ -385,15 +396,18 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
   const number = useNumber();
   const hasValue = row.value != null;
   const prev = row.previous ?? null;
-  const showPrev = prev != null && prev !== 0;
-  const showDiff = row.showDiff !== false && showPrev;
+  const showPrev = prev != null;
+  // A change from zero has no percentage.
+  const showDiff = row.showDiff !== false && showPrev && prev !== 0;
   const diff =
     showDiff && hasValue ? getPreviousMetric(row.value!, prev) : null;
+  const formatValue = (value: number) =>
+    row.format ? row.format(value) : formatOPValue(value, row.unit, number);
 
   return (
     <div className="flex gap-2">
-      <div className="w-[3px] rounded-full" style={{ background: row.color }} />
-      <div className="col min-w-0 flex-1 gap-1">
+      <div className="w-0.5 rounded-full" style={{ background: row.color }} />
+      <div className="col min-w-0 flex-1 gap-0.5">
         <div className="flex min-w-0 items-center gap-1">
           {row.icon && (
             <span className="flex shrink-0 items-center">{row.icon}</span>
@@ -401,12 +415,12 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
           <span className="truncate font-medium">{row.label}</span>
         </div>
         {hasValue && (
-          <div className="flex items-center justify-between gap-8 font-medium font-mono">
+          <div className="flex items-center justify-between gap-6 font-medium tabular-nums">
             <div className="row items-baseline gap-1">
-              <span>{formatOPValue(row.value!, row.unit, number)}</span>
+              <span>{formatValue(row.value!)}</span>
               {showPrev && (
                 <span className="text-muted-foreground">
-                  ({formatOPValue(prev, row.unit, number)})
+                  ({formatValue(prev)})
                 </span>
               )}
               {row.percentage != null && (
@@ -422,10 +436,10 @@ function OPTooltipRowView({ row }: { row: OPTooltipRow }) {
         )}
 
         {row.sub && row.sub.length > 0 && (
-          <div className="col gap-1 text-sm">
+          <div className="col gap-0.5 text-xs">
             {row.sub.map((s, i) => (
               <div
-                className="flex justify-between gap-8 font-medium font-mono"
+                className="flex justify-between gap-6 font-medium tabular-nums"
                 key={`${typeof s.label === 'string' ? s.label : i}-${i}`}
               >
                 <span className="text-muted-foreground">{s.label}</span>

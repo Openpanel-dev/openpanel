@@ -1,0 +1,327 @@
+import { Agent as HttpAgent } from 'node:http';
+import { Agent as HttpsAgent } from 'node:https';
+import type { LookupFunction } from 'node:net';
+import {
+  HeadBucketCommand,
+  PutObjectCommand,
+  type PutObjectCommandInput,
+  S3Client,
+} from '@aws-sdk/client-s3';
+import { AssumeRoleCommand, STSClient } from '@aws-sdk/client-sts';
+import {
+  assertSafeUrl,
+  createPinnedLookup,
+  decryptCredential,
+} from '@openpanel/shared/server';
+import {
+  callProvider,
+  ProviderError,
+  providerErrorFrom,
+} from '../../../../clients/provider-error';
+import type { CoreConfig } from '../../../../config';
+import type { IS3ExportConfig } from '../../integration.constants';
+import type {
+  IObjectStoreAdapter,
+  IUploadOptions,
+  IUploadResult,
+} from './types';
+
+/** Every failure that leaves this adapter is classified under this provider name. */
+const S3_PROVIDER = 's3';
+
+// An endpoint the SSRF guard refuses is refused identically on every retry.
+const ENDPOINT_REJECTED_RETRYABLE = false;
+
+/**
+ * Transport that dials only `address`, whatever DNS says at connect time.
+ *
+ * The AWS SDK resolves the endpoint hostname itself, so validating the address
+ * up front is check-then-connect: a hostname whose DNS answer flips between the
+ * two (rebinding) would connect somewhere we never checked. Pinning removes the
+ * second resolution entirely. Mirrors createPinnedAgent in
+ * common/server/safe-fetch, which does the same for fetch callers.
+ */
+function pinnedRequestHandler(address: string) {
+  const lookup = createPinnedLookup(address) as unknown as LookupFunction;
+  return {
+    httpAgent: new HttpAgent({ lookup }),
+    httpsAgent: new HttpsAgent({ lookup }),
+  };
+}
+
+/** S3 adapter for uploading export batches to AWS S3 or S3-compatible storage. */
+export class S3Adapter implements IObjectStoreAdapter {
+  private config: IS3ExportConfig;
+  private clientPromise: Promise<S3Client> | null = null;
+  private clientExpiresAt = 0;
+
+  constructor(
+    config: IS3ExportConfig,
+    private readonly coreConfig: CoreConfig
+  ) {
+    if (config.authMode === 'access_key') {
+      this.config = {
+        ...config,
+        secretAccessKey: decryptCredential(
+          coreConfig.encryptionKey,
+          config.secretAccessKey
+        ),
+      };
+    } else {
+      this.config = config;
+    }
+  }
+
+  private async getClient(): Promise<S3Client> {
+    if (this.config.authMode === 'iam_role') {
+      // Assumed-role clients talk to the default AWS endpoint (see
+      // createClientWithAssumedRole) — the tenant's custom endpoint is not
+      // applied to them, so there is nothing tenant-controlled to guard.
+      return this.getClientWithAssumedRole();
+    }
+
+    // A custom endpoint is tenant-controlled. Validate the resolved address AND
+    // pin the socket to it: validating alone is check-then-connect, and the AWS
+    // SDK re-resolves the hostname independently, so a DNS answer that flips
+    // between the check and the connect would reach an internal host.
+    // Self-hosted returns null (guard skipped) — a single tenant already owns
+    // the network, and internal MinIO endpoints are a legitimate use.
+    //
+    // A refused endpoint is refused on every attempt, so it is classified
+    // permanent rather than left as a bare throw the caller would have to treat
+    // as retryable.
+    let addresses: string[] | null = null;
+    if (this.config.endpoint) {
+      try {
+        addresses = await assertSafeUrl(
+          this.coreConfig.selfHosted,
+          this.config.endpoint
+        );
+      } catch (error) {
+        throw new ProviderError(
+          S3_PROVIDER,
+          `Endpoint '${this.config.endpoint}' is not a permitted export destination`,
+          { retryable: ENDPOINT_REJECTED_RETRYABLE, cause: error }
+        );
+      }
+    }
+
+    return this.getClientWithAccessKeys(addresses?.[0]);
+  }
+
+  private async getClientWithAccessKeys(
+    pinnedAddress?: string
+  ): Promise<S3Client> {
+    // Access key clients don't expire, reuse if available. A cached client is
+    // already pinned to a previously validated address, so reuse is safe.
+    if (this.clientPromise && this.clientExpiresAt === 0) {
+      return this.clientPromise;
+    }
+
+    if (this.config.authMode !== 'access_key') {
+      throw new Error(
+        'Access key auth mode required but IAM role config provided'
+      );
+    }
+
+    const client = new S3Client({
+      region: this.config.region,
+      endpoint: this.config.endpoint,
+      credentials: {
+        accessKeyId: this.config.accessKeyId,
+        secretAccessKey: this.config.secretAccessKey,
+      },
+      // For R2, MinIO, etc.: force path-style addressing
+      forcePathStyle: !!this.config.endpoint,
+      // The hostname still travels as SNI and the Host header, so TLS
+      // verification is unaffected — only the address dialled is fixed.
+      ...(pinnedAddress
+        ? { requestHandler: pinnedRequestHandler(pinnedAddress) }
+        : {}),
+    });
+
+    this.clientExpiresAt = 0;
+    this.clientPromise = Promise.resolve(client);
+
+    return client;
+  }
+
+  private async getClientWithAssumedRole(): Promise<S3Client> {
+    const now = Date.now();
+
+    // Reuse client if credentials haven't expired (with 5 min buffer)
+    if (this.clientPromise && this.clientExpiresAt > now + 5 * 60 * 1000) {
+      return this.clientPromise;
+    }
+
+    this.clientPromise = this.createClientWithAssumedRole();
+    return this.clientPromise;
+  }
+
+  private async createClientWithAssumedRole(): Promise<S3Client> {
+    if (this.config.authMode !== 'iam_role') {
+      throw new Error(
+        'IAM role auth mode required but access key config provided'
+      );
+    }
+
+    const stsClient = new STSClient({ region: this.config.region });
+
+    const assumeRoleParams: {
+      RoleArn: string;
+      RoleSessionName: string;
+      DurationSeconds: number;
+      ExternalId?: string;
+    } = {
+      RoleArn: this.config.roleArn,
+      RoleSessionName: 'OpenPanelExport',
+      DurationSeconds: 3600, // 1 hour
+    };
+
+    if (this.config.externalId) {
+      assumeRoleParams.ExternalId = this.config.externalId;
+    }
+
+    try {
+      const assumeRoleCommand = new AssumeRoleCommand(assumeRoleParams);
+      const assumeRoleResponse = await stsClient.send(assumeRoleCommand);
+
+      const credentials = assumeRoleResponse.Credentials;
+      if (!credentials) {
+        throw new Error('Failed to assume role: no credentials returned');
+      }
+
+      this.clientExpiresAt =
+        credentials.Expiration?.getTime() || Date.now() + 3600 * 1000;
+
+      const s3Client = new S3Client({
+        region: this.config.region,
+        credentials: {
+          accessKeyId: credentials.AccessKeyId!,
+          secretAccessKey: credentials.SecretAccessKey!,
+          sessionToken: credentials.SessionToken,
+        },
+      });
+
+      return s3Client;
+    } catch (error) {
+      throw providerErrorFrom(
+        S3_PROVIDER,
+        error,
+        `Failed to assume role ${this.config.roleArn} for S3 access`
+      );
+    }
+  }
+
+  private getEncryptionParams(): Partial<PutObjectCommandInput> {
+    const encryption = this.config.encryption || 'SSE-S3';
+
+    switch (encryption) {
+      case 'SSE-S3':
+        return {
+          ServerSideEncryption: 'AES256',
+        };
+      case 'SSE-KMS':
+        return {
+          ServerSideEncryption: 'aws:kms',
+          SSEKMSKeyId: this.config.kmsKeyId,
+        };
+      case 'none':
+        return {};
+      default:
+        return {
+          ServerSideEncryption: 'AES256',
+        };
+    }
+  }
+
+  async upload(options: IUploadOptions): Promise<IUploadResult> {
+    const client = await this.getClient();
+
+    const putParams: PutObjectCommandInput = {
+      Bucket: options.bucket,
+      Key: options.key,
+      Body: options.content,
+      ContentType: options.contentType,
+      ...this.getEncryptionParams(),
+    };
+
+    const response = await callProvider(S3_PROVIDER, () =>
+      client.send(new PutObjectCommand(putParams))
+    );
+
+    return {
+      bucket: options.bucket,
+      key: options.key,
+      etag: response.ETag,
+      location: `s3://${options.bucket}/${options.key}`,
+    };
+  }
+
+  async uploadMany(
+    options: Array<IUploadOptions>
+  ): Promise<Array<IUploadResult | Error>> {
+    const results = await Promise.allSettled(
+      options.map((opt) => this.upload(opt))
+    );
+
+    return results.map((result) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      }
+      return result.reason instanceof Error
+        ? result.reason
+        : new Error(String(result.reason));
+    });
+  }
+
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const client = await this.getClient();
+
+      const command = new HeadBucketCommand({
+        Bucket: this.config.bucket,
+      });
+
+      await client.send(command);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: this.describeError(error) };
+    }
+  }
+
+  /**
+   * Turn an SDK error into something the user can act on, without echoing raw
+   * transport detail back to them. The endpoint is caller-supplied, so a
+   * verbatim message ("ECONNREFUSED 10.0.0.5:22", a TLS handshake failure)
+   * would make this procedure a probe for whatever the worker can reach.
+   */
+  private describeError(error: unknown): string {
+    const name = (error as { name?: string } | null)?.name;
+    const status = (error as { $metadata?: { httpStatusCode?: number } } | null)
+      ?.$metadata?.httpStatusCode;
+
+    if (status === 404 || name === 'NotFound' || name === 'NoSuchBucket') {
+      return `Bucket '${this.config.bucket}' does not exist or is not accessible`;
+    }
+    if (status === 403 || name === 'AccessDenied' || name === 'Forbidden') {
+      return `Access denied to bucket '${this.config.bucket}'. Check the credentials and their bucket permissions.`;
+    }
+    if (status === 301 || name === 'PermanentRedirect') {
+      return `Bucket '${this.config.bucket}' is in a different region than '${this.config.region}'`;
+    }
+    if (name === 'InvalidAccessKeyId' || name === 'SignatureDoesNotMatch') {
+      return 'The access key or secret is not valid for this endpoint';
+    }
+    // Anything else (DNS, connection, TLS) collapses to one message on purpose.
+    return 'Could not reach the bucket. Check the endpoint, region and bucket name.';
+  }
+}
+
+export function createS3Adapter(
+  config: IS3ExportConfig,
+  coreConfig: CoreConfig
+): S3Adapter {
+  return new S3Adapter(config, coreConfig);
+}

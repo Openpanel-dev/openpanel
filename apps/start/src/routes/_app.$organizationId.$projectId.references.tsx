@@ -1,3 +1,14 @@
+import type { IServiceReference } from '@openpanel/core';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import type { ColumnDef } from '@tanstack/react-table';
+import { PlusIcon } from 'lucide-react';
+import { toast } from 'sonner';
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
@@ -13,27 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-// import { Input } from '@/components/ui/input';
-// import { TableButtons } from '@/components/ui/table';
-// import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
-import { formatDate, formatDateTime } from '@/utils/date';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import type { IServiceReference } from '@openpanel/db';
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import type { ColumnDef } from '@tanstack/react-table';
-import { PlusIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { formatDateTime } from '@/utils/date';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/references',
+  '/_app/$organizationId/$projectId/references'
 )({
   component: Component,
   head: () => {
@@ -56,7 +53,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
         <div>
           <div className="font-medium">{row.original.title}</div>
           {!!row.original.description && (
-            <div className="text-muted-foreground break-words whitespace-normal">
+            <div className="whitespace-normal break-words text-muted-foreground">
               {row.original.description}
             </div>
           )}
@@ -110,7 +107,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
           toast.success('Reference deleted');
           queryClient.invalidateQueries(trpc.reference.pathFilter());
         },
-      }),
+      })
     );
     const ref = row.original;
     return (
@@ -129,7 +126,6 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          variant="destructive"
           onClick={() =>
             showConfirm({
               title: 'Delete reference',
@@ -141,6 +137,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
               },
             })
           }
+          variant="destructive"
         >
           Delete
         </DropdownMenuItem>
@@ -159,8 +156,8 @@ function Component() {
       },
       {
         placeholderData: keepPreviousData,
-      },
-    ),
+      }
+    )
   );
   const data = query.data ?? [];
 
@@ -175,9 +172,9 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title="References"
-        description="References is a good way to keep track of important events. They will show up in your reports."
         className="mb-8"
+        description="References is a good way to keep track of important events. They will show up in your reports."
+        title="References"
       />
       <DataTableToolbar table={table}>
         <Button icon={PlusIcon} onClick={() => pushModal('AddReference')}>
@@ -185,7 +182,7 @@ function Component() {
           <span className="sm:hidden">Reference</span>
         </Button>
       </DataTableToolbar>
-      <DataTable table={table} loading={loading} />
+      <DataTable error={query.isError} loading={loading} table={table} />
     </PageContainer>
   );
 }

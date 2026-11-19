@@ -1,8 +1,8 @@
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
+import { differenceInHours, getISOWeek } from 'date-fns';
 import { motion, useSpring } from 'motion/react';
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { differenceInHours, getISOWeek } from 'date-fns';
-import type { IInterval } from '@openpanel/validation';
 import {
   type TooltipData,
   useChartHover,
@@ -37,7 +37,7 @@ export function OPDatePill({ interval }: OPDatePillProps) {
     setMounted(true);
   }, []);
 
-  if (!mounted || !containerRef.current || !tooltipData) {
+  if (!(mounted && containerRef.current && tooltipData)) {
     return null;
   }
 
@@ -61,34 +61,40 @@ function OPDatePillInner({
   interval?: IInterval;
   tooltipData: TooltipData;
 }) {
-  const { data, xAccessor, margin, width } = useChartStable();
+  const { data, xAccessor, margin, width, barScale, barXAccessor } =
+    useChartStable();
 
   const xCenter = tooltipData.x + margin.left;
   const animatedX = useSpring(xCenter, SPRING);
   animatedX.set(xCenter);
 
-  const label = useMemo(
-    () =>
-      formatPillDate(
-        xAccessor(tooltipData.point),
-        interval ?? 'day',
-        data,
-        xAccessor,
-      ),
-    [tooltipData, data, xAccessor, interval],
-  );
+  const label = useMemo(() => {
+    // A category bar chart has no dates; its x value is the category name.
+    if (barScale && barXAccessor) {
+      return barXAccessor(tooltipData.point);
+    }
+    return formatPillDate(
+      xAccessor(tooltipData.point),
+      interval ?? 'day',
+      data,
+      xAccessor
+    );
+  }, [tooltipData, data, xAccessor, interval, barScale, barXAccessor]);
 
   // Stable across hovers — depends only on chart dimensions.
   const maxWidth = useMemo(
     () => Math.max(120, width - margin.left - margin.right),
-    [width, margin.left, margin.right],
+    [width, margin.left, margin.right]
   );
 
-  if (!label) return null;
+  if (!label) {
+    return null;
+  }
 
+  // Below the tooltip card (z-50) so the card wins when they overlap.
   return createPortal(
     <motion.div
-      className="pointer-events-none absolute z-50"
+      className="pointer-events-none absolute z-40"
       style={{
         left: animatedX,
         bottom: 4,
@@ -96,11 +102,11 @@ function OPDatePillInner({
         maxWidth,
       }}
     >
-      <div className="rounded-full bg-foreground px-2.5 py-1 text-[11px] font-medium tracking-tight text-background shadow-md whitespace-nowrap">
+      <div className="whitespace-nowrap rounded-full bg-foreground px-2.5 py-1 font-medium text-2xs text-background tracking-tight shadow-md">
         {label}
       </div>
     </motion.div>,
-    container,
+    container
   );
 }
 
@@ -128,10 +134,11 @@ function formatPillDate(
   date: Date,
   interval: IInterval,
   data: Record<string, unknown>[],
-  xAccessor: (d: Record<string, unknown>) => Date,
+  xAccessor: (d: Record<string, unknown>) => Date
 ): string {
   const first = data[0] ? xAccessor(data[0]) : date;
-  const last = data[data.length - 1] ? xAccessor(data[data.length - 1]!) : date;
+  const lastPoint = data.at(-1);
+  const last = lastPoint ? xAccessor(lastPoint) : date;
   const spanHours = Math.max(0, differenceInHours(last, first));
 
   const dayMonth = `${SHORT_MONTHS[date.getMonth()]} ${date.getDate()}`;
@@ -139,14 +146,19 @@ function formatPillDate(
 
   switch (interval) {
     case 'minute':
-      if (spanHours <= 1) return time;
-      if (spanHours <= 24) return time;
+      if (spanHours <= 1) {
+        return time;
+      }
+      if (spanHours <= 24) {
+        return time;
+      }
       return `${dayMonth} ${time}`;
 
     case 'hour':
       // ≤ ~25h span → single day, show only the hour
-      if (spanHours <= 25) return `${pad(date.getHours())}:00`;
-      // Otherwise include the date
+      if (spanHours <= 25) {
+        return `${pad(date.getHours())}:00`;
+      }
       return `${dayMonth} ${pad(date.getHours())}:00`;
 
     case 'day':

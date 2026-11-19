@@ -1,5 +1,3 @@
-import { useMemo } from 'react';
-
 interface SimpleChartProps {
   width?: number;
   height?: number;
@@ -18,7 +16,9 @@ export function SimpleChart({
   className,
 }: SimpleChartProps) {
   // Skip if no points
-  if (!points.length) return null;
+  if (!points.length) {
+    return null;
+  }
 
   // Calculate scaling factors
   const maxValue = Math.max(...points);
@@ -45,8 +45,8 @@ export function SimpleChart({
 
   return (
     <svg
-      viewBox={`0 0 ${width} ${height}`}
       className={`w-full ${className ?? ''}`}
+      viewBox={`0 0 ${width} ${height}`}
     >
       <defs>
         <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">

@@ -8,23 +8,21 @@ import { useEffect } from 'react';
 
 import 'flag-icons/css/flag-icons.min.css';
 import 'katex/dist/katex.min.css';
-import 'react-grid-layout/css/styles.css';
-import 'react-resizable/css/styles.css';
-import type { AppRouter } from '@openpanel/trpc';
+import type { AppRouter } from '@openpanel/core';
 import type { QueryClient } from '@tanstack/react-query';
 import { TRPCClientError } from '@trpc/client';
 import type { TRPCOptionsProxy } from '@trpc/tanstack-react-query';
 import { LockIcon } from 'lucide-react';
 import appCss from '../styles.css?url';
 import type { ConfigResonse } from './api/config';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import { EmptyState } from '@/components/empty-state';
+import { FeedbackWidgetScripts } from '@/components/feedback-widget-scripts';
 import { FullPageErrorState } from '@/components/full-page-error-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
-import { useSessionExtension } from '@/hooks/use-session-extension';
 import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
@@ -74,13 +72,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     // hard-redirects them to /login.
     if (error instanceof TRPCClientError && error.data?.httpStatus === 403) {
       return (
-        <FullPageEmptyState
+        <EmptyState
           description={error.message}
           icon={LockIcon}
           title="No access"
+          variant="page"
         >
           <LinkButton href="/">Go back to home</LinkButton>
-        </FullPageEmptyState>
+        </EmptyState>
       );
     }
     return (
@@ -116,28 +115,17 @@ function OpIdentify() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  useSessionExtension();
-
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="grainy min-h-screen bg-def-100 font-sans text-base leading-normal antialiased">
+      <body className="grainy min-h-screen bg-def-100 font-sans text-sm antialiased">
         <OpIdentify />
         <Providers>{children}</Providers>
         <ThemeScriptOnce />
         <Scripts />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.$ujq=window.$ujq||[];window.uj=window.uj||new Proxy({},{get:(_,p)=>(...a)=>window.$ujq.push([p,...a])});document.head.appendChild(Object.assign(document.createElement('script'),{src:'https://cdn.userjot.com/sdk/v2/uj.js',type:'module',async:!0}));`,
-          }}
-        />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.uj.init('cm6thlmwr03xr13jghznx87gk', { widget: true, trigger: 'custom' });`,
-          }}
-        />
+        <FeedbackWidgetScripts />
         <div className="hidden">
           <div className="bg-chart-0 text-chart-0" />
           <div className="bg-chart-1 text-chart-1" />

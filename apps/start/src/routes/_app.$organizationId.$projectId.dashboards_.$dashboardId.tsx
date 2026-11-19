@@ -1,5 +1,42 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
+import {
+  isSameDashboardFilters,
+  parseDashboardFilters,
+} from '@openpanel/core/modules/dashboard/dashboard.constants';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createFileRoute, useRouter } from '@tanstack/react-router';
+import {
+  ChartLineIcon,
+  CopyIcon,
+  MoreHorizontal,
+  PlusIcon,
+  RotateCcw,
+  SaveIcon,
+  SearchIcon,
+  ShareIcon,
+  TrashIcon,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import {
+  DashboardGrid,
+  isSameTilePosition,
+  type Layout,
+  TILE_MIN_SIZE,
+  useDashboardLayout,
+} from '@/components/dashboard-grid';
+import { EmptyState } from '@/components/empty-state';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
+import FullPageLoadingState from '@/components/full-page-loading-state';
+import { OverviewInterval } from '@/components/overview/overview-interval';
+import { OverviewRange } from '@/components/overview/overview-range';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
+import { PageContainer } from '@/components/page-container';
+import { PageHeader } from '@/components/page-header';
+import {
+  ReportItem,
+  ReportItemSkeleton,
+} from '@/components/report/report-item';
+import type { PropertiesComboboxCategory } from '@/components/report/sidebar/PropertiesCombobox';
 import { Button, LinkButton } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,42 +45,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { createProjectTitle } from '@/utils/title';
-import {
-  LayoutPanelTopIcon,
-  MoreHorizontal,
-  PlusIcon,
-  RotateCcw,
-  SearchIcon,
-  ShareIcon,
-  TrashIcon,
-} from 'lucide-react';
-import { toast } from 'sonner';
-
-import FullPageLoadingState from '@/components/full-page-loading-state';
-import {
-  GrafanaGrid,
-  type Layout,
-  useReportLayouts,
-} from '@/components/grafana-grid';
-import { OverviewInterval } from '@/components/overview/overview-interval';
-import { OverviewRange } from '@/components/overview/overview-range';
-import { PageContainer } from '@/components/page-container';
-import { PageHeader } from '@/components/page-header';
-import {
-  ReportItem,
-  ReportItemSkeleton,
-} from '@/components/report/report-item';
 import { Input } from '@/components/ui/input';
 import { useDashboardPageContext } from '@/hooks/use-page-context-helpers';
+import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTileViews } from '@/hooks/use-tile-views';
 import { handleErrorToastOptions, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createFileRoute, useRouter } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createProjectTitle } from '@/utils/title';
+
+/** The same key the overview uses, so clicking a country on a map tile
+ *  filters the whole dashboard. */
+const DASHBOARD_FILTERS_URL_KEY = 'f';
+const DASHBOARD_FILTER_CATEGORIES: PropertiesComboboxCategory[] = [
+  'event',
+  'profile',
+  'group',
+  'cohort',
+  'session',
+];
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/dashboards_/$dashboardId',
+  '/_app/$organizationId/$projectId/dashboards_/$dashboardId'
 )({
   component: Component,
   head: () => {
@@ -61,23 +83,23 @@ export const Route = createFileRoute(
         context.trpc.dashboard.byId.queryOptions({
           id: params.dashboardId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.report.list.queryOptions({
           dashboardId: params.dashboardId,
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.project.getProjectWithClients.queryOptions({
           projectId: params.projectId,
-        }),
+        })
       ),
       context.queryClient.prefetchQuery(
         context.trpc.organization.get.queryOptions({
           organizationId: params.organizationId,
-        }),
+        })
       ),
     ]);
   },
@@ -95,14 +117,14 @@ function Component() {
     trpc.dashboard.byId.queryOptions({
       id: dashboardId,
       projectId,
-    }),
+    })
   );
 
   const reportsQuery = useQuery(
     trpc.report.list.queryOptions({
       dashboardId,
       projectId,
-    }),
+    })
   );
 
   const dashboardDeletion = useMutation(
@@ -119,33 +141,98 @@ function Component() {
           },
         });
       },
-    }),
+    })
   );
 
-  const reports = reportsQuery.data ?? [];
+  const dashboardDuplication = useMutation(
+    trpc.dashboard.duplicate.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess(copy) {
+        queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
+        toast(`Created "${copy.name}"`);
+        router.navigate({
+          to: '/$organizationId/$projectId/dashboards/$dashboardId',
+          params: {
+            organizationId,
+            projectId,
+            dashboardId: copy.id,
+          },
+        });
+      },
+    })
+  );
+
+  const reports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const dashboard = dashboardQuery.data;
-  const [isGridReady, setIsGridReady] = useState(false);
-  const [enableTransitions, setEnableTransitions] = useState(false);
   const [search, setSearch] = useState('');
+
+  const savedFilters = useMemo(
+    () => parseDashboardFilters(dashboard?.filters),
+    [dashboard?.filters]
+  );
+  // Replace, so Back does not land on the dashboard without its saved filters.
+  const [rawUrlFilters, setUrlFilters] = useTableFilters(
+    DASHBOARD_FILTERS_URL_KEY,
+    { history: 'replace' }
+  );
+  // A hand-edited link can hold a filter the chart input rejects, which would
+  // fail every tile.
+  const urlFilters = useMemo(
+    () => parseDashboardFilters(rawUrlFilters),
+    [rawUrlFilters]
+  );
+  const [seededDashboardId, setSeededDashboardId] = useState<string | null>(
+    null
+  );
+  const isSeeded = seededDashboardId === dashboardId;
+  // Until the saved filters are in the URL, tiles use them directly so they
+  // never fetch unfiltered data first.
+  const dashboardFilters =
+    !isSeeded && urlFilters.length === 0 ? savedFilters : urlFilters;
+  const filtersChanged = !isSameDashboardFilters(
+    dashboardFilters,
+    savedFilters
+  );
+
+  useEffect(() => {
+    if (isSeeded || !dashboard) {
+      return;
+    }
+    // A link that carries valid filters wins over the saved ones.
+    const openingFilters = urlFilters.length > 0 ? urlFilters : savedFilters;
+    if (!isSameDashboardFilters(rawUrlFilters, openingFilters)) {
+      setUrlFilters(openingFilters);
+    }
+    setSeededDashboardId(dashboardId);
+  }, [
+    isSeeded,
+    dashboard,
+    rawUrlFilters,
+    urlFilters,
+    savedFilters,
+    setUrlFilters,
+    dashboardId,
+  ]);
+
+  const saveFilters = useMutation(
+    trpc.dashboard.update.mutationOptions({
+      onError: handleErrorToastOptions({}),
+      onSuccess() {
+        queryClient.invalidateQueries(
+          trpc.dashboard.byId.queryFilter({ id: dashboardId, projectId })
+        );
+        toast('Dashboard filters saved');
+      },
+    })
+  );
 
   const filteredReports = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return reports;
+    if (!q) {
+      return reports;
+    }
     return reports.filter((r) => r.name?.toLowerCase().includes(q));
   }, [reports, search]);
-
-  // Wait for initial render to ensure grid has proper dimensions
-  useEffect(() => {
-    if (reports.length > 0 && !isGridReady) {
-      // Small delay to ensure container has rendered with proper width
-      const timer = setTimeout(() => {
-        setIsGridReady(true);
-        // Enable transitions after initial render
-        setTimeout(() => setEnableTransitions(true), 100);
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [reports.length, isGridReady]);
 
   const reportDeletion = useMutation(
     trpc.report.delete.mutationOptions({
@@ -155,7 +242,7 @@ function Component() {
         reportsQuery.refetch();
         toast('Report deleted');
       },
-    }),
+    })
   );
 
   const reportDuplicate = useMutation(
@@ -166,19 +253,31 @@ function Component() {
         reportsQuery.refetch();
         toast('Report duplicated');
       },
-    }),
+    })
   );
 
-  const updateLayout = useMutation(
-    trpc.report.updateLayout.mutationOptions({
-      onError: handleErrorToastOptions({}),
-      onSuccess() {
-        // Silently refetch reports (which includes layouts)
-        reportsQuery.refetch();
+  const reportsQueryKey = trpc.report.list.queryKey({ dashboardId, projectId });
+  const { mutate: saveLayouts } = useMutation(
+    trpc.report.updateLayouts.mutationOptions({
+      onSuccess(savedLayouts) {
+        queryClient.setQueryData(reportsQueryKey, (current) =>
+          current?.map((report) => ({
+            ...report,
+            layout:
+              savedLayouts.find((saved) => saved.reportId === report.id) ??
+              report.layout,
+          }))
+        );
       },
-    }),
+      onError(error) {
+        handleErrorToastOptions({})(error);
+        // The grid already shows the rejected layout; the saved one is the rollback.
+        queryClient.invalidateQueries({ queryKey: reportsQueryKey });
+      },
+    })
   );
 
+  const { unsavedViews, changeView } = useTileViews({ dashboardId, projectId });
   const resetLayout = useMutation(
     trpc.report.resetLayout.mutationOptions({
       onError: handleErrorToastOptions({}),
@@ -186,95 +285,89 @@ function Component() {
         toast('Layout reset to default');
         reportsQuery.refetch();
       },
-    }),
+    })
   );
 
-  // Convert reports to grid layout format for all breakpoints
-  const layouts = useReportLayouts(filteredReports);
+  const [layout, setLayout] = useDashboardLayout(filteredReports);
 
-  const dashboardPrimer = useMemo(
-    () => ({
-      name: dashboard?.name,
-      reportCount: reports.length,
-      reports: reports.map((r) => ({
-        id: r.id,
-        name: r.name,
-        chartType: r.chartType,
-      })),
-    }),
-    [dashboard?.name, reports],
-  );
+  useDashboardPageContext(dashboardId);
 
-  useDashboardPageContext(dashboardId, dashboardPrimer);
-
-  const handleLayoutChange = useCallback((newLayout: Layout[]) => {
-    // This is called during dragging/resizing, we'll save on drag/resize stop
-  }, []);
-
-  const handleDragStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after drag stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
-      });
+  const saveLayout = useCallback(
+    (newLayout: Layout) => {
+      const items = newLayout
+        .filter((item) => {
+          const saved = reports.find((report) => report.id === item.i)?.layout;
+          return !(saved && isSameTilePosition(item, saved));
+        })
+        .map((item) => ({
+          reportId: item.i,
+          layout: {
+            x: item.x,
+            y: item.y,
+            w: item.w,
+            h: item.h,
+            minW: item.minW ?? TILE_MIN_SIZE.minW,
+            minH: item.minH ?? TILE_MIN_SIZE.minH,
+          },
+        }));
+      if (items.length === 0) {
+        return;
+      }
+      saveLayouts({ dashboardId, projectId, items });
     },
-    [reports, updateLayout],
+    [reports, saveLayouts, dashboardId, projectId]
   );
 
-  const handleResizeStop = useCallback(
-    (newLayout: Layout[]) => {
-      // Save each changed layout after resize stops
-      newLayout.forEach((item) => {
-        const report = reports.find((r) => r.id === item.i);
-        if (report) {
-          const oldLayout = report.layout;
-          // Only update if layout actually changed
-          if (
-            !oldLayout ||
-            oldLayout.x !== item.x ||
-            oldLayout.y !== item.y ||
-            oldLayout.w !== item.w ||
-            oldLayout.h !== item.h
-          ) {
-            updateLayout.mutate({
-              reportId: item.i,
-              layout: {
-                x: item.x,
-                y: item.y,
-                w: item.w,
-                h: item.h,
-                minW: item.minW ?? 3,
-                minH: item.minH ?? 3,
-              },
-            });
-          }
-        }
-      });
-    },
-    [reports, updateLayout],
+  // The grid re-renders on every drag frame; tiles that keep their element
+  // identity are skipped by the grid's memo, so no chart renders mid-drag.
+  const deleteReport = reportDeletion.mutate;
+  const duplicateReport = reportDuplicate.mutate;
+  const moveReport = useCallback(
+    (reportId: string) => pushModal('MoveReport', { reportId, dashboardId }),
+    [dashboardId]
+  );
+  const tiles = useMemo(
+    () =>
+      filteredReports.map((report) => {
+        const unsavedView = unsavedViews[report.id];
+        return (
+          <div key={report.id}>
+            <ReportItem
+              dashboardFilters={dashboardFilters}
+              endDate={endDate}
+              interval={interval}
+              onDelete={(reportId) => deleteReport({ reportId })}
+              onDuplicate={(reportId) => duplicateReport({ reportId })}
+              onMove={moveReport}
+              onViewChange={changeView}
+              organizationId={organizationId}
+              projectId={projectId}
+              range={range}
+              report={
+                unsavedView
+                  ? { ...report, display: { view: unsavedView } }
+                  : report
+              }
+              startDate={startDate}
+            />
+          </div>
+        );
+      }),
+    [
+      filteredReports,
+      unsavedViews,
+      dashboardFilters,
+      endDate,
+      interval,
+      range,
+      startDate,
+      organizationId,
+      projectId,
+      deleteReport,
+      duplicateReport,
+      moveReport,
+      changeView,
+    ]
   );
 
   if (!dashboard) {
@@ -284,20 +377,17 @@ function Component() {
   return (
     <PageContainer>
       <PageHeader
-        title={dashboard.name}
-        description="View and manage your reports"
-        className="mb-4"
         actions={
           <>
             {reports.length > 0 && (
               <div className="relative">
-                <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  type="search"
-                  placeholder="Search reports..."
-                  value={search}
+                  className="w-[180px] pl-8 sm:w-[220px]"
                   onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8 w-[180px] sm:w-[220px]"
+                  placeholder="Search reports..."
+                  type="search"
+                  value={search}
                 />
               </div>
             )}
@@ -305,8 +395,9 @@ function Component() {
             <OverviewInterval />
             <LinkButton
               from={Route.fullPath}
-              to={'/$organizationId/$projectId/reports'}
               icon={PlusIcon}
+              search={{ dashboardId }}
+              to={'/$organizationId/$projectId/reports'}
             >
               <span className="max-sm:hidden">Create report</span>
               <span className="sm:hidden">Report</span>
@@ -341,7 +432,15 @@ function Component() {
                     Reset layout
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    variant="destructive"
+                    disabled={dashboardDuplication.isPending}
+                    onClick={() =>
+                      dashboardDuplication.mutate({ id: dashboardId })
+                    }
+                  >
+                    <CopyIcon className="mr-2 size-4" />
+                    Duplicate dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
                     onClick={() =>
                       showConfirm({
                         title: 'Delete dashboard',
@@ -350,6 +449,7 @@ function Component() {
                           dashboardDeletion.mutate({ id: dashboardId }),
                       })
                     }
+                    variant="destructive"
                   >
                     <TrashIcon className="mr-2 size-4" />
                     Delete dashboard
@@ -359,22 +459,62 @@ function Component() {
             </DropdownMenu>
           </>
         }
+        className="mb-4"
+        description="View and manage your reports"
+        title={dashboard.name}
       />
 
+      {reports.length > 0 && (
+        <div className="row mb-4 flex-wrap items-center gap-2">
+          <TableFilterPills
+            categories={DASHBOARD_FILTER_CATEGORIES}
+            title="Dashboard filters"
+            urlKey={DASHBOARD_FILTERS_URL_KEY}
+          />
+          {filtersChanged && (
+            <div className="row ml-auto gap-2">
+              <Button
+                onClick={() => setUrlFilters(savedFilters)}
+                size="sm"
+                variant="ghost"
+              >
+                Reset
+              </Button>
+              <Button
+                icon={SaveIcon}
+                loading={saveFilters.isPending}
+                onClick={() =>
+                  saveFilters.mutate({
+                    id: dashboardId,
+                    filters: dashboardFilters,
+                  })
+                }
+                size="sm"
+              >
+                Save filters
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
       {reports.length === 0 ? (
-        <FullPageEmptyState title="No reports" icon={LayoutPanelTopIcon}>
-          <p>You can visualize your data with a report</p>
+        <EmptyState
+          description="Reports you save to this dashboard show up here as tiles you can move and resize."
+          icon={ChartLineIcon}
+          title="No reports on this dashboard yet"
+        >
           <LinkButton
             from={Route.fullPath}
-            to={'/$organizationId/$projectId/reports'}
-            className="mt-14"
             icon={PlusIcon}
+            search={{ dashboardId }}
+            to={'/$organizationId/$projectId/reports'}
           >
             Create report
           </LinkButton>
-        </FullPageEmptyState>
-      ) : !isGridReady || reportsQuery.isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </EmptyState>
+      ) : reportsQuery.isLoading ? (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <ReportItemSkeleton />
           <ReportItemSkeleton />
           <ReportItemSkeleton />
@@ -383,42 +523,25 @@ function Component() {
           <ReportItemSkeleton />
         </div>
       ) : filteredReports.length === 0 ? (
-        <FullPageEmptyState title="No matching reports" icon={SearchIcon}>
-          <p>No reports match "{search}". Try a different search.</p>
-        </FullPageEmptyState>
-      ) : (
-        <GrafanaGrid
-          transitions={enableTransitions}
-          layouts={layouts}
-          onLayoutChange={handleLayoutChange}
-          onDragStop={handleDragStop}
-          onResizeStop={handleResizeStop}
-          isDraggable={!search}
-          isResizable={!search}
+        <EmptyState
+          description={`Nothing on this dashboard matches “${search}”.`}
+          icon={SearchIcon}
+          title="No matching reports"
         >
-          {filteredReports.map((report) => (
-            <div key={report.id}>
-              <ReportItem
-                report={report}
-                organizationId={organizationId}
-                projectId={projectId}
-                range={range}
-                startDate={startDate}
-                endDate={endDate}
-                interval={interval}
-                onDelete={(reportId) => {
-                  reportDeletion.mutate({ reportId });
-                }}
-                onDuplicate={(reportId) => {
-                  reportDuplicate.mutate({ reportId });
-                }}
-                onMove={(reportId) => {
-                  pushModal('MoveReport', { reportId, dashboardId });
-                }}
-              />
-            </div>
-          ))}
-        </GrafanaGrid>
+          <Button onClick={() => setSearch('')} variant="outline">
+            Clear search
+          </Button>
+        </EmptyState>
+      ) : (
+        <DashboardGrid
+          isEditable={!search}
+          layout={layout}
+          onDragStop={saveLayout}
+          onLayoutChange={setLayout}
+          onResizeStop={saveLayout}
+        >
+          {tiles}
+        </DashboardGrid>
       )}
     </PageContainer>
   );

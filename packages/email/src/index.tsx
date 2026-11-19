@@ -1,14 +1,12 @@
-import React from 'react';
+import { db } from '@openpanel/db';
 import { render } from '@react-email/render';
 import { createTransport } from 'nodemailer';
 import { Resend } from 'resend';
 import type { z } from 'zod';
-
-import { db } from '@openpanel/db';
 import { type TemplateKey, type Templates, templates } from './emails';
 import { getUnsubscribeUrl } from './unsubscribe';
 
-/** a***@example.com, enough to correlate a log line without exposing the address. */
+/** a***@example.com: enough to correlate a log line without exposing the address. */
 function redactEmail(email: string): string {
   const at = email.indexOf('@');
   if (at <= 0) {
@@ -25,14 +23,20 @@ export type EmailData<T extends TemplateKey> = z.infer<Templates[T]['schema']>;
 export type EmailTemplate = keyof Templates;
 
 function createSmtpTransport() {
+  const secure = process.env.SMTP_SECURE === 'true';
+  const auth =
+    process.env.SMTP_USER && process.env.SMTP_PASS
+      ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      : undefined;
   return createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
-    secure: process.env.SMTP_SECURE === 'true',
-    auth:
-      process.env.SMTP_USER && process.env.SMTP_PASS
-        ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-        : undefined,
+    secure,
+    auth,
+    // Without implicit TLS, STARTTLS is opportunistic: an attacker who strips
+    // it gets the credentials in plaintext. An unauthenticated relay (a local
+    // sidecar) is left alone.
+    requireTLS: !secure && auth !== undefined,
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 30_000,
@@ -44,7 +48,7 @@ export async function sendEmail<T extends TemplateKey>(
   options: {
     to: string;
     data: z.infer<Templates[T]['schema']>;
-  },
+  }
 ) {
   const { to, data } = options;
   const template = templates[templateKey];
@@ -92,7 +96,7 @@ export async function sendEmail<T extends TemplateKey>(
   if (process.env.SMTP_HOST) {
     try {
       const html = await render(
-        <template.Component {...(props.data as any)} />,
+        <template.Component {...(props.data as any)} />
       );
       const transport = createSmtpTransport();
       const res = await transport.sendMail({
@@ -114,6 +118,9 @@ export async function sendEmail<T extends TemplateKey>(
   }
 
   if (!process.env.RESEND_API_KEY) {
+    // Never dump the payload: template data carries password-reset and
+    // unsubscribe links, and the recipient is personal data
+    // (GHSA-xr2x-w49w-hp2c).
     console.warn('Email delivery skipped', {
       templateKey,
       to: redactEmail(to),

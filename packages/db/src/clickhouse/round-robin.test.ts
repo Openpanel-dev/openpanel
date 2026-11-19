@@ -1,9 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 import {
-  type ErrorClass,
   classifyError,
+  type ErrorClass,
   isRetriableConnectionError,
+  nodeLabel,
 } from './round-robin';
+
+describe('nodeLabel', () => {
+  it('keeps only host and port, dropping credentials', () => {
+    expect(nodeLabel('http://a:secret@ch-1:8123/openpanel')).toBe('ch-1:8123');
+  });
+
+  it('never echoes a url it cannot parse', () => {
+    expect(nodeLabel('not a url :secret@')).toBe('<unparseable>');
+  });
+
+  it('labels an unset url', () => {
+    expect(nodeLabel('')).toBe('<unset>');
+  });
+});
 
 /**
  * The contract: anything from the ClickHouse server (errors that traveled
@@ -20,25 +35,23 @@ describe('isRetriableConnectionError', () => {
       {
         label: 'SQL syntax error',
         err: new Error(
-          'Code: 62, DB::Exception: Syntax error: failed at position 42',
+          'Code: 62, DB::Exception: Syntax error: failed at position 42'
         ),
       },
       {
         label: 'Unknown identifier (e.g. wrong column)',
-        err: new Error(
-          "Code: 47, DB::Exception: Unknown identifier 'fooooo'",
-        ),
+        err: new Error("Code: 47, DB::Exception: Unknown identifier 'fooooo'"),
       },
       {
         label: 'ILLEGAL_AGGREGATION',
         err: new Error(
-          'Code: 184, DB::Exception: Aggregate function max(...) is found in WHERE',
+          'Code: 184, DB::Exception: Aggregate function max(...) is found in WHERE'
         ),
       },
       {
         label: 'Missing columns',
         err: new Error(
-          'Code: 47, DB::Exception: Missing columns: a, b while processing query',
+          'Code: 47, DB::Exception: Missing columns: a, b while processing query'
         ),
       },
       {
@@ -48,13 +61,13 @@ describe('isRetriableConnectionError', () => {
       {
         label: 'MEMORY_LIMIT_EXCEEDED',
         err: new Error(
-          'Code: 241, DB::Exception: Memory limit (for query) exceeded',
+          'Code: 241, DB::Exception: Memory limit (for query) exceeded'
         ),
       },
       {
         label: 'TIMEOUT_EXCEEDED — server-side query timeout',
         err: new Error(
-          'Code: 159, DB::Exception: Timeout exceeded: elapsed 60.001 sec',
+          'Code: 159, DB::Exception: Timeout exceeded: elapsed 60.001 sec'
         ),
       },
       {
@@ -69,9 +82,7 @@ describe('isRetriableConnectionError', () => {
       },
       {
         label: 'CH error whose body happens to mention "connect"',
-        err: new Error(
-          'Code: 999, DB::Exception: Cannot connect to ZooKeeper',
-        ),
+        err: new Error('Code: 999, DB::Exception: Cannot connect to ZooKeeper'),
       },
     ];
 
@@ -110,10 +121,9 @@ describe('isRetriableConnectionError', () => {
       },
       {
         label: 'EAI_AGAIN (transient DNS)',
-        err: Object.assign(
-          new Error('getaddrinfo EAI_AGAIN ch.internal'),
-          { code: 'EAI_AGAIN' },
-        ),
+        err: Object.assign(new Error('getaddrinfo EAI_AGAIN ch.internal'), {
+          code: 'EAI_AGAIN',
+        }),
       },
       {
         label: 'EPIPE on broken socket',
@@ -178,7 +188,6 @@ describe('isRetriableConnectionError', () => {
       err: unknown;
       expected: ErrorClass;
     }> = [
-      // ── transient: don't sin-bin the node ────────────────────────────
       {
         label: 'ECONNRESET (stale keep-alive race — the common case)',
         err: Object.assign(new Error('read ECONNRESET'), {
@@ -215,7 +224,6 @@ describe('isRetriableConnectionError', () => {
         }),
         expected: 'transient',
       },
-      // ── node-down: sin-bin the node ──────────────────────────────────
       {
         label: 'ECONNREFUSED (node not listening)',
         err: Object.assign(new Error('connect ECONNREFUSED 10.1.0.18:8123'), {
@@ -251,7 +259,6 @@ describe('isRetriableConnectionError', () => {
         }),
         expected: 'node-down',
       },
-      // ── ch-server: propagate ────────────────────────────────────────
       {
         label: 'CH server SQL error',
         err: new Error('Code: 47, DB::Exception: Unknown identifier'),
@@ -262,7 +269,6 @@ describe('isRetriableConnectionError', () => {
         err: new Error('Code: 159, DB::Exception: Timeout exceeded'),
         expected: 'ch-server',
       },
-      // ── ch-server allow-list: overload rejections retry ──────────────
       // TOO_MANY_SIMULTANEOUS_QUERIES means the node hit its concurrency
       // cap at that instant, not that the query is wrong — another node
       // (or a backoff) absorbs it. Transient, so the node is NOT
@@ -275,7 +281,8 @@ describe('isRetriableConnectionError', () => {
         expected: 'transient',
       },
       {
-        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (@clickhouse/client parsed shape)',
+        label:
+          'CH TOO_MANY_SIMULTANEOUS_QUERIES (@clickhouse/client parsed shape)',
         err: Object.assign(
           new Error('Too many simultaneous queries. Maximum: 100.'),
           { code: '202', type: 'TOO_MANY_SIMULTANEOUS_QUERIES' }
@@ -283,7 +290,8 @@ describe('isRetriableConnectionError', () => {
         expected: 'transient',
       },
       {
-        label: 'CH TOO_MANY_SIMULTANEOUS_QUERIES (numeric code from a re-wrapping layer)',
+        label:
+          'CH TOO_MANY_SIMULTANEOUS_QUERIES (numeric code from a re-wrapping layer)',
         err: Object.assign(new Error('query rejected'), { code: 202 }),
         expected: 'transient',
       },
@@ -294,7 +302,6 @@ describe('isRetriableConnectionError', () => {
         ),
         expected: 'ch-server',
       },
-      // ── cause-chain preserves classification ─────────────────────────
       {
         label: 'wrapped error: outer is opaque, cause is ECONNRESET',
         err: Object.assign(new Error('Request failed'), {
@@ -338,9 +345,8 @@ describe('isRetriableConnectionError', () => {
       },
       {
         label: 'Error mentioning "connect" in a non-network context',
-        // This is the kind of false-positive the old "Connect" substring
-        // match was at risk of. Ensure the new matcher doesn't take the
-        // bait — there's no system code and no precise transport keyword.
+        // No system code and no precise transport keyword: a bare "connect"
+        // substring must not classify as node-down.
         err: new Error('Cannot connect the dots in this query plan'),
       },
     ];

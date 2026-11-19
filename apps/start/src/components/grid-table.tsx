@@ -62,11 +62,11 @@ export const GridCell: React.FC<
       'flex min-h-12 items-center whitespace-nowrap px-4 align-middle shadow-[0_0_0_0.5px] shadow-border',
       isHeader && 'h-10 bg-def-100 font-semibold text-muted-foreground',
       colSpan && `col-span-${colSpan}`,
-      className,
+      className
     )}
     {...props}
   >
-    <div className="truncate w-full">{children}</div>
+    <div className="w-full truncate">{children}</div>
   </Component>
 );
 
@@ -78,7 +78,7 @@ export const GridRow: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
   <div
     className={cn(
       'contents transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
-      className,
+      className
     )}
     {...props}
   >

@@ -1,3 +1,7 @@
+/**
+ * Largest-Triangle-Three-Buckets downsampling for time-series SVG paths.
+ * Keeps first/last points and picks visually significant points per bucket.
+ */
 export function decimateTimeSeries<T extends Record<string, unknown>>(
   data: T[],
   maxPoints: number,
@@ -11,7 +15,7 @@ export function decimateTimeSeries<T extends Record<string, unknown>>(
   const getY = (point: T, index: number): number => {
     if (valueKeys.length === 0) {
       for (const val of Object.values(point)) {
-        if (typeof val === "number") {
+        if (typeof val === 'number') {
           return val;
         }
       }
@@ -22,7 +26,7 @@ export function decimateTimeSeries<T extends Record<string, unknown>>(
     let count = 0;
     for (const key of valueKeys) {
       const val = point[key];
-      if (typeof val === "number") {
+      if (typeof val === 'number') {
         sum += val;
         count++;
       }
@@ -115,10 +119,10 @@ export function decimateOhlcData<T extends Record<string, unknown>>(
     for (const row of bucket) {
       const rowHigh = row.high;
       const rowLow = row.low;
-      if (typeof rowHigh === "number" && rowHigh > high) {
+      if (typeof rowHigh === 'number' && rowHigh > high) {
         high = rowHigh;
       }
-      if (typeof rowLow === "number" && rowLow < low) {
+      if (typeof rowLow === 'number' && rowLow < low) {
         low = rowLow;
       }
     }

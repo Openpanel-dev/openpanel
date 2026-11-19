@@ -1,19 +1,15 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { IServiceDashboard } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { IServiceDashboard } from '@openpanel/db';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { useTRPC } from '@/integrations/trpc/react';
 
 type EditDashboardProps = Exclude<IServiceDashboard, null>;
 
@@ -45,7 +41,7 @@ export default function EditDashboard({ id, name }: EditDashboardProps) {
         popModal();
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
       },
-    }),
+    })
   );
 
   return (
@@ -62,14 +58,14 @@ export default function EditDashboard({ id, name }: EditDashboardProps) {
           {...register('name')}
           defaultValue={name}
         />
-        <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+        <DialogFooter>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Update
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

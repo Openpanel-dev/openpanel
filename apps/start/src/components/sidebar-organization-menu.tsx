@@ -1,4 +1,5 @@
-import { Link } from '@tanstack/react-router';
+import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
+import { Link, useParams } from '@tanstack/react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ChevronDownIcon,
@@ -9,6 +10,7 @@ import {
   UsersIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { SidebarIcon, sidebarItemClassName } from './sidebar-link';
 import { Badge } from './ui/badge';
 import {
   DropdownMenu,
@@ -17,12 +19,10 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
-import { getSubscriptionStateMeta } from '@openpanel/payments/subscription-state-meta';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
-import { useParams } from '@tanstack/react-router';
 
 export default function SidebarOrganizationMenu({
   organization,
@@ -37,36 +37,30 @@ export default function SidebarOrganizationMenu({
     <>
       <Link
         activeOptions={{ exact: true }}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
+        className={sidebarItemClassName}
         from="/$organizationId"
         to="/$organizationId"
       >
-        <LayoutListIcon size={20} />
+        <SidebarIcon icon={LayoutListIcon} />
         <div className="flex-1">Projects</div>
       </Link>
       <Link
         activeOptions={{ exact: true }}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-        )}
+        className={sidebarItemClassName}
         from="/$organizationId"
         to="/$organizationId/settings"
       >
-        <CogIcon size={20} />
+        <SidebarIcon icon={CogIcon} />
         <div className="flex-1">Settings</div>
       </Link>
       {isAdmin && !isSelfHosted && (
         <Link
           activeOptions={{ exact: true }}
-          className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-          )}
+          className={sidebarItemClassName}
           from="/$organizationId"
           to="/$organizationId/billing"
         >
-          <CreditCardIcon size={20} />
+          <SidebarIcon icon={CreditCardIcon} />
           <div className="flex-1">Billing</div>
           {(() => {
             if (!organization) {
@@ -87,13 +81,11 @@ export default function SidebarOrganizationMenu({
       )}
       {isAdmin && (
         <Link
-          className={cn(
-            'flex items-center gap-2 rounded-md px-3 py-2 font-medium text-[13px] transition-all hover:bg-def-200'
-          )}
+          className={sidebarItemClassName}
           from="/$organizationId"
           to="/$organizationId/members"
         >
-          <UsersIcon size={20} />
+          <SidebarIcon icon={UsersIcon} />
           <div className="flex-1">Members</div>
         </Link>
       )}
@@ -144,21 +136,25 @@ export function ActionCTAButton() {
   }
 
   return (
-    <div className="mb-4">
+    <div className="mb-3 shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            type="button"
             className={cn(
-              'group flex w-full items-center gap-2 rounded-md border border-border bg-def-200 px-3 py-2 text-left',
-              'text-[13px] font-medium text-foreground',
+              'group flex h-9 w-full items-center gap-2.5 rounded-lg border border-border bg-def-200 px-2.5 text-left',
+              'text-foreground text-nav',
               'transition-colors hover:bg-def-300',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
             )}
+            type="button"
           >
-            <PlusIcon className="size-5 shrink-0" />
+            <PlusIcon className="size-4 shrink-0" strokeWidth={1.75} />
             <div className="relative flex h-5 flex-1 items-center overflow-hidden">
-              <AnimatePresence mode="popLayout">
+              {/* `initial={false}` suppresses only the FIRST mount: framer writes
+                  transform/opacity into the style attribute, and the SSR string
+                  differs from the client's first frame. The
+                  cycling animation between actions is unaffected. */}
+              <AnimatePresence initial={false} mode="popLayout">
                 <motion.span
                   animate={{ y: 0, opacity: 1 }}
                   className="absolute whitespace-nowrap"

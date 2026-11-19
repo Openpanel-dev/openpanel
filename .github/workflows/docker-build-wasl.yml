@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       app:
-        description: "App to build (api, worker, dashboard, all)"
+        description: "App to build (api/worker share the backend image, dashboard, all)"
         required: true
         default: "all"
         type: choice
@@ -14,6 +14,9 @@ on:
           - worker
           - dashboard
 
+permissions:
+  contents: read
+
 env:
   registry: ${{ secrets.OCIR_REGISTRY }}
   username: ${{ secrets.OCIR_USERNAME }}
@@ -21,11 +24,14 @@ env:
 
 jobs:
   generate-tag:
-    runs-on: [ arc-amd64 ]
+    if: ${{ github.repository == 'naver-innovation/openpanel' }}
+    runs-on: [arc-amd64]
     outputs:
       image_tag: ${{ steps.tag.outputs.image_tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Generate dated tag
         id: tag
@@ -35,15 +41,18 @@ jobs:
           echo "image_tag=${DATE_TAG}-${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "Image tag: ${DATE_TAG}-${SHORT_SHA}"
 
-  build-api:
+  # API and Worker use the same artifact; keep both image names for existing deployments.
+  build-backend:
+    name: Backend (API and Worker)
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     needs: generate-tag
-    if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'api' }}
-    permissions:
-      contents: read
-      packages: write
-    runs-on: [ arc-amd64 ]
+    if: ${{ inputs.app == 'all' || inputs.app == 'api' || inputs.app == 'worker' }}
+    runs-on: [arc-amd64]
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -56,6 +65,7 @@ jobs:
           password: ${{ env.password }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -67,53 +77,21 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.registry }}/wasl-openpanel-api:${{ needs.generate-tag.outputs.image_tag }}
-          build-args: |
-            DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
-
-  build-worker:
-    needs: generate-tag
-    if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'worker' }}
-    permissions:
-      contents: read
-      packages: write
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to OCIR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.registry }}
-          username: ${{ env.username }}
-          password: ${{ env.password }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/worker/Dockerfile
-          push: true
-          provenance: false
-          sbom: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: |
             ${{ env.registry }}/wasl-openpanel-worker:${{ needs.generate-tag.outputs.image_tag }}
           build-args: |
             DATABASE_URL=postgresql://dummy:dummy@localhost:5432/dummy
 
   build-dashboard:
+    name: Dashboard
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     needs: generate-tag
-    if: ${{ github.event.inputs.app == 'all' || github.event.inputs.app == 'dashboard' }}
-    permissions:
-      contents: read
-      packages: write
+    if: ${{ inputs.app == 'all' || inputs.app == 'dashboard' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -126,6 +104,7 @@ jobs:
           password: ${{ env.password }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -137,5 +116,3 @@ jobs:
           cache-to: type=gha,mode=max
           tags: |
             ${{ env.registry }}/wasl-openpanel-dashboard:${{ needs.generate-tag.outputs.image_tag }}
-          build-args: |
-            NO_CLOUDFLARE=1

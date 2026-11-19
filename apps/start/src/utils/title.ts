@@ -1,12 +1,5 @@
-/**
- * Utility functions for generating page titles
- */
-
 const BASE_TITLE = 'OpenPanel.dev';
 
-/**
- * Creates a hierarchical title with the format: "Page Title | Section | OpenPanel.dev"
- */
 export function createTitle(
   pageTitle: string,
   section?: string,
@@ -20,9 +13,6 @@ export function createTitle(
   return parts.join(' | ');
 }
 
-/**
- * Creates a title for organization-level pages
- */
 export function createOrganizationTitle(
   pageTitle: string,
   organizationName?: string
@@ -33,9 +23,6 @@ export function createOrganizationTitle(
   return createTitle(pageTitle, 'Organization');
 }
 
-/**
- * Creates a title for project-level pages
- */
 export function createProjectTitle(
   pageTitle: string,
   projectName?: string,
@@ -52,9 +39,6 @@ export function createProjectTitle(
   return parts.join(' | ');
 }
 
-/**
- * Creates a title for specific entity pages (reports, sessions, etc.)
- */
 export function createEntityTitle(
   entityName: string,
   entityType: string,
@@ -72,9 +56,6 @@ export function createEntityTitle(
   return parts.join(' | ');
 }
 
-/**
- * Common page titles
- */
 export const PAGE_TITLES = {
   // Main sections
   DASHBOARD: 'Dashboard',
@@ -91,6 +72,10 @@ export const PAGE_TITLES = {
   REALTIME: 'Realtime',
   REFERENCES: 'References',
   INSIGHTS: 'Insights',
+  AI: 'AI',
+  AI_TRACES: 'AI traces',
+  AI_GENERATIONS: 'AI generations',
+  AI_TRACE: 'AI trace',
   // Profiles
   PROFILES: 'Profiles',
   PROFILE_EVENTS: 'Profile events',

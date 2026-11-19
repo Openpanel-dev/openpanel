@@ -26,6 +26,12 @@ export type SessionReplayOptions = {
   blockClass?: string;
   ignoreSelector?: string;
   flushIntervalMs?: number;
+  /**
+   * How often (ms) a full snapshot of the page is recorded. Seeking replays
+   * from the closest earlier snapshot, so a shorter interval seeks faster in
+   * long sessions but stores far more. Defaults to 300000 (5 minutes).
+   */
+  fullSnapshotIntervalMs?: number;
   maxEventsPerChunk?: number;
   maxPayloadBytes?: number;
   /**
@@ -212,7 +218,7 @@ export class OpenPanel extends OpenPanelBase {
             const linkUrl = new URL(href);
             const currentHostname = window.location.hostname;
             if (linkUrl.hostname !== currentHostname) {
-              super.track('link_out', {
+              this.track('link_out', {
                 href,
                 text:
                   link.innerText ||
@@ -287,14 +293,25 @@ export class OpenPanel extends OpenPanelBase {
         }
         const name = element.getAttribute('data-track');
         if (name) {
-          super.track(name, properties);
+          this.track(name, properties);
         }
       }
     });
   }
 
+  // The automatic click trackers must call this, not super.track(), or their
+  // events lose the page they happened on.
   track(name: string, properties?: TrackProperties) {
-    return super.track(name, { ...properties, __path: this.lastPath });
+    return super.track(name, { ...properties, __path: this.currentPath() });
+  }
+
+  // Without screen view tracking nothing sets lastPath, so fall back to the
+  // page the browser is on.
+  private currentPath() {
+    if (this.lastPath) {
+      return this.lastPath;
+    }
+    return this.isServer() ? '' : window.location.href;
   }
 
   screenView(properties?: TrackProperties): void;

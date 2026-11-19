@@ -1,8 +1,7 @@
-
 import type { LucideIcon } from 'lucide-react';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
 import { FeatureCardHoverTrack } from '@/components/feature-card-hover-track';
+import { cn } from '@/lib/utils';
 
 interface FeatureCardProps {
   link?: {
@@ -30,9 +29,7 @@ export const FeatureCardBackground = ({
 }) => (
   <div
     className={cn(
-      'pointer-events-none absolute inset-0 bg-linear-to-br opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100',
-      'dark:from-blue-500/20 dark:via-transparent dark:to-emerald-500/10',
-      'light:from-blue-800/20 light:via-transparent light:to-emerald-900/10',
+      'pointer-events-none absolute inset-0 bg-neutral-900/[0.025] opacity-0 transition-opacity duration-300 group-hover:opacity-100',
       interactive === false && 'opacity-100'
     )}
   />

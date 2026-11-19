@@ -57,8 +57,11 @@ model ChatMessage {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String
+  // json, not jsonb: the model replays these verbatim and jsonb reorders keys.
   /// [IPrismaUIMessageParts]
-  parts          Json
+  parts          Json         @db.Json
+  /// [IPrismaChatMessageMetadata]
+  metadata       Json?
   createdAt      DateTime     @default(now())
 
   @@index([conversationId, createdAt])
@@ -68,11 +71,12 @@ model ChatMessage {
 model Organization {
   id              String           @id @default(dbgenerated("gen_random_uuid()"))
   name            String
+  // Nullable until every row is backfilled; the organization plugin needs it.
+  slug            String?          @unique
   projects        Project[]
   members         Member[]
   createdByUserId String?
   createdBy       User?            @relation(name: "organizationCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
-  ProjectAccess   ProjectAccess[]
   Client          Client[]
   Dashboard       Dashboard[]
   ShareOverview   ShareOverview[]
@@ -84,6 +88,10 @@ model Organization {
   conversations   Conversation[]
   timezone        String?
   onboarding      String?          @default("completed")
+  // First touch on openpanel.dev before sign-up (referrer, landing page, UTM),
+  // so paying organizations can be traced back to the channel that brought them.
+  /// [IPrismaOrganizationAttribution]
+  attribution     Json?
 
   // Subscription
   subscriptionId                          String?
@@ -145,6 +153,12 @@ model User {
   email                String               @unique
   firstName            String?
   lastName             String?
+  // better-auth's user fields, backfilled from the ones above and the IdP.
+  name                 String?
+  emailVerified        Boolean              @default(false)
+  image                String?
+  twoFactorEnabled     Boolean              @default(false)
+  twoFactor            TwoFactor?
   createdOrganizations Organization[]       @relation("organizationCreatedBy")
   subscriptions        Organization[]       @relation("subscriptionCreatedBy")
   membership           Member[]
@@ -152,7 +166,6 @@ model User {
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @default(now()) @updatedAt
   deletedAt            DateTime?
-  ProjectAccess        ProjectAccess[]
   sessions             Session[]
   accounts             Account[]
   invites              Invite[]
@@ -176,6 +189,23 @@ model UserTotp {
   @@map("user_totp")
 }
 
+// better-auth's twoFactor plugin. `secret` and `backupCodes` are encrypted
+// with the auth secret.
+model TwoFactor {
+  id                      String    @id @default(dbgenerated("gen_random_uuid()"))
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @default(now()) @updatedAt
+
+  @@map("two_factor")
+}
+
 model TwoFactorChallenge {
   id        String   @id
   userId    String
@@ -192,8 +222,12 @@ model Account {
   userId                String
   user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   email                 String?
+  // better-auth's `providerId` ('credential', 'google', 'github').
   provider              String
+  // The IdP's user id, read by the legacy OAuth callback. better-auth reads `accountId`.
   providerId            String?
+  accountId             String?
+  idToken               String?
   accessToken           String?
   refreshToken          String?
   accessTokenExpiresAt  DateTime?
@@ -209,8 +243,13 @@ model Account {
 
 model Session {
   id        String   @id
+  // What better-auth looks a session up by. A legacy row is keyed by the hash of
+  // its cookie and gets one when its first request upgrades it.
+  token     String?  @unique
   userId    String
   expiresAt DateTime
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
   user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
@@ -218,23 +257,57 @@ model Session {
   @@map("sessions")
 }
 
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@index([identifier])
+  @@map("verifications")
+}
+
 model Member {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   role           String
   email          String
   // userId is nullable because we want to allow invites to be sent to emails that are not registered
   userId         String?
-  user           User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
   invitedById    String?
-  invitedBy      User?        @relation("invitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedBy      User?           @relation("invitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  // `all` follows projects created later; `selected` with no rows is no access.
+  projectScope   ProjectScope    @default(all)
+  projects       MemberProject[]
   meta           Json?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @default(now()) @updatedAt
 
   @@unique([organizationId, userId])
   @@map("members")
+}
+
+enum ProjectScope {
+  all
+  selected
+}
+
+model MemberProject {
+  memberId  String       @db.Uuid
+  member    Member       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  // Null derives the level from the role; set only to restrict below it.
+  level     AccessLevel?
+  createdAt DateTime     @default(now())
+
+  @@id([memberId, projectId])
+  @@index([projectId])
+  @@map("member_projects")
 }
 
 model Invite {
@@ -246,6 +319,7 @@ model Invite {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   /// [IPrismaInviteProjectAccess]
   projectAccess  Json         @default("[]")
+  projectScope   ProjectScope @default(all)
   expiresAt      DateTime
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @default(now()) @updatedAt
@@ -265,6 +339,9 @@ model Project {
   cors                       String[]      @default([])
   crossDomain                Boolean       @default(false)
   allowUnsafeRevenueTracking Boolean       @default(false)
+  // AI observability: false keeps prompts, completions and tool definitions
+  // out of ai_events; tokens, cost and latency are stored either way.
+  aiStoreContent             Boolean       @default(true)
   /// [IPrismaProjectFilters]
   filters                    Json          @default("[]")
   // Set once when the project's first event arrives (activation checklist,
@@ -285,8 +362,9 @@ model Project {
   shareReports      ShareReport[]
   shareWidgets      ShareWidget[]
   meta              EventMeta[]
+  customEvents      CustomEvent[]
   references        Reference[]
-  access            ProjectAccess[]
+  memberProjects    MemberProject[]
   notificationRules NotificationRule[]
   notifications     Notification[]
   imports           Import[]
@@ -327,21 +405,6 @@ enum AccessLevel {
   read
   write
   admin
-}
-
-model ProjectAccess {
-  id             String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  projectId      String
-  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  organizationId String
-  userId         String
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  level          AccessLevel
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-
-  @@map("project_access")
 }
 
 model Salt {
@@ -407,6 +470,7 @@ model Dashboard {
   project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
   reports        Report[]
   share          ShareDashboard?
+  filters        Json            @default("[]")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -445,6 +509,8 @@ model Report {
   funnelWindow  Float?
   /// [IReportOptions]
   options       Json?
+  /// How a dashboard tile shows the report: { view: 'chart' | 'table' }
+  display       Json?
   visibleSeries String[]
   startDate     String?
   endDate       String?
@@ -465,15 +531,19 @@ model ReportLayout {
   reportId String @unique @db.Uuid
   report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
-  // Grid position and size
+  // The grid the layout was saved on: 12 (× 100px rows) before code migration
+  // 25, 24 (× 42px rows) after. Writers set it, so a row without it is old.
+  gridColumns Int @default(12)
+
+  // Grid position and size, in 24-column × 42px-row units
   x Int @default(0)
   y Int @default(0)
-  w Int @default(4)
-  h Int @default(3)
+  w Int @default(8)
+  h Int @default(6)
 
   // Optional: store additional layout preferences
-  minW Int? @default(2)
-  minH Int? @default(2)
+  minW Int? @default(4)
+  minH Int? @default(4)
   maxW Int?
   maxH Int?
 
@@ -558,6 +628,21 @@ model EventMeta {
 
   @@unique([name, projectId])
   @@map("event_meta")
+}
+
+model CustomEvent {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String
+  /// [IPrismaCustomEventItems]
+  items     Json
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([projectId, name])
+  @@map("custom_events")
 }
 
 model Reference {

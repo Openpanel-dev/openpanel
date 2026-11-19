@@ -1,15 +1,15 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { zCreateDiscordIntegration } from '@openpanel/core/modules/integration/integration.constants';
+import { useMutation } from '@tanstack/react-query';
+import { mergeDeepRight, path } from 'ramda';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { zCreateDiscordIntegration } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { path, mergeDeepRight } from 'ramda';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
 
 type IForm = z.infer<typeof zCreateDiscordIntegration>;
 
@@ -32,7 +32,7 @@ export function DiscordIntegrationForm({
           headers: {},
         },
       },
-      defaultValues ?? {},
+      defaultValues ?? {}
     ),
     resolver: zodResolver(zCreateDiscordIntegration),
   });
@@ -43,7 +43,7 @@ export function DiscordIntegrationForm({
       onError() {
         toast.error('Failed to create integration');
       },
-    }),
+    })
   );
 
   const handleSubmit = (values: IForm) => {
@@ -55,13 +55,13 @@ export function DiscordIntegrationForm({
   };
 
   const testMutation = useMutation(
-    trpc.integration.testConnection.mutationOptions(),
+    trpc.integration.testConnection.mutationOptions()
   );
 
   const handleTest = async () => {
     const url = form.getValues('config.url');
     if (!url) {
-      return toast.error('Webhook URL is required');
+      return toast.error('Enter the webhook URL to test it');
     }
     const res = await testMutation.mutateAsync({
       projectId,
@@ -76,8 +76,8 @@ export function DiscordIntegrationForm({
 
   return (
     <form
-      onSubmit={form.handleSubmit(handleSubmit, handleError)}
       className="col gap-4"
+      onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
         label="Name"
@@ -87,14 +87,19 @@ export function DiscordIntegrationForm({
       />
       <InputWithLabel
         label="Discord Webhook URL"
+        // The URL is a credential and never sent back to the browser, so an
+        // edit starts blank and blank means "keep the stored URL".
+        placeholder={
+          defaultValues?.id ? 'Leave blank to keep the current URL' : undefined
+        }
         {...form.register('config.url')}
         error={path(['config', 'url', 'message'], form.formState.errors)}
       />
       <div className="row gap-4">
-        <Button type="button" variant="outline" onClick={handleTest}>
+        <Button onClick={handleTest} type="button" variant="outline">
           Test connection
         </Button>
-        <Button type="submit" className="flex-1">
+        <Button className="flex-1" type="submit">
           Create
         </Button>
       </div>

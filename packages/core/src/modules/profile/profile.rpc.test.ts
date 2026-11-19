@@ -1,0 +1,71 @@
+// Only the "is anyone logged in" boundary is exercised here; no database.
+
+import { expect, test } from 'bun:test';
+import {
+  servicesWithProjectAccess,
+  stubHttpCtx,
+} from '../../../test/rpc-fixtures';
+import { makeTrpcContext } from '../../rpc/base';
+import type { CookieOptions } from '../../shared/cookie';
+import { profileRouter } from './profile.rpc';
+
+const COOKIE_OPTIONS: CookieOptions = {
+  domain: '.openpanel.dev',
+  secure: true,
+  sameSite: 'lax',
+  httpOnly: true,
+  path: '/',
+};
+
+const EMPTY_SESSION = { session: null, user: null, userId: null };
+const REF = { profileId: 'prof_1', projectId: 'proj_1' };
+
+async function anonCaller() {
+  const { ctx } = stubHttpCtx({}, EMPTY_SESSION);
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return profileRouter.createCaller(trpcCtx);
+}
+
+/**
+ * A signed-in member. `protectedProcedure` authenticates and authorizes
+ * before the input parser runs, so reaching a zod rejection needs both.
+ */
+async function memberCaller() {
+  const { ctx } = stubHttpCtx({ services: servicesWithProjectAccess() });
+  const trpcCtx = await makeTrpcContext(ctx, new Headers(), {
+    cookieOptions: COOKIE_OPTIONS,
+  });
+  return profileRouter.createCaller(trpcCtx);
+}
+
+const UNAUTHORIZED = { code: 'UNAUTHORIZED' };
+
+test('every procedure rejects an unauthenticated caller before touching a database', async () => {
+  const caller = await anonCaller();
+  await expect(caller.byId(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.metrics(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.activity(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.mostEvents(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.popularRoutes(REF)).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(
+    caller.properties({ projectId: 'proj_1' })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(caller.list({ projectId: 'proj_1' })).rejects.toMatchObject(
+    UNAUTHORIZED
+  );
+  await expect(
+    caller.powerUsers({ projectId: 'proj_1' })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+  await expect(
+    caller.values({ projectId: 'proj_1', property: 'email' })
+  ).rejects.toMatchObject(UNAUTHORIZED);
+});
+
+test('list rejects a malformed filter at the input boundary', async () => {
+  const caller = await memberCaller();
+  await expect(
+    caller.list({ projectId: 'proj_1', filters: [{ bogus: true }] as never })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});

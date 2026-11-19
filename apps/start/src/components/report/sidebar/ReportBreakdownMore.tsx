@@ -1,3 +1,5 @@
+import { MoreHorizontal, Trash } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,8 +9,6 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Trash } from 'lucide-react';
-import * as React from 'react';
 
 export interface ReportBreakdownMoreProps {
   onClick: (action: 'remove') => void;
@@ -18,9 +18,9 @@ export function ReportBreakdownMore({ onClick }: ReportBreakdownMoreProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
+        <Button size="sm" variant="ghost">
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>

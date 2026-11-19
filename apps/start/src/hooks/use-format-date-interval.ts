@@ -1,6 +1,5 @@
+import type { IInterval } from '@openpanel/core/modules/report/report.constants';
 import { getISOWeek } from 'date-fns';
-
-import type { IInterval } from '@openpanel/validation';
 
 export function formatDateInterval(options: {
   interval: IInterval;

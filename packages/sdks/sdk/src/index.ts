@@ -1,30 +1,153 @@
-// Deep-imported on purpose: rollup-plugin-dts (used by tsup) only inlines
-// types when the import resolves to a single source file. Importing from
-// the package root ('@openpanel/validation') leaves an external reference
-// in dist/index.d.ts, and `@openpanel/validation` is not published so
-// consumers would see a broken import. We tested tsdown too; it hits the
-// same limitation via rolldown-plugin-dts (Oxc/tsc both fail to follow
-// `export *` chains across source-only workspace packages).
-import type {
-  IAliasPayload,
-  IAssignGroupPayload,
-  IDecrementPayload,
-  IGroupPayload,
-  IIdentifyPayload,
-  IIncrementPayload,
-  ITrackHandlerPayload,
-  ITrackPayload,
-} from '@openpanel/validation/src/track.validation';
+// Hand-duplicated on purpose, not imported: the wire contract's source of
+// truth is @openpanel/core/modules/ingest/ingest.constants.ts, but core's
+// package.json exports map is deliberately narrow (no `./*` wildcard) and
+// rollup-plugin-dts (tsup's dts bundler) cannot inline a type that resolves
+// through that map's `*` pattern: it leaves an unresolvable
+// `@openpanel/core/...` reference in dist/index.d.ts, which breaks for every
+// consumer since core isn't published. A plain deep import into any
+// workspace-internal shim package hits the same wall one hop later, since
+// those packages now just re-export core's. Keeping a literal copy here is
+// what keeps this package's shipped .d.ts self-contained.
 import { Api } from './api';
 
-export type AliasPayload = IAliasPayload;
-export type AssignGroupPayload = IAssignGroupPayload;
-export type DecrementPayload = IDecrementPayload;
-export type GroupPayload = IGroupPayload;
-export type IdentifyPayload = IIdentifyPayload;
-export type IncrementPayload = IIncrementPayload;
-export type TrackHandlerPayload = ITrackHandlerPayload;
-export type TrackPayload = ITrackPayload;
+export type ProfileId = string | number;
+
+export interface AliasPayload {
+  profileId: ProfileId;
+  alias: string;
+}
+
+export interface AssignGroupPayload {
+  groupIds: string[];
+  profileId?: ProfileId;
+}
+
+export interface DecrementPayload {
+  profileId: ProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface GroupPayload {
+  id: string;
+  type: string;
+  name: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IdentifyPayload {
+  profileId: ProfileId;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  avatar?: string;
+  properties?: Record<string, unknown>;
+}
+
+export interface IncrementPayload {
+  profileId: ProfileId;
+  property: string;
+  value?: number;
+}
+
+export interface TrackPayload {
+  name: string;
+  properties?: Record<string, unknown>;
+  profileId?: ProfileId;
+  groups?: string[] | null;
+}
+
+export interface ReplayPayload {
+  chunk_index: number;
+  events_count: number;
+  is_full_snapshot: boolean;
+  started_at: string;
+  ended_at: string;
+  payload: string;
+  // Server-issued session id (from a prior /track response) the SDK echoes back,
+  // so the chunk is filed under the right session without device resolution.
+  sessionId?: string;
+}
+
+export type AiEventKind = 'generation' | 'embedding' | 'span' | 'trace';
+
+export interface AiUsage {
+  /** Includes cached tokens. */
+  inputTokens?: number;
+  /** Includes reasoning tokens. */
+  outputTokens?: number;
+  cacheReadTokens?: number;
+  cacheWriteTokens?: number;
+  reasoningTokens?: number;
+}
+
+export interface AiError {
+  message: string;
+  code?: string;
+  httpStatus?: number;
+}
+
+export interface AiModelParameters {
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  topK?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  seed?: number;
+  stopSequences?: string[];
+  [key: string]: unknown;
+}
+
+/** One AI observability event: a model call, an embedding, a span or a trace root. */
+export interface AiPayload {
+  kind: AiEventKind;
+  /** Groups every event of one request. */
+  traceId: string;
+  /** Defaults to the event id. */
+  spanId?: string;
+  /** A span id or the trace id. */
+  parentId?: string;
+  /** Display name of this step or trace, e.g. `summarize`. */
+  name?: string;
+  /** Groups traces into a conversation or thread. */
+  conversationId?: string;
+  model?: string;
+  provider?: string;
+  /** Messages for a generation, any JSON for a span or trace, strings for an embedding. */
+  input?: unknown;
+  output?: unknown;
+  tools?: unknown;
+  usage?: AiUsage;
+  /** USD. When given it is stored as is instead of being computed. */
+  cost?: number;
+  latencyMs?: number;
+  timeToFirstTokenMs?: number;
+  error?: AiError | null;
+  stopReason?: string;
+  stream?: boolean;
+  modelParameters?: AiModelParameters;
+  /** Drops input, output and tools before storage. */
+  privacyMode?: boolean;
+  properties?: Record<string, unknown>;
+  profileId?: ProfileId;
+  groups?: string[] | null;
+  /** Binds the event to a web session's device. */
+  deviceId?: string;
+  /** ISO 8601. Back-dates the event. */
+  timestamp?: string;
+}
+
+export type TrackHandlerPayload =
+  | { type: 'track'; payload: TrackPayload }
+  | { type: 'identify'; payload: IdentifyPayload }
+  | { type: 'increment'; payload: IncrementPayload }
+  | { type: 'decrement'; payload: DecrementPayload }
+  | { type: 'alias'; payload: AliasPayload }
+  | { type: 'replay'; payload: ReplayPayload }
+  | { type: 'group'; payload: GroupPayload }
+  | { type: 'assign_group'; payload: AssignGroupPayload }
+  | { type: 'ai'; payload: AiPayload };
 
 export interface TrackProperties {
   [key: string]: unknown;
@@ -82,10 +205,7 @@ export class OpenPanel {
     });
   }
 
-  // placeholder for future use
-  init() {
-    // empty
-  }
+  init() {}
 
   ready() {
     this.options.disabled = false;
@@ -113,6 +233,9 @@ export class OpenPanel {
         __timestamp: new Date().toISOString(),
       };
     }
+    if (payload.type === 'ai' && !payload.payload.timestamp) {
+      payload.payload.timestamp = new Date().toISOString();
+    }
 
     this.queue.push(payload);
   }
@@ -132,6 +255,11 @@ export class OpenPanel {
       TrackHandlerPayload,
       { deviceId: string; sessionId: string }
     >('/track', payload, { keepalive: payload.type !== 'replay' });
+    // An ai event is stored without a device or session, so its empty ids
+    // must not replace the ones the other events resolved.
+    if (payload.type === 'ai') {
+      return result;
+    }
     this.deviceId = result?.deviceId;
     const hadSession = !!this.sessionId;
     this.sessionId = result?.sessionId;
@@ -171,10 +299,30 @@ export class OpenPanel {
     });
   }
 
+  /**
+   * Records one AI observability event (a model call, embedding, span or
+   * trace root). The sticky profile id and groups from `identify()` /
+   * `setGroups()` are merged in, like `track()`.
+   */
+  ai(payload: AiPayload) {
+    this.log('ai event', payload.kind, payload.traceId);
+    const mergedGroups = [
+      ...new Set([...this.groups, ...(payload.groups ?? [])]),
+    ];
+    return this.send({
+      type: 'ai',
+      payload: {
+        ...payload,
+        profileId: payload.profileId ?? this.profileId,
+        groups: mergedGroups.length > 0 ? mergedGroups : undefined,
+      },
+    });
+  }
+
   identify(payload: IdentifyPayload) {
     this.log('identify user', payload);
     if (payload.profileId) {
-      this.profileId = payload.profileId
+      this.profileId = payload.profileId;
       this.flush();
     }
 
@@ -229,9 +377,7 @@ export class OpenPanel {
   /**
    * @deprecated This method is deprecated and will be removed in a future version.
    */
-  alias(_payload: AliasPayload) {
-    // noop
-  }
+  alias(_payload: AliasPayload) {}
 
   increment(payload: IncrementPayload) {
     return this.send({
@@ -282,11 +428,15 @@ export class OpenPanel {
     this.sessionId = undefined;
   }
 
+  /** Apply identity learned after queueing while preserving explicit bindings. */
   private buildFlushPayload(
     item: TrackHandlerPayload
   ): TrackHandlerPayload['payload'] {
     if (item.type === 'replay') {
-      return item.payload;
+      return {
+        ...item.payload,
+        sessionId: item.payload.sessionId ?? this.sessionId,
+      };
     }
     if (item.type === 'track') {
       const queuedGroups =
@@ -312,6 +462,16 @@ export class OpenPanel {
       return {
         ...item.payload,
         profileId: item.payload.profileId ?? this.profileId,
+      };
+    }
+    if (item.type === 'ai') {
+      const mergedGroups = [
+        ...new Set([...this.groups, ...(item.payload.groups ?? [])]),
+      ];
+      return {
+        ...item.payload,
+        profileId: item.payload.profileId ?? this.profileId,
+        groups: mergedGroups.length > 0 ? mergedGroups : undefined,
       };
     }
     return item.payload;

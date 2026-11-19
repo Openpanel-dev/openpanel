@@ -73,7 +73,6 @@ export function DataTableToolbar<TData>({
             aria-label="Reset filters"
             className="border-dashed"
             onClick={onReset}
-            size="sm"
             variant="outline"
           >
             <XIcon className="mr-2 size-4" />
@@ -121,7 +120,7 @@ function DataTableToolbarFilter<TData>({
           return (
             <div className="relative">
               <Input
-                className={cn('h-8 w-[120px]', columnMeta.unit && 'pr-8')}
+                className={cn('w-[120px]', columnMeta.unit && 'pr-8')}
                 inputMode="numeric"
                 onChange={(event) => column.setFilterValue(event.target.value)}
                 placeholder={getTitle()}
@@ -196,7 +195,7 @@ export function AnimatedSearchInput({
       className={cn(
         'relative flex items-center rounded-md border border-input bg-background text-sm transition-[width] duration-300 ease-out',
         'focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 focus-within:ring-offset-background',
-        'h-8 min-h-8',
+        'h-9 min-h-9',
         isExpanded ? 'w-56 lg:w-72' : 'w-32'
       )}
       role="search"
@@ -208,7 +207,7 @@ export function AnimatedSearchInput({
           'absolute inset-0 h-full w-full rounded-md border-0 bg-transparent py-2 pr-7 pl-7 shadow-none',
           'focus-visible:ring-0 focus-visible:ring-offset-0',
           'transition-opacity duration-200',
-          'truncate align-baseline font-medium text-[14px]'
+          'truncate align-baseline font-medium text-sm'
         )}
         onBlur={() => setIsFocused(false)}
         onChange={(e) => onChange(e.target.value)}

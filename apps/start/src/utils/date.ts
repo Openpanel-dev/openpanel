@@ -1,4 +1,4 @@
-import { differenceInDays, differenceInHours, isSameDay } from 'date-fns';
+import { differenceInHours, isSameDay } from 'date-fns';
 import type { FormatStyleName } from 'javascript-time-ago';
 import TimeAgo from 'javascript-time-ago';
 import en from 'javascript-time-ago/locale/en';
@@ -8,12 +8,18 @@ export function dateDifferanceInDays(date1: Date, date2: Date) {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Pinned, deliberately. `navigator.language` differs between the server (the
+ * MACHINE locale, since node defines `navigator` too) and the browser, so the
+ * two renders disagreed and React discarded the tree: `21:35:55` against
+ * `9:35:55 PM`, and Swedish month names in an English UI.
+ *
+ * Note this pins the LOCALE, not the timezone: a server in a different zone
+ * from the visitor still renders different clock times. That is a separate
+ * problem and this does not solve it.
+ */
 export function getLocale() {
-  if (typeof navigator === 'undefined') {
-    return 'en-US';
-  }
-
-  return navigator.language ?? 'en-US';
+  return 'en-US';
 }
 
 export function formatDate(date: Date) {

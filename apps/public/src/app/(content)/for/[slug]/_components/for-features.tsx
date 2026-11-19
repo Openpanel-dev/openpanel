@@ -1,32 +1,21 @@
-import { CheckCircle2Icon } from 'lucide-react';
-import { Section, SectionHeader } from '@/components/section';
+import { featureVisual } from './for-visuals';
+import { CardGrid } from '@/components/blocks/card-grid';
 import type { ForFeatures as ForFeaturesData } from '@/lib/for';
 
-interface ForFeaturesProps {
-  features: ForFeaturesData;
-}
-
-export function ForFeatures({ features }: ForFeaturesProps) {
+// The feature cards, each with a small replica when its title names a
+// product area.
+export function ForFeatures({ features }: { features: ForFeaturesData }) {
   return (
-    <Section className="container">
-      <SectionHeader
-        description={features.intro}
-        title={features.title}
-        variant="sm"
-      />
-      <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {features.items.map((feature) => (
-          <div className="col gap-2 rounded-2xl border p-6" key={feature.title}>
-            <div className="row items-center gap-2">
-              <CheckCircle2Icon className="size-5 shrink-0 text-green-500" />
-              <h3 className="font-semibold">{feature.title}</h3>
-            </div>
-            <p className="text-muted-foreground text-sm">
-              {feature.description}
-            </p>
-          </div>
-        ))}
-      </div>
-    </Section>
+    <CardGrid
+      description={features.intro}
+      id="features"
+      items={features.items.map((item) => ({
+        title: item.title,
+        description: item.description,
+        visual: featureVisual(item.title),
+      }))}
+      label="What you get"
+      title={features.title}
+    />
   );
 }

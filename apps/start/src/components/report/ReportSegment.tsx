@@ -1,10 +1,11 @@
-import { chartSegments } from '@openpanel/constants';
-import { type IChartEventSegment, mapKeys } from '@openpanel/validation';
+import type { IChartEventSegment } from '@openpanel/core/modules/report/report.constants';
+import { chartSegments } from '@openpanel/core/modules/report/report.constants';
 import {
   ActivityIcon,
   Building2Icon,
   ClockIcon,
   EqualApproximatelyIcon,
+  GaugeIcon,
   type LucideIcon,
   SigmaIcon,
   SmartphoneIcon,
@@ -14,7 +15,7 @@ import {
   UserCheckIcon,
   UsersIcon,
 } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button, type ButtonProps } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,14 +27,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/utils/cn';
+import { mapKeys } from '@/utils/object-to-zod-enums';
 
 interface ReportChartTypeProps {
   className?: string;
+  variant?: ButtonProps['variant'];
+  size?: ButtonProps['size'];
   value: IChartEventSegment;
   onChange: (segment: IChartEventSegment) => void;
 }
 export function ReportSegment({
   className,
+  variant = 'outline',
+  size,
   value,
   onChange,
 }: ReportChartTypeProps) {
@@ -54,6 +60,9 @@ export function ReportSegment({
     property_average: EqualApproximatelyIcon,
     property_max: TrendingUpIcon,
     property_min: TrendingDownIcon,
+    property_p50: GaugeIcon,
+    property_p95: GaugeIcon,
+    property_p99: GaugeIcon,
   };
 
   return (
@@ -62,7 +71,8 @@ export function ReportSegment({
         <Button
           className={cn('justify-start text-sm', className)}
           icon={Icons[value]}
-          variant="outline"
+          size={size}
+          variant={variant}
         >
           {items.find((item) => item.value === value)?.label}
         </Button>

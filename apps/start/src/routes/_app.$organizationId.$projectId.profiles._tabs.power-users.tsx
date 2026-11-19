@@ -1,12 +1,12 @@
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
 import { ProfilesTable } from '@/components/profiles/table';
 import { useDataTablePagination } from '@/components/ui/data-table/data-table-hooks';
 import { useTRPC } from '@/integrations/trpc/react';
-import { PAGE_TITLES, createEntityTitle } from '@/utils/title';
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/profiles/_tabs/power-users',
+  '/_app/$organizationId/$projectId/profiles/_tabs/power-users'
 )({
   component: Component,
   head: () => {
@@ -33,8 +33,8 @@ function Component() {
       },
       {
         placeholderData: keepPreviousData,
-      },
-    ),
+      }
+    )
   );
 
   return <ProfilesTable query={query} type="power-users" />;

@@ -1,10 +1,9 @@
-import { cn } from '@/utils/cn';
-import { slug } from '@/utils/slug';
+import { slug } from '@openpanel/shared';
 import type { LucideIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import type { ControllerRenderProps } from 'react-hook-form';
-
 import { Switch } from '../ui/switch';
+import { cn } from '@/utils/cn';
 
 type Props = {
   label: string;
@@ -17,7 +16,7 @@ type Props = {
 export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
   (
     { label, description, Icon, children, onChange, value, disabled, error },
-    ref,
+    ref
   ) => {
     const id = slug(label);
     return (
@@ -25,30 +24,30 @@ export const CheckboxItem = forwardRef<HTMLButtonElement, Props>(
         <label
           className={cn(
             'flex items-center gap-4 px-4 py-6 transition-colors hover:bg-def-200',
-            disabled && 'cursor-not-allowed opacity-50',
+            disabled && 'cursor-not-allowed opacity-50'
           )}
           htmlFor={id}
         >
           {Icon && <div className="w-6 shrink-0">{<Icon />}</div>}
           <div className="flex-1">
             <div className="font-medium">{label}</div>
-            <div className=" text-muted-foreground">{description}</div>
-            {error && <div className="text-sm text-red-600">{error}</div>}
+            <div className="text-muted-foreground">{description}</div>
+            {error && <div className="text-red-600 text-sm">{error}</div>}
           </div>
           <div>
             <Switch
-              ref={ref}
-              disabled={disabled}
               checked={!!value}
-              onCheckedChange={onChange}
+              disabled={disabled}
               id={id}
+              onCheckedChange={onChange}
+              ref={ref}
             />
           </div>
         </label>
         {children}
       </div>
     );
-  },
+  }
 );
 
 CheckboxItem.displayName = 'CheckboxItem';

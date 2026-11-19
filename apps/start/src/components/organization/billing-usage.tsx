@@ -1,324 +1,422 @@
-import { sum } from '@openpanel/common';
-import type { IServiceOrganization } from '@openpanel/db';
+import type { IServiceOrganization } from '@openpanel/core';
+import { round } from '@openpanel/shared';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2Icon } from 'lucide-react';
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Tooltip as RechartTooltip,
-  ResponsiveContainer,
-  XAxis,
-  YAxis,
-} from 'recharts';
-import { BarShapeBlue } from '../charts/common-bar';
-import {
-  useXAxisProps,
-  useYAxisProps,
-} from '@/components/report-chart/common/axis';
+import { Loader2Icon, XIcon } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ComposedChart } from '@/components/charts/composed-chart';
+import { Grid } from '@/components/charts/grid';
+import { OPChartTooltip } from '@/components/charts/op-tooltip';
+import { PieCenter } from '@/components/charts/pie-center';
+import { DEFAULT_HOVER_OFFSET, PieChart } from '@/components/charts/pie-chart';
+import { PieSlice } from '@/components/charts/pie-slice';
+import { SeriesBar } from '@/components/charts/series-bar';
+import { XAxis } from '@/components/charts/x-axis';
+import { YAxis } from '@/components/charts/y-axis';
+import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import { useTRPC } from '@/integrations/trpc/react';
+import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
+import { getChartColor } from '@/utils/theme';
+
+const MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
+const BAR_RADIUS = 3;
+const MAX_BAR_SIZE = 14;
+// Room between stacked segments so each project reads as its own block.
+const STACK_GAP = 1;
+const DONUT_HOLE = 0.62;
+const PAD_ANGLE = 0.02;
+const CORNER_RADIUS = 3;
+const PIE_SIZE = 200;
+const OTHER_LABEL = 'Other';
+const OTHER_COLOR = 'var(--chart-foreground-muted)';
 
 interface Props {
   organization: IServiceOrganization;
 }
 
-function Card({ title, value }: { title: string; value: string }) {
+interface UsagePoint {
+  [key: string]: unknown;
+  date: number;
+  total: number;
+}
+
+interface Slice {
+  id?: string;
+  label: string;
+  value: number;
+  share: number;
+  color: string;
+}
+
+function formatDayLabel(date: Date) {
+  return formatDateInterval({ interval: 'day', date, short: true });
+}
+
+function toSlices(
+  rows: { id?: string; label: string; value: number; color: string }[],
+  total: number
+): Slice[] {
+  return rows
+    .filter((row) => row.value > 0)
+    .map((row) => ({
+      ...row,
+      share: total ? round((row.value / total) * 100, 1) : 0,
+    }));
+}
+
+function SliceRow({ slice }: { slice: Slice }) {
+  const number = useNumber();
   return (
-    <div className="col min-w-0 flex-1 gap-2 p-4" title={`${title}: ${value}`}>
-      <div className="truncate text-muted-foreground">{title}</div>
-      <div className="truncate font-bold font-mono text-xl">{value}</div>
-    </div>
+    <>
+      <span
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ background: slice.color }}
+      />
+      <span className="min-w-0 flex-1 truncate">{slice.label}</span>
+      <span className="font-semibold tabular-nums">
+        {number.short(slice.value)}
+      </span>
+      <span className="w-12 text-right text-muted-foreground tabular-nums">
+        {slice.share}%
+      </span>
+    </>
   );
+}
+
+const SLICE_ROW_CLASS =
+  'flex w-full items-center gap-2 rounded px-1.5 py-1 text-left';
+
+// The donut's legend highlights slices on hover; the project legend selects
+// a project to filter the donut by.
+function SliceLegend({
+  slices,
+  hoveredIndex = null,
+  onHover,
+  selectedIndex = null,
+  onSelect,
+}: {
+  slices: Slice[];
+  hoveredIndex?: number | null;
+  onHover?: (index: number | null) => void;
+  selectedIndex?: number | null;
+  onSelect?: (index: number | null) => void;
+}) {
+  return (
+    <ul className="col gap-0.5">
+      {slices.map((slice, index) => {
+        const isSelected = selectedIndex === index;
+        const isFaded = hoveredIndex !== null && hoveredIndex !== index;
+        return (
+          <li key={slice.id ?? `${index}-${slice.label}`}>
+            <button
+              aria-pressed={onSelect ? isSelected : undefined}
+              className={cn(
+                SLICE_ROW_CLASS,
+                'transition-opacity hover:bg-def-100',
+                isFaded && 'opacity-50',
+                isSelected && 'bg-def-100 font-medium'
+              )}
+              onBlur={() => onHover?.(null)}
+              onClick={() => onSelect?.(isSelected ? null : index)}
+              onFocus={() => onHover?.(index)}
+              onMouseEnter={() => onHover?.(index)}
+              onMouseLeave={() => onHover?.(null)}
+              type="button"
+            >
+              <SliceRow slice={slice} />
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function UsageWidget({
+  title,
+  subtitle,
+  aside,
+  className,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  aside?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Widget className={cn('w-full', className)}>
+      <WidgetHead className="row items-start justify-between gap-4">
+        <div className="col min-w-0 gap-0.5">
+          <span className="title">{title}</span>
+          {subtitle && (
+            <span className="text-muted-foreground text-sm">{subtitle}</span>
+          )}
+        </div>
+        {aside}
+      </WidgetHead>
+      <WidgetBody>{children}</WidgetBody>
+    </Widget>
+  );
+}
+
+function Message({ children }: { children: React.ReactNode }) {
+  return <div className="center-center p-8 font-medium">{children}</div>;
 }
 
 export default function BillingUsage({ organization }: Props) {
   const number = useNumber();
   const trpc = useTRPC();
   const usageQuery = useQuery(
-    trpc.subscription.usage.queryOptions({
-      organizationId: organization.id,
-    })
+    trpc.subscription.usage.queryOptions({ organizationId: organization.id })
   );
+  const usage = usageQuery.data;
 
-  // Determine interval based on data range - use weekly if more than 30 days
-  const getDataInterval = () => {
-    if (!usageQuery.data || usageQuery.data.length === 0) {
-      return 'day';
-    }
-
-    const dates = usageQuery.data.map((item) => new Date(item.day));
-    const minDate = new Date(Math.min(...dates.map((d) => d.getTime())));
-    const maxDate = new Date(Math.max(...dates.map((d) => d.getTime())));
-    const daysDiff = Math.ceil(
-      (maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    return daysDiff > 30 ? 'week' : 'day';
+  const [hoveredName, setHoveredName] = useState<number | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
+  const selectProject = (projectId: string | null) => {
+    setSelectedProjectId(projectId);
+    setHoveredName(null);
   };
 
-  const interval = getDataInterval();
-  const useWeeklyIntervals = interval === 'week';
-  const xAxisProps = useXAxisProps({ interval });
-  const yAxisProps = useYAxisProps({});
+  const projects = useMemo(
+    () =>
+      (usage?.projects ?? []).map((project, index) => ({
+        ...project,
+        color: getChartColor(index),
+        total: usage?.projectTotals[project.id] ?? 0,
+      })),
+    [usage]
+  );
+  const total = projects.reduce((sum, project) => sum + project.total, 0);
 
-  const wrapper = (node: React.ReactNode) => (
-    <Widget className="w-full">
-      <WidgetHead className="flex items-center justify-between">
-        <span className="title">Usage</span>
-      </WidgetHead>
-      <WidgetBody>{node}</WidgetBody>
-    </Widget>
+  const chartData = useMemo<UsagePoint[]>(
+    () =>
+      (usage?.days ?? []).map((row) => ({
+        date: new Date(`${row.day}T00:00:00`).getTime(),
+        total: Object.values(row.counts).reduce((sum, n) => sum + n, 0),
+        ...row.counts,
+      })),
+    [usage]
   );
 
-  if (usageQuery.isLoading) {
-    return wrapper(
-      <div className="center-center p-8">
-        <Loader2Icon className="animate-spin" />
-      </div>
-    );
-  }
+  const projectSlices = useMemo(
+    () =>
+      toSlices(
+        projects.map((project) => ({
+          id: project.id,
+          label: project.name,
+          value: project.total,
+          color: project.color,
+        })),
+        total
+      ),
+    [projects, total]
+  );
 
-  if (usageQuery.isError) {
-    return wrapper(
-      <div className="center-center p-8 font-medium">
-        Issues loading usage data
-      </div>
-    );
-  }
-
-  if (
-    usageQuery.data?.length === 0 ||
-    !usageQuery.data?.some((item) => item.count !== 0)
-  ) {
-    return wrapper(
-      <div className="center-center p-8 font-medium">No usage data yet</div>
-    );
-  }
-
-  const subscriptionPeriodEventsLimit = organization.hasSubscription
-    ? organization.subscriptionPeriodEventsLimit
-    : 0;
-  const subscriptionPeriodEventsCount = organization.hasSubscription
-    ? organization.subscriptionPeriodEventsCount
-    : 0;
-
-  // Group daily data into weekly intervals if data spans more than 30 days
-  const processChartData = () => {
-    if (!usageQuery.data) {
-      return [];
-    }
-
-    if (useWeeklyIntervals) {
-      // Group daily data into weekly intervals
-      const weeklyData: {
-        [key: string]: { count: number; startDate: Date; endDate: Date };
-      } = {};
-
-      usageQuery.data.forEach((item) => {
-        const date = new Date(item.day);
-        // Get the start of the week (Monday)
-        const startOfWeek = new Date(date);
-        const dayOfWeek = date.getDay();
-        const diff = date.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust when day is Sunday
-        startOfWeek.setDate(diff);
-        startOfWeek.setHours(0, 0, 0, 0);
-
-        const weekKey = startOfWeek.toISOString().split('T')[0];
-
-        if (!weeklyData[weekKey]) {
-          weeklyData[weekKey] = {
-            count: 0,
-            startDate: new Date(startOfWeek),
-            endDate: new Date(startOfWeek),
-          };
-        }
-
-        weeklyData[weekKey].count += item.count;
-        weeklyData[weekKey].endDate = new Date(date);
-      });
-
-      return Object.values(weeklyData).map((week) => ({
-        date: week.startDate.getTime(),
-        count: week.count,
-        weekRange: `${formatDate(week.startDate)} - ${formatDate(week.endDate)}`,
-      }));
-    }
-
-    // Use daily data for monthly subscriptions
-    return usageQuery.data.map((item) => ({
-      date: new Date(item.day).getTime(),
-      count: item.count,
+  const selectedProject =
+    projects.find((project) => project.id === selectedProjectId) ?? null;
+  const namesTotal = selectedProject ? selectedProject.total : total;
+  const nameSlices = useMemo(() => {
+    const rows = selectedProject
+      ? (usage?.eventNamesByProject[selectedProject.id] ?? [])
+      : (usage?.eventNames ?? []);
+    const named = rows.map((row, index) => ({
+      label: row.name,
+      value: row.count,
+      color: getChartColor(index),
     }));
+    const namedTotal = named.reduce((sum, row) => sum + row.value, 0);
+    return toSlices(
+      [
+        ...named,
+        {
+          label: OTHER_LABEL,
+          value: namesTotal - namedTotal,
+          color: OTHER_COLOR,
+        },
+      ],
+      namesTotal
+    );
+  }, [usage, selectedProject, namesTotal]);
+
+  const windowLabel = (() => {
+    if (!usage) {
+      return undefined;
+    }
+    const range = `${formatDate(new Date(`${usage.from}T00:00:00`))} – ${formatDate(new Date(`${usage.to}T00:00:00`))}`;
+    const kind =
+      usage.window === 'billing_period'
+        ? 'Current billing period'
+        : 'Last 30 days';
+    return `${kind} · ${range}`;
+  })();
+
+  const renderState = () => {
+    if (usageQuery.isLoading) {
+      return (
+        <div className="center-center p-8">
+          <Loader2Icon className="animate-spin" />
+        </div>
+      );
+    }
+    if (usageQuery.isError) {
+      return <Message>Issues loading usage data</Message>;
+    }
+    if (total === 0) {
+      return <Message>No events in this period</Message>;
+    }
+    return null;
   };
+  const state = renderState();
 
-  const chartData = processChartData();
-
-  const domain = [
-    0,
-    Math.max(
-      subscriptionPeriodEventsLimit,
-      subscriptionPeriodEventsCount,
-      ...chartData.map((item) => item.count)
-    ),
-  ] as [number, number];
-
-  domain[1] += domain[1] * 0.05;
-
-  return wrapper(
-    <>
-      <div className="-m-4 mb-4 grid grid-cols-2 border-b [&>div]:shadow-[0_0_0_0.5px] [&_div]:shadow-border">
-        {organization.hasSubscription ? (
-          <>
-            <Card
-              title="Period"
-              value={
-                organization.subscriptionCurrentPeriodStart &&
-                organization.subscriptionCurrentPeriodEnd
-                  ? `${formatDate(organization.subscriptionCurrentPeriodStart)}-${formatDate(organization.subscriptionCurrentPeriodEnd)}`
-                  : '🤷‍♂️'
-              }
-            />
-            <Card
-              title="Left to use"
-              value={
-                subscriptionPeriodEventsLimit === 0
-                  ? '👀'
-                  : number.formatWithUnit(
-                      1 -
-                        subscriptionPeriodEventsCount /
-                          subscriptionPeriodEventsLimit,
-                      '%'
-                    )
-              }
-            />
-            <Card
-              title="Events count"
-              value={number.format(subscriptionPeriodEventsCount)}
-            />
-            <Card
-              title="Limit"
-              value={number.format(subscriptionPeriodEventsLimit)}
-            />
-          </>
-        ) : (
-          <>
-            <div className="col-span-2">
-              <Card title="Subscription" value={'No active subscription'} />
-            </div>
-            <div className="col-span-2">
-              <Card
-                title="Events from last 30 days"
-                value={number.format(
-                  sum(usageQuery.data?.map((item) => item.count) ?? [])
-                )}
-              />
-            </div>
-          </>
-        )}
-      </div>
-      {/* Events Chart */}
-      <div className="space-y-2">
-        <h3 className="font-medium text-muted-foreground text-sm">
-          {useWeeklyIntervals ? 'Weekly Events' : 'Daily Events'}
-        </h3>
-        <div className="h-[250px] max-h-[300px] w-full p-4">
-          <ResponsiveContainer>
-            <BarChart barSize={useWeeklyIntervals ? 20 : 8} data={chartData}>
-              <RechartTooltip
-                content={<EventsTooltip useWeekly={useWeeklyIntervals} />}
-                cursor={{
-                  fill: 'var(--def-200)',
-                  stroke: 'var(--def-200)',
-                }}
-              />
-              <Bar
-                dataKey="count"
-                isAnimationActive={false}
-                shape={BarShapeBlue}
-              />
-              <XAxis {...xAxisProps} dataKey="date" />
-              <YAxis {...yAxisProps} domain={[0, 'dataMax']} />
-              <CartesianGrid
-                className="stroke-border"
-                horizontal={true}
-                strokeDasharray="3 3"
-                strokeOpacity={0.5}
-                vertical={false}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </>
-  );
-}
-
-function EventsTooltip({ useWeekly, ...props }: { useWeekly: boolean } & any) {
-  const number = useNumber();
-  const payload = props.payload?.[0]?.payload;
-
-  if (!payload) {
-    return null;
+  if (state) {
+    return <UsageWidget title="Usage">{state}</UsageWidget>;
   }
 
-  return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
-      <div className="text-muted-foreground text-sm">
-        {useWeekly && payload.weekRange
-          ? payload.weekRange
-          : payload?.date
-            ? formatDate(new Date(payload.date))
-            : 'Unknown date'}
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="h-10 w-1 rounded-full bg-chart-0" />
-        <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">
-            Events {useWeekly ? 'this week' : 'this day'}
-          </div>
-          <div className="font-semibold text-chart-0 text-lg">
-            {number.format(payload.count)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TotalTooltip(props: any) {
-  const number = useNumber();
-  const payload = props.payload?.[0]?.payload;
-
-  if (!payload) {
-    return null;
-  }
+  const innerRadius = (PIE_SIZE / 2 - DEFAULT_HOVER_OFFSET) * DONUT_HOLE;
 
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-xl border bg-card p-3 shadow-xl">
-      <div className="text-muted-foreground text-sm">Total Events</div>
-      <div className="flex items-center gap-2">
-        <div className="h-10 w-1 rounded-full bg-chart-2" />
-        <div className="col gap-1">
-          <div className="text-muted-foreground text-sm">Your events count</div>
-          <div className="font-semibold text-chart-2 text-lg">
-            {number.format(payload.count)}
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <UsageWidget
+        className="lg:col-span-2"
+        subtitle={windowLabel}
+        title="Events per project"
+      >
+        <ComposedChart
+          animationDuration={0}
+          aspectRatio="auto"
+          className="h-[260px]"
+          data={chartData}
+          formatDateLabel={formatDayLabel}
+          margin={MARGIN}
+          maxBarSize={MAX_BAR_SIZE}
+          stacked
+          stackGap={STACK_GAP}
+          xDataKey="date"
+        >
+          <Grid horizontal />
+          <YAxis formatValue={number.short} />
+          <XAxis />
+          {projects.map((project) => (
+            <SeriesBar
+              animate={false}
+              dataKey={project.id}
+              fill={project.color}
+              key={project.id}
+              radius={BAR_RADIUS}
+            />
+          ))}
+          <OPChartTooltip<UsagePoint>
+            interval="day"
+            rows={(point) => [
+              ...projects
+                .map((project) => ({
+                  color: project.color,
+                  label: project.name,
+                  value: Number(point[project.id] ?? 0),
+                  format: number.format,
+                }))
+                .filter((row) => row.value > 0),
+              {
+                color: 'transparent',
+                label: 'Total',
+                value: point.total,
+                format: number.format,
+              },
+            ]}
+            showCrosshair={false}
+            showDots={false}
+            title={(point) => formatDate(new Date(point.date))}
+          />
+        </ComposedChart>
+        <div className="mt-4 border-t pt-4">
+          <SliceLegend
+            onSelect={(index) =>
+              selectProject(
+                index === null ? null : (projectSlices[index]?.id ?? null)
+              )
+            }
+            selectedIndex={
+              selectedProject
+                ? projectSlices.findIndex(
+                    (slice) => slice.id === selectedProject.id
+                  )
+                : null
+            }
+            slices={projectSlices}
+          />
+        </div>
+      </UsageWidget>
+
+      <UsageWidget
+        aside={
+          selectedProject && (
+            <Button
+              onClick={() => selectProject(null)}
+              size="sm"
+              variant="outline"
+            >
+              All projects
+              <XIcon className="ml-1 size-3.5" />
+            </Button>
+          )
+        }
+        subtitle={
+          windowLabel &&
+          `${selectedProject?.name ?? 'All projects'} · ${windowLabel}`
+        }
+        title="Events by name"
+      >
+        <div className="col items-center gap-4">
+          <PieChart
+            cornerRadius={CORNER_RADIUS}
+            data={nameSlices}
+            hoveredIndex={hoveredName}
+            innerRadius={innerRadius}
+            onHoverChange={setHoveredName}
+            padAngle={PAD_ANGLE}
+            size={PIE_SIZE}
+          >
+            {nameSlices.map((slice, index) => (
+              <PieSlice
+                animate={false}
+                index={index}
+                key={`${index}-${slice.label}`}
+              />
+            ))}
+            <PieCenter>
+              {({ value, isHovered }) => {
+                const slice =
+                  hoveredName === null ? null : nameSlices[hoveredName];
+                return (
+                  <div className="col max-w-[80%] items-center text-center">
+                    <div className="font-semibold text-lg tabular-nums">
+                      {number.short(value)}
+                    </div>
+                    <div className="w-full truncate text-muted-foreground text-xs">
+                      {isHovered && slice ? `${slice.share}%` : 'Total'}
+                    </div>
+                  </div>
+                );
+              }}
+            </PieCenter>
+          </PieChart>
+          <div className="w-full">
+            <SliceLegend
+              hoveredIndex={hoveredName}
+              onHover={setHoveredName}
+              slices={nameSlices}
+            />
           </div>
         </div>
-      </div>
-      {payload.limit > 0 && (
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-1 rounded-full border-2 border-chart-1 border-dashed" />
-          <div className="col gap-1">
-            <div className="text-muted-foreground text-sm">Your tier limit</div>
-            <div className="font-semibold text-chart-1 text-lg">
-              {number.format(payload.limit)}
-            </div>
-          </div>
-        </div>
-      )}
+      </UsageWidget>
     </div>
   );
 }

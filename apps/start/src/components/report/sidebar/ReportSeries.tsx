@@ -1,19 +1,9 @@
-import { ColorSquare } from '@/components/color-square';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ComboboxEvents } from '@/components/ui/combobox-events';
-import { Input } from '@/components/ui/input';
-import { InputEnter } from '@/components/ui/input-enter';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useDebounceFn } from '@/hooks/use-debounce-fn';
-import { useEventNames } from '@/hooks/use-event-names';
-import { useDispatch, useSelector } from '@/redux';
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -24,12 +14,12 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { alphabetIds } from '@openpanel/constants';
 import type {
   IChartEvent,
   IChartEventItem,
   IChartFormula,
-} from '@openpanel/validation';
+} from '@openpanel/core/modules/report/report.constants';
+import { alphabetIds } from '@openpanel/core/modules/report/report.constants';
 import { HandIcon, PiIcon, PlusIcon } from 'lucide-react';
 import {
   addSerie,
@@ -44,6 +34,18 @@ import {
   ReportSeriesItem,
   type ReportSeriesItemProps,
 } from './ReportSeriesItem';
+import { BuilderList, SidebarSection } from './sidebar-section';
+import { ColorSquare } from '@/components/color-square';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ComboboxEvents } from '@/components/ui/combobox-events';
+import { Input } from '@/components/ui/input';
+import { InputEnter } from '@/components/ui/input-enter';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useCustomEvents } from '@/hooks/use-custom-events';
+import { useDebounceFn } from '@/hooks/use-debounce-fn';
+import { useEventNames } from '@/hooks/use-event-names';
+import { useDispatch, useSelector } from '@/redux';
 
 // Matches a single uppercase letter that isn't part of a larger identifier,
 // which is how mathjs treats series references in formulas (A, B, C, ...).
@@ -51,7 +53,7 @@ const ALPHA_REFERENCE_REGEX = /(?<![a-zA-Z0-9_])[A-Z](?![a-zA-Z0-9_])/g;
 
 function getReferencedAlphaIds(
   formula: string,
-  formulaIndex: number,
+  formulaIndex: number
 ): string[] {
   if (!formula) {
     return [];
@@ -79,6 +81,7 @@ function SortableReportSeriesItem({
   index,
   showSegment,
   showAddFilter,
+  showFirstTime,
   isSelectManyEvents,
   ...props
 }: Omit<ReportSeriesItemProps, 'renderDragHandle'>) {
@@ -96,19 +99,20 @@ function SortableReportSeriesItem({
       <ReportSeriesItem
         event={event}
         index={index}
-        showSegment={showSegment}
-        showAddFilter={showAddFilter}
         isSelectManyEvents={isSelectManyEvents}
         renderDragHandle={(index) => (
           <button className="cursor-grab active:cursor-grabbing" {...listeners}>
             <ColorSquare className="relative">
-              <HandIcon className="size-3 opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100 transition-all absolute inset-1" />
-              <span className="block group-hover:opacity-0 group-hover:scale-0 transition-all">
+              <HandIcon className="absolute inset-1 size-3 scale-50 opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100" />
+              <span className="block transition-all group-hover:scale-0 group-hover:opacity-0">
                 {alphabetIds[index]}
               </span>
             </ColorSquare>
           </button>
         )}
+        showAddFilter={showAddFilter}
+        showFirstTime={showFirstTime}
+        showSegment={showSegment}
         {...props}
       />
     </div>
@@ -125,6 +129,8 @@ export function ReportSeries() {
   });
 
   const showSegment = !['retention', 'funnel', 'sankey'].includes(chartType);
+  // Retention and user flow build their own event queries.
+  const showFirstTime = !['retention', 'sankey'].includes(chartType);
   // Retention supports property + cohort filters (hybrid cohort_events_mv /
   // raw-events engine), so the filter UI is enabled for it.
   const showAddFilter = !['sankey'].includes(chartType);
@@ -147,12 +153,16 @@ export function ReportSeries() {
     dispatch(changeEvent(event));
   });
   const isSelectManyEvents = chartType === 'retention';
+  // Retention and user flow match stored event names, so they cannot resolve a custom event.
+  const supportsCustomEvents = !(isSelectManyEvents || isSankey);
+  const projectCustomEvents = useCustomEvents(projectId);
+  const customEvents = supportsCustomEvents ? projectCustomEvents : [];
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -173,7 +183,7 @@ export function ReportSeries() {
           return dispatch(
             removeEvent({
               id: 'type' in event ? event.id : (event as IChartEvent).id,
-            }),
+            })
           );
         }
         case 'duplicate': {
@@ -198,12 +208,11 @@ export function ReportSeries() {
     chartType !== 'sankey';
 
   return (
-    <div>
-      <h3 className="mb-2 font-medium">Metrics</h3>
+    <SidebarSection title="Metrics">
       <DndContext
-        sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
+        sensors={sensors}
       >
         <SortableContext
           items={selectedSeries.map((e) => ({
@@ -211,36 +220,35 @@ export function ReportSeries() {
           }))}
           strategy={verticalListSortingStrategy}
         >
-          <div className="flex flex-col gap-4">
+          <BuilderList>
             {selectedSeries.map((event, index) => {
               const isFormula = event.type === 'formula';
 
               return (
                 <SortableReportSeriesItem
-                  key={event.id}
                   event={event}
                   index={index}
-                  showSegment={showSegment}
-                  showAddFilter={showAddFilter}
                   isSelectManyEvents={isSelectManyEvents}
-                  className="rounded-lg border bg-def-100"
+                  key={event.id}
+                  showAddFilter={showAddFilter}
+                  showFirstTime={showFirstTime}
+                  showSegment={showSegment}
                 >
                   {isFormula ? (
                     <>
-                      <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex flex-1 flex-col gap-2">
                         <InputEnter
-                          placeholder="eg: A+B"
-                          value={event.formula}
                           onChangeValue={(value) => {
                             dispatchChangeFormula({
                               ...event,
                               formula: value,
                             });
                           }}
+                          placeholder="eg: A+B"
+                          value={event.formula}
                         />
                         {showDisplayNameInput && (
                           <Input
-                            placeholder={`Name: Formula (${alphabetIds[index]})`}
                             defaultValue={event.displayName}
                             onChange={(e) => {
                               dispatchChangeFormula({
@@ -248,12 +256,13 @@ export function ReportSeries() {
                                 displayName: e.target.value,
                               });
                             }}
+                            placeholder={`Name: Formula (${alphabetIds[index]})`}
                           />
                         )}
                         {(() => {
                           const referencedAlphaIds = getReferencedAlphaIds(
                             event.formula,
-                            index,
+                            index
                           );
                           if (referencedAlphaIds.length === 0) {
                             return null;
@@ -265,8 +274,8 @@ export function ReportSeries() {
                                 const isHidden = hideSeries.includes(alphaId);
                                 return (
                                   <label
+                                    className="flex cursor-pointer select-none items-center gap-1.5 font-medium text-xs"
                                     key={alphaId}
-                                    className="flex items-center gap-1.5 text-xs font-medium select-none cursor-pointer"
                                   >
                                     <Checkbox
                                       checked={isHidden}
@@ -274,18 +283,18 @@ export function ReportSeries() {
                                         const next = checked
                                           ? [
                                               ...hideSeries.filter(
-                                                (id) => id !== alphaId,
+                                                (id) => id !== alphaId
                                               ),
                                               alphaId,
                                             ]
                                           : hideSeries.filter(
-                                              (id) => id !== alphaId,
+                                              (id) => id !== alphaId
                                             );
                                         dispatch(
                                           changeEvent({
                                             ...event,
                                             hideSeries: next,
-                                          }),
+                                          })
                                         );
                                       }}
                                     />
@@ -302,9 +311,55 @@ export function ReportSeries() {
                   ) : (
                     <>
                       <ComboboxEvents
-                        className="flex-1"
-                        searchable
+                        allowUnseenEvents
+                        className="min-w-0 flex-1"
+                        customEvents={customEvents}
+                        items={eventNames}
                         multiple={isSelectManyEvents as false}
+                        onChange={(value) => {
+                          dispatch(
+                            changeEvent(
+                              Array.isArray(value)
+                                ? {
+                                    id: event.id,
+                                    type: 'event',
+                                    segment: 'user',
+                                    filters: [
+                                      {
+                                        name: 'name',
+                                        operator: 'is',
+                                        value,
+                                      },
+                                    ],
+                                    name: '*',
+                                  }
+                                : {
+                                    ...event,
+                                    type: 'event',
+                                    name: value,
+                                    customEventId: undefined,
+                                    filters: [],
+                                  }
+                            )
+                          );
+                        }}
+                        onSelectCustomEvent={(customEvent) => {
+                          dispatch(
+                            changeEvent({
+                              ...event,
+                              type: 'event',
+                              name: customEvent.name,
+                              customEventId: customEvent.id,
+                              filters: [],
+                            })
+                          );
+                        }}
+                        placeholder="Select event"
+                        searchable
+                        selectedCustomEventId={
+                          (event as IChartEventItem & { type: 'event' })
+                            .customEventId
+                        }
                         value={
                           (isSelectManyEvents
                             ? ((
@@ -318,42 +373,11 @@ export function ReportSeries() {
                                 }
                               ).name) as any
                         }
-                        onChange={(value) => {
-                          dispatch(
-                            changeEvent(
-                              Array.isArray(value)
-                                ? {
-                                    id: event.id,
-                                    type: 'event',
-                                    segment: 'user',
-                                    filters: [
-                                      {
-                                        name: 'name',
-                                        operator: 'is',
-                                        value: value,
-                                      },
-                                    ],
-                                    name: '*',
-                                  }
-                                : {
-                                    ...event,
-                                    type: 'event',
-                                    name: value,
-                                    filters: [],
-                                  },
-                            ),
-                          );
-                        }}
-                        items={eventNames}
-                        placeholder="Select event"
+                        variant="input"
                       />
                       {showDisplayNameInput && (
                         <Input
-                          placeholder={
-                            (event as IChartEventItem & { type: 'event' }).name
-                              ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
-                              : 'Display name'
-                          }
+                          className="w-36 shrink-0"
                           defaultValue={
                             (event as IChartEventItem & { type: 'event' })
                               .displayName
@@ -366,6 +390,11 @@ export function ReportSeries() {
                               displayName: e.target.value,
                             });
                           }}
+                          placeholder={
+                            (event as IChartEventItem & { type: 'event' }).name
+                              ? `${(event as IChartEventItem & { type: 'event' }).name} (${alphabetIds[index]})`
+                              : 'Display name'
+                          }
                         />
                       )}
                       <ReportEventMore onClick={handleMore(event)} />
@@ -375,12 +404,14 @@ export function ReportSeries() {
               );
             })}
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-1 p-2">
               <ComboboxEvents
-                className="flex-1"
+                allowUnseenEvents
+                className="text-muted-foreground hover:text-foreground"
+                customEvents={customEvents}
                 disabled={isAddEventDisabled || isSankeyEventLimitReached}
-                value={''}
-                searchable
+                icon={PlusIcon}
+                items={eventNames}
                 onChange={(value) => {
                   if (isSelectManyEvents) {
                     dispatch(
@@ -395,7 +426,7 @@ export function ReportSeries() {
                             value: [value],
                           },
                         ],
-                      }),
+                      })
                     );
                   } else {
                     dispatch(
@@ -404,37 +435,51 @@ export function ReportSeries() {
                         name: value,
                         segment: 'event',
                         filters: [],
-                      }),
+                      })
                     );
                   }
                 }}
+                onSelectCustomEvent={(customEvent) => {
+                  dispatch(
+                    addSerie({
+                      type: 'event',
+                      name: customEvent.name,
+                      customEventId: customEvent.id,
+                      segment: 'event',
+                      filters: [],
+                    })
+                  );
+                }}
                 placeholder="Select event"
-                items={eventNames}
+                searchable
+                size="sm"
+                value={''}
+                variant="ghost"
               />
               {showFormula && (
                 <Button
-                  type="button"
-                  variant="outline"
+                  className="text-muted-foreground hover:text-foreground"
                   icon={PiIcon}
-                  className="flex-1 justify-start text-left px-4"
                   onClick={() => {
                     dispatch(
                       addSerie({
                         type: 'formula',
                         formula: '',
                         displayName: '',
-                      }),
+                      })
                     );
                   }}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
                 >
                   Add Formula
-                  <PlusIcon className="size-4 ml-auto text-muted-foreground" />
                 </Button>
               )}
             </div>
-          </div>
+          </BuilderList>
         </SortableContext>
       </DndContext>
-    </div>
+    </SidebarSection>
   );
 }

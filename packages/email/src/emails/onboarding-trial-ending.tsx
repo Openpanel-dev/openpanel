@@ -1,5 +1,4 @@
 import { Link, Text } from '@react-email/components';
-import React from 'react';
 import { z } from 'zod';
 import { Button } from '../components/button';
 import { Layout } from '../components/layout';
@@ -44,7 +43,7 @@ export function OnboardingTrialEnding({
           <Link
             href={withUtm(
               'https://openpanel.dev/docs/get-started/install-openpanel',
-              'onboarding-trial-ending',
+              'onboarding-trial-ending'
             )}
           >
             install guide
@@ -97,5 +96,5 @@ OnboardingTrialEnding.PreviewProps = {
   recommendedPlan: '100K events per month for $20.00',
   trialEndDate: 'June 16',
   hasData: true,
-  eventsCount: 84211,
+  eventsCount: 84_211,
 };

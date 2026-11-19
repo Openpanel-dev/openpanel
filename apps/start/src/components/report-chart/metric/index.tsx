@@ -1,11 +1,10 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-
 import { AspectContainer } from '../aspect-container';
 import { ReportChartEmpty } from '../common/empty';
 import { ReportChartError } from '../common/error';
 import { useChartInput, useReportChartContext } from '../context';
 import { Chart } from './chart';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function ReportMetricChart() {
   const { isLazyLoading, shareId } = useReportChartContext();
@@ -21,8 +20,8 @@ export function ReportMetricChart() {
       {
         placeholderData: keepPreviousData,
         enabled: !isLazyLoading,
-      },
-    ),
+      }
+    )
   );
 
   if (

@@ -1,0 +1,682 @@
+import { Readable } from 'node:stream';
+import type { ClickHouseSettings } from '@clickhouse/client';
+import { getRedisCache } from '@openpanel/redis';
+import { generateSecureId } from '@openpanel/shared';
+import { type ChQueryInput, type ChScope, chQuery } from '../ch-query';
+import type { CoreConfig } from '../config';
+import type { Logger } from '../logger';
+import type { ServiceDeps } from '../services';
+import { defineRedisScript } from './redis-script';
+
+/** What a buffer needs from the boot scope; a test constructs its own. */
+export interface BufferDeps {
+  /**
+   * Each buffer logs under its own name. Injected rather than built here so
+   * core instantiates no pino and a test hands in a silent stub instead of
+   * spawning one transport worker thread per buffer.
+   */
+  createLogger(name: string): Logger;
+  /**
+   * The boot scope's ClickHouse client — the same round-robin/retry proxy
+   * every service reaches as `deps.ch`.
+   */
+  ch: ServiceDeps['ch'];
+  /**
+   * Asked before every flush. Pausing `cron` from bull-board halts ALL
+   * buffer flushing, preserved deliberately as an accepted trade-off.
+   */
+  isCronPaused(): Promise<boolean>;
+  /**
+   * The parsed environment: every buffer's batch/chunk/TTL knob, so a test can
+   * size a buffer without touching the process environment.
+   */
+  config: CoreConfig;
+}
+
+/**
+ * Max number of ch.insert sub-chunks that a single flush may run in parallel.
+ * Caps connection-pool usage and worker memory peak. The ClickHouse client
+ * pool defaults to 30 connections; with 3 workers and up to ~3 buffers
+ * flushing concurrently cluster-wide, a per-flush cap of 5 keeps total
+ * in-flight inserts well under the pool.
+ */
+const DEFAULT_CH_INSERT_CONCURRENCY = 5;
+
+/** One cron run drains as many batches as fit before the next run is due. */
+const DRAIN_TIME_BUDGET_MS = 8000;
+
+/**
+ * The flush lock is refreshed this many times per TTL. The TTL only has to
+ * outlive a crashed worker; a live flush keeps extending it, so a slow
+ * ClickHouse can never let a second flush start on the same list.
+ */
+const LOCK_KEEPALIVE_PER_TTL = 3;
+
+const releaseLockScript = defineRedisScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+else
+  return 0
+end
+`);
+
+const extendLockScript = defineRedisScript(`
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("expire", KEYS[1], ARGV[2])
+else
+  return 0
+end
+`);
+
+export interface FlushPhaseTimings {
+  lrangeMs?: number;
+  /** Time spent in CH SELECT(s) during flush (e.g. profile-buffer's
+   *  fetch-existing-profile-for-merge step). Only buffers that read CH
+   *  during flush will populate this. */
+  chFetchMs?: number;
+  /** Parsing and reshaping rows between the read and the insert. */
+  transformMs?: number;
+  chInsertMs?: number;
+  trimMs?: number;
+  /** Total time spent inside onFlush (subclass-specific processing) */
+  onFlushMs?: number;
+}
+
+const FLUSH_PHASES = [
+  'lrangeMs',
+  'chFetchMs',
+  'transformMs',
+  'chInsertMs',
+  'trimMs',
+  'onFlushMs',
+] as const satisfies readonly (keyof FlushPhaseTimings)[];
+
+export type FlushTrigger = 'add' | 'cron';
+
+export interface FlushObservation {
+  buffer: string;
+  /**
+   * - `success`: flush ran and completed without error
+   * - `error`: flush ran and threw
+   * - `locked`: another worker held the lock (no-op)
+   * - `paused`: cron queue paused (no-op)
+   */
+  result: 'success' | 'error' | 'locked' | 'paused';
+  /** What invoked this flush: `add` = fast-path (buffer crossed batchSize), `cron` = periodic scheduler. */
+  trigger: FlushTrigger;
+  /** Total wall time of the tryFlush call, including lock acquisition. */
+  totalMs: number;
+  /** Number of rows actually processed by this flush (subclass-reported). */
+  rowsProcessed?: number;
+  /** LLEN of the buffer's main list captured at flush start. */
+  llenAtStart?: number;
+  phases?: FlushPhaseTimings;
+  err?: unknown;
+}
+
+export type FlushObserver = (obs: FlushObservation) => void;
+
+export interface AddObservation {
+  buffer: string;
+  durationMs: number;
+  /** True if the add was a no-op (e.g. cached-and-skipped). When set,
+   *  prefer not to charge this against add-latency histograms — the call
+   *  did almost no work. */
+  skipped?: boolean;
+  /** Free-form reason label for skipped adds (e.g. 'cached'). */
+  skipReason?: string;
+}
+
+export type AddObserver = (obs: AddObservation) => void;
+
+export class BaseBuffer {
+  name: string;
+  logger: Logger;
+  lockKey: string;
+  /** Seconds. How long a crashed worker's lock blocks the next flush. */
+  lockTimeout = 60;
+  /**
+   * Set by the keepalive when the lock is no longer this flush's: expired
+   * (Redis unreachable for longer than the TTL) or taken by someone else.
+   * `drainBatches` stops before its next batch, because two flushes on one
+   * list insert the same batch twice and then trim a batch nobody inserted.
+   */
+  private lockLost = false;
+  /**
+   * One flush per buffer per process. The Redis lock keeps workers apart; this
+   * keeps the cron's concurrent runs apart, so `lockLost` always describes the
+   * one flush this instance is running.
+   */
+  private flushInFlight = false;
+  onFlush: () => Promise<void> | void;
+  enableParallelProcessing: boolean;
+
+  /**
+   * Subclass-reported counts/timings for the in-flight flush. Populated by
+   * `reportFlushStats` from within `onFlush` so the base-class observer can
+   * include them in the FlushObservation.
+   */
+  private inflightStats: {
+    rowsProcessed?: number;
+    phases?: FlushPhaseTimings;
+  } = {};
+
+  /** Subclass-set markers for the in-flight add() call. Reset on every
+   *  call so a single short-circuit doesn't pollute the next observation. */
+  private inflightAddStats: {
+    skipped?: boolean;
+    skipReason?: string;
+  } = {};
+
+  /** The scope's ClickHouse client, for a subclass's insert path. */
+  protected resolveCh(): ServiceDeps['ch'] {
+    return this.deps.ch;
+  }
+
+  /** `chQuery` bound to this buffer's client and its own logger. */
+  protected async chQuery<T extends object>(query: ChQueryInput): Promise<T[]> {
+    const scope: ChScope = { ch: this.resolveCh(), logger: this.logger };
+    return chQuery<T>(scope, query);
+  }
+
+  protected getClickhouseSettings(): ClickHouseSettings {
+    if (this.deps.config.buffers.asyncInserts) {
+      return {
+        async_insert: 1,
+        wait_for_async_insert: 0,
+        parallel_view_processing: 1,
+      };
+    }
+
+    return {};
+  }
+
+  /** Optional hook used by the worker to bridge flushes into Prometheus. */
+  public flushObserver: FlushObserver | null = null;
+
+  /** Optional hook for instrumenting add() latency. */
+  public addObserver: AddObserver | null = null;
+
+  constructor(
+    protected readonly deps: BufferDeps,
+    options: {
+      name: string;
+      onFlush: () => Promise<void>;
+      enableParallelProcessing?: boolean;
+    }
+  ) {
+    this.chInsertConcurrency =
+      deps.config.buffers.chInsertConcurrency ?? DEFAULT_CH_INSERT_CONCURRENCY;
+    this.logger = deps.createLogger(options.name);
+    this.name = options.name;
+    this.lockKey = `lock:${this.name}`;
+    this.onFlush = options.onFlush;
+    this.enableParallelProcessing = options.enableParallelProcessing ?? false;
+  }
+
+  /**
+   * Returns the Redis key of the buffer's main list (the queue of pending
+   * rows). Used by base-class methods for ground-truth size and
+   * observability. Subclasses MUST override.
+   */
+  protected getRedisListKey(): string {
+    throw new Error(`${this.name}: subclass must override getRedisListKey()`);
+  }
+
+  /**
+   * Yield control back to the event loop. Use periodically inside CPU-bound
+   * loops (parse / merge / sort over N items) so other awaiters — incoming
+   * add() calls, BullMQ heartbeats, the /healthz endpoint — can make
+   * progress instead of waiting hundreds of milliseconds for the loop to
+   * monopolise itself on one flush.
+   *
+   * Costs ~1ms per call (one event-loop tick); use every 500–1000 items,
+   * not every iteration.
+   */
+  protected yieldToEventLoop(): Promise<void> {
+    return new Promise((resolve) => setImmediate(resolve));
+  }
+
+  /**
+   * Compute how often to yield in a CPU-bound loop over `batchSize`
+   * items: target ~20 yields per flush, clamped to a per-buffer band.
+   *
+   * The band lets each buffer reflect per-item cost:
+   * - cheap loops (regex, shallow checks): min=1000, max=5000 → coarse
+   * - heavy loops (JSON.parse + deep merge): min=100,  max=1000 → fine
+   *
+   * Without clamping, small default batchSizes (e.g. profile-buffer's
+   * 200) would yield far too often (every ~10 items, dominated by yield
+   * overhead) or — with hardcoded `% N` literals where N > batchSize —
+   * never yield at all. Both are bad; the band rules out both.
+   *
+   * @param batchSize total items the loop will process
+   * @param opts.min  lower bound for yield interval (default 100)
+   * @param opts.max  upper bound for yield interval (default 5000)
+   * @param opts.targetYieldsPerFlush  default 20
+   */
+  protected getYieldInterval(
+    batchSize: number,
+    opts: { min?: number; max?: number; targetYieldsPerFlush?: number } = {}
+  ): number {
+    const target = opts.targetYieldsPerFlush ?? 20;
+    const min = opts.min ?? 100;
+    const max = opts.max ?? 5000;
+    return Math.max(min, Math.min(max, Math.ceil(batchSize / target)));
+  }
+
+  /**
+   * Wrap an array of already-serialized JSONEachRow lines into an
+   * object-mode Readable stream that yields the lines as strings. The
+   * @clickhouse/client requires object-mode for JSON* formats — but with
+   * our custom `json.stringify` in `CLICKHOUSE_OPTIONS` (passes strings
+   * through unchanged), the lines reach CH without being re-serialized.
+   *
+   * Net effect: no JSON.parse on our side, no JSON.stringify on the
+   * client's side — the bytes go from Redis to CH's HTTP body
+   * essentially unchanged.
+   *
+   * Caller must guarantee each line is a valid single-line JSON object
+   * (the contract when we JSON.stringify(obj) before rpush'ing into
+   * Redis). A malformed line will fail the whole CH insert, not just
+   * that row.
+   */
+  protected jsonEachRowStream(lines: string[]): Readable {
+    return Readable.from(
+      (function* () {
+        for (const line of lines) {
+          yield line;
+        }
+      })()
+    );
+  }
+
+  protected chunks<T>(items: T[], size: number) {
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+      chunks.push(items.slice(i, i + size));
+    }
+    return chunks;
+  }
+
+  /** BUFFER_CH_INSERT_CONCURRENCY, or DEFAULT_CH_INSERT_CONCURRENCY. */
+  protected chInsertConcurrency: number;
+
+  /**
+   * Run `fn` over `items` with a bounded concurrency. Preserves order of
+   * `results`. After the first failure no new item starts, and the call
+   * rejects with that error only once the items already running have settled,
+   * so nothing is still writing when the caller releases its flush lock.
+   */
+  protected async parallelLimit<T, R>(
+    items: T[],
+    fn: (item: T, index: number) => Promise<R>,
+    concurrency: number = this.chInsertConcurrency
+  ): Promise<R[]> {
+    if (items.length === 0) {
+      return [];
+    }
+    if (concurrency <= 1 || items.length === 1) {
+      const out: R[] = [];
+      for (let i = 0; i < items.length; i++) {
+        out.push(await fn(items[i] as T, i));
+      }
+      return out;
+    }
+    const results = new Array<R>(items.length);
+    let nextIndex = 0;
+    const failures: unknown[] = [];
+    const worker = async (): Promise<void> => {
+      while (failures.length === 0) {
+        const idx = nextIndex++;
+        if (idx >= items.length) {
+          return;
+        }
+        try {
+          results[idx] = await fn(items[idx] as T, idx);
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+    };
+    const workers = Array.from(
+      { length: Math.min(concurrency, items.length) },
+      () => worker()
+    );
+    await Promise.all(workers);
+    if (failures.length > 0) {
+      throw failures[0];
+    }
+    return results;
+  }
+
+  /**
+   * Subclasses call this from within onFlush to record what they actually
+   * did. The base class includes these in the FlushObservation it emits.
+   * Repeated calls in one flush (one per drained batch) add up.
+   */
+  protected reportFlushStats(stats: {
+    rowsProcessed?: number;
+    phases?: FlushPhaseTimings;
+  }) {
+    if (stats.rowsProcessed !== undefined) {
+      this.inflightStats.rowsProcessed =
+        (this.inflightStats.rowsProcessed ?? 0) + stats.rowsProcessed;
+    }
+    if (stats.phases) {
+      const phases: FlushPhaseTimings = { ...this.inflightStats.phases };
+      for (const phase of FLUSH_PHASES) {
+        const ms = stats.phases[phase];
+        if (ms !== undefined) {
+          phases[phase] = (phases[phase] ?? 0) + ms;
+        }
+      }
+      this.inflightStats.phases = phases;
+    }
+  }
+
+  /**
+   * Flushes batch after batch until one comes back short of `batchSize` or the
+   * cron run's time budget is spent. Buffers only append on ingest, so the cron
+   * has to keep up with a list that grows faster than one batch per run.
+   */
+  protected async drainBatches(
+    batchSize: number,
+    processBatch: () => Promise<number>
+  ): Promise<void> {
+    const deadline = performance.now() + DRAIN_TIME_BUDGET_MS;
+    while (performance.now() < deadline && !this.lockLost) {
+      const processed = await processBatch();
+      if (processed < batchSize) {
+        return;
+      }
+    }
+  }
+
+  /**
+   * Ground-truth size of the buffer (LLEN of the Redis list), O(1). No shadow
+   * counter: it silently drifts.
+   */
+  async getBufferSize(): Promise<number> {
+    return await getRedisCache().llen(this.getRedisListKey());
+  }
+
+  /**
+   * Time the body of an `add()` call. Subclasses wrap their work with this
+   * so all add latency is reported uniformly via the `addObserver` hook.
+   * Subclasses may call `reportAddSkipped(reason)` from inside the fn to
+   * mark the call as a no-op (e.g. cached-and-skipped).
+   */
+  protected async timeAdd<T>(fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    this.inflightAddStats = {};
+    try {
+      return await fn();
+    } finally {
+      try {
+        this.addObserver?.({
+          buffer: this.name,
+          durationMs: performance.now() - start,
+          skipped: this.inflightAddStats.skipped,
+          skipReason: this.inflightAddStats.skipReason,
+        });
+      } catch {
+        // observer errors must not break add
+      }
+    }
+  }
+
+  /** Mark the in-flight add() as a no-op for observability. */
+  protected reportAddSkipped(reason: string) {
+    this.inflightAddStats.skipped = true;
+    this.inflightAddStats.skipReason = reason;
+  }
+
+  private async releaseLock(lockId: string): Promise<void> {
+    await releaseLockScript(getRedisCache(), [this.lockKey], [lockId]);
+  }
+
+  /** Returns the function that ends the keepalive for this flush. */
+  private keepLockAlive(lockId: string): () => void {
+    const intervalMs = (this.lockTimeout * 1000) / LOCK_KEEPALIVE_PER_TTL;
+    let ownershipLost = false;
+    // A renewal still in flight when the flush ends must not touch the flag
+    // of the next flush, which may already hold a new lock.
+    let stopped = false;
+    const interval = setInterval(async () => {
+      if (stopped || ownershipLost) {
+        return;
+      }
+      try {
+        const extended = await extendLockScript(
+          getRedisCache(),
+          [this.lockKey],
+          [lockId, String(this.lockTimeout)]
+        );
+        if (stopped || extended === 1) {
+          return;
+        }
+        ownershipLost = true;
+        this.lockLost = true;
+        this.logger.error(
+          { lockKey: this.lockKey },
+          'flush lock lost mid-flush; stopping before the next batch'
+        );
+      } catch (error) {
+        if (stopped) {
+          return;
+        }
+        // A failed call says nothing about ownership: the key may still be
+        // ours, so keep renewing for the batch in flight and start no new one.
+        this.lockLost = true;
+        this.logger.error(
+          { err: error, lockKey: this.lockKey },
+          'flush lock could not be extended; stopping before the next batch'
+        );
+      }
+    }, intervalMs);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+    };
+  }
+
+  /**
+   * Emit a flush observation to the configured observer and to the structured
+   * logger. Catches observer errors so a bad metrics path can never break
+   * the worker.
+   */
+  private emitFlushObservation(obs: FlushObservation): void {
+    try {
+      this.flushObserver?.(obs);
+    } catch (error) {
+      this.logger.warn({ err: error }, 'flushObserver threw');
+    }
+
+    const logPayload = {
+      buffer: obs.buffer,
+      result: obs.result,
+      trigger: obs.trigger,
+      totalMs: Math.round(obs.totalMs),
+      rowsProcessed: obs.rowsProcessed,
+      llenAtStart: obs.llenAtStart,
+      lrangeMs:
+        obs.phases?.lrangeMs != null
+          ? Math.round(obs.phases.lrangeMs)
+          : undefined,
+      chFetchMs:
+        obs.phases?.chFetchMs != null
+          ? Math.round(obs.phases.chFetchMs)
+          : undefined,
+      transformMs:
+        obs.phases?.transformMs != null
+          ? Math.round(obs.phases.transformMs)
+          : undefined,
+      chInsertMs:
+        obs.phases?.chInsertMs != null
+          ? Math.round(obs.phases.chInsertMs)
+          : undefined,
+      trimMs:
+        obs.phases?.trimMs != null ? Math.round(obs.phases.trimMs) : undefined,
+      onFlushMs:
+        obs.phases?.onFlushMs != null
+          ? Math.round(obs.phases.onFlushMs)
+          : undefined,
+    };
+
+    if (obs.result === 'error') {
+      this.logger.error(
+        { ...logPayload, err: obs.err },
+        `Flush failed for ${this.name}`
+      );
+    } else if (obs.result === 'paused') {
+      // Demoted to debug — happens every 10s when intentionally paused
+      this.logger.debug(
+        logPayload,
+        `Flush skipped for ${this.name} (cron paused)`
+      );
+    } else if (obs.result === 'locked') {
+      this.logger.debug(logPayload, `Flush skipped for ${this.name} (locked)`);
+    } else {
+      this.logger.debug(logPayload, `Flush completed for ${this.name}`);
+    }
+  }
+
+  async tryFlush(options: { trigger?: FlushTrigger } = {}) {
+    const trigger: FlushTrigger = options.trigger ?? 'cron';
+    const startedAt = performance.now();
+    this.inflightStats = {};
+
+    let llenAtStart: number | undefined;
+    try {
+      llenAtStart = await this.getBufferSize();
+    } catch {
+      // best-effort
+    }
+
+    const isCronQueuePaused = await this.deps.isCronPaused();
+    if (isCronQueuePaused) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'paused',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+
+    if (this.enableParallelProcessing) {
+      const onFlushStarted = performance.now();
+      try {
+        await this.onFlush();
+        this.emitFlushObservation({
+          buffer: this.name,
+          result: 'success',
+          trigger,
+          totalMs: performance.now() - startedAt,
+          rowsProcessed: this.inflightStats.rowsProcessed,
+          llenAtStart,
+          phases: {
+            ...this.inflightStats.phases,
+            onFlushMs: performance.now() - onFlushStarted,
+          },
+        });
+      } catch (error) {
+        this.emitFlushObservation({
+          buffer: this.name,
+          result: 'error',
+          trigger,
+          totalMs: performance.now() - startedAt,
+          rowsProcessed: this.inflightStats.rowsProcessed,
+          llenAtStart,
+          phases: {
+            ...this.inflightStats.phases,
+            onFlushMs: performance.now() - onFlushStarted,
+          },
+          err: error,
+        });
+      }
+      return;
+    }
+
+    if (this.flushInFlight) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'locked',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+    this.flushInFlight = true;
+    try {
+      await this.flushUnderLock(trigger, startedAt, llenAtStart);
+    } finally {
+      this.flushInFlight = false;
+    }
+  }
+
+  private async flushUnderLock(
+    trigger: FlushTrigger,
+    startedAt: number,
+    llenAtStart: number | undefined
+  ): Promise<void> {
+    const lockId = generateSecureId('lock');
+    const acquired = await getRedisCache().set(
+      this.lockKey,
+      lockId,
+      'EX',
+      this.lockTimeout,
+      'NX'
+    );
+
+    if (acquired !== 'OK') {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'locked',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        llenAtStart,
+      });
+      return;
+    }
+
+    this.lockLost = false;
+    const stopKeepAlive = this.keepLockAlive(lockId);
+    const onFlushStarted = performance.now();
+    try {
+      await this.onFlush();
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'success',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        rowsProcessed: this.inflightStats.rowsProcessed,
+        llenAtStart,
+        phases: {
+          ...this.inflightStats.phases,
+          onFlushMs: performance.now() - onFlushStarted,
+        },
+      });
+    } catch (error) {
+      this.emitFlushObservation({
+        buffer: this.name,
+        result: 'error',
+        trigger,
+        totalMs: performance.now() - startedAt,
+        rowsProcessed: this.inflightStats.rowsProcessed,
+        llenAtStart,
+        phases: {
+          ...this.inflightStats.phases,
+          onFlushMs: performance.now() - onFlushStarted,
+        },
+        err: error,
+      });
+    } finally {
+      stopKeepAlive();
+      await this.releaseLock(lockId);
+    }
+  }
+}

@@ -1,9 +1,9 @@
+import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
-import { Outlet, createFileRoute, useRouter } from '@tanstack/react-router';
 
 export const Route = createFileRoute('/_app/$organizationId/account/_tabs')({
   component: Component,
@@ -37,9 +37,9 @@ function Component() {
     <PageContainer>
       <PageHeader title="Your account" />
       <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
         className="mt-2 mb-8"
+        onValueChange={handleTabChange}
+        value={activeTab}
       >
         <TabsList>
           {tabs.map((tab) => (

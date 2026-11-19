@@ -1,12 +1,17 @@
-import type { IServiceReport } from '@openpanel/db';
-import { GanttChartSquareIcon, ShareIcon } from 'lucide-react';
+import type { IServiceReport } from '@openpanel/core';
+import type { IReportInput } from '@openpanel/core/modules/report/report.constants';
+import { useQuery } from '@tanstack/react-query';
+import { ShareIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import EditReportName from '../report/edit-report-name';
+import { ReportPrompt } from '../report/report-prompt';
+import { ReportSummaryTrigger } from '../report/report-summary-trigger';
 import { ReportChartType } from '@/components/report/ReportChartType';
 import { ReportInterval } from '@/components/report/ReportInterval';
 import { ReportLineType } from '@/components/report/ReportLineType';
 import { ReportSaveButton } from '@/components/report/ReportSaveButton';
 import {
+  applyDraft,
   changeChartType,
   changeDateRanges,
   changeEndDate,
@@ -22,15 +27,36 @@ import { TimeWindowPicker } from '@/components/time-window-picker';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
 
+const TOOLBAR_TRIGGER_CLASS =
+  'h-8 rounded-md px-2.5 hover:bg-card hover:shadow-xs dark:hover:bg-def-400/60';
+
 interface ReportEditorProps {
   report: IServiceReport | null;
+  /** An unsaved report to start from, e.g. from an AI widget's "Open as report". */
+  draft?: IReportInput & { name: string };
+}
+
+/** With an AI provider the empty editor asks for a description; without one it points at the event picker. */
+function EmptyReport({ projectId }: { projectId: string }) {
+  const trpc = useTRPC();
+  const models = useQuery(trpc.chat.models.queryOptions());
+  const report = useSelector((state) => state.report);
+  if (models.isPending) {
+    return <div className="card min-h-72" />;
+  }
+  if ((models.data?.models.length ?? 0) > 0) {
+    return <ReportPrompt />;
+  }
+  return <ReportChart isEditMode report={{ ...report, projectId }} />;
 }
 
 export default function ReportEditor({
   report: initialReport,
+  draft,
 }: ReportEditorProps) {
   const { projectId } = useAppParams();
   const dispatch = useDispatch();
@@ -42,79 +68,96 @@ export default function ReportEditor({
       dispatch(setReport(initialReport));
     } else {
       dispatch(ready());
+      if (draft) {
+        dispatch(applyDraft(draft));
+      }
     }
 
     return () => {
       dispatch(reset());
     };
-  }, [initialReport, dispatch]);
+  }, [initialReport, draft, dispatch]);
 
   return (
     <Sheet>
       <div>
-        <div className="flex items-center justify-between p-4">
-          <EditReportName />
-          {initialReport?.id && (
-            <Button
-              icon={ShareIcon}
-              onClick={() =>
-                pushModal('ShareReportModal', { reportId: initialReport.id })
-              }
-              variant="outline"
-            >
-              Share
-            </Button>
+        <div className="flex flex-col gap-3 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <EditReportName />
+            <div className="flex shrink-0 items-center gap-2">
+              {initialReport?.id && (
+                <Button
+                  icon={ShareIcon}
+                  onClick={() =>
+                    pushModal('ShareReportModal', {
+                      reportId: initialReport.id,
+                    })
+                  }
+                  variant="outline"
+                >
+                  Share
+                </Button>
+              )}
+              <ReportSaveButton />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <SheetTrigger asChild>
+              <ReportSummaryTrigger className="max-w-full self-start md:self-auto" />
+            </SheetTrigger>
+            <div className="flex shrink-0 flex-wrap items-center gap-0.5 self-start rounded-lg bg-def-200 p-0.5 md:ml-auto md:self-auto dark:bg-def-300">
+              <ReportChartType
+                className={TOOLBAR_TRIGGER_CLASS}
+                onChange={(type) => {
+                  dispatch(changeChartType(type));
+                }}
+                size="sm"
+                value={report.chartType}
+                variant="ghost"
+              />
+              <TimeWindowPicker
+                className={TOOLBAR_TRIGGER_CLASS}
+                endDate={report.endDate}
+                interval={report.interval}
+                onChange={(value) => {
+                  dispatch(changeDateRanges(value));
+                }}
+                onEndDateChange={(date) => dispatch(changeEndDate(date))}
+                onIntervalChange={(interval) =>
+                  dispatch(changeInterval(interval))
+                }
+                onStartDateChange={(date) => dispatch(changeStartDate(date))}
+                size="sm"
+                startDate={report.startDate}
+                value={report.range}
+                variant="ghost"
+              />
+              <ReportInterval
+                chartType={report.chartType}
+                className={TOOLBAR_TRIGGER_CLASS}
+                endDate={report.endDate}
+                interval={report.interval}
+                onChange={(newInterval) =>
+                  dispatch(changeInterval(newInterval))
+                }
+                range={report.range}
+                size="sm"
+                startDate={report.startDate}
+                variant="ghost"
+              />
+              <ReportLineType
+                className={TOOLBAR_TRIGGER_CLASS}
+                size="sm"
+                variant="ghost"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 p-4 pt-0" id="report-editor">
+          {report.ready && report.series.length === 0 && (
+            <EmptyReport projectId={projectId} />
           )}
-        </div>
-        <div className="grid grid-cols-2 gap-2 p-4 pt-0 md:grid-cols-6">
-          <SheetTrigger asChild>
-            <Button
-              className="self-start"
-              icon={GanttChartSquareIcon}
-              variant="cta"
-            >
-              Pick events
-            </Button>
-          </SheetTrigger>
-          <div className="col-span-4 grid grid-cols-2 gap-2 md:grid-cols-4">
-            <ReportChartType
-              className="min-w-0 flex-1"
-              onChange={(type) => {
-                dispatch(changeChartType(type));
-              }}
-              value={report.chartType}
-            />
-            <TimeWindowPicker
-              className="min-w-0 flex-1"
-              endDate={report.endDate}
-              onChange={(value) => {
-                dispatch(changeDateRanges(value));
-              }}
-              onEndDateChange={(date) => dispatch(changeEndDate(date))}
-              onIntervalChange={(interval) =>
-                dispatch(changeInterval(interval))
-              }
-              onStartDateChange={(date) => dispatch(changeStartDate(date))}
-              startDate={report.startDate}
-              value={report.range}
-            />
-            <ReportInterval
-              chartType={report.chartType}
-              className="min-w-0 flex-1"
-              endDate={report.endDate}
-              interval={report.interval}
-              onChange={(newInterval) => dispatch(changeInterval(newInterval))}
-              range={report.range}
-              startDate={report.startDate}
-            />
-            <ReportLineType className="min-w-0 flex-1" />
-          </div>
-          <div className="col-start-2 row-start-1 text-right md:col-start-6">
-            <ReportSaveButton />
-          </div>
-        </div>
-        <div className="flex flex-col gap-4 p-4" id="report-editor">
-          {report.ready && (
+          {report.ready && report.series.length > 0 && (
             <ReportChart isEditMode report={{ ...report, projectId }} />
           )}
         </div>

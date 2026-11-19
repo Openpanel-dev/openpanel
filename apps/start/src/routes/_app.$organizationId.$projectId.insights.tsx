@@ -1,9 +1,22 @@
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { useRangePageContext } from '@/hooks/use-page-context-helpers';
+import { INSIGHT_LIST_ALL_MAX_LIMIT } from '@openpanel/core/modules/insight/insight.constants';
+import { useQuery } from '@tanstack/react-query';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import {
+  ArrowDownWideNarrowIcon,
+  ArrowUpDownIcon,
+  CalendarRangeIcon,
+  GaugeIcon,
+  SearchIcon,
+  SparklesIcon,
+} from 'lucide-react';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
+import { useMemo } from 'react';
+import { EmptyState } from '@/components/empty-state';
 import { InsightCard } from '@/components/insights/insight-card';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/skeleton';
+import { Button } from '@/components/ui/button';
 import {
   Carousel,
   CarouselContent,
@@ -11,25 +24,16 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
 import { TableButtons } from '@/components/ui/table';
+import { ToolbarSelect } from '@/components/ui/toolbar-select';
+import { useRangePageContext } from '@/hooks/use-page-context-helpers';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
-import { PAGE_TITLES, createProjectTitle } from '@/utils/title';
-import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
-import { useMemo } from 'react';
+import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/insights',
+  '/_app/$organizationId/$projectId/insights'
 )({
   component: Component,
   head: () => {
@@ -51,6 +55,37 @@ type SortOption =
   | 'severity-asc'
   | 'recent';
 
+const WINDOW_OPTIONS = [
+  { value: 'all', label: 'All windows' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'rolling_7d', label: '7 days' },
+  { value: 'rolling_30d', label: '30 days' },
+] as const;
+
+const SEVERITY_OPTIONS = [
+  { value: 'all', label: 'All severities' },
+  { value: 'severe', label: 'Severe' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'low', label: 'Low' },
+  { value: 'none', label: 'No severity' },
+] as const;
+
+const DIRECTION_OPTIONS = [
+  { value: 'all', label: 'All directions' },
+  { value: 'up', label: 'Increasing' },
+  { value: 'down', label: 'Decreasing' },
+  { value: 'flat', label: 'Flat' },
+] as const;
+
+const SORT_OPTIONS = [
+  { value: 'relevance', label: 'Relevance (AI)' },
+  { value: 'impact-desc', label: 'Impact (high → low)' },
+  { value: 'impact-asc', label: 'Impact (low → high)' },
+  { value: 'severity-desc', label: 'Severity (high → low)' },
+  { value: 'severity-asc', label: 'Severity (low → high)' },
+  { value: 'recent', label: 'Most recent' },
+] as const satisfies readonly { value: SortOption; label: string }[];
+
 function getModuleDisplayName(moduleKey: string): string {
   const displayNames: Record<string, string> = {
     geo: 'Geographic',
@@ -71,18 +106,18 @@ function Component() {
   const { data: insights, isLoading } = useQuery(
     trpc.insight.listAll.queryOptions({
       projectId,
-      limit: 500,
-    }),
+      limit: INSIGHT_LIST_ALL_MAX_LIMIT,
+    })
   );
   const navigate = useNavigate();
 
   const [search, setSearch] = useQueryState(
     'search',
-    parseAsString.withDefault(''),
+    parseAsString.withDefault('')
   );
   const [moduleFilter, setModuleFilter] = useQueryState(
     'module',
-    parseAsString.withDefault('all'),
+    parseAsString.withDefault('all')
   );
   const [windowKindFilter, setWindowKindFilter] = useQueryState(
     'window',
@@ -91,17 +126,17 @@ function Component() {
       'yesterday',
       'rolling_7d',
       'rolling_30d',
-    ]).withDefault('all'),
+    ]).withDefault('all')
   );
   const [severityFilter, setSeverityFilter] = useQueryState(
     'severity',
     parseAsStringEnum(['all', 'severe', 'moderate', 'low', 'none']).withDefault(
-      'all',
-    ),
+      'all'
+    )
   );
   const [directionFilter, setDirectionFilter] = useQueryState(
     'direction',
-    parseAsStringEnum(['all', 'up', 'down', 'flat']).withDefault('all'),
+    parseAsStringEnum(['all', 'up', 'down', 'flat']).withDefault('all')
   );
   const [sortBy, setSortBy] = useQueryState(
     'sort',
@@ -112,11 +147,13 @@ function Component() {
       'severity-desc',
       'severity-asc',
       'recent',
-    ]).withDefault('relevance'),
+    ]).withDefault('relevance')
   );
 
   const filteredAndSorted = useMemo(() => {
-    if (!insights) return [];
+    if (!insights) {
+      return [];
+    }
 
     const filtered = insights.filter((insight) => {
       // Search filter
@@ -133,10 +170,12 @@ function Component() {
           .toLowerCase()
           .includes(searchLower);
         if (
-          !matchesTitle &&
-          !matchesSummary &&
-          !matchesAiSummary &&
-          !matchesDimension
+          !(
+            matchesTitle ||
+            matchesSummary ||
+            matchesAiSummary ||
+            matchesDimension
+          )
         ) {
           return false;
         }
@@ -157,12 +196,15 @@ function Component() {
 
       // Severity filter
       if (severityFilter !== 'all') {
-        if (severityFilter === 'none' && insight.severityBand) return false;
+        if (severityFilter === 'none' && insight.severityBand) {
+          return false;
+        }
         if (
           severityFilter !== 'none' &&
           insight.severityBand !== severityFilter
-        )
+        ) {
           return false;
+        }
       }
 
       // Direction filter
@@ -241,8 +283,12 @@ function Component() {
     return Array.from(groups.entries()).sort(
       ([keyA, insightsA], [keyB, insightsB]) => {
         // Referrers always first
-        if (keyA === 'referrers') return -1;
-        if (keyB === 'referrers') return 1;
+        if (keyA === 'referrers') {
+          return -1;
+        }
+        if (keyB === 'referrers') {
+          return 1;
+        }
 
         // Calculate average impact for each module
         const avgImpactA =
@@ -254,29 +300,29 @@ function Component() {
 
         // Sort by average impact (high to low)
         return avgImpactB - avgImpactA;
-      },
+      }
     );
   }, [filteredAndSorted]);
 
   if (isLoading) {
     return (
       <PageContainer>
-        <PageHeader title="Insights" className="mb-8" />
+        <PageHeader className="mb-8" title="Insights" />
         <div className="space-y-8">
           {Array.from({ length: 3 }, (_, i) => `section-${i}`).map((key) => (
-            <div key={key} className="space-y-4">
+            <div className="space-y-4" key={key}>
               <Skeleton className="h-8 w-32" />
-              <Carousel opts={{ align: 'start' }} className="w-full">
+              <Carousel className="w-full" opts={{ align: 'start' }}>
                 <CarouselContent className="-ml-4">
                   {Array.from({ length: 4 }, (_, i) => `skeleton-${i}`).map(
                     (cardKey) => (
                       <CarouselItem
+                        className="basis-full pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                         key={cardKey}
-                        className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4"
                       >
                         <Skeleton className="h-48 w-full" />
                       </CarouselItem>
-                    ),
+                    )
                   )}
                 </CarouselContent>
               </Carousel>
@@ -287,123 +333,95 @@ function Component() {
     );
   }
 
+  const isFiltered =
+    search !== '' ||
+    moduleFilter !== 'all' ||
+    windowKindFilter !== 'all' ||
+    severityFilter !== 'all' ||
+    directionFilter !== 'all';
+  const clearFilters = () => {
+    setSearch(null);
+    setModuleFilter(null);
+    setWindowKindFilter(null);
+    setSeverityFilter(null);
+    setDirectionFilter(null);
+  };
+
   return (
     <PageContainer>
       <PageHeader
-        title="Insights"
-        description="Discover trends and changes in your analytics"
         className="mb-8"
+        description="Discover trends and changes in your analytics"
+        title="Insights"
       />
       <TableButtons className="mb-8">
-        <Input
-          placeholder="Search insights..."
+        <AnimatedSearchInput
+          onChange={(value) => setSearch(value || null)}
+          placeholder="Search insights"
           value={search ?? ''}
-          onChange={(e) => void setSearch(e.target.value || null)}
-          className="max-w-xs"
         />
-        <Select
+        <ToolbarSelect
+          icon={CalendarRangeIcon}
+          label="Time window"
+          onChange={setWindowKindFilter}
+          options={WINDOW_OPTIONS}
           value={windowKindFilter ?? 'all'}
-          onValueChange={(v) =>
-            void setWindowKindFilter(v as typeof windowKindFilter)
-          }
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Time Window" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Windows</SelectItem>
-            <SelectItem value="yesterday">Yesterday</SelectItem>
-            <SelectItem value="rolling_7d">7 Days</SelectItem>
-            <SelectItem value="rolling_30d">30 Days</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+        />
+        <ToolbarSelect
+          icon={GaugeIcon}
+          label="Severity"
+          onChange={setSeverityFilter}
+          options={SEVERITY_OPTIONS}
           value={severityFilter ?? 'all'}
-          onValueChange={(v) =>
-            void setSeverityFilter(v as typeof severityFilter)
-          }
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Severity" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Severity</SelectItem>
-            <SelectItem value="severe">Severe</SelectItem>
-            <SelectItem value="moderate">Moderate</SelectItem>
-            <SelectItem value="low">Low</SelectItem>
-            <SelectItem value="none">No Severity</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
+        />
+        <ToolbarSelect
+          icon={ArrowUpDownIcon}
+          label="Direction"
+          onChange={setDirectionFilter}
+          options={DIRECTION_OPTIONS}
           value={directionFilter ?? 'all'}
-          onValueChange={(v) =>
-            void setDirectionFilter(v as typeof directionFilter)
-          }
-        >
-          <SelectTrigger className="w-[140px]">
-            <SelectValue placeholder="Direction" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Directions</SelectItem>
-            <SelectItem value="up">Increasing</SelectItem>
-            <SelectItem value="down">Decreasing</SelectItem>
-            <SelectItem value="flat">Flat</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select
-          value={sortBy ?? 'impact-desc'}
-          onValueChange={(v) => void setSortBy(v as SortOption)}
-        >
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Sort by" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="relevance">Relevance (AI)</SelectItem>
-            <SelectItem value="impact-desc">Impact (High → Low)</SelectItem>
-            <SelectItem value="impact-asc">Impact (Low → High)</SelectItem>
-            <SelectItem value="severity-desc">Severity (High → Low)</SelectItem>
-            <SelectItem value="severity-asc">Severity (Low → High)</SelectItem>
-            <SelectItem value="recent">Most Recent</SelectItem>
-          </SelectContent>
-        </Select>
+        />
+        <ToolbarSelect
+          icon={ArrowDownWideNarrowIcon}
+          label="Sort by"
+          onChange={setSortBy}
+          options={SORT_OPTIONS}
+          value={sortBy ?? 'relevance'}
+        />
       </TableButtons>
 
       {filteredAndSorted.length === 0 && !isLoading && (
-        <FullPageEmptyState
-          title="No insights found"
-          description={
-            search || moduleFilter !== 'all' || windowKindFilter !== 'all'
-              ? 'Try adjusting your filters to see more insights.'
-              : 'Insights will appear here as trends are detected in your analytics.'
-          }
+        <InsightsEmptyState
+          isFiltered={isFiltered}
+          onClearFilters={clearFilters}
         />
       )}
 
       {groupedByModule.length > 0 && (
         <div className="space-y-8">
           {groupedByModule.map(([moduleKey, moduleInsights]) => (
-            <div key={moduleKey} className="space-y-4">
+            <div className="space-y-4" key={moduleKey}>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold capitalize">
+                <h2 className="font-semibold text-lg capitalize">
                   {getModuleDisplayName(moduleKey)}
                 </h2>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   {moduleInsights.length}{' '}
                   {moduleInsights.length === 1 ? 'insight' : 'insights'}
                 </span>
               </div>
               <div className="-mx-8">
                 <Carousel
+                  className="group w-full"
                   opts={{ align: 'start', dragFree: true }}
-                  className="w-full group"
                 >
                   <CarouselContent className="mx-4 mr-8">
                     {moduleInsights.map((insight, index) => (
                       <CarouselItem
-                        key={insight.id}
                         className={cn(
-                          'pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4',
+                          'basis-full pl-4 sm:basis-1/2 lg:basis-1/3 xl:basis-1/4'
                         )}
+                        key={insight.id}
                       >
                         <InsightCard
                           insight={insight}
@@ -411,7 +429,7 @@ function Component() {
                             const filterString = insight.payload?.dimensions
                               .map(
                                 (dim) =>
-                                  `${dim.key},is,${encodeURIComponent(dim.value)}`,
+                                  `${dim.key},is,${encodeURIComponent(dim.value)}`
                               )
                               .join(';');
                             if (filterString) {
@@ -431,8 +449,8 @@ function Component() {
                       </CarouselItem>
                     ))}
                   </CarouselContent>
-                  <CarouselPrevious className="opacity-0 [&:disabled]:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto left-3" />
-                  <CarouselNext className="opacity-0  [&:disabled]:opacity-0 pointer-events-none transition-opacity group-hover:opacity-100 group-hover:pointer-events-auto right-3" />
+                  <CarouselPrevious className="pointer-events-none left-3 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&:disabled]:opacity-0" />
+                  <CarouselNext className="pointer-events-none right-3 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 [&:disabled]:opacity-0" />
                 </Carousel>
               </div>
             </div>
@@ -441,10 +459,39 @@ function Component() {
       )}
 
       {filteredAndSorted.length > 0 && (
-        <div className="mt-8 text-sm text-muted-foreground text-center">
+        <div className="mt-8 text-center text-muted-foreground text-sm">
           Showing {filteredAndSorted.length} of {insights?.length ?? 0} insights
         </div>
       )}
     </PageContainer>
+  );
+}
+
+function InsightsEmptyState({
+  isFiltered,
+  onClearFilters,
+}: {
+  isFiltered: boolean;
+  onClearFilters: () => void;
+}) {
+  if (isFiltered) {
+    return (
+      <EmptyState
+        description="Nothing matches the current search and filters."
+        icon={SearchIcon}
+        title="No matching insights"
+      >
+        <Button onClick={onClearFilters} variant="outline">
+          Clear filters
+        </Button>
+      </EmptyState>
+    );
+  }
+  return (
+    <EmptyState
+      description="Insights are detected automatically from your traffic. Give it a few days of data and check back."
+      icon={SparklesIcon}
+      title="No insights yet"
+    />
   );
 }

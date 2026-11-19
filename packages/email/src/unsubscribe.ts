@@ -2,20 +2,23 @@ import { createHmac, timingSafeEqual } from 'crypto';
 
 /**
  * Read at call time, not import time, so a missing secret fails the one
- * request that needs it with a clear message instead of silently signing
- * with a well-known default that anyone could forge.
+ * request that needs it with a clear message instead of silently signing with
+ * a well-known default that anyone could forge (GHSA-cv3v-4j56-hr88).
  */
 function getSecret(): string {
   const secret = process.env.UNSUBSCRIBE_SECRET || process.env.COOKIE_SECRET;
   if (!secret) {
     throw new Error(
-      'UNSUBSCRIBE_SECRET or COOKIE_SECRET must be set to sign unsubscribe links',
+      'UNSUBSCRIBE_SECRET or COOKIE_SECRET must be set to sign unsubscribe links'
     );
   }
   return secret;
 }
 
-export function generateUnsubscribeToken(email: string, category: string): string {
+export function generateUnsubscribeToken(
+  email: string,
+  category: string
+): string {
   const data = `${email}:${category}`;
   return createHmac('sha256', getSecret()).update(data).digest('hex');
 }
@@ -23,7 +26,7 @@ export function generateUnsubscribeToken(email: string, category: string): strin
 export function verifyUnsubscribeToken(
   email: string,
   category: string,
-  token: string,
+  token: string
 ): boolean {
   const expectedToken = generateUnsubscribeToken(email, category);
   const tokenBuffer = Buffer.from(token, 'hex');

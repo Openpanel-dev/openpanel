@@ -1,13 +1,13 @@
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { createFileRoute } from '@tanstack/react-router';
+import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 import { EventsTable } from '@/components/events/table';
 import { useReadColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { useEventQueryNamesFilter } from '@/hooks/use-event-query-filters';
 import { useTRPC } from '@/integrations/trpc/react';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { parseAsIsoDateTime, useQueryState } from 'nuqs';
 
 export const Route = createFileRoute(
-  '/_app/$organizationId/$projectId/events/_tabs/conversions',
+  '/_app/$organizationId/$projectId/events/_tabs/conversions'
 )({
   component: Component,
 });
@@ -17,7 +17,7 @@ function Component() {
   const trpc = useTRPC();
   const [startDate, setStartDate] = useQueryState(
     'startDate',
-    parseAsIsoDateTime,
+    parseAsIsoDateTime
   );
   const [endDate, setEndDate] = useQueryState('endDate', parseAsIsoDateTime);
   const [eventNames] = useEventQueryNamesFilter();
@@ -33,8 +33,8 @@ function Component() {
       },
       {
         getNextPageParam: (lastPage) => lastPage.meta.next,
-      },
-    ),
+      }
+    )
   );
 
   return <EventsTable query={query} />;

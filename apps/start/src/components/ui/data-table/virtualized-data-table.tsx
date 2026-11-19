@@ -1,13 +1,11 @@
-import { FloatingPagination } from '@/components/pagination-floating';
-import { Skeleton } from '@/components/skeleton';
-import { cn } from '@/utils/cn';
 import type { Table as ITable, Row } from '@tanstack/react-table';
 import { flexRender } from '@tanstack/react-table';
 import {
-  type VirtualItem,
   useWindowVirtualizer,
+  type VirtualItem,
 } from '@tanstack/react-virtual';
 import throttle from 'lodash.throttle';
+import { SearchIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import {
   Table,
@@ -19,6 +17,9 @@ import {
 } from '../table';
 import { DataTableColumnHeader } from './data-table-column-header';
 import { getCommonPinningStyles } from './data-table-helpers';
+import { EmptyState } from '@/components/empty-state';
+import { Skeleton } from '@/components/skeleton';
+import { cn } from '@/utils/cn';
 
 export interface DataTableProps<TData> {
   table: ITable<TData>;
@@ -54,7 +55,7 @@ export function VirtualizedDataTable<TData>({
     const updateScrollMargin = throttle(() => {
       if (parentRef.current) {
         setScrollMargin(
-          parentRef.current.getBoundingClientRect().top + window.scrollY,
+          parentRef.current.getBoundingClientRect().top + window.scrollY
         );
       }
     }, 500);
@@ -77,9 +78,10 @@ export function VirtualizedDataTable<TData>({
   const renderTableRow = (row: Row<TData>, virtualRow: VirtualItem) => {
     return (
       <TableRow
-        data-index={virtualRow.index}
-        // ref={virtualizer.measureElement}
         className={cn('absolute top-0 left-0 w-full')}
+        // ref={virtualizer.measureElement}
+        data-index={virtualRow.index}
+        key={row.id}
         style={{
           transform: `translateY(${
             virtualRow.start - virtualizer.options.scrollMargin
@@ -87,10 +89,10 @@ export function VirtualizedDataTable<TData>({
           height: `${virtualRow.size}px`,
           display: 'flex',
         }}
-        key={row.id}
       >
         {row.getVisibleCells().map((cell) => (
           <TableCell
+            className={cn(cell.column.columnDef.meta?.bold && 'font-medium')}
             key={cell.id}
             style={{
               ...getCommonPinningStyles({ column: cell.column }),
@@ -100,7 +102,6 @@ export function VirtualizedDataTable<TData>({
               display: 'flex',
               alignItems: 'center',
             }}
-            className={cn(cell.column.columnDef.meta?.bold && 'font-medium')}
           >
             {loading ? (
               <Skeleton className="h-4 w-3/5" />
@@ -125,8 +126,8 @@ export function VirtualizedDataTable<TData>({
               <TableRow key={headerGroup.id} style={{ display: 'flex' }}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
-                    key={header.id}
                     colSpan={header.colSpan}
+                    key={header.id}
                     style={{
                       ...getCommonPinningStyles({ column: header.column }),
                       width: header.column.getSize(),
@@ -140,7 +141,7 @@ export function VirtualizedDataTable<TData>({
                         .columnDef.header === 'function' ? (
                       flexRender(
                         header.column.columnDef.header,
-                        header.getContext(),
+                        header.getContext()
                       )
                     ) : (
                       <DataTableColumnHeader
@@ -163,13 +164,17 @@ export function VirtualizedDataTable<TData>({
             {visibleRows.length ? (
               visibleRows.map((row) => renderTableRow(rows[row.index]!, row))
             ) : (
-              <TableRow style={{ display: 'flex', height: '96px' }}>
+              <TableRow style={{ display: 'flex' }}>
                 <TableCell
                   colSpan={table.getAllColumns().length}
-                  className="h-24 text-center flex items-center justify-center"
                   style={{ width: '100%' }}
                 >
-                  No results.
+                  <EmptyState
+                    description="Nothing matches the current filters."
+                    icon={SearchIcon}
+                    title="No results"
+                    variant="inline"
+                  />
                 </TableCell>
               </TableRow>
             )}

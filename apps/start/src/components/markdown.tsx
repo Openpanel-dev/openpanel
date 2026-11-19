@@ -12,15 +12,15 @@ export const Markdown = memo<Options>(
   (props) => (
     <ReactMarkdown
       {...props}
-      remarkPlugins={[remarkParse, remarkHighlight, remarkMath, remarkGfm]}
       rehypePlugins={[rehypeKatex, remarkRehype]}
+      remarkPlugins={[remarkParse, remarkHighlight, remarkMath, remarkGfm]}
     />
   ),
   (prevProps, nextProps) =>
     prevProps.children === nextProps.children &&
     'className' in prevProps &&
     'className' in nextProps &&
-    prevProps.className === nextProps.className,
+    prevProps.className === nextProps.className
 );
 
 Markdown.displayName = 'Markdown';

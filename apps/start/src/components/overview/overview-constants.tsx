@@ -1,4 +1,4 @@
-import type { IGetTopGenericInput } from '@openpanel/db';
+import type { IGetTopGenericInput } from '@openpanel/core';
 
 export const OVERVIEW_COLUMNS_NAME: Record<
   IGetTopGenericInput['column'],

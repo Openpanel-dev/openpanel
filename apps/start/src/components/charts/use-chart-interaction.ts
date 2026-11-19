@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import { localPoint } from "@visx/event";
-import type { scaleLinear, scaleTime } from "@visx/scale";
-import { useCallback, useRef, useState } from "react";
-import type { LineConfig, Margin, TooltipData } from "./chart-context";
-import { useScheduledTooltip } from "./use-scheduled-tooltip";
+import { localPoint } from '@visx/event';
+import type { scaleLinear, scaleTime } from '@visx/scale';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { LineConfig, Margin, TooltipData } from './chart-context';
+import { useScheduledTooltip } from './use-scheduled-tooltip';
+import { normalizeYAxisId } from './y-axis-scales';
 
 type ScaleTime = ReturnType<typeof scaleTime<number>>;
 type ScaleLinear = ReturnType<typeof scaleLinear<number>>;
@@ -20,6 +21,7 @@ export interface ChartSelection {
 interface UseChartInteractionParams {
   xScale: ScaleTime;
   yScale: ScaleLinear;
+  yScales: Record<string, ScaleLinear>;
   data: Record<string, unknown>[];
   lines: LineConfig[];
   margin: Margin;
@@ -52,6 +54,7 @@ interface ChartInteractionResult {
 export function useChartInteraction({
   xScale,
   yScale,
+  yScales,
   data,
   lines,
   margin,
@@ -70,6 +73,7 @@ export function useChartInteraction({
 
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef<number>(0);
+  const lastHoveredXRef = useRef<number | null>(null);
 
   const resolveTooltipFromX = useCallback(
     (pixelX: number): TooltipData | null => {
@@ -96,8 +100,9 @@ export function useChartInteraction({
       const yPositions: Record<string, number> = {};
       for (const line of lines) {
         const value = d[line.dataKey];
-        if (typeof value === "number") {
-          yPositions[line.dataKey] = yScale(value) ?? 0;
+        if (typeof value === 'number') {
+          const axisScale = yScales[normalizeYAxisId(line.yAxisId)] ?? yScale;
+          yPositions[line.dataKey] = axisScale(value) ?? 0;
         }
       }
 
@@ -108,7 +113,7 @@ export function useChartInteraction({
         yPositions,
       };
     },
-    [xScale, yScale, data, lines, xAccessor, bisectDate]
+    [xScale, yScale, yScales, data, lines, xAccessor, bisectDate]
   );
 
   const resolveIndexFromX = useCallback(
@@ -139,7 +144,7 @@ export function useChartInteraction({
     ): number | null => {
       let point: { x: number; y: number } | null = null;
 
-      if ("touches" in event) {
+      if ('touches' in event) {
         const touch = event.touches[touchIndex];
         if (!touch) {
           return null;
@@ -181,6 +186,7 @@ export function useChartInteraction({
         return;
       }
 
+      lastHoveredXRef.current = chartX;
       const tooltip = resolveTooltipFromX(chartX);
       if (tooltip) {
         scheduleTooltip(tooltip);
@@ -190,6 +196,7 @@ export function useChartInteraction({
   );
 
   const handleMouseLeave = useCallback(() => {
+    lastHoveredXRef.current = null;
     clearTooltip();
     if (isDraggingRef.current) {
       isDraggingRef.current = false;
@@ -226,6 +233,7 @@ export function useChartInteraction({
         if (chartX === null) {
           return;
         }
+        lastHoveredXRef.current = chartX;
         const tooltip = resolveTooltipFromX(chartX);
         if (tooltip) {
           scheduleTooltip(tooltip);
@@ -268,6 +276,7 @@ export function useChartInteraction({
         if (chartX === null) {
           return;
         }
+        lastHoveredXRef.current = chartX;
         const tooltip = resolveTooltipFromX(chartX);
         if (tooltip) {
           scheduleTooltip(tooltip);
@@ -302,6 +311,19 @@ export function useChartInteraction({
     setSelection(null);
   }, []);
 
+  // Re-anchor tooltip/crosshair when x-scale or visible data changes (e.g. brush zoom commit).
+  useEffect(() => {
+    if (!canInteract || lastHoveredXRef.current === null) {
+      return;
+    }
+    const tooltip = resolveTooltipFromX(lastHoveredXRef.current);
+    if (tooltip) {
+      scheduleTooltip(tooltip, `${tooltip.index}:${Math.round(tooltip.x)}`);
+      return;
+    }
+    clearTooltip();
+  }, [canInteract, clearTooltip, resolveTooltipFromX, scheduleTooltip]);
+
   const interactionHandlers = canInteract
     ? {
         onMouseMove: handleMouseMove,
@@ -315,8 +337,8 @@ export function useChartInteraction({
     : {};
 
   const interactionStyle: React.CSSProperties = {
-    cursor: canInteract ? "crosshair" : "default",
-    touchAction: "none",
+    cursor: canInteract ? 'crosshair' : 'default',
+    touchAction: 'none',
   };
 
   return {

@@ -1,10 +1,8 @@
 /**
- * find-duplicate-events.ts
- *
  * Reports (and optionally deletes) duplicate rows in the ClickHouse `events`
  * table. A "duplicate" is two or more rows that are logically the same event
  * but have different `id`s — the signature of the event being processed more
- * than once (see the Kafka consumer offset-handling fix).
+ * than once.
  *
  * Duplicates are matched by a content hash over the meaningful columns
  * (everything that identifies the event, excluding `id`), so genuinely
@@ -23,20 +21,16 @@
  *   --bucket=<day|hour>    Reporting granularity (default: day)
  *   --project=<projectId>  Restrict to a single project (default: all)
  *   --limit=<n>            Max example duplicate groups to print (default: 20)
- *   --batch=<n>            Ids per DELETE statement when deleting (default: 10000)
+ *   --batch=<n>            Rows per DELETE statement when deleting (default: 2000)
  *   --danger-yes-delete    Actually delete the extra rows. Keeps the lowest `id`
  *                          per duplicate group, deletes the rest. Without this
  *                          flag the script only reports.
  */
 import {
-  TABLE_NAMES,
   ch,
   getReplicatedTableName,
+  TABLE_NAMES,
 } from '../src/clickhouse/client';
-
-// ---------------------------------------------------------------------------
-// Arg parsing
-// ---------------------------------------------------------------------------
 
 type Bucket = 'day' | 'hour';
 
@@ -63,7 +57,7 @@ function parseSince(raw: string): Date {
   const relative = raw.match(/^(\d+)([hd])$/);
   if (relative) {
     const amount = Number.parseInt(relative[1]!, 10);
-    const unitMs = relative[2] === 'h' ? 3600_000 : 86_400_000;
+    const unitMs = relative[2] === 'h' ? 3_600_000 : 86_400_000;
     return new Date(Date.now() - amount * unitMs);
   }
   const parsed = new Date(raw);
@@ -85,16 +79,13 @@ function parseArgs(): Args {
     bucket,
     project: getArg('project') ?? null,
     limit: Number.parseInt(getArg('limit') ?? '20', 10),
-    // Ids are inlined into `id IN (...)`. ~39 bytes/uuid, so 5000 ≈ 195KB stays
-    // safely under ClickHouse's default max_query_size (256KB).
-    batch: Number.parseInt(getArg('batch') ?? '5000', 10),
+    // Each row inlines (project_id, id, content hash), about 110 bytes with
+    // uuid ids, so 2000 rows ≈ 220KB stays under ClickHouse's default
+    // max_query_size (256KB).
+    batch: Number.parseInt(getArg('batch') ?? '2000', 10),
     delete: hasFlag('danger-yes-delete'),
   };
 }
-
-// ---------------------------------------------------------------------------
-// SQL helpers
-// ---------------------------------------------------------------------------
 
 // Format a JS Date as a ClickHouse DateTime64(3) literal (UTC).
 function chDateTime(date: Date): string {
@@ -123,8 +114,12 @@ const DEDUP_KEY = `cityHash64(
   )
 )`;
 
+function sqlString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
 function projectClause(project: string | null): string {
-  return project ? ` AND project_id = '${project.replace(/'/g, "''")}'` : '';
+  return project ? ` AND project_id = ${sqlString(project)}` : '';
 }
 
 async function query<T>(sql: string): Promise<T[]> {
@@ -132,10 +127,6 @@ async function query<T>(sql: string): Promise<T[]> {
     .query({ query: sql, format: 'JSONEachRow' })
     .then((res) => res.json<T>());
 }
-
-// ---------------------------------------------------------------------------
-// Report
-// ---------------------------------------------------------------------------
 
 async function report(args: Args): Promise<void> {
   const bucketFn = args.bucket === 'day' ? 'toStartOfDay' : 'toStartOfHour';
@@ -236,16 +227,11 @@ async function report(args: Args): Promise<void> {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Delete
-// ---------------------------------------------------------------------------
-
 function* bucketRanges(
   since: Date,
   bucket: Bucket
 ): Generator<{ start: Date; end: Date }> {
-  const stepMs = bucket === 'day' ? 86_400_000 : 3600_000;
-  // Align the first bucket to the start of the day/hour.
+  const stepMs = bucket === 'day' ? 86_400_000 : 3_600_000;
   const start = new Date(since);
   if (bucket === 'day') {
     start.setUTCHours(0, 0, 0, 0);
@@ -261,10 +247,10 @@ function* bucketRanges(
 async function deleteDuplicates(args: Args): Promise<void> {
   const target = getReplicatedTableName(TABLE_NAMES.events);
   console.log(
-    `\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n` +
+    '\n⚠️  DELETE MODE — keeping the lowest id per group, deleting the rest.\n' +
       `   Target: ${target}\n` +
-      `   Note: ClickHouse mutations run asynchronously; rows disappear once the\n` +
-      `   mutation completes server-side.\n`
+      '   Note: ClickHouse mutations run asynchronously; rows disappear once the\n' +
+      '   mutation completes server-side.\n'
   );
 
   let grandTotal = 0;
@@ -275,30 +261,43 @@ async function deleteDuplicates(args: Args): Promise<void> {
       `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
       projectClause(args.project);
 
-    // Extra rows = every row in a duplicate group except the lowest id.
-    const extras = await query<{ id: string }>(`
-      SELECT id FROM (
-        SELECT id, row_number() OVER (
-          PARTITION BY ${DEDUP_KEY} ORDER BY id ASC
-        ) AS rn
+    // Extra rows = every row in a duplicate group except the lowest id. The
+    // delete matches on (project_id, id, content), so a copy that shares the
+    // survivor's id cannot be removed without removing the survivor too; it is
+    // skipped. A distinct event that reuses the id has other content and stays.
+    const extras = await query<{
+      project_id: string;
+      id: string;
+      dedup_hash: string;
+    }>(`
+      SELECT project_id, id, dedup_hash FROM (
+        SELECT project_id, id,
+          ${DEDUP_KEY} AS dedup_hash,
+          row_number() OVER w AS rn,
+          min(id) OVER w AS survivor_id
         FROM ${TABLE_NAMES.events}
         WHERE ${where}
-      ) WHERE rn > 1
+        WINDOW w AS (PARTITION BY ${DEDUP_KEY} ORDER BY id ASC)
+      ) WHERE rn > 1 AND id != survivor_id
     `);
 
     if (extras.length === 0) {
       continue;
     }
 
-    const ids = extras.map((e) => e.id);
     console.log(
-      `${startLiteral} → ${ids.length.toLocaleString()} duplicate rows to delete`
+      `${startLiteral} → ${extras.length.toLocaleString()} duplicate rows to delete`
     );
-    grandTotal += ids.length;
+    grandTotal += extras.length;
 
-    for (let i = 0; i < ids.length; i += args.batch) {
-      const slice = ids.slice(i, i + args.batch);
-      const idList = slice.map((id) => `'${id}'`).join(',');
+    for (let i = 0; i < extras.length; i += args.batch) {
+      const slice = extras.slice(i, i + args.batch);
+      const rowList = slice
+        .map(
+          (row) =>
+            `(${sqlString(row.project_id)},${sqlString(row.id)},toUInt64(${sqlString(row.dedup_hash)}))`
+        )
+        .join(',');
       // Scope the mutation to this bucket's time range so it only touches the
       // relevant monthly partition (and the primary index, when --project is
       // set) instead of scanning all history — `id` alone is not in the sort
@@ -307,21 +306,18 @@ async function deleteDuplicates(args: Args): Promise<void> {
         query:
           `ALTER TABLE ${target} DELETE WHERE ` +
           `created_at >= '${startLiteral}' AND created_at < '${endLiteral}'` +
-          `${projectClause(args.project)} AND id IN (${idList})`,
+          `${projectClause(args.project)} AND (project_id, id, ${DEDUP_KEY}) IN (${rowList})`,
       });
-      // Avoid piling up mutations.
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 
   console.log(
     `\nSubmitted deletes for ${grandTotal.toLocaleString()} duplicate rows.\n` +
-      `Watch system.mutations for completion:\n` +
-      `  SELECT * FROM system.mutations WHERE is_done = 0\n`
+      'Watch system.mutations for completion:\n' +
+      '  SELECT * FROM system.mutations WHERE is_done = 0\n'
   );
 }
-
-// ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
   const args = parseArgs();

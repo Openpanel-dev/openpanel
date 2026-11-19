@@ -1,3 +1,21 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import type {
+  IProjectFilterEvent,
+  IProjectFilterIp,
+  IProjectFilterProfileId,
+} from '@openpanel/core/modules/project/project.constants';
+import { zProjectFilterEvent } from '@openpanel/core/modules/project/project.constants';
+import type {
+  IChartEventFilter,
+  IChartEventFilterOperator,
+  IChartEventFilterValue,
+} from '@openpanel/core/modules/report/report.constants';
+import { shortId } from '@openpanel/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
+import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import { z } from 'zod';
 import { WithLabel } from '@/components/forms/input-with-label';
 import TagInput from '@/components/forms/tag-input';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
@@ -8,26 +26,10 @@ import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useEventNames } from '@/hooks/use-event-names';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { shortId } from '@openpanel/common';
-import type {
-  IChartEventFilter,
-  IChartEventFilterOperator,
-  IChartEventFilterValue,
-  IProjectFilterEvent,
-  IProjectFilterIp,
-  IProjectFilterProfileId,
-} from '@openpanel/validation';
-import { zProjectFilterEvent } from '@openpanel/validation';
-import { useMutation } from '@tanstack/react-query';
-import { PlusIcon, SaveIcon, Trash2Icon } from 'lucide-react';
-import { Controller, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import { z } from 'zod';
 
-type Props = {
+interface Props {
   project: NonNullable<RouterOutputs['project']['getProjectWithClients']>;
-};
+}
 
 const validator = z.object({
   ips: z.array(z.string()),
@@ -76,26 +78,26 @@ function EventRuleItem({
 
   const changeFilterValue = (
     value: IChartEventFilterValue[],
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...rule,
       filters: rule.filters.map((f) =>
-        f.id === filter.id ? { ...f, value } : f,
+        f.id === filter.id ? { ...f, value } : f
       ),
     });
   };
 
   const changeFilterOperator = (
     operator: IChartEventFilterOperator,
-    filter: IChartEventFilter,
+    filter: IChartEventFilter
   ) => {
     onChange({
       ...rule,
       filters: rule.filters.map((f) =>
         f.id === filter.id
           ? { ...f, operator, value: f.value.filter(Boolean).slice(0, 1) }
-          : f,
+          : f
       ),
     });
   };
@@ -105,43 +107,39 @@ function EventRuleItem({
       <div className="flex items-center gap-2 p-4">
         <div className="flex-1">
           <ComboboxEvents
-            placeholder="Select event name..."
-            items={eventNames}
-            value={rule.name}
-            onChange={(name) => onChange({ ...rule, name })}
             className="w-full"
+            items={eventNames}
+            onChange={(name) => onChange({ ...rule, name })}
+            placeholder="Select event name..."
             searchable
+            value={rule.name}
           />
         </div>
-        <Button variant="ghost" size="icon" onClick={onRemove}>
+        <Button onClick={onRemove} size="icon" variant="ghost">
           <Trash2Icon size={16} />
         </Button>
       </div>
 
-      {rule.filters.length > 0 && (
-        <>
-          {rule.filters.map((filter) => (
-            <PureFilterItem
-              key={filter.id}
-              filter={filter}
-              eventName={rule.name}
-              onRemove={removeFilter}
-              onChangeValue={changeFilterValue}
-              onChangeOperator={changeFilterOperator}
-              immediateInput
-              className="border-t p-2 px-4 border-l-2 border-l-emerald-500"
-            />
-          ))}
-        </>
-      )}
-      <div className="p-4 border-t">
-        <PropertiesCombobox onSelect={addFilter} categories={['event']}>
+      {rule.filters.map((filter) => (
+        <PureFilterItem
+          className="border-t border-l-2 border-l-emerald-500 p-2 px-4"
+          eventName={rule.name}
+          filter={filter}
+          immediateInput
+          key={filter.id}
+          onChangeOperator={changeFilterOperator}
+          onChangeValue={changeFilterValue}
+          onRemove={removeFilter}
+        />
+      ))}
+      <div className="border-t p-4">
+        <PropertiesCombobox categories={['event']} onSelect={addFilter}>
           {(setOpen) => (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setOpen(true)}
               icon={PlusIcon}
+              onClick={() => setOpen(true)}
+              size="sm"
+              variant="outline"
             >
               Add property filter
             </Button>
@@ -161,7 +159,7 @@ export default function EditProjectFilters({ project }: Props) {
         .map((item) => item.ip),
       profileIds: project.filters
         .filter(
-          (item): item is IProjectFilterProfileId => item.type === 'profile_id',
+          (item): item is IProjectFilterProfileId => item.type === 'profile_id'
         )
         .map((item) => item.profileId),
       eventRules: project.filters
@@ -177,13 +175,19 @@ export default function EditProjectFilters({ project }: Props) {
   });
 
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const mutation = useMutation(
     trpc.project.update.mutationOptions({
       onError: handleError,
       onSuccess: () => {
         toast.success('Project filters updated');
+        queryClient.invalidateQueries(
+          trpc.project.getProjectWithClients.queryFilter({
+            projectId: project.id,
+          })
+        );
       },
-    }),
+    })
   );
 
   const onSubmit = (values: IForm) => {
@@ -223,12 +227,12 @@ export default function EditProjectFilters({ project }: Props) {
   const removeEventRule = (index: number) => {
     form.setValue(
       'eventRules',
-      eventRules.filter((_, i) => i !== index),
+      eventRules.filter((_, i) => i !== index)
     );
   };
 
   return (
-    <Widget className="max-w-screen-md w-full">
+    <Widget className="w-full max-w-screen-md">
       <WidgetHead className="space-y-2">
         <span className="title">Exclude events</span>
         <p className="text-muted-foreground">
@@ -236,44 +240,38 @@ export default function EditProjectFilters({ project }: Props) {
         </p>
       </WidgetHead>
       <WidgetBody>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && e.target instanceof HTMLInputElement) {
-              e.preventDefault();
-            }
-          }}
-          className="space-y-4"
-        >
+        {/* Not a <form>: Enter in a tag or filter input adds a value, so the
+            page must never submit implicitly. */}
+        <div className="space-y-4">
           <Controller
-            name="ips"
             control={form.control}
+            name="ips"
             render={({ field }) => (
               <WithLabel label="IP addresses">
                 <TagInput
                   {...field}
-                  id="IP addresses"
                   error={form.formState.errors.ips?.message}
+                  id="IP addresses"
+                  onChange={field.onChange}
                   placeholder="Exclude IP addresses"
                   value={field.value}
-                  onChange={field.onChange}
                 />
               </WithLabel>
             )}
           />
 
           <Controller
-            name="profileIds"
             control={form.control}
+            name="profileIds"
             render={({ field }) => (
               <WithLabel label="Profile IDs">
                 <TagInput
                   {...field}
-                  id="Profile IDs"
                   error={form.formState.errors.profileIds?.message}
+                  id="Profile IDs"
+                  onChange={field.onChange}
                   placeholder="Exclude Profile IDs"
                   value={field.value}
-                  onChange={field.onChange}
                 />
               </WithLabel>
             )}
@@ -285,18 +283,18 @@ export default function EditProjectFilters({ project }: Props) {
                 <EventRuleItem
                   // biome-ignore lint/suspicious/noArrayIndexKey: order is stable
                   key={index}
-                  projectId={project.id}
-                  rule={rule}
                   onChange={(updated) => updateEventRule(index, updated)}
                   onRemove={() => removeEventRule(index)}
+                  projectId={project.id}
+                  rule={rule}
                 />
               ))}
               <Button
+                icon={PlusIcon}
+                onClick={addEventRule}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={addEventRule}
-                icon={PlusIcon}
               >
                 Add event rule
               </Button>
@@ -304,14 +302,15 @@ export default function EditProjectFilters({ project }: Props) {
           </WithLabel>
 
           <Button
-            loading={mutation.isPending}
-            type="submit"
-            icon={SaveIcon}
             className="self-end"
+            icon={SaveIcon}
+            loading={mutation.isPending}
+            onClick={form.handleSubmit(onSubmit)}
+            type="button"
           >
             Save
           </Button>
-        </form>
+        </div>
       </WidgetBody>
     </Widget>
   );

@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
-# Standalone Redpanda that REQUIRES SASL, for verifying the TLS/SASL support in
-# packages/queue against a real broker. Not part of the default stack:
+# Standalone Redpanda that REQUIRES SASL, for verifying the KAFKA_SSL /
+# KAFKA_SASL_* support in packages/core/src/modules/ingest against a real
+# broker. Not part of the default stack:
 #
-#   pnpm dock:kafka-auth          # start (compose profile "kafka-auth")
-#   pnpm vitest run packages/queue/src/kafka.integration.test.ts
+#   bun run dock:kafka-auth       # start (compose profile "kafka-auth")
 #
-# Listeners (both require SASL):
-#   localhost:19093  plaintext
-#   localhost:19094  TLS, self-signed CA written to docker/data/op-rp-auth-certs
+# Listeners (both require SASL), bound to 127.0.0.1 by docker-compose.yml:
+#   localhost:23093  plaintext
+#   localhost:23094  TLS, self-signed CA written to docker/data/op-rp-auth-certs
 # Users: op512 (SCRAM-SHA-512), op256 (SCRAM-SHA-256); PLAIN works with both.
 set -euo pipefail
 
 CERT_DIR=/certs
-SASL_PORT=19093
-TLS_PORT=19094
+SASL_PORT=23093
+TLS_PORT=23094
 
 gen_certs() {
   if [[ -f "$CERT_DIR/ca.crt" && -f "$CERT_DIR/broker.crt" && -f "$CERT_DIR/broker.key" ]]; then

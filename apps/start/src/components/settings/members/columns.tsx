@@ -1,15 +1,13 @@
-import { TooltipComplete } from '@/components/tooltip-complete';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { useTRPC } from '@/integrations/trpc/react';
+import type { IServiceMember } from '@openpanel/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { toast } from 'sonner';
-
 import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
-import type { IServiceMember } from '@openpanel/db';
 
 export function useColumns() {
   const columns: ColumnDef<IServiceMember>[] = [
@@ -18,7 +16,9 @@ export function useColumns() {
       header: 'Name',
       cell: ({ row }) => {
         const user = row.original.user;
-        if (!user) return null;
+        if (!user) {
+          return null;
+        }
         return [user.firstName, user.lastName].filter(Boolean).join(' ');
       },
       meta: {
@@ -30,7 +30,9 @@ export function useColumns() {
       header: 'Email',
       cell: ({ row }) => {
         const user = row.original.user;
-        if (!user) return null;
+        if (!user) {
+          return null;
+        }
         return <div className="font-medium">{user.email}</div>;
       },
       meta: {
@@ -63,18 +65,23 @@ export function useColumns() {
       },
     },
     {
-      accessorKey: 'access',
+      accessorKey: 'projects',
       header: 'Access',
       cell: ({ row }) => {
-        const access = row.original.access ?? [];
-        if (access.length === 0) {
+        if (row.original.projectScope === 'all') {
           return <div className="text-muted-foreground">All projects</div>;
+        }
+        if (row.original.projects.length === 0) {
+          return <div className="text-muted-foreground">No projects</div>;
         }
         return (
           <div className="row flex-wrap gap-2">
-            {row.original.access?.map((item) => (
-              <Badge variant={'outline'} key={item.projectId}>
+            {row.original.projects.map((item) => (
+              <Badge key={item.projectId} variant={'outline'}>
                 {item.projectId}
+                {item.level === 'read' || row.original.role === 'viewer'
+                  ? ' (read-only)'
+                  : ''}
               </Badge>
             ))}
           </div>
@@ -91,18 +98,18 @@ export function useColumns() {
         trpc.organization.removeMember.mutationOptions({
           onSuccess() {
             toast.success(
-              `${row.original.user?.firstName} has been removed from the organization`,
+              `${row.original.user?.firstName} has been removed from the organization`
             );
             queryClient.invalidateQueries(
-              trpc.organization.members.pathFilter(),
+              trpc.organization.members.pathFilter()
             );
           },
           onError() {
             toast.error(
-              `Failed to remove ${row.original.user?.firstName} from the organization`,
+              `Failed to remove ${row.original.user?.firstName} from the organization`
             );
           },
-        }),
+        })
       );
 
       return (

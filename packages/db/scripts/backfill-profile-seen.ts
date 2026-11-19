@@ -1,28 +1,21 @@
 // One-off backfill that reconciles `profiles.created_at` (first seen) and
 // `profiles.last_seen_at` (last seen) against actual event activity.
 //
-// After migration `16-restructure-profiles.ts` runs, every profile has
-// `last_seen_at = created_at`. From cutover onward the buffer's session-boundary
-// upserts move `last_seen_at` forward — but historically active profiles with no
-// new sessions stay at their migrated value until they're seen again.
+// After migration `16-restructure-profiles.ts` every profile has
+// `last_seen_at = created_at`; historically active profiles with no new
+// sessions keep that value until seen again. Run once per environment to make
+// both columns match the events table.
 //
-// Run this once (per environment) when you want post-migration `last_seen_at`
-// (and, defensively, `created_at`) to match what the events table already
-// records.
-//
-// How it works:
-//   For each project, INSERT one new row per profile with:
+// For each project, INSERT one new row per profile with:
 //     created_at   = least(existing, min(events.created_at))
 //     last_seen_at = greatest(existing, max(events.created_at))
 //   ReplacingMergeTree(last_seen_at) dedups on the next merge, keeping the row
 //   with the higher `last_seen_at` — i.e. our updated row wins whenever it has
 //   newer activity, otherwise the existing row wins (greatest = old value).
 //
-// Per-project iteration is the trick that avoids needing a temp table:
-//   - The events table is sharded/sorted by `project_id` first, so the WHERE
-//     clause partition-prunes the events scan to that project.
-//   - Memory is bounded by one project's profile count, not the whole table.
-//   - Each project is one round-trip, so progress is observable.
+// Per project, so no temp table is needed: events sorts by `project_id`
+// first (the WHERE prunes the scan), memory is bounded by one project's
+// profiles, and progress is observable.
 //
 // Usage:
 //   cd packages/db
@@ -147,7 +140,6 @@ async function main() {
     `[backfill] ${projectIds.length} project(s) · concurrency=${concurrency}${dryRun ? ' · DRY RUN' : ''}`
   );
 
-  // Simple worker-pool: each worker drains a shared cursor.
   let cursor = 0;
   await Promise.all(
     Array.from(

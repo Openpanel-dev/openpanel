@@ -1,3 +1,8 @@
+import type { IServiceEvent } from '@openpanel/core';
+import { memo } from 'react';
+import { Skeleton } from '../../skeleton';
+import { EventIcon } from '../event-icon';
+import { useEventDrawer } from '../use-event-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tooltiper } from '@/components/ui/tooltip';
@@ -5,10 +10,6 @@ import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
 import { getProfileName } from '@/utils/getters';
-import type { IServiceEvent } from '@openpanel/db';
-import { memo } from 'react';
-import { Skeleton } from '../../skeleton';
-import { EventIcon } from '../event-icon';
 
 interface EventItemProps {
   event: IServiceEvent | Record<string, never>;
@@ -18,6 +19,7 @@ interface EventItemProps {
 
 export const EventItem = memo<EventItemProps>(
   ({ event, viewOptions, className }) => {
+    const { openEvent } = useEventDrawer();
     let url: string | null = '';
     if (event.path && event.origin) {
       if (viewOptions.origin !== false && event.origin) {
@@ -37,36 +39,27 @@ export const EventItem = memo<EventItemProps>(
     return (
       <div className={cn('group card @container overflow-hidden', className)}>
         <div
-          onClick={() => {
-            pushModal('EventDetails', {
-              id: event.id,
-              projectId: event.projectId,
-              createdAt: event.createdAt,
-            });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              pushModal('EventDetails', {
-                id: event.id,
-                projectId: event.projectId,
-                createdAt: event.createdAt,
-              });
-            }
-          }}
-          data-slot="inner"
           className={cn(
-            'col gap-1 flex-1 p-2',
+            'col flex-1 gap-1 p-2',
             // Desktop
             '@lg:row @lg:items-center',
             'cursor-pointer',
             event.meta?.color
               ? `hover:bg-${event.meta.color}-50 dark:hover:bg-${event.meta.color}-900`
-              : 'hover:bg-def-200',
+              : 'hover:bg-def-200'
           )}
+          data-slot="inner"
+          onClick={() => {
+            openEvent({ id: event.id, createdAt: event.createdAt });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              openEvent({ id: event.id, createdAt: event.createdAt });
+            }
+          }}
         >
-          <div className="min-w-0 flex-1 row items-center gap-2">
+          <div className="row min-w-0 flex-1 items-center gap-2">
             <button
-              type="button"
               className="transition-transform hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
@@ -75,14 +68,15 @@ export const EventItem = memo<EventItemProps>(
                   id: event.id,
                 });
               }}
+              type="button"
             >
-              <EventIcon name={event.name} size="sm" meta={event.meta} />
+              <EventIcon meta={event.meta} name={event.name} size="sm" />
             </button>
-            <span className="min-w-0 whitespace-break-spaces wrap-break-word break-all text-sm leading-normal">
+            <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm">
               {event.name === 'screen_view' ? (
                 <>
-                  <span className="text-muted-foreground mr-2">Visit:</span>
-                  <span className="font-medium min-w-0">
+                  <span className="mr-2 text-muted-foreground">Visit:</span>
+                  <span className="min-w-0 font-medium">
                     {url ? url : event.path}
                   </span>
                 </>
@@ -93,7 +87,7 @@ export const EventItem = memo<EventItemProps>(
               )}
             </span>
           </div>
-          <div className="row gap-2 items-center @max-lg:pl-8">
+          <div className="row items-center gap-2 @max-lg:pl-8">
             {event.referrerName && viewOptions.referrerName !== false && (
               <Pill
                 icon={<SerieIcon className="mr-2" name={event.referrerName} />}
@@ -123,7 +117,7 @@ export const EventItem = memo<EventItemProps>(
               </Pill>
             )}
             {viewOptions.createdAt !== false && (
-              <span className="text-sm text-neutral-500">
+              <span className="text-neutral-500 text-sm">
                 {formatTimeAgoOrDateTime(event.createdAt)}
               </span>
             )}
@@ -131,25 +125,25 @@ export const EventItem = memo<EventItemProps>(
         </div>
         {viewOptions.properties !== false && (
           <div
+            className="border-neutral-200 border-t bg-def-100 p-4 py-2"
             data-slot="extra"
-            className="border-t border-neutral-200 p-4 py-2 bg-def-100"
           >
-            <pre className="text-sm leading-tight">
+            <pre className="text-xs">
               {JSON.stringify(event.properties, null, 2)}
             </pre>
           </div>
         )}
       </div>
     );
-  },
+  }
 );
 
 export const EventItemSkeleton = () => {
   return (
-    <div className="card h-10 p-2 gap-4 row items-center">
+    <div className="card row h-10 items-center gap-4 p-2">
       <Skeleton className="size-6 rounded-full" />
-      <Skeleton className="w-1/2 h-3" />
-      <div className="row gap-2 ml-auto">
+      <Skeleton className="h-3 w-1/2" />
+      <div className="row ml-auto gap-2">
         <Skeleton className="size-4 rounded-full" />
         <Skeleton className="size-4 rounded-full" />
         <Skeleton className="size-4 rounded-full" />
@@ -163,17 +157,21 @@ function Pill({
   children,
   icon,
   className,
-}: { children: React.ReactNode; icon?: React.ReactNode; className?: string }) {
+}: {
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+  className?: string;
+}) {
   return (
     <Tooltiper
-      content={children}
       className={cn(
-        'shrink-0 whitespace-nowrap inline-flex gap-2 items-center rounded-full @3xl:text-muted-foreground h-6 text-xs font-mono',
-        className,
+        'inline-flex h-6 shrink-0 items-center gap-2 whitespace-nowrap rounded-full @3xl:text-muted-foreground text-xs tabular-nums',
+        className
       )}
+      content={children}
     >
-      {icon && <div className="size-4 center-center">{icon}</div>}
-      <div className="hidden @3xl:inline">{children}</div>
+      {icon && <div className="center-center size-4">{icon}</div>}
+      <div className="@3xl:inline hidden">{children}</div>
     </Tooltiper>
   );
 }

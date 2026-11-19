@@ -3,7 +3,8 @@
   "compilerOptions": {
     "incremental": false,
     "outDir": "dist",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["bun-types", "node"]
   },
   "exclude": ["dist"]
 }

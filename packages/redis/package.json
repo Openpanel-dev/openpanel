@@ -7,15 +7,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openpanel/json": "workspace:*",
+    "@openpanel/shared": "workspace:*",
     "ioredis": "5.8.2",
-    "lru-cache": "^11.2.2"
+    "lru-cache": "11.5.1"
   },
   "devDependencies": {
+    "@openpanel/core": "workspace:*",
     "@openpanel/db": "workspace:*",
     "@openpanel/tsconfig": "workspace:*",
     "@types/node": "catalog:",
-    "prisma": "^5.1.1",
     "typescript": "catalog:"
   }
 }

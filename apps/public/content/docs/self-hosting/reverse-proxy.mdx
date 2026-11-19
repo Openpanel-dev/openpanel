@@ -3,13 +3,17 @@ title: Reverse proxy setup
 description: Run OpenPanel behind your own reverse proxy, or upstream of the bundled Caddy. Covers routing, WebSockets, and the gotchas that bite every time.
 ---
 
+import { SelfHostingVersionBanner } from '@/components/self-hosting-version-banner';
+
+<SelfHostingVersionBanner />
+
 OpenPanel ships with a Caddy container that handles TLS and routing. It's two lines of config and Just Works. If you prefer NGINX, Traefik, HAProxy, or you're putting another TLS terminator in front of Caddy, this page covers how and — more importantly — what will break along the way.
 
 ## When do you need this?
 
 - **Replacing Caddy with NGINX/Traefik/HAProxy** — jump to [Your own reverse proxy](#your-own-reverse-proxy).
 - **Putting a TLS terminator upstream of the bundled Caddy** (cloud LB, edge VM) — see [TLS terminated upstream of Caddy](#tls-terminated-upstream-of-caddy).
-- **Just using the bundled Caddy** — you don't need this page. `./setup` + `./start` and you're done.
+- **Just using the bundled Caddy** — you don't need this page. `openpanel init` + `openpanel up` and you're done.
 
 ## How the bundled Caddy does it
 

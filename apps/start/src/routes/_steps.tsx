@@ -1,6 +1,14 @@
-import { createFileRoute, Outlet, useMatchRoute } from '@tanstack/react-router';
-import { SkeletonDashboard } from '@/components/skeleton-dashboard';
+import { createFileRoute, Outlet } from '@tanstack/react-router';
+import { LogOutIcon } from 'lucide-react';
+import { LogoSquare } from '@/components/logo';
+import {
+  STEP_NAMES,
+  useOnboardingShellConfig,
+} from '@/components/onboarding/onboarding-shell';
+import { Button } from '@/components/ui/button';
+import { useLogout } from '@/hooks/use-logout';
 import { cn } from '@/utils/cn';
+import { trackFunnel } from '@/utils/funnel-tracking';
 import { createEntityTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute('/_steps')({
@@ -11,63 +19,65 @@ export const Route = createFileRoute('/_steps')({
 });
 
 function OnboardingLayout() {
+  const logout = useLogout();
+  const { step, wide } = useOnboardingShellConfig();
+  const width = wide ? 'max-w-5xl' : 'max-w-2xl';
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4">
-      <div className="fixed inset-0 hidden md:block">
-        <SkeletonDashboard />
-        <div className="fixed inset-0 z-10 bg-def-100/50" />
-      </div>
-      <div className="relative z-10 flex max-h-[calc(100vh-2rem)] w-full max-w-xl flex-col overflow-hidden rounded-lg border bg-background shadow-muted/50 shadow-xl">
-        <div className="sticky top-0 z-10 flex-shrink-0 border-b bg-background">
-          <Progress />
-        </div>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <Outlet />
-        </div>
-      </div>
+    <div className="min-h-screen bg-background">
+      <header
+        className={cn(
+          'mx-auto flex w-full items-center justify-between px-6 py-6',
+          width
+        )}
+      >
+        <a className="row items-center gap-2.5 font-medium" href="/">
+          <LogoSquare className="size-8 shrink-0" />
+          <span>OpenPanel</span>
+        </a>
+        <Button
+          icon={LogOutIcon}
+          loading={logout.isPending}
+          onClick={() => {
+            trackFunnel('onboarding_signed_out', {
+              step: STEP_NAMES[step - 1] ?? String(step),
+            });
+            logout.mutate();
+          }}
+          size="sm"
+          variant="ghost"
+        >
+          Sign out
+        </Button>
+      </header>
+      <main className={cn('mx-auto w-full px-6 pt-8 pb-24', width)}>
+        <StepIndicator current={step} />
+        <Outlet />
+      </main>
     </div>
   );
 }
 
-function Progress() {
-  const steps = [
-    {
-      name: 'Create project',
-      match: '/onboarding/project',
-    },
-    {
-      name: 'Connect data',
-      match: '/onboarding/$projectId/connect',
-    },
-    {
-      name: 'Verify',
-      match: '/onboarding/$projectId/verify',
-    },
-  ];
-  const matchRoute = useMatchRoute();
-
-  const currentStep = steps.find((step) =>
-    matchRoute({
-      // @ts-expect-error
-      from: step.match,
-      fuzzy: false,
-    })
-  );
-
+function StepIndicator({ current }: { current: number }) {
+  const currentIndex = current - 1;
   return (
-    <div className="row w-full flex-shrink-0 items-center justify-between gap-4 p-4">
-      <div className="font-bold">{currentStep?.name ?? 'Onboarding'}</div>
-      <div className="row gap-4">
-        {steps.map((step) => (
-          <div
-            className={cn(
-              'h-2 w-10 rounded-full bg-muted',
-              currentStep === step && 'w-20 bg-primary'
-            )}
-            key={step.match}
-          />
-        ))}
+    <nav aria-label="Onboarding progress" className="col mb-8 gap-3">
+      <div className="text-muted-foreground text-sm tabular-nums">
+        Step {current} of {STEP_NAMES.length}
       </div>
-    </div>
+      <ol className="row gap-2">
+        {STEP_NAMES.map((name, index) => (
+          <li
+            aria-current={index === currentIndex ? 'step' : undefined}
+            className={cn(
+              'h-1 flex-1 rounded-full transition-colors',
+              index <= currentIndex ? 'bg-foreground' : 'bg-def-300'
+            )}
+            key={name}
+          >
+            <span className="sr-only">{name}</span>
+          </li>
+        ))}
+      </ol>
+    </nav>
   );
 }

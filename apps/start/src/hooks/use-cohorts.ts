@@ -1,9 +1,9 @@
-import { useTRPC } from '@/integrations/trpc/react';
 import { useQuery } from '@tanstack/react-query';
+import { useTRPC } from '@/integrations/trpc/react';
 
 export function useCohorts(
   params: { projectId: string; includeCount?: boolean },
-  options?: { enabled?: boolean },
+  options?: { enabled?: boolean }
 ) {
   const trpc = useTRPC();
   const query = useQuery(
@@ -12,7 +12,7 @@ export function useCohorts(
         !!params.projectId && typeof options?.enabled !== 'undefined'
           ? options.enabled
           : true,
-    }),
+    })
   );
   return query.data ?? [];
 }

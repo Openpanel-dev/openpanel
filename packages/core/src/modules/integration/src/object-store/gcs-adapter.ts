@@ -1,0 +1,208 @@
+import { Storage } from '@google-cloud/storage';
+import { decryptCredential } from '@openpanel/shared/server';
+import {
+  callProvider,
+  ProviderError,
+} from '../../../../clients/provider-error';
+import type { CoreConfig } from '../../../../config';
+import {
+  type IGCSExportConfig,
+  parseServiceAccountKey,
+} from '../../integration.constants';
+import type {
+  IObjectStoreAdapter,
+  IUploadOptions,
+  IUploadResult,
+} from './types';
+
+/** Every failure that leaves this adapter is classified under this provider name. */
+const GCS_PROVIDER = 'gcs';
+
+// A credential this adapter refuses is a refusal no retry can change.
+const CREDENTIAL_REJECTED_RETRYABLE = false;
+
+/** Object written by `testConnection`; named so it is obvious in a bucket. */
+const CONNECTION_TEST_FILENAME = '.openpanel-connection-test';
+
+export class GCSAdapter implements IObjectStoreAdapter {
+  private config: IGCSExportConfig;
+  private storage: Storage | null = null;
+
+  constructor(
+    config: IGCSExportConfig,
+    private readonly coreConfig: CoreConfig
+  ) {
+    this.config = {
+      ...config,
+      serviceAccountKey: decryptCredential(
+        coreConfig.encryptionKey,
+        config.serviceAccountKey
+      ),
+    };
+  }
+
+  private getStorage(): Storage {
+    if (this.storage) {
+      return this.storage;
+    }
+
+    // Parse and pin the credential document BEFORE it reaches the SDK.
+    //
+    // `new Storage({ credentials })` forwards the raw object to GoogleAuth,
+    // which dispatches on its `type`: an `external_account` document would be
+    // routed to ExternalAccountClient, whose `credential_source` gives the
+    // document's author arbitrary local file reads and unguarded outbound
+    // requests, with the result POSTed to an attacker-chosen `token_url`. The
+    // config is tenant-supplied, so that dispatch must be unreachable.
+    //
+    // The zod schema rejects non-service-account documents on the way in; this
+    // is the load-bearing check, covering rows written before that schema and
+    // any future caller that skips it.
+    const parsed = parseServiceAccountKey(this.config.serviceAccountKey);
+    if (!parsed.ok) {
+      throw new ProviderError(
+        GCS_PROVIDER,
+        `Invalid service account key: ${parsed.error}`,
+        { retryable: CREDENTIAL_REJECTED_RETRYABLE }
+      );
+    }
+    const { credentials } = parsed;
+
+    try {
+      // Endpoint override. Real GCS needs none (the SDK resolves it), but
+      // pointing the client at a local fake-gcs-server is the only way to
+      // exercise this adapter without live Google credentials — the same
+      // escape hatch the S3 adapter has via `endpoint`.
+      //
+      // Deliberately NOT the SDK's own `STORAGE_EMULATOR_HOST`: in v7 that var
+      // is applied to the JSON API base but not the upload base, so metadata
+      // reads and uploads can't both resolve. `apiEndpoint` sets both.
+      const apiEndpoint = this.coreConfig.objectStoreExport.gcsApiEndpoint;
+
+      this.storage = new Storage({
+        // Allowlisted fields only, and deliberately WITHOUT `type`: with no
+        // recognised type GoogleAuth can only fall through to its JWT branch,
+        // which needs exactly client_email + private_key.
+        credentials: {
+          client_email: credentials.client_email,
+          private_key: credentials.private_key,
+          ...(credentials.private_key_id
+            ? { private_key_id: credentials.private_key_id }
+            : {}),
+          ...(credentials.universe_domain
+            ? { universe_domain: credentials.universe_domain }
+            : {}),
+        },
+        projectId: credentials.project_id,
+        ...(apiEndpoint ? { apiEndpoint } : {}),
+      });
+
+      return this.storage;
+    } catch (error) {
+      throw new ProviderError(GCS_PROVIDER, 'Failed to create GCS client', {
+        retryable: CREDENTIAL_REJECTED_RETRYABLE,
+        cause: error,
+      });
+    }
+  }
+
+  async upload(options: IUploadOptions): Promise<IUploadResult> {
+    const storage = this.getStorage();
+    const bucket = storage.bucket(options.bucket);
+    const file = bucket.file(options.key);
+
+    const content =
+      typeof options.content === 'string'
+        ? Buffer.from(options.content)
+        : options.content;
+
+    await callProvider(GCS_PROVIDER, () =>
+      file.save(content, {
+        contentType: options.contentType,
+        resumable: false, // For small files, non-resumable is faster
+        metadata: {
+          contentType: options.contentType,
+        },
+      })
+    );
+
+    // `save` populates `file.metadata` from the upload response, so re-reading
+    // it with getMetadata() would double the request count of every export.
+    const metadata = file.metadata;
+
+    return {
+      bucket: options.bucket,
+      key: options.key,
+      etag: metadata?.etag || undefined,
+      location: `gs://${options.bucket}/${options.key}`,
+    };
+  }
+
+  async uploadMany(
+    options: Array<IUploadOptions>
+  ): Promise<Array<IUploadResult | Error>> {
+    const results = await Promise.allSettled(
+      options.map((opt) => this.upload(opt))
+    );
+
+    return results.map((result) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      }
+      return result.reason instanceof Error
+        ? result.reason
+        : new Error(String(result.reason));
+    });
+  }
+
+  /**
+   * Deliberately not `bucket.exists()`: reading bucket metadata needs
+   * `storage.buckets.get`, which the least-privilege grant for an export target
+   * (roles/storage.objectCreator, roles/storage.objectAdmin) does NOT include.
+   * That check fails with a 403 on a correctly configured bucket while the
+   * export itself would work fine. Writing an object exercises exactly the
+   * permission the export needs, so a pass here means a pass at flush time.
+   */
+  async testConnection(): Promise<{ success: boolean; error?: string }> {
+    try {
+      const storage = this.getStorage();
+      const bucket = storage.bucket(this.config.bucket);
+      const prefix = this.config.prefix || 'openpanel-exports';
+      const file = bucket.file(`${prefix}/${CONNECTION_TEST_FILENAME}`);
+
+      await file.save(Buffer.from('openpanel connection test\n'), {
+        contentType: 'text/plain',
+        resumable: false,
+      });
+
+      // Best effort: objectCreator can write but not delete, and a stray
+      // zero-value probe object must not turn a working setup into a failure.
+      await file.delete().catch(() => undefined);
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: this.describeError(error) };
+    }
+  }
+
+  /** Turn an SDK error into something a user can act on. */
+  private describeError(error: unknown): string {
+    const code = (error as { code?: number } | null)?.code;
+
+    if (code === 404) {
+      return `Bucket '${this.config.bucket}' does not exist or is not accessible`;
+    }
+    if (code === 401 || code === 403) {
+      return `The service account cannot write to bucket '${this.config.bucket}'. Grant it roles/storage.objectAdmin (or objectCreator) on the bucket.`;
+    }
+
+    return error instanceof Error ? error.message : 'Unknown error';
+  }
+}
+
+export function createGCSAdapter(
+  config: IGCSExportConfig,
+  coreConfig: CoreConfig
+): GCSAdapter {
+  return new GCSAdapter(config, coreConfig);
+}

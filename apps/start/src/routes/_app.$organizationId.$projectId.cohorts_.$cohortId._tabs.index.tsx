@@ -59,10 +59,12 @@ function Component() {
   );
 
   const c = cohort.data;
-  if (!c) return null;
+  if (!c) {
+    return null;
+  }
 
   const notComputed = c.lastComputedAt === null;
-  const isCapped = c.profileCount >= 10000;
+  const isCapped = c.profileCount >= 10_000;
 
   return (
     <div className="col gap-6">

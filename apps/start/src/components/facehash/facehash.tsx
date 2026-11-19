@@ -2,10 +2,6 @@ import * as React from 'react';
 import { FACES } from './faces';
 import { stringHash } from './utils/hash';
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export type Intensity3D = 'none' | 'subtle' | 'medium' | 'dramatic';
 export type Variant = 'gradient' | 'solid';
 
@@ -101,10 +97,6 @@ export interface FacehashProps
   gradientOverlayClass?: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
 const INTENSITY_PRESETS = {
   none: {
     rotateRange: 0,
@@ -171,10 +163,6 @@ const DEFAULT_GRADIENT_STYLE: React.CSSProperties = {
     'radial-gradient(ellipse 100% 100% at 50% 50%, rgba(255,255,255,0.15) 0%, transparent 60%)',
 };
 
-// ============================================================================
-// Component
-// ============================================================================
-
 /**
  * Facehash - Deterministic avatar faces from any string.
  */
@@ -184,15 +172,19 @@ const DEFAULT_GRADIENT_STYLE: React.CSSProperties = {
 function useColorScheme(colorScheme: ColorScheme): 'light' | 'dark' {
   const [systemScheme, setSystemScheme] = React.useState<'light' | 'dark'>(
     () => {
-      if (typeof window === 'undefined') return 'light';
+      if (typeof window === 'undefined') {
+        return 'light';
+      }
       return window.matchMedia('(prefers-color-scheme: dark)').matches
         ? 'dark'
         : 'light';
-    },
+    }
   );
 
   React.useEffect(() => {
-    if (colorScheme !== 'auto') return;
+    if (colorScheme !== 'auto') {
+      return;
+    }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => {
@@ -231,29 +223,27 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
       onMouseLeave,
       ...props
     },
-    ref,
+    ref
   ) => {
     const [isHovered, setIsHovered] = React.useState(false);
     const resolvedScheme = useColorScheme(colorScheme);
 
-    // For group-hover, we use CSS instead of JS state
     const usesCssHover = groupHover;
 
-    // Determine which colors to use based on scheme
     const effectiveColors = React.useMemo(() => {
-      // If explicit colors prop is provided, use it
-      if (colors) return colors;
-      // If colorClasses is provided, don't use inline colors
-      if (colorClasses) return undefined;
+      if (colors) {
+        return colors;
+      }
+      if (colorClasses) {
+        return undefined;
+      }
 
-      // Use scheme-specific colors or defaults
       const lightColors = colorsLight ?? DEFAULT_COLORS_LIGHT;
       const darkColors = colorsDark ?? DEFAULT_COLORS_DARK;
 
       return resolvedScheme === 'dark' ? darkColors : lightColors;
     }, [colors, colorClasses, colorsLight, colorsDark, resolvedScheme]);
 
-    // Generate deterministic values from name
     const { FaceComponent, colorIndex, rotation } = React.useMemo(() => {
       const hash = stringHash(name);
       const faceIndex = hash % FACES.length;
@@ -269,10 +259,8 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
       };
     }, [name, effectiveColors?.length, colorClasses?.length]);
 
-    // Get intensity preset
     const preset = INTENSITY_PRESETS[intensity3d];
 
-    // Calculate 3D transforms
     const { baseTransform, hoverTransform } = React.useMemo(() => {
       if (intensity3d === 'none') {
         return { baseTransform: undefined, hoverTransform: undefined };
@@ -287,7 +275,6 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
       };
     }, [intensity3d, rotation, preset]);
 
-    // For JS-based hover, apply transform based on hover state
     const transform = React.useMemo(() => {
       if (usesCssHover || !interactive) {
         return baseTransform;
@@ -295,17 +282,14 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
       return isHovered ? hoverTransform : baseTransform;
     }, [usesCssHover, interactive, isHovered, baseTransform, hoverTransform]);
 
-    // Size style
     const sizeValue = typeof size === 'number' ? `${size}px` : size;
 
-    // Initial letter
     const initial = name.charAt(0).toUpperCase();
 
-    // Background: either hex color (inline) or class
     const bgColorClass = colorClasses?.[colorIndex];
     const bgColorHex = effectiveColors?.[colorIndex];
 
-    // Event handlers (only used for JS-based hover, not group-hover)
+    // Event handlers only apply to JS-based hover; group-hover uses CSS.
     const handleMouseEnter = React.useCallback(
       (e: React.MouseEvent<HTMLDivElement>) => {
         if (interactive && !usesCssHover) {
@@ -313,7 +297,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         }
         onMouseEnter?.(e);
       },
-      [interactive, usesCssHover, onMouseEnter],
+      [interactive, usesCssHover, onMouseEnter]
     );
 
     const handleMouseLeave = React.useCallback(
@@ -323,16 +307,18 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         }
         onMouseLeave?.(e);
       },
-      [interactive, usesCssHover, onMouseLeave],
+      [interactive, usesCssHover, onMouseLeave]
     );
 
     return (
       <div
+        aria-label={`Avatar for ${name}`}
+        className={`${bgColorClass ?? ''} ${className ?? ''}`}
+        data-facehash-avatar=""
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         ref={ref}
         role="img"
-        aria-label={`Avatar for ${name}`}
-        data-facehash-avatar=""
-        className={`${bgColorClass ?? ''} ${className ?? ''}`}
         style={{
           position: 'relative',
           display: 'flex',
@@ -345,13 +331,11 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
           ...(bgColorHex && { backgroundColor: bgColorHex }),
           ...style,
         }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         {...props}
       >
-        {/* Gradient overlay */}
         {variant === 'gradient' && (
           <div
+            aria-hidden="true"
             className={gradientOverlayClass}
             style={{
               position: 'absolute',
@@ -359,31 +343,30 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
               pointerEvents: 'none',
               ...(gradientOverlayClass ? {} : DEFAULT_GRADIENT_STYLE),
             }}
-            aria-hidden="true"
           />
         )}
 
-        {/* Face container with 3D transform */}
         <div
-          data-facehash-avatar-face=""
           className={
             usesCssHover && interactive
               ? 'group-hover:[transform:var(--facehash-hover-transform)]'
               : undefined
           }
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transform,
-            transition: interactive ? 'transform 0.2s ease-out' : undefined,
-            transformStyle: 'preserve-3d',
-            '--facehash-hover-transform': hoverTransform,
-          } as React.CSSProperties}
+          data-facehash-avatar-face=""
+          style={
+            {
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform,
+              transition: interactive ? 'transform 0.2s ease-out' : undefined,
+              transformStyle: 'preserve-3d',
+              '--facehash-hover-transform': hoverTransform,
+            } as React.CSSProperties
+          }
         >
-          {/* Face SVG */}
           <FaceComponent
             style={{
               position: 'absolute',
@@ -392,7 +375,6 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
             }}
           />
 
-          {/* Initial letter */}
           {showInitial && (
             <span
               data-facehash-avatar-initial=""
@@ -411,7 +393,7 @@ export const Facehash = React.forwardRef<HTMLDivElement, FacehashProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 Facehash.displayName = 'Facehash';

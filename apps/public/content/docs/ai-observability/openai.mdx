@@ -1,0 +1,334 @@
+---
+title: OpenAI SDK
+description: Record every call made through the official openai client, with cost, tokens, latency and errors tied to your users.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+<Callout type="warn" title="Beta">
+AI observability is in beta; the wrapper options and the event payload may still change. See the [overview](/docs/ai-observability) for how to give feedback.
+</Callout>
+
+`@openpanel/ai/openai` wraps an `openai` client. After that, every model call it makes shows up in OpenPanel with its tokens, latency, messages and errors, tied to the user who triggered it. Its cost is added when the model is in the built-in price catalog.
+
+It records:
+
+- Chat Completions and the Responses API, streamed or not
+- Embeddings
+- The SDK's helpers built on them: `chat.completions.parse`, `chat.completions.stream`, `runTools`, `responses.parse` and `responses.stream`
+- `AzureOpenAI`, and any OpenAI-compatible API you reach through `baseURL` (OpenRouter, Groq, Together, a local server)
+
+Using the Vercel AI SDK instead? Use the [Vercel AI SDK middleware](/docs/ai-observability/vercel-ai-sdk).
+
+## Quick start
+
+<Steps>
+<Step>
+
+### Install
+
+```bash
+pnpm install @openpanel/sdk @openpanel/ai openai
+```
+
+Tested with `openai` 7 and `@openpanel/sdk` 1.3.3 or later.
+
+</Step>
+<Step>
+
+### Wrap the client
+
+Wrap the client once, where you create it, and import it everywhere else as before.
+
+```ts title="lib/openai.ts"
+import { OpenPanel } from '@openpanel/sdk';
+import { wrapOpenAI } from '@openpanel/ai/openai';
+import OpenAI from 'openai';
+
+export const op = new OpenPanel({
+  clientId: process.env.OPENPANEL_CLIENT_ID!,
+  clientSecret: process.env.OPENPANEL_CLIENT_SECRET!,
+});
+
+export const openai = wrapOpenAI(new OpenAI(), { op });
+```
+
+The client secret is required: AI events are sent from your server, never from the browser.
+
+</Step>
+<Step>
+
+### Say who the call is for
+
+Run the call inside `withAiContext` to attach it to a user and a feature:
+
+```ts
+import { withAiContext } from '@openpanel/ai';
+import { openai } from './lib/openai';
+
+const completion = await withAiContext(
+  { profileId: user.id, name: 'inbox-summary' },
+  () =>
+    openai.chat.completions.create({
+      model: 'gpt-5-mini',
+      messages: [{ role: 'user', content: 'Summarize my inbox' }],
+    })
+);
+```
+
+Use the same `profileId` you pass to `identify()` in the web SDK, so the call shows up on that user's profile next to everything else they did.
+
+</Step>
+<Step>
+
+### Check that it works
+
+Make one call, then open your project in OpenPanel and go to **AI**. Events arrive within a few seconds:
+
+- **Overview** shows cost, generations, tokens, latency and error rate.
+- **Calls** lists each call. Open one to read its messages, tool calls and token breakdown.
+- **Traces** groups the calls made inside one `withAiContext`.
+
+Nothing there? See [troubleshooting](#troubleshooting).
+
+</Step>
+</Steps>
+
+## Attach calls to users and features
+
+The OpenAI client has no field for OpenPanel's context, so it comes from `withAiContext`. Every call inside the callback, however deep, picks it up.
+
+| Field | What it's for |
+|---|---|
+| `profileId` | The user. Cost per user, the profile's AI widget, funnels with an AI step. |
+| `name` | The feature or step, e.g. `inbox-summary`. Breaks cost and latency down by feature. |
+| `conversationId` | Groups the traces of one chat thread. |
+| `groups` | Group ids, such as the customer's organization, for cost per account. |
+| `properties` | Anything else you want to filter or break down by, e.g. `{ plan: 'pro' }`. |
+| `deviceId` | Binds the call to an anonymous visitor's session; see [linking to sessions](#linking-to-sessions). |
+| `traceId`, `parentId` | Set these only to join a trace you started elsewhere. One is created for you otherwise. |
+| `privacyMode` | Don't send this request's messages. |
+
+Contexts nest. An inner `withAiContext` keeps the outer user and trace and overrides only what it sets, so a pipeline can name each step:
+
+```ts
+await withAiContext({ profileId: user.id, conversationId: thread.id }, async () => {
+  const plan = await withAiContext({ name: 'plan' }, () => planTask(task));
+  return withAiContext({ name: 'write' }, () => writeAnswer(plan));
+});
+```
+
+For calls that always belong to the same thing, such as a nightly job, set `defaults` when you wrap the client instead:
+
+```ts
+const openai = wrapOpenAI(new OpenAI(), {
+  op,
+  defaults: { name: 'nightly-digest' },
+});
+```
+
+## Examples
+
+### Stream a chat response
+
+The event is recorded when the stream ends, with time to first token. Ask for `include_usage`, or a streamed chat completion reports no tokens and no cost:
+
+```ts title="app/api/chat/route.ts"
+import { withAiContext } from '@openpanel/ai';
+import { findThreadForUser, requireUser } from '@/lib/auth';
+import { openai } from '@/lib/openai';
+
+export async function POST(request: Request) {
+  // Take the user from your auth, never from the request body.
+  const user = await requireUser(request);
+  const { messages, threadId: requestedThreadId } = await request.json();
+  // Resolve the thread against the signed-in user before grouping calls under it.
+  const threadId = await findThreadForUser(user.id, requestedThreadId);
+
+  return withAiContext(
+    { profileId: user.id, conversationId: threadId, name: 'chat' },
+    async () => {
+      const stream = await openai.chat.completions.create({
+        model: 'gpt-5-mini',
+        messages,
+        stream: true,
+        stream_options: { include_usage: true },
+      });
+      return new Response(stream.toReadableStream());
+    }
+  );
+}
+```
+
+The context is captured when the call starts, so the event keeps it even though the stream is read after the callback has returned. If the client stops reading early, the event is still recorded with the text that arrived so far and a `stream cancelled` error.
+
+### An agent loop as one trace
+
+Each model call in the loop is its own generation. Because they run inside one `withAiContext`, they share a trace, and **Traces** shows the whole run with its total cost and duration:
+
+```ts
+const tools: OpenAI.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'get_weather',
+      description: 'Current weather for a city',
+      parameters: {
+        type: 'object',
+        properties: { city: { type: 'string' } },
+        required: ['city'],
+      },
+    },
+  },
+];
+
+await withAiContext({ profileId: user.id, name: 'weather-agent' }, async () => {
+  const messages: OpenAI.ChatCompletionMessageParam[] = [
+    { role: 'user', content: 'Should I bring a jacket in Oslo today?' },
+  ];
+  for (;;) {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-5-mini',
+      messages,
+      tools,
+    });
+    const message = completion.choices[0].message;
+    messages.push(message);
+    if (!message.tool_calls?.length) {
+      return message.content;
+    }
+    for (const call of message.tool_calls) {
+      messages.push({
+        role: 'tool',
+        tool_call_id: call.id,
+        content: await runTool(call),
+      });
+    }
+  }
+});
+```
+
+The SDK's own `runTools` helper is recorded the same way.
+
+### Responses API
+
+```ts
+const response = await openai.responses.create({
+  model: 'gpt-5',
+  instructions: 'Answer in one sentence.',
+  input: 'What does OpenPanel do?',
+  reasoning: { effort: 'low' },
+});
+```
+
+`instructions` is stored as the system message, and reasoning summaries, tool calls and tool results appear in the conversation view. Streamed Responses calls always report usage.
+
+### Embeddings
+
+```ts
+await openai.embeddings.create({
+  model: 'text-embedding-3-small',
+  input: chunks,
+});
+```
+
+This records an `ai_embedding` event with the input texts, the token count and the cost. The vectors are never sent.
+
+### OpenRouter, Azure and other compatible APIs
+
+Point the client at another API as usual, and set `provider` so the event says where the call went and the cost is looked up for that provider:
+
+```ts
+const openrouter = wrapOpenAI(
+  new OpenAI({
+    baseURL: 'https://openrouter.ai/api/v1',
+    apiKey: process.env.OPENROUTER_API_KEY,
+  }),
+  { op, provider: 'openrouter' }
+);
+```
+
+```ts
+import { AzureOpenAI } from 'openai';
+
+const azure = wrapOpenAI(
+  new AzureOpenAI({ apiVersion: '2025-04-01-preview' }),
+  { op, provider: 'azure' }
+);
+```
+
+## What gets recorded
+
+Each chat or Responses call becomes an `ai_generation` event, and each embeddings call an `ai_embedding` event. Both are ordinary OpenPanel events, so the report builder, funnels, retention and cohorts can use them. The numbers are stored as event properties:
+
+| Property | Holds |
+|---|---|
+| `ai_model`, `ai_provider` | The model that answered (e.g. `gpt-5-mini-2025-08-07`) and the provider. |
+| `ai_input_tokens`, `ai_output_tokens` | Token counts. Input includes cached tokens; output includes reasoning tokens. |
+| `ai_cache_read_tokens`, `ai_reasoning_tokens` | The cached and reasoning parts of those counts. |
+| `ai_cost` | USD, computed from a built-in price catalog with cache discounts applied. |
+| `ai_latency_ms`, `ai_time_to_first_token_ms` | Total duration, and time to the first token on streams. |
+| `ai_stop_reason` | `stop`, `length`, `tool-calls`, `content-filter`, `error` or `other`. |
+| `ai_is_error`, `ai_http_status`, `ai_error_code` | Whether the call failed, its HTTP status, and OpenAI's error code (e.g. `model_not_found`). |
+| `ai_stream` | Whether it was streamed. |
+| `ai_name`, `ai_conversation_id`, `ai_trace_id` | From `withAiContext`. |
+
+The messages, tool definitions and model parameters (`temperature`, `max_completion_tokens`, `reasoning_effort` and so on) are kept for 30 days and shown on the generation in the dashboard. Images, audio and files are replaced by a `[file]` placeholder and never uploaded.
+
+A failed call is recorded with its error and then rethrown, so your own error handling is unchanged. Recording never blocks the model call and can never make it fail.
+
+Two kinds of call are not recorded: a successful call read with `.asResponse()`, because the wrapper would have to read the body you asked to keep unread (a failed one is still recorded with its error), and the polling of a background Responses call (`background: true`). Its `create` is recorded with the queued status, but `responses.retrieve` is not wrapped.
+
+## Privacy
+
+To keep prompts and completions out of OpenPanel, set `privacyMode`. Tokens, cost, latency and errors are still recorded.
+
+```ts
+// Every call from this client
+const openai = wrapOpenAI(new OpenAI(), { op, privacyMode: true });
+
+// Or only one request
+await withAiContext({ profileId: user.id, privacyMode: true }, () =>
+  draftReply(email)
+);
+```
+
+You can also turn content storage off for the whole project under **Settings → AI**.
+
+## Options
+
+| Option | What it does |
+|---|---|
+| `op` | Where events go: your `OpenPanel` client, or any object with an `ai(payload)` method. |
+| `privacyMode` | Never send messages or tool definitions. |
+| `provider` | Reported instead of `openai`, for compatible APIs. |
+| `defaults` | Context for calls made outside any `withAiContext`. |
+
+## Serverless functions
+
+Events are sent in the background. On Vercel, Cloudflare Workers or Lambda the function can be frozen before a send finishes. Pass an `op` that hands each send to the platform:
+
+```ts
+import { waitUntil } from '@vercel/functions';
+
+export const openai = wrapOpenAI(new OpenAI(), {
+  op: { ai: (payload) => waitUntil(op.ai(payload)) },
+});
+```
+
+## Linking to sessions
+
+A logged-in user's model call lands in the same session as their page views, because OpenPanel attaches a server event to that profile's current session. For anonymous visitors, send the web SDK's `op.getDeviceId()` to your backend and pass it as `deviceId` in `withAiContext`.
+
+## Troubleshooting
+
+**Nothing shows up.** Make sure the `OpenPanel` client has a `clientSecret`, and that you call the client you wrapped. `client.withOptions()` returns a new client that is not wrapped; wrap the result too. In a short script or a serverless function, see [serverless functions](#serverless-functions).
+
+**Streamed chat calls have no tokens or cost.** Add `stream_options: { include_usage: true }`.
+
+**Tokens but no cost.** The model isn't in the price catalog under that name. This happens with some open-weight models on Groq or Together, or a provider-specific model name. Check that `provider` is set; the tokens are recorded either way.
+
+**Calls don't appear on the user's profile.** The call ran outside `withAiContext`, or `profileId` differs from the id you identify the user with.
+
+**A streamed call shows `stream cancelled`.** Your code, or the HTTP client, stopped reading before the model finished, so the event has what arrived up to that point.

@@ -89,14 +89,14 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
 
   const analyticsQuery = useQuery(
     trpc.event.pages.queryOptions(
-      { projectId, cursor: 1, take: 1000, search: undefined, range, interval },
+      { projectId, take: 1000, range, interval },
       { placeholderData: keepPreviousData }
     )
   );
 
   const insights = useMemo<PageInsight[]>(() => {
     const gscPages = gscPagesQuery.data ?? [];
-    const analyticsPages = analyticsQuery.data ?? [];
+    const analyticsPages = analyticsQuery.data?.data ?? [];
 
     const analyticsMap = new Map(
       analyticsPages.map((p) => [p.origin + p.path, p])
@@ -281,6 +281,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
               setPage(0);
             }}
             placeholder="Search pages"
+            size="sm"
             type="search"
             value={search}
           />
@@ -336,15 +337,15 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
                     }}
                     src={`${apiUrl}/misc/favicon?url=${insight.origin}`}
                   />
-                  <span className="truncate font-medium font-mono text-xs">
+                  <span className="truncate font-medium text-xs tabular-nums">
                     {insight.path || insight.page}
                   </span>
 
-                  <span className="ml-auto shrink-0 whitespace-nowrap font-mono text-muted-foreground text-xs">
+                  <span className="ml-auto shrink-0 whitespace-nowrap text-muted-foreground text-xs tabular-nums">
                     {insight.metrics}
                   </span>
                 </div>
-                <p className="text-muted-foreground text-xs leading-relaxed">
+                <p className="text-muted-foreground text-xs">
                   <span className="font-medium text-foreground">
                     {insight.headline}.
                   </span>{' '}

@@ -1,8 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { shortId } from '@openpanel/common';
-import { isKind, zCreateNotificationRule } from '@openpanel/validation';
+import { isKind } from '@openpanel/core/modules/integration/integration.constants';
+import { zCreateNotificationRule } from '@openpanel/core/modules/notification/notification.constants';
+import { shortId } from '@openpanel/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { FilterIcon, PlusIcon, SaveIcon, TrashIcon } from 'lucide-react';
+import { useId } from 'react';
 import {
   Controller,
   type SubmitHandler,
@@ -16,7 +18,11 @@ import type { z } from 'zod';
 import { popModal } from '.';
 import { ModalHeader } from './Modal/Container';
 import { ColorSquare } from '@/components/color-square';
-import { InputWithLabel, WithLabel } from '@/components/forms/input-with-label';
+import {
+  fieldMessageId,
+  InputWithLabel,
+  WithLabel,
+} from '@/components/forms/input-with-label';
 import { PureFilterItem } from '@/components/report/sidebar/filters/FilterItem';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
@@ -27,7 +33,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useEventProperties } from '@/hooks/use-event-properties';
-import { useTRPC } from '@/integrations/trpc/react';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
 interface Props {
@@ -37,6 +43,7 @@ interface Props {
 type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
+  const typeId = useId();
   const client = useQueryClient();
   const { projectId } = useAppParams();
   const form = useForm<IForm>({
@@ -62,6 +69,11 @@ export default function AddNotificationRule({ rule }: Props) {
       },
     },
   });
+  // The config union hides `type` from the inferred error shape.
+  const configErrors = form.formState.errors.config as
+    | { type?: { message?: string } }
+    | undefined;
+  const typeError = configErrors?.type?.message;
   const trpc = useTRPC();
   const mutation = useMutation(
     trpc.notification.createOrUpdateRule.mutationOptions({
@@ -76,6 +88,7 @@ export default function AddNotificationRule({ rule }: Props) {
         );
         popModal();
       },
+      onError: handleError,
     })
   );
   const integrationsQuery = useQuery(
@@ -100,7 +113,7 @@ export default function AddNotificationRule({ rule }: Props) {
   // Only notification sinks belong in a rule — export integrations (S3/GCS)
   // come back from the same list endpoint but have nothing to deliver to.
   const integrations = (integrationsQuery.data ?? []).filter((integration) =>
-    isKind(integration.config, 'notification'),
+    isKind(integration.config, 'notification')
   );
 
   return (
@@ -114,20 +127,19 @@ export default function AddNotificationRule({ rule }: Props) {
           {...form.register('name')}
         />
 
-        <WithLabel
-          // @ts-expect-error
-          error={form.formState.errors.config?.type.message}
-          label="Type"
-        >
+        <WithLabel error={typeError} id={typeId} label="Type">
           <Controller
             control={form.control}
             name="config.type"
             render={({ field }) => (
               <Combobox
                 {...field}
+                aria-describedby={
+                  typeError ? fieldMessageId(typeId) : undefined
+                }
                 className="w-full"
-                // @ts-expect-error
-                error={form.formState.errors.config?.type.message}
+                error={typeError}
+                id={typeId}
                 items={[
                   {
                     label: 'Events',

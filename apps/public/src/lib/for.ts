@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isContentSlug } from './utils';
 
 export interface ForSeo {
   title: string;
@@ -87,6 +88,9 @@ export interface ForData {
 const contentDir = join(process.cwd(), 'content', 'for');
 
 export async function getForData(slug: string): Promise<ForData | null> {
+  if (!isContentSlug(slug)) {
+    return null;
+  }
   try {
     const filePath = join(contentDir, `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');

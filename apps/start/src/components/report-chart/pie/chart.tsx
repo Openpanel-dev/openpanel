@@ -1,190 +1,156 @@
-import { changeVisibleSeries } from '@/components/report/reportSlice';
-import { useVisibleSeries } from '@/hooks/use-visible-series';
-import { useDispatch } from '@/redux';
-import type { IChartData } from '@/trpc/client';
-import { cn } from '@/utils/cn';
-import { round } from '@/utils/math';
-import { getChartColor } from '@/utils/theme';
-import { truncate } from '@/utils/truncate';
-import { Fragment } from 'react';
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-
-import {
-  ChartTooltipContainer,
-  ChartTooltipHeader,
-  ChartTooltipItem,
-} from '@/components/charts/chart-tooltip';
-import { useNumber } from '@/hooks/use-numer-formatter';
-import { formatDate } from '@/utils/date';
-import { AXIS_FONT_PROPS } from '../common/axis';
-import { PreviousDiffIndicator } from '../common/previous-diff-indicator';
-import { ReportChartTooltip } from '../common/report-chart-tooltip';
-import { ReportTable } from '../common/report-table';
+import { round } from '@openpanel/shared';
+import { useMemo, useState } from 'react';
+import { useChartChrome } from '../common/chart-size';
+import { getLabelNames } from '../common/label-names';
 import { SerieIcon } from '../common/serie-icon';
 import { SerieName } from '../common/serie-name';
 import { useReportChartContext } from '../context';
+import { PieCenter } from '@/components/charts/pie-center';
+import { DEFAULT_HOVER_OFFSET, PieChart } from '@/components/charts/pie-chart';
+import { PieSlice } from '@/components/charts/pie-slice';
+import { useElementSize } from '@/hooks/use-element-size';
+import { useNumber } from '@/hooks/use-numer-formatter';
+import type { IVisibleSeries } from '@/hooks/use-visible-series';
+import { cn } from '@/utils/cn';
+import { getChartColor } from '@/utils/theme';
+
+const DONUT_HOLE = 0.6;
+const PAD_ANGLE = 0.02;
+const CORNER_RADIUS = 4;
+// Wider than this (width / height) and the legend goes beside the donut.
+const SIDE_LEGEND_RATIO = 1.3;
 
 interface Props {
-  data: IChartData;
+  series: IVisibleSeries;
 }
 
-const PieTooltip = (props: { payload?: any[] }) => {
+export function Chart({ series }: Props) {
+  const { isEditMode } = useReportChartContext();
+  const { legendLimit } = useChartChrome();
+  const showLegend = legendLimit > 0;
   const number = useNumber();
-  return (
-    <ChartTooltipContainer>
-      {props.payload?.map((serie, index) => {
-        const item = serie.payload;
-        return (
-          <Fragment key={item.id}>
-            {index === 0 && item.date && (
-              <ChartTooltipHeader>
-                <div>{formatDate(new Date(item.date))}</div>
-              </ChartTooltipHeader>
-            )}
-            <ChartTooltipItem color={item.color}>
-              <div className="flex items-center gap-1">
-                <SerieIcon name={item.name} />
-                <SerieName name={item.names} className="font-medium" />
-              </div>
-              <div className="flex justify-between gap-8 font-mono font-medium">
-                <div className="row gap-1">
-                  {number.formatWithUnit(item.count)}
-                  {!!item.previous && (
-                    <span className="text-muted-foreground">
-                      ({number.formatWithUnit(item.previous.sum.value)})
-                    </span>
-                  )}
-                </div>
-                <PreviousDiffIndicator {...item.previous?.sum} />
-              </div>
-            </ChartTooltipItem>
-          </Fragment>
-        );
-      })}
-    </ChartTooltipContainer>
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [frameRef, frame] = useElementSize();
+  const [pieRef, pieBox] = useElementSize();
+
+  const slices = useMemo(() => {
+    const total = series.reduce((sum, serie) => sum + serie.metrics.sum, 0);
+    const labelNames = getLabelNames(series);
+    return series.map((serie) => ({
+      id: serie.id,
+      names: labelNames(serie.names),
+      label: serie.names.join(' › '),
+      value: serie.metrics.sum,
+      share: total ? round((serie.metrics.sum / total) * 100, 1) : 0,
+      color: getChartColor(serie.index),
+    }));
+  }, [series]);
+
+  const legendSlices = slices.slice(0, legendLimit);
+  const hiddenSliceCount = slices.length - legendSlices.length;
+  const isSideLegend =
+    showLegend && frame.width > frame.height * SIDE_LEGEND_RATIO;
+  const pieSize = Math.min(pieBox.width, pieBox.height);
+  const innerRadius = Math.max(
+    0,
+    (pieSize / 2 - DEFAULT_HOVER_OFFSET) * DONUT_HOLE
   );
-};
-
-export function Chart({ data }: Props) {
-  const {
-    isEditMode,
-    report: { visibleSeries: savedVisibleSeries },
-  } = useReportChartContext();
-  const dispatch = useDispatch();
-  const { series, setVisibleSeries } = useVisibleSeries(data, {
-    savedVisibleSeries,
-    onVisibleSeriesChange: isEditMode
-      ? (ids) => dispatch(changeVisibleSeries(ids))
-      : undefined,
-  });
-
-  const sum = series.reduce((acc, serie) => acc + serie.metrics.sum, 0);
-  const pieData = series.map((serie) => ({
-    id: serie.id,
-    color: getChartColor(serie.index),
-    index: serie.index,
-    name: serie.names.join(' > '),
-    names: serie.names,
-    count: serie.metrics.sum,
-    percent: serie.metrics.sum / sum,
-    previous: serie.metrics.previous ? serie.metrics.previous : undefined,
-  }));
 
   return (
-    <>
+    <div className={cn('h-full w-full', isEditMode && 'card p-4')}>
       <div
-        className={cn('h-full w-full max-sm:-mx-3', isEditMode && 'card p-4')}
+        className={cn(
+          'flex h-full w-full gap-4',
+          isSideLegend ? 'flex-row items-center' : 'col'
+        )}
+        data-report-chart="pie"
+        ref={frameRef}
       >
-        <ResponsiveContainer>
-          <PieChart>
-            <Tooltip content={<PieTooltip />} />
-            <Pie
-              dataKey={'count'}
-              data={pieData}
-              innerRadius={'30%'}
-              outerRadius={'80%'}
-              isAnimationActive={false}
-              label={renderLabel}
-            >
-              {pieData.map((item) => {
-                return (
-                  <Cell
-                    key={item.id}
-                    strokeWidth={4}
-                    className="stroke-background"
-                    fill={item.color}
+        <div
+          className="relative min-h-0 min-w-0 flex-1 self-stretch"
+          ref={pieRef}
+        >
+          {pieSize > 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <PieChart
+                cornerRadius={CORNER_RADIUS}
+                data={slices}
+                hoveredIndex={hoveredIndex}
+                innerRadius={innerRadius}
+                onHoverChange={setHoveredIndex}
+                padAngle={PAD_ANGLE}
+                size={pieSize}
+              >
+                {slices.map((slice, index) => (
+                  <PieSlice animate={false} index={index} key={slice.id} />
+                ))}
+                <PieCenter>
+                  {({ value, isHovered }) => {
+                    const slice =
+                      hoveredIndex === null ? null : slices[hoveredIndex];
+                    return (
+                      <div className="col max-w-[80%] items-center text-center">
+                        <div className="font-semibold text-lg tabular-nums">
+                          {number.short(value)}
+                        </div>
+                        <div className="w-full truncate text-muted-foreground text-xs">
+                          {isHovered && slice ? `${slice.share}%` : 'Total'}
+                        </div>
+                      </div>
+                    );
+                  }}
+                </PieCenter>
+              </PieChart>
+            </div>
+          )}
+        </div>
+        {showLegend && (
+          <ul
+            className={cn(
+              'col min-h-0 shrink-0 gap-0.5 overflow-y-auto text-sm',
+              isSideLegend ? 'w-1/2 max-w-72' : 'max-h-[40%] w-full'
+            )}
+          >
+            {legendSlices.map((slice, index) => (
+              <li key={slice.id}>
+                <button
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded px-1.5 py-1 text-left transition-opacity',
+                    hoveredIndex !== null &&
+                      hoveredIndex !== index &&
+                      'opacity-50'
+                  )}
+                  onBlur={() => setHoveredIndex(null)}
+                  onFocus={() => setHoveredIndex(index)}
+                  onMouseEnter={() => setHoveredIndex(index)}
+                  onMouseLeave={() => setHoveredIndex(null)}
+                  type="button"
+                >
+                  <span
+                    className="size-2.5 shrink-0 rounded-full"
+                    style={{ background: slice.color }}
                   />
-                );
-              })}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+                  <SerieIcon name={slice.names} />
+                  <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">
+                    <SerieName name={slice.names} />
+                  </div>
+                  <span className="font-semibold tabular-nums">
+                    {number.short(slice.value)}
+                  </span>
+                  <span className="w-12 text-right text-muted-foreground tabular-nums">
+                    {slice.share}%
+                  </span>
+                </button>
+              </li>
+            ))}
+            {hiddenSliceCount > 0 && (
+              <li className="px-1.5 py-1 text-muted-foreground text-xs">
+                +{hiddenSliceCount} more
+              </li>
+            )}
+          </ul>
+        )}
       </div>
-      {isEditMode && (
-        <ReportTable
-          data={data}
-          visibleSeries={series}
-          setVisibleSeries={setVisibleSeries}
-        />
-      )}
-    </>
+    </div>
   );
 }
-
-const renderLabel = ({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  fill,
-  payload,
-}: {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  innerRadius: number;
-  outerRadius: number;
-  fill: string;
-  payload: { name: string; percent: number };
-}) => {
-  const RADIAN = Math.PI / 180;
-  const radius = 25 + innerRadius + (outerRadius - innerRadius);
-  const radiusProcent = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const xProcent = cx + radiusProcent * Math.cos(-midAngle * RADIAN);
-  const yProcent = cy + radiusProcent * Math.sin(-midAngle * RADIAN);
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  const name = payload.name;
-  const percent = round(payload.percent * 100, 1);
-
-  return (
-    <>
-      <text
-        x={xProcent}
-        y={yProcent}
-        fill="white"
-        textAnchor="middle"
-        dominantBaseline="central"
-        pointerEvents={'none'}
-        {...AXIS_FONT_PROPS}
-        fontSize={12}
-        fontWeight={700}
-      >
-        {percent}%
-      </text>
-      <text
-        x={x}
-        y={y}
-        fill={fill}
-        textAnchor={x > cx ? 'start' : 'end'}
-        dominantBaseline="central"
-        {...AXIS_FONT_PROPS}
-        fontSize={10}
-        fontWeight={700}
-      >
-        {truncate(name, 20)}
-      </text>
-    </>
-  );
-};

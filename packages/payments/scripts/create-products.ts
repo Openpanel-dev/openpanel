@@ -38,7 +38,9 @@ async function promptForInput() {
       name: 'polarApiKey',
       message: 'Enter your Polar API key:',
       validate: (input: string) => {
-        if (!input) return 'API key is required';
+        if (!input) {
+          return 'API key is required';
+        }
         return true;
       },
     },
@@ -76,7 +78,7 @@ async function main() {
       const exists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
-          p.recurringInterval === 'month',
+          p.recurringInterval === 'month'
       );
       if (exists) {
         console.log('Free product already exists:');
@@ -129,13 +131,13 @@ async function main() {
         (p) =>
           p.metadata?.eventsLimit === price.events &&
           p.recurringInterval === 'month' &&
-          p.name === productCreate.name,
+          p.name === productCreate.name
       );
       const yearlyProductExists = products.find(
         (p) =>
           p.metadata?.eventsLimit === price.events &&
           p.recurringInterval === 'year' &&
-          p.name === `${productCreate.name} (yearly)`,
+          p.name === `${productCreate.name} (yearly)`
       );
 
       if (monthlyProductExists) {
@@ -170,7 +172,6 @@ async function main() {
         ) {
           productCreate.prices[0]!.priceAmount = price.price * 100 * 10;
         }
-        // console.log('CREATE YEARLY', productCreate);
         const yearlyProduct = await polar.products.create(productCreate);
         console.log('Yearly product created:');
         console.log(' - ID:', yearlyProduct.id);

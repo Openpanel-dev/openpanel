@@ -1,21 +1,26 @@
-"use client";
+'use client';
 
-import { motion, useSpring } from "motion/react";
-import { memo, useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
-import { type SpringConfig, useChartConfig } from "../chart-config-context";
+import { motion, useSpring } from 'motion/react';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  resolveTooltipBoxMotion,
+  type SpringConfig,
+  useChartConfig,
+} from '../chart-config-context';
 import {
   chartCssVars,
   type LineConfig,
   useChart,
   useChartStable,
-} from "../chart-context";
-import { weekdayDateFmt } from "../chart-formatters";
-import { DateTicker } from "./date-ticker";
-import { TooltipBox } from "./tooltip-box";
-import { TooltipContent, type TooltipRow } from "./tooltip-content";
-import { TooltipDot } from "./tooltip-dot";
-import { TooltipIndicator } from "./tooltip-indicator";
+} from '../chart-context';
+import { weekdayDateFmt } from '../chart-formatters';
+import type { IndicatorFadeEdges } from '../indicator-fade';
+import { DateTicker } from './date-ticker';
+import { TooltipBox } from './tooltip-box';
+import { TooltipContent, type TooltipRow } from './tooltip-content';
+import { TooltipDot } from './tooltip-dot';
+import { TooltipIndicator } from './tooltip-indicator';
 
 export interface ChartTooltipProps {
   /** Whether to show the date pill at bottom. Default: true */
@@ -24,6 +29,29 @@ export interface ChartTooltipProps {
   showCrosshair?: boolean;
   /** Whether to show dots on the lines. Default: true */
   showDots?: boolean;
+  /**
+   * Dot style: filled circle with a soft same-color halo, or transparent ring.
+   * Default: "dot"
+   */
+  dotVariant?: 'dot' | 'ring';
+  /** Dot core / ring radius in pixels. Default: 5 */
+  dotSize?: number;
+  /**
+   * `dot` variant: halo radius as a multiple of the core radius. `0` hides the halo.
+   * Default: `2.6`
+   */
+  dotHaloScale?: number;
+  /** `dot` variant: halo opacity (0–1). Default: `0.3` */
+  dotHaloOpacity?: number;
+  /** Ring corner radius as a fraction of side length (0 = square, 0.5 = circle). */
+  dotRadiusFraction?: number;
+  /** Multiplier applied to the computed dot / ring pixel radius. Default: 1 */
+  dotScale?: number;
+  /**
+   * Ring stroke width in pixels (default `1.5`). For the `dot` variant, draws a
+   * background-colored outline around the core (default `0`, none).
+   */
+  dotStrokeWidth?: number;
   /**
    * Color for the crosshair/indicator line. When a function, receives the hovered point
    * (e.g. for candlestick: match candle color from close vs open). Default: --chart-crosshair.
@@ -49,8 +77,31 @@ export interface ChartTooltipProps {
   className?: string;
   /** Per-chart override for the crosshair / dot / date-pill spring. */
   springConfig?: SpringConfig;
+  /**
+   * When `true`, the floating panel uses the crosshair spring and stays in sync.
+   * Default `false` — panel follow uses `damping` (`20`).
+   */
+  matchCrosshair?: boolean;
+  /**
+   * Spring damping for the floating tooltip panel when `matchCrosshair` is `false`.
+   * `0` disables spring motion (instant). Default: `20`.
+   */
+  damping?: number;
+  /** SVG stroke dash pattern for the crosshair. Omit for solid. */
+  indicatorDasharray?: string;
+  /** Vertical crosshair fade: `both`, `top`, `bottom`, or `none` (solid). Default: `both`. */
+  indicatorFadeEdges?: IndicatorFadeEdges;
+  /** Crosshair fade zone size (% of height). Default: `10`. */
+  indicatorFadeLength?: number;
   /** Per-chart override for the floating-panel spring. */
   boxSpringConfig?: SpringConfig;
+  /** Inline styles for the tooltip panel (background, blur, etc.). */
+  panelStyle?: React.CSSProperties;
+  /**
+   * Tooltip panel background color (CSS variable or color value).
+   * Default: `var(--chart-tooltip-background)`.
+   */
+  backgroundColor?: string;
 }
 
 interface ChartTooltipInnerProps extends ChartTooltipProps {
@@ -61,15 +112,29 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
   showDatePill = true,
   showCrosshair = true,
   showDots = true,
+  dotVariant = 'dot',
+  dotSize = 5,
+  dotHaloScale,
+  dotHaloOpacity,
+  dotRadiusFraction,
+  dotScale = 1,
+  dotStrokeWidth,
   indicatorColor: indicatorColorProp,
   content,
   rows: rowsRenderer,
   dotColor: dotColorProp,
   children,
-  className = "",
+  className = '',
   container,
   springConfig,
+  matchCrosshair = false,
+  damping,
+  indicatorDasharray,
+  indicatorFadeEdges,
+  indicatorFadeLength,
   boxSpringConfig,
+  panelStyle,
+  backgroundColor,
 }: ChartTooltipInnerProps) {
   const {
     tooltipData,
@@ -84,10 +149,52 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     containerRef,
     orientation,
     barXAccessor,
+    bandWidth,
+    squareSnap,
   } = useChart();
+  const { tooltipSpring } = useChartConfig();
 
-  const isHorizontal = orientation === "horizontal";
+  const isHorizontal = orientation === 'horizontal';
   const discreteInteraction = dateLabels.length > 60;
+
+  const resolvedDotSize = useMemo(() => {
+    if (dotVariant !== 'ring' || !bandWidth || lines.length === 0) {
+      return dotSize * dotScale;
+    }
+    const seriesCount = lines.length;
+    const gap = squareSnap?.groupGap ?? (seriesCount > 1 ? 4 : 0);
+    const squareSize = (bandWidth - gap * (seriesCount - 1)) / seriesCount;
+    return (squareSize / 2) * dotScale;
+  }, [
+    bandWidth,
+    dotScale,
+    dotSize,
+    dotVariant,
+    lines.length,
+    squareSnap?.groupGap,
+  ]);
+  const boxMotion = useMemo(() => {
+    if (boxSpringConfig) {
+      return {
+        animate: !discreteInteraction,
+        springConfig: boxSpringConfig,
+      };
+    }
+    if (matchCrosshair) {
+      return {
+        animate: !discreteInteraction,
+        springConfig: springConfig ?? tooltipSpring,
+      };
+    }
+    return resolveTooltipBoxMotion(damping);
+  }, [
+    boxSpringConfig,
+    damping,
+    discreteInteraction,
+    matchCrosshair,
+    springConfig,
+    tooltipSpring,
+  ]);
 
   const visible = tooltipData !== null;
   const x = tooltipData?.x ?? 0;
@@ -123,10 +230,10 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
         return tooltipRows[index].color;
       }
       if (dotColorProp != null) {
-        if (typeof dotColorProp === "function" && tooltipData) {
+        if (typeof dotColorProp === 'function' && tooltipData) {
           return dotColorProp(tooltipData.point, line);
         }
-        if (typeof dotColorProp === "string") {
+        if (typeof dotColorProp === 'string') {
           return dotColorProp;
         }
       }
@@ -139,7 +246,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
     if (indicatorColorProp == null) {
       return chartCssVars.crosshair;
     }
-    if (typeof indicatorColorProp === "function") {
+    if (typeof indicatorColorProp === 'function') {
       return tooltipData
         ? indicatorColorProp(tooltipData.point)
         : chartCssVars.crosshair;
@@ -166,7 +273,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
       {showCrosshair && (
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 overflow-visible"
           height="100%"
           width="100%"
         >
@@ -176,9 +283,13 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
               colorEdge={indicatorColor}
               colorMid={indicatorColor}
               columnWidth={columnWidth}
-              fadeEdges
+              fadeEdges={
+                indicatorDasharray ? 'none' : (indicatorFadeEdges ?? 'both')
+              }
+              fadeLength={indicatorFadeLength}
               height={innerHeight}
               springConfig={springConfig}
+              strokeDasharray={indicatorDasharray}
               visible={visible}
               width="line"
               x={x}
@@ -191,7 +302,7 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
       {showDots && visible && !isHorizontal && (
         <svg
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 overflow-visible"
           height="100%"
           width="100%"
         >
@@ -199,10 +310,20 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
             {lines.map((line, index) => (
               <TooltipDot
                 color={resolveDotColor(line, index)}
+                cornerRadiusFraction={
+                  dotVariant === 'ring' ? dotRadiusFraction : undefined
+                }
+                haloOpacity={dotHaloOpacity}
+                haloScale={dotHaloScale}
                 key={line.dataKey}
+                size={resolvedDotSize}
                 springConfig={springConfig}
                 strokeColor={chartCssVars.background}
-                visible={visible}
+                strokeWidth={dotStrokeWidth}
+                variant={dotVariant}
+                visible={
+                  visible && tooltipData?.yPositions[line.dataKey] !== undefined
+                }
                 x={tooltipData?.xPositions?.[line.dataKey] ?? x}
                 y={tooltipData?.yPositions[line.dataKey] ?? 0}
               />
@@ -213,11 +334,14 @@ const ChartTooltipInner = memo(function ChartTooltipInner({
 
       {/* Tooltip Box */}
       <TooltipBox
+        animate={boxMotion.animate}
+        backgroundColor={backgroundColor}
         className={className}
         containerHeight={height}
         containerRef={containerRef}
         containerWidth={width}
-        springConfig={boxSpringConfig}
+        panelStyle={panelStyle}
+        springConfig={boxMotion.springConfig}
         top={isHorizontal ? undefined : margin.top}
         visible={visible}
         x={xWithMargin}
@@ -268,7 +392,7 @@ export function ChartTooltip(props: ChartTooltipProps) {
   return <ChartTooltipInner {...props} container={container} />;
 }
 
-ChartTooltip.displayName = "ChartTooltip";
+ChartTooltip.displayName = 'ChartTooltip';
 
 interface DatePillTrackerProps {
   enabled: boolean;
@@ -305,12 +429,17 @@ function DatePillTrackerInner({
     animatedX.set(xWithMargin);
   }
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: we need to jump the animatedX when the visible prop changes
+  useEffect(() => {
+    animatedX.set(xWithMargin);
+  }, [animatedX, visible]);
+
   return (
     <motion.div
-      className="pointer-events-none absolute z-50"
+      className="pointer-events-none absolute z-40"
       style={{
         left: discreteInteraction ? xWithMargin : animatedX,
-        transform: "translateX(-50%)",
+        transform: 'translateX(-50%)',
         bottom: 4,
       }}
     >

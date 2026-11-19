@@ -4,7 +4,7 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table';
 import { parseAsInteger, useQueryState } from 'nuqs';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useLocalStorage, useReadLocalStorage } from 'usehooks-ts';
 
 export const useDataTablePagination = (pageSize = 10) => {
@@ -13,24 +13,24 @@ export const useDataTablePagination = (pageSize = 10) => {
     parseAsInteger.withDefault(1).withOptions({
       clearOnDefault: true,
       history: 'push',
-    }),
+    })
   );
   const state: PaginationState = {
     pageIndex: page - 1,
-    pageSize: pageSize,
+    pageSize,
   };
   return { page, setPage, state };
 };
 
 export const useReadColumnVisibility = (persistentKey: string) => {
   return useReadLocalStorage<Record<string, boolean>>(
-    `@op:${persistentKey}-column-visibility`,
+    `@op:${persistentKey}-column-visibility`
   );
 };
 
 export const useDataTableColumnVisibility = <TData,>(
   columns: ColumnDef<TData>[],
-  persistentKey: string,
+  persistentKey: string
 ) => {
   const [columnVisibility, setColumnVisibility] = useLocalStorage<
     Record<string, boolean>
@@ -46,7 +46,7 @@ export const useDataTableColumnVisibility = <TData,>(
             : true;
       }
       return acc;
-    }, {} as VisibilityState),
+    }, {} as VisibilityState)
   );
 
   // somewhat hack
@@ -58,7 +58,7 @@ export const useDataTableColumnVisibility = <TData,>(
 
   const [columnOrder, setColumnOrder] = useLocalStorage<string[]>(
     `@op:${persistentKey}-column-order`,
-    columns.map((column) => column.id!),
+    columns.map((column) => column.id!)
   );
 
   return { columnVisibility, setColumnVisibility, columnOrder, setColumnOrder };

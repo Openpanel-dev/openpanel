@@ -1,0 +1,139 @@
+// `enforceAccess` only sees a top-level `projectId` / `organizationId`, so
+// anything resolved from another id needs its own explicit check in the handler.
+
+import { z } from 'zod';
+import { createTRPCRouter, protectedProcedure } from '../../rpc/base';
+import { TRPCBadRequestError, TRPCNotFoundError } from '../../rpc/errors';
+import { zCreateImport } from './import.constants';
+import {
+  requireMappedProjectsWriteAccess,
+  toPublicImport,
+} from './import.service';
+
+export const importRouter = createTRPCRouter({
+  list: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: input.projectId,
+        level: 'read',
+      });
+
+      const imports = await ctx.db.import.findMany({
+        where: { projectId: input.projectId },
+        orderBy: { createdAt: 'desc' },
+      });
+      return imports.map(toPublicImport);
+    }),
+
+  create: protectedProcedure
+    .input(zCreateImport)
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: input.projectId,
+        level: 'write',
+      });
+      await requireMappedProjectsWriteAccess(
+        ctx.services.auth,
+        userId,
+        input.config
+      );
+
+      const db = ctx.db;
+      const organization = await db.organization.findFirst({
+        where: { projects: { some: { id: input.projectId } } },
+      });
+
+      if (!organization) {
+        throw new TRPCNotFoundError(
+          'Could not start import, organization not found'
+        );
+      }
+
+      if (!organization.isActive) {
+        throw new TRPCBadRequestError(
+          'You cannot start an import without an active subscription!'
+        );
+      }
+
+      const importRecord = await db.import.create({
+        data: {
+          projectId: input.projectId,
+          config: input.config,
+          status: 'pending',
+        },
+      });
+
+      const jobId = await ctx.services.import.enqueue(importRecord.id);
+
+      await db.import.update({
+        where: { id: importRecord.id },
+        data: { jobId },
+      });
+
+      return toPublicImport({ ...importRecord, jobId });
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      const db = ctx.db;
+      const importRecord = await db.import.findUniqueOrThrow({
+        where: { id: input.id },
+      });
+
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: importRecord.projectId,
+        level: 'write',
+      });
+
+      if (importRecord.jobId) {
+        await ctx.queues.import.import.remove(importRecord.jobId);
+      }
+
+      return toPublicImport(
+        await db.import.delete({ where: { id: input.id } })
+      );
+    }),
+
+  retry: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input, ctx }) => {
+      const userId = ctx.session.userId;
+      const db = ctx.db;
+      const importRecord = await db.import.findUniqueOrThrow({
+        where: { id: input.id },
+      });
+
+      await ctx.services.auth.requireProjectAccess({
+        userId,
+        projectId: importRecord.projectId,
+        level: 'write',
+      });
+
+      await requireMappedProjectsWriteAccess(
+        ctx.services.auth,
+        userId,
+        importRecord.config
+      );
+
+      if (importRecord.status !== 'failed') {
+        throw new Error('Only failed imports can be retried');
+      }
+
+      const jobId = await ctx.services.import.enqueue(importRecord.id);
+
+      return toPublicImport(
+        await db.import.update({
+          where: { id: importRecord.id },
+          data: { jobId, status: 'pending', errorMessage: null },
+        })
+      );
+    }),
+});

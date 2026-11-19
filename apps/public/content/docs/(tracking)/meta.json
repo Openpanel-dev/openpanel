@@ -1,3 +1,9 @@
 {
-  "pages": ["sdks", "how-it-works", "session-replay", "consent-management", "..."]
+  "pages": [
+    "sdks",
+    "how-it-works",
+    "session-replay",
+    "consent-management",
+    "..."
+  ]
 }

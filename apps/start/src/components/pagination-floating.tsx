@@ -2,8 +2,8 @@ import { Pagination, type Props } from './pagination';
 
 export function FloatingPagination(props: Props) {
   return (
-    <div className="fixed bottom-8 left-0 lg:left-72 right-0 row justify-center">
-      <div className="card p-8 py-4 backdrop-blur-sm bg-background/50 shadow-lg">
+    <div className="row fixed right-0 bottom-8 left-0 justify-center lg:left-72">
+      <div className="card bg-background/50 p-8 py-4 shadow-lg backdrop-blur-sm">
         <Pagination {...props} />
       </div>
     </div>

@@ -23,7 +23,7 @@ export const GET = function POST(req: Request) {
         }
         return acc;
       },
-      {} as Record<string, string>,
+      {} as Record<string, string>
     ),
   });
 };

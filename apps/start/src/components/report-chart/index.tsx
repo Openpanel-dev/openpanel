@@ -1,10 +1,9 @@
 import { mergeDeepRight } from 'ramda';
-import React, { memo, type RefObject, useEffect, useRef } from 'react';
+import { type RefObject, useCallback, useEffect, useRef } from 'react';
 import { useInViewport } from 'react-in-viewport';
-
-import { shallowEqual } from 'react-redux';
 import { ReportAreaChart } from './area';
 import { ReportBarChart } from './bar';
+import { getSizeTier } from './common/chart-size';
 import type { ReportChartProps } from './context';
 import { ReportChartProvider } from './context';
 import { ReportConversionChart } from './conversion';
@@ -16,6 +15,8 @@ import { ReportMetricChart } from './metric';
 import { ReportPieChart } from './pie';
 import { ReportRetentionChart } from './retention';
 import { ReportSankeyChart } from './sankey';
+import { useElementSize } from '@/hooks/use-element-size';
+import { cn } from '@/utils/cn';
 
 export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   const ref = useRef<HTMLDivElement>(null);
@@ -25,7 +26,7 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
     undefined,
     {
       disconnectOnLeave: true,
-    },
+    }
   );
 
   useEffect(() => {
@@ -35,6 +36,17 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   }, [inViewport]);
 
   const loaded = lazy ? once.current || inViewport : true;
+
+  const [measureRef, size] = useElementSize();
+  const setRootRef = useCallback(
+    (element: HTMLDivElement | null) => {
+      ref.current = element;
+      return measureRef(element);
+    },
+    [measureRef]
+  );
+  // Before the first measurement the chart renders with full chrome.
+  const sizeTier = size.width > 0 ? getSizeTier(size.width) : 'wide';
 
   const renderReportChart = () => {
     switch (props.report.chartType) {
@@ -66,10 +78,17 @@ export const ReportChart = ({ lazy = true, ...props }: ReportChartProps) => {
   };
 
   return (
-    <div ref={ref}>
+    <div
+      className={cn('w-full', props.layout === 'fill' && 'h-full min-h-0')}
+      ref={setRootRef}
+    >
       <ReportChartProvider
-        {...mergeDeepRight({ options: {}, isEditMode: false }, props)}
+        {...mergeDeepRight(
+          { options: {}, isEditMode: false, layout: 'aspect' as const },
+          props
+        )}
         isLazyLoading={!loaded}
+        sizeTier={sizeTier}
       >
         {renderReportChart()}
       </ReportChartProvider>

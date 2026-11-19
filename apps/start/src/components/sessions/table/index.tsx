@@ -1,7 +1,30 @@
+import type { IServiceSession } from '@openpanel/core';
 import type { UseInfiniteQueryResult } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import type { Table } from '@tanstack/react-table';
+import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
+import { Loader2Icon, RotateCwIcon, UsersIcon } from 'lucide-react';
+import { last } from 'ramda';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useInViewport } from 'react-in-viewport';
 import { useLocalStorage } from 'usehooks-ts';
 import { useColumns } from './columns';
+import { EmptyState } from '@/components/empty-state';
+import { TableFilterPills } from '@/components/filters/TableFilterPills';
+import { FullPageErrorState } from '@/components/full-page-error-state';
+import { Skeleton } from '@/components/skeleton';
+import { Button } from '@/components/ui/button';
+import {
+  AnimatedSearchInput,
+  DataTableToolbarContainer,
+} from '@/components/ui/data-table/data-table-toolbar';
+import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
+import { cn } from '@/utils/cn';
 
 // Custom hook for persistent column visibility
 const usePersistentColumnVisibility = (columns: any[]) => {
@@ -35,30 +58,7 @@ const usePersistentColumnVisibility = (columns: any[]) => {
   };
 };
 
-import type { IServiceSession } from '@openpanel/db';
-import { useNavigate } from '@tanstack/react-router';
-import type { Table } from '@tanstack/react-table';
-import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
-import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import type { TRPCInfiniteData } from '@trpc/tanstack-react-query';
-import { Loader2Icon } from 'lucide-react';
-import { last } from 'ramda';
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useInViewport } from 'react-in-viewport';
-import { TableFilterPills } from '@/components/filters/TableFilterPills';
-import { FullPageEmptyState } from '@/components/full-page-empty-state';
-import { Skeleton } from '@/components/skeleton';
-import { Button } from '@/components/ui/button';
-import {
-  AnimatedSearchInput,
-  DataTableToolbarContainer,
-} from '@/components/ui/data-table/data-table-toolbar';
-import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useSearchQueryState } from '@/hooks/use-search-query-state';
-import { cn } from '@/utils/cn';
-
-type Props = {
+interface Props {
   query: UseInfiniteQueryResult<
     TRPCInfiniteData<
       RouterInputs['session']['list'],
@@ -66,7 +66,7 @@ type Props = {
     >,
     unknown
   >;
-};
+}
 
 const LOADING_DATA = [{}, {}, {}, {}, {}, {}, {}, {}, {}] as IServiceSession[];
 const ROW_HEIGHT = 40;
@@ -196,7 +196,6 @@ const VirtualizedSessionsTable = ({
       className="w-full overflow-x-auto rounded-md border bg-card"
       ref={parentRef}
     >
-      {/* Table Header */}
       <div
         className="sticky top-0 z-10 border-b bg-card"
         style={{
@@ -212,7 +211,7 @@ const VirtualizedSessionsTable = ({
           const width = `${column.getSize()}px`;
           return (
             <div
-              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-[10px] text-foreground uppercase"
+              className="flex h-10 items-center whitespace-nowrap px-4 text-left font-semibold text-3xs text-foreground uppercase"
               key={column.id}
               style={{
                 width,
@@ -225,13 +224,15 @@ const VirtualizedSessionsTable = ({
       </div>
 
       {!isLoading && data.length === 0 && (
-        <FullPageEmptyState
-          description="Looks like you haven't inserted any events yet."
-          title="No sessions found"
+        <EmptyState
+          className="py-16"
+          description="Nothing matches this date range and filters. Sessions appear as soon as your site or app sends events."
+          icon={UsersIcon}
+          title="No sessions"
+          variant="inline"
         />
       )}
 
-      {/* Table Body */}
       <div
         className="relative w-full"
         style={{
@@ -289,9 +290,8 @@ export const SessionsTable = ({ query }: Props) => {
     }
 
     return query.data?.pages?.flatMap((p) => p.items) ?? [];
-  }, [query.data]);
+  }, [query.data, isLoading]);
 
-  // const { setPage, state: pagination } = useDataTablePagination();
   const { columnVisibility, setColumnVisibility } =
     usePersistentColumnVisibility(columns);
 
@@ -333,6 +333,29 @@ export const SessionsTable = ({ query }: Props) => {
     }
   }, [inViewport, enterCount, hasNextPage]);
 
+  const hasFailedWithoutData = query.isError && !query.data;
+  if (hasFailedWithoutData) {
+    return (
+      <>
+        <SessionTableToolbar table={table} />
+        <FullPageErrorState
+          description="We could not load this data. Try again in a moment."
+          title="Something went wrong"
+          variant="inline"
+        >
+          <Button
+            icon={RotateCwIcon}
+            loading={query.isFetching}
+            onClick={() => query.refetch()}
+            variant="outline"
+          >
+            Try again
+          </Button>
+        </FullPageErrorState>
+      </>
+    );
+  }
+
   return (
     <>
       <SessionTableToolbar table={table} />
@@ -368,9 +391,9 @@ function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
           value={search}
         />
         <TableFilterPills
-          urlKey="f"
           categories={['profile', 'group', 'cohort', 'session']}
           title="Session filters"
+          urlKey="f"
         />
       </div>
       <DataTableViewOptions table={table} />

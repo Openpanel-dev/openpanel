@@ -1,3 +1,22 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import type { Table } from '@tanstack/react-table';
+import { Check, GripVertical, RotateCcw, Settings2Icon } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -13,31 +32,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import {
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import type { Table } from '@tanstack/react-table';
-import {
-  Check,
-  ChevronsUpDown,
-  GripVertical,
-  RotateCcw,
-  Settings2Icon,
-} from 'lucide-react';
-import * as React from 'react';
 
 interface DataTableViewOptionsProps<TData> {
   table: Table<TData>;
@@ -68,19 +62,19 @@ function SortableColumnItem({
 
   return (
     <CommandItem
-      ref={setNodeRef}
-      style={style}
       className={cn('flex items-center gap-2', isDragging && 'opacity-50')}
       onSelect={onToggleVisibility}
+      ref={setNodeRef}
+      style={style}
     >
       <div
         {...attributes}
         {...listeners}
-        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        className="cursor-grab rounded p-1 hover:bg-muted active:cursor-grabbing"
       >
         <GripVertical className="size-3 text-muted-foreground" />
       </div>
-      <span className="truncate flex-1">
+      <span className="flex-1 truncate">
         {typeof column.columnDef.header === 'string'
           ? column.columnDef.header
           : (column.columnDef.meta?.label ?? column.id)}
@@ -88,7 +82,7 @@ function SortableColumnItem({
       <Check
         className={cn(
           'ml-auto size-4 shrink-0',
-          column.getIsVisible() ? 'opacity-100' : 'opacity-0',
+          column.getIsVisible() ? 'opacity-100' : 'opacity-0'
         )}
       />
     </CommandItem>
@@ -100,7 +94,7 @@ export function DataTableViewOptions<TData>({
 }: DataTableViewOptionsProps<TData>) {
   const allColumns = table.getAllColumns();
   const filterableColumns = allColumns.filter(
-    (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide(),
+    (column) => typeof column.accessorFn !== 'undefined' && column.getCanHide()
   );
 
   // Use the column order from the table state (managed by useDataTableColumnVisibility)
@@ -130,7 +124,7 @@ export function DataTableViewOptions<TData>({
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -159,7 +153,7 @@ export function DataTableViewOptions<TData>({
         column.toggleVisibility(
           typeof column.columnDef.meta?.hidden === 'boolean'
             ? !column.columnDef.meta?.hidden
-            : true,
+            : true
         );
       }
     });
@@ -174,14 +168,12 @@ export function DataTableViewOptions<TData>({
       <PopoverTrigger asChild>
         <Button
           aria-label="Toggle columns"
+          className="ml-auto hidden lg:flex"
+          icon={Settings2Icon}
           role="combobox"
           variant="outline"
-          size="sm"
-          className="ml-auto hidden h-8 lg:flex"
         >
-          <Settings2Icon className="size-4 mr-2" />
           View
-          <ChevronsUpDown className="opacity-50 ml-2 size-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-0">
@@ -191,9 +183,9 @@ export function DataTableViewOptions<TData>({
             <CommandEmpty>No columns found.</CommandEmpty>
             <CommandGroup>
               <DndContext
-                sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
+                sensors={sensors}
               >
                 <SortableContext
                   items={columns.map((col) => col.id)}
@@ -201,8 +193,8 @@ export function DataTableViewOptions<TData>({
                 >
                   {columns.map((column) => (
                     <SortableColumnItem
-                      key={column.id}
                       column={column}
+                      key={column.id}
                       onToggleVisibility={() =>
                         column.toggleVisibility(!column.getIsVisible())
                       }
@@ -213,10 +205,10 @@ export function DataTableViewOptions<TData>({
             </CommandGroup>
             <CommandGroup>
               <CommandItem
-                onSelect={handleReset}
                 className="text-muted-foreground"
+                onSelect={handleReset}
               >
-                <RotateCcw className="size-4 mr-2" />
+                <RotateCcw className="mr-2 size-4" />
                 Reset to default
               </CommandItem>
             </CommandGroup>

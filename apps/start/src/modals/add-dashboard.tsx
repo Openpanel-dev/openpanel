@@ -1,18 +1,16 @@
-import { ButtonContainer } from '@/components/button-container';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
   name: z.string().min(1, 'Required'),
@@ -20,7 +18,11 @@ const validator = z.object({
 
 type IForm = z.infer<typeof validator>;
 
-export default function AddDashboard() {
+export interface AddDashboardProps {
+  name?: string;
+}
+
+export default function AddDashboard({ name }: AddDashboardProps = {}) {
   const { projectId, organizationId } = useAppParams();
   const router = useRouter();
   const trpc = useTRPC();
@@ -29,7 +31,7 @@ export default function AddDashboard() {
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
-      name: '',
+      name: name ?? '',
     },
   });
 
@@ -51,7 +53,7 @@ export default function AddDashboard() {
         popModal();
       },
       onError: handleError,
-    }),
+    })
   );
 
   return (
@@ -71,14 +73,14 @@ export default function AddDashboard() {
           placeholder="Name of the dashboard"
           {...register('name')}
         />
-        <ButtonContainer>
-          <Button type="button" variant="outline" onClick={() => popModal()}>
+        <DialogFooter>
+          <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isDirty}>
+          <Button disabled={!formState.isDirty} type="submit">
             Create
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

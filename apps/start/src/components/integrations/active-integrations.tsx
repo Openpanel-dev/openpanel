@@ -1,28 +1,27 @@
-import { useAppParams } from '@/hooks/use-app-params';
-import { useTRPC } from '@/integrations/trpc/react';
-import { pushModal, showConfirm } from '@/modals';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
 import { AnimatePresence, motion } from 'framer-motion';
-import { BoxSelectIcon } from 'lucide-react';
+import { PlugIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import { PingBadge } from '../ping';
-import { Button } from '../ui/button';
+import { Button, LinkButton } from '../ui/button';
 import {
   IntegrationCard,
   IntegrationCardFooter,
-  IntegrationCardLogo,
   IntegrationCardSkeleton,
 } from './integration-card';
 import { INTEGRATIONS } from './integrations';
+import { EmptyState } from '@/components/empty-state';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
+import { pushModal, showConfirm } from '@/modals';
 
 export function ActiveIntegrations() {
-  const { projectId } = useAppParams();
+  const { organizationId, projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
     trpc.integration.list.queryOptions({
       projectId: projectId!,
-    }),
+    })
   );
   const client = useQueryClient();
   const deletion = useMutation(
@@ -31,17 +30,17 @@ export function ActiveIntegrations() {
         client.refetchQueries(
           trpc.integration.list.queryFilter({
             projectId,
-          }),
+          })
         );
       },
-    }),
+    })
   );
 
   const data = useMemo(() => {
     return (query.data || [])
       .map((item) => {
         const integration = INTEGRATIONS.find(
-          (integration) => integration.type === item.config.type,
+          (integration) => integration.type === item.config.type
         )!;
         return {
           ...item,
@@ -54,7 +53,7 @@ export function ActiveIntegrations() {
   const isLoading = query.isLoading;
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 auto-rows-auto">
+    <div className="grid auto-rows-auto grid-cols-1 gap-4 md:grid-cols-2">
       {isLoading && (
         <>
           <IntegrationCardSkeleton />
@@ -63,26 +62,29 @@ export function ActiveIntegrations() {
         </>
       )}
       {!isLoading && data.length === 0 && (
-        <IntegrationCard
-          icon={
-            <IntegrationCardLogo className="bg-def-200 text-foreground">
-              <BoxSelectIcon className="size-10" strokeWidth={1} />
-            </IntegrationCardLogo>
-          }
-          name="No integrations yet"
-          description="Integrations allow you to connect your systems to OpenPanel. You can add them in the available integrations section."
-        />
+        <EmptyState
+          className="md:col-span-2"
+          description="Connect Slack, Discord or a webhook to send notifications and data to the tools you already use."
+          icon={PlugIcon}
+          title="No integrations yet"
+        >
+          <LinkButton
+            params={{ organizationId, projectId }}
+            to="/$organizationId/$projectId/integrations/available"
+          >
+            Browse integrations
+          </LinkButton>
+        </EmptyState>
       )}
       <AnimatePresence mode="popLayout">
         {data.map((item) => {
           return (
             <motion.div key={item.id} layout="position">
               <IntegrationCard {...item.integration} name={item.name}>
-                <IntegrationCardFooter className="row justify-between items-center">
+                <IntegrationCardFooter className="row items-center justify-between">
                   <PingBadge>Connected</PingBadge>
                   <div className="row gap-2">
                     <Button
-                      variant="ghost"
                       className="text-destructive"
                       onClick={() => {
                         showConfirm({
@@ -95,17 +97,18 @@ export function ActiveIntegrations() {
                           },
                         });
                       }}
+                      variant="ghost"
                     >
                       Delete
                     </Button>
                     <Button
-                      variant="ghost"
                       onClick={() => {
                         pushModal('AddIntegration', {
                           id: item.id,
                           type: item.config.type,
                         });
                       }}
+                      variant="ghost"
                     >
                       Edit
                     </Button>

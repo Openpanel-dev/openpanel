@@ -1,12 +1,17 @@
-import { Button } from '@/components/ui/button';
-import { SheetClose, SheetFooter } from '@/components/ui/sheet';
-import { useSelector } from '@/redux';
-
 import { ReportBreakdowns } from './ReportBreakdowns';
 import { ReportGlobalFilters } from './ReportGlobalFilters';
 import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 import { ReportFixedEvents } from './report-fixed-events';
+import { Button } from '@/components/ui/button';
+import {
+  SheetClose,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { useSelector } from '@/redux';
 
 export function ReportSidebar() {
   const { chartType, options } = useSelector((state) => state.report);
@@ -14,7 +19,15 @@ export function ReportSidebar() {
   const showFixedEvents = chartType === 'sankey';
   return (
     <>
-      <div className="flex flex-col gap-8">
+      <SheetHeader>
+        <div className="flex flex-col gap-1">
+          <SheetTitle>Report builder</SheetTitle>
+          <SheetDescription>
+            What to measure, how to filter it and how to split it.
+          </SheetDescription>
+        </div>
+      </SheetHeader>
+      <div className="flex flex-col gap-7 py-2">
         {showFixedEvents ? (
           <ReportFixedEvents
             numberOfEvents={

@@ -9,7 +9,7 @@ import {
 import { DataTableColumnHeader } from './data-table-column-header';
 
 export function createHeaderColumn<TData>(
-  title: string,
+  title: string
 ): ColumnDef<TData>['header'] {
   return ({ column }) => (
     <DataTableColumnHeader column={column} title={title} />
@@ -17,7 +17,7 @@ export function createHeaderColumn<TData>(
 }
 
 export function createActionColumn<TData>(
-  Component: ({ row }: { row: Row<TData> }) => React.ReactNode,
+  Component: ({ row }: { row: Row<TData> }) => React.ReactNode
 ): ColumnDef<TData> {
   return {
     id: 'actions',
@@ -33,7 +33,7 @@ export function createActionColumn<TData>(
           <DropdownMenuTrigger asChild>
             <Button icon={MoreHorizontalIcon} size="icon" variant={'ghost'} />
           </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="end">
+          <DropdownMenuContent align="end" side="bottom">
             <Component row={row} />
           </DropdownMenuContent>
         </DropdownMenu>

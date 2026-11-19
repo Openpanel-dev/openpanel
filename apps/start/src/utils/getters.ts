@@ -1,4 +1,4 @@
-import type { IServiceProfile } from '@openpanel/db';
+import type { IServiceProfile } from '@openpanel/core';
 
 export type GetProfileNameProps = Partial<
   Pick<
@@ -8,7 +8,7 @@ export type GetProfileNameProps = Partial<
 >;
 export function getProfileName(
   profile: GetProfileNameProps | undefined | null,
-  short = true,
+  short = true
 ) {
   if (!profile) {
     return '';

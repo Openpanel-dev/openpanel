@@ -5,10 +5,10 @@ import { ForBenefits } from './_components/for-benefits';
 import { ForFaq } from './_components/for-faq';
 import { ForFeatures } from './_components/for-features';
 import { ForHero } from './_components/for-hero';
+import { ForPillars } from './_components/for-pillars';
 import { ForProblem } from './_components/for-problem';
 import { ForRelatedLinksSection } from './_components/for-related-links';
 import { CtaBanner } from '@/app/(home)/_sections/cta-banner';
-import { WindowImage } from '@/components/window-image';
 import { getAllForSlugs, getForData } from '@/lib/for';
 import { url } from '@/lib/layout.shared';
 import { getOgImageUrl, getPageMetadata } from '@/lib/metadata';
@@ -78,60 +78,18 @@ export default async function ForPage({
         strategy="beforeInteractive"
         type="application/ld+json"
       />
-      <ForHero hero={data.hero} />
-
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Dashboard Overview"
-          caption="This is our web analytics dashboard, its an out-of-the-box experience so you can start understanding your traffic and engagement right away."
-          srcDark="/screenshots/overview-dark.webp"
-          srcLight="/screenshots/overview-light.webp"
-        />
-      </div>
-
+      <ForHero data={data} />
       <div id="problem">
         <ForProblem problem={data.problem} />
       </div>
-
-      <div id="features">
-        <ForFeatures features={data.features} />
-      </div>
-
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Real-time Analytics"
-          caption="Track events in real-time as they happen with instant updates and live monitoring."
-          srcDark="/screenshots/realtime-dark.webp"
-          srcLight="/screenshots/realtime-light.webp"
-        />
-      </div>
-
-      <div id="benefits">
-        <ForBenefits benefits={data.benefits} />
-      </div>
-
-      <div className="container my-16">
-        <WindowImage
-          alt="OpenPanel Dashboard"
-          caption="Comprehensive analytics dashboard with real-time insights and customizable views."
-          srcDark="/screenshots/dashboard-dark.webp"
-          srcLight="/screenshots/dashboard-light.webp"
-        />
-      </div>
-
-      <div id="faq">
-        <ForFaq faqs={data.faqs} />
-      </div>
-
-      {data.related_links && (
-        <ForRelatedLinksSection relatedLinks={data.related_links} />
-      )}
-
+      <ForPillars audience={data.audience} />
+      <ForFeatures features={data.features} />
+      <ForBenefits benefits={data.benefits} />
+      <ForFaq faqs={data.faqs} />
+      <ForRelatedLinksSection relatedLinks={data.related_links} />
       <CtaBanner
         ctaLink={data.ctas.primary.href}
         ctaText={data.ctas.primary.label}
-        description="Test OpenPanel free for 30 days, you'll not be charged anything unless you upgrade to a paid plan."
-        title="Ready to get started?"
       />
     </div>
   );

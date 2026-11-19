@@ -1,13 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, ClockIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { DialogFooter } from '@/components/ui/dialog';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 // Utility function to round date to nearest 5-minute interval
 function roundToNearestFiveMinutes(date: Date): Date {
@@ -48,7 +48,7 @@ export default function DateTimePicker({
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(
-    roundToNearestFiveMinutes(initialDate || new Date()),
+    roundToNearestFiveMinutes(initialDate || new Date())
   );
 
   // Generate all time options with 5-minute intervals
@@ -96,7 +96,7 @@ export default function DateTimePicker({
 
     const scrollContainer = scrollRef.current;
     const buttonIndex = timeOptions.findIndex(
-      (time) => time.value === currentTimeValue,
+      (time) => time.value === currentTimeValue
     );
     const calculatedScrollTo =
       Math.max(0, buttonIndex - 4) * (buttonSize + buttonMargin) +
@@ -115,7 +115,6 @@ export default function DateTimePicker({
       <ModalHeader title={title} />
 
       <div className="space-y-4">
-        {/* Selected Date/Time Display */}
         <div className="rounded-lg border border-dashed bg-muted/50 p-4">
           <div className="flex items-center justify-center space-x-2 text-sm">
             <CalendarIcon className="h-4 w-4 text-muted-foreground" />
@@ -124,41 +123,40 @@ export default function DateTimePicker({
             </span>
             <div className="h-4 w-px bg-border" />
             <ClockIcon className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium font-mono">
+            <span className="font-medium tabular-nums">
               {format(selectedDate, 'HH:mm')}
             </span>
           </div>
         </div>
 
-        {/* Calendar Section */}
-        <div className="row gap-2 h-[333px]">
+        <div className="row h-[333px] gap-2">
           <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDateSelect}
+            className="rounded-lg border [&_table]:mx-auto [&_table]:w-auto"
             initialFocus
-            className="[&_table]:mx-auto [&_table]:w-auto border rounded-lg"
+            mode="single"
+            onSelect={handleDateSelect}
+            selected={selectedDate}
           />
           <ScrollArea
-            className="h-full w-full border rounded-lg bg-background/50"
+            className="h-full w-full rounded-lg border bg-background/50"
             ref={scrollRef}
           >
             <div className="flex flex-col p-1">
               {timeOptions.map((time) => (
                 <Button
-                  key={time.value}
-                  size="sm"
+                  className={cn(
+                    'mb-0.5 h-8 w-full justify-start text-xs tabular-nums transition-all duration-200',
+                    currentTimeValue === time.value
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'hover:bg-muted'
+                  )}
                   data-value={time.value}
+                  key={time.value}
+                  onClick={() => handleTimeSelect(time.value)}
+                  size="sm"
                   variant={
                     currentTimeValue === time.value ? 'default' : 'ghost'
                   }
-                  className={cn(
-                    'w-full mb-0.5 h-8 text-xs font-mono transition-all duration-200 justify-start',
-                    currentTimeValue === time.value
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'hover:bg-muted',
-                  )}
-                  onClick={() => handleTimeSelect(time.value)}
                 >
                   {time.label}
                 </Button>
@@ -167,27 +165,20 @@ export default function DateTimePicker({
             <ScrollBar orientation="vertical" />
           </ScrollArea>
         </div>
-
-        {/* Action Buttons */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={() => popModal()}
-          >
-            Cancel
-          </Button>
-          <Button
-            className="flex-1"
-            onClick={() => {
-              popModal();
-              onChange(selectedDate);
-            }}
-          >
-            Confirm Selection
-          </Button>
-        </div>
       </div>
+      <DialogFooter>
+        <Button onClick={() => popModal()} variant="outline">
+          Cancel
+        </Button>
+        <Button
+          onClick={() => {
+            popModal();
+            onChange(selectedDate);
+          }}
+        >
+          Confirm selection
+        </Button>
+      </DialogFooter>
     </ModalContent>
   );
 }

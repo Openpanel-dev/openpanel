@@ -1,0 +1,12 @@
+# `bun test` configuration for @openpanel/api.
+
+[test]
+# Runs once per test FILE under `--isolate`, not once per run — `bun test` has
+# no `globalSetup`. The preload is the successor to `test/global-setup.ts`:
+# it pins DATABASE_URL / CLICKHOUSE_URL at the ISOLATED test databases and
+# bootstraps them. Shared with packages/db; both must stay idempotent.
+preload = ["../../test/bun-preload.ts"]
+
+# --isolate is chosen deliberately (ADR-010) and it CANNOT be set here: on Bun
+# 1.4.0 `[test] isolate` is silently ignored, as is any unknown key in this
+# table. The flag lives on the `test` script in package.json.

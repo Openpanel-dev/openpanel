@@ -14,6 +14,7 @@ import Confirm from './confirm';
 import ConfirmDeleteAccount from './confirm-delete-account';
 import ConfirmDeleteOrganization from './confirm-delete-organization';
 import CreateInvite from './create-invite';
+import CustomEvent from './custom-event';
 import DateRangerPicker from './date-ranger-picker';
 import DateTimePicker from './date-time-picker';
 import DisableTwoFactor from './disable-two-factor';
@@ -25,8 +26,6 @@ import EditGroup from './edit-group';
 import EditMember from './edit-member';
 import EditReference from './edit-reference';
 import EditReport from './edit-report';
-import EventDetails from './event-details';
-import Instructions from './Instructions';
 import InsightDetails from './insight-details';
 import MoveReport from './move-report';
 import OverviewChartDetails from './overview-chart-details';
@@ -56,8 +55,8 @@ const modals = {
   OverviewTopGenericModal,
   RequestPasswordReset,
   EditEvent,
+  CustomEvent,
   EditMember,
-  EventDetails,
   InsightDetails,
   EditClient,
   AddProject,
@@ -77,7 +76,6 @@ const modals = {
   ShareReportModal,
   AddReference,
   ViewChartUsers,
-  Instructions,
   DateRangerPicker,
   DateTimePicker,
   OverviewChartDetails,

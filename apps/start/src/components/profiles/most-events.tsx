@@ -1,10 +1,11 @@
 import { ZapIcon } from 'lucide-react';
-import { Widget, WidgetEmptyState } from '@/components/widget';
 import { WidgetHead, WidgetTitle } from '../overview/overview-widget';
+import { EmptyState } from '@/components/empty-state';
+import { Widget } from '@/components/widget';
 
-type Props = {
+interface Props {
   data: { count: number; name: string }[];
-};
+}
 
 export const MostEvents = ({ data }: Props) => {
   const max = data.length > 0 ? Math.max(...data.map((item) => item.count)) : 0;
@@ -14,18 +15,18 @@ export const MostEvents = ({ data }: Props) => {
         <WidgetTitle>Popular events</WidgetTitle>
       </WidgetHead>
       {data.length === 0 ? (
-        <WidgetEmptyState icon={ZapIcon} text="No events yet" />
+        <EmptyState icon={ZapIcon} title="No events yet" variant="inline" />
       ) : (
         <div className="flex flex-col gap-1 p-1">
           {data.slice(0, 5).map((item) => (
-            <div key={item.name} className="relative px-3 py-2">
+            <div className="relative px-3 py-2" key={item.name}>
               <div
-                className="absolute bottom-0 left-0 top-0 rounded bg-def-200"
+                className="absolute top-0 bottom-0 left-0 rounded bg-def-200"
                 style={{
                   width: `${(item.count / max) * 100}%`,
                 }}
               />
-              <div className="relative flex justify-between ">
+              <div className="relative flex justify-between">
                 <div>{item.name}</div>
                 <div>{item.count}</div>
               </div>

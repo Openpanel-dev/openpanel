@@ -1,5 +1,6 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { isContentSlug } from './utils';
 
 export interface CompareSeo {
   title: string;
@@ -25,6 +26,12 @@ export interface CompareCompetitor {
   short_description: string;
   founded?: number;
   headquarters?: string;
+}
+
+export interface CompareMeta {
+  author: string;
+  updated: string;
+  prices_checked?: string;
 }
 
 export interface CompareSummary {
@@ -78,6 +85,24 @@ export interface ComparePricing {
     free_tier?: string;
     pricing_url?: string;
   };
+  volumes?: ComparePriceAtVolume[];
+}
+
+export interface ComparePriceAtVolume {
+  volume: string;
+  openpanel: string;
+  competitor: string;
+}
+
+export interface CompareStrength {
+  title: string;
+  description: string;
+}
+
+export interface CompareStrengths {
+  title: string;
+  intro: string;
+  items: CompareStrength[];
 }
 
 export interface CompareTrust {
@@ -93,10 +118,18 @@ export interface CompareTrustCompliance {
   competitor: CompareTrust;
 }
 
+export interface CompareScreenshot {
+  // Name of a VisualMock (src/components/visual-mock.tsx); preferred over images.
+  mock?: string;
+  src?: string;
+  alt: string;
+}
+
 export interface CompareUseCase {
   title: string;
   description: string;
   icon?: string;
+  screenshot?: CompareScreenshot;
 }
 
 export interface CompareUseCases {
@@ -114,14 +147,6 @@ export interface CompareFaqs {
   title: string;
   intro: string;
   items: CompareFaq[];
-}
-
-export interface CompareBenefitsSection {
-  label?: string;
-  title: string;
-  description: string;
-  cta?: CompareCta;
-  benefits: string[];
 }
 
 export interface CompareTechnicalItem {
@@ -175,16 +200,23 @@ export interface CompareOverview {
   paragraphs: string[];
 }
 
+// Which part of OpenPanel the competitor is closest to; picks the replicas
+// a page shows.
+export type CompareCategory = 'product' | 'web' | 'replay' | 'attribution';
+
 export interface CompareData {
   url: string;
   slug: string;
   page_type: 'alternative' | 'vs';
+  category: CompareCategory;
   seo: CompareSeo;
   hero: CompareHero;
   competitor: CompareCompetitor;
+  meta?: CompareMeta;
   overview?: CompareOverview;
   summary_comparison: CompareSummary;
   highlights: CompareHighlights;
+  competitor_strengths?: CompareStrengths;
   feature_comparison: CompareFeatureComparison;
   technical_comparison?: CompareTechnicalComparison;
   pricing: ComparePricing;
@@ -192,7 +224,6 @@ export interface CompareData {
   trust_and_compliance?: CompareTrustCompliance;
   use_cases: CompareUseCases;
   faqs: CompareFaqs;
-  benefits_section?: CompareBenefitsSection;
   related_links?: RelatedLinks;
   ctas: {
     primary: CompareCta;
@@ -203,8 +234,11 @@ export interface CompareData {
 const contentDir = join(process.cwd(), 'content', 'compare');
 
 export async function getCompareData(
-  slug: string,
+  slug: string
 ): Promise<CompareData | null> {
+  if (!isContentSlug(slug)) {
+    return null;
+  }
   try {
     const filePath = join(contentDir, `${slug}.json`);
     const fileContents = readFileSync(filePath, 'utf8');

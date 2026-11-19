@@ -1,15 +1,11 @@
 'use client';
 
-import { basicSetup } from 'codemirror';
 import { javascript } from '@codemirror/lang-javascript';
 import { json } from '@codemirror/lang-json';
+import { Compartment, EditorState, type Extension } from '@codemirror/state';
 import { oneDark } from '@codemirror/theme-one-dark';
-import {
-  Compartment,
-  EditorState,
-  type Extension,
-} from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView } from '@codemirror/view';
+import { basicSetup } from 'codemirror';
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from './theme-provider';
 
@@ -57,8 +53,7 @@ export function JsonEditor({
         onValidate?.(true);
       } catch (e) {
         setIsValid(false);
-        const errorMsg =
-          e instanceof Error ? e.message : 'Invalid JSON syntax';
+        const errorMsg = e instanceof Error ? e.message : 'Invalid JSON syntax';
         setError(errorMsg);
         onValidate?.(false, errorMsg);
       }
@@ -72,7 +67,9 @@ export function JsonEditor({
 
   // Create editor once on mount
   useEffect(() => {
-    if (!editorRef.current || viewRef.current) return;
+    if (!editorRef.current || viewRef.current) {
+      return;
+    }
 
     const themeCompartment = new Compartment();
     themeCompartmentRef.current = themeCompartment;
@@ -82,7 +79,9 @@ export function JsonEditor({
 
     const extensions: Extension[] = [
       basicSetup,
-      languageCompartment.of(language === 'javascript' ? [javascript()] : [json()]),
+      languageCompartment.of(
+        language === 'javascript' ? [javascript()] : [json()]
+      ),
       EditorState.tabSize.of(2),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
@@ -162,22 +161,26 @@ export function JsonEditor({
 
   // Update theme using compartment
   useEffect(() => {
-    if (!viewRef.current || !themeCompartmentRef.current) return;
+    if (!(viewRef.current && themeCompartmentRef.current)) {
+      return;
+    }
 
     viewRef.current.dispatch({
       effects: themeCompartmentRef.current.reconfigure(
-        appTheme === 'dark' ? [oneDark] : [],
+        appTheme === 'dark' ? [oneDark] : []
       ),
     });
   }, [appTheme]);
 
   // Update language using compartment
   useEffect(() => {
-    if (!viewRef.current || !languageCompartmentRef.current) return;
+    if (!(viewRef.current && languageCompartmentRef.current)) {
+      return;
+    }
 
     viewRef.current.dispatch({
       effects: languageCompartmentRef.current.reconfigure(
-        language === 'javascript' ? [javascript()] : [json()],
+        language === 'javascript' ? [javascript()] : [json()]
       ),
     });
     validateContent(value);
@@ -185,7 +188,9 @@ export function JsonEditor({
 
   // Update editor content when value changes externally
   useEffect(() => {
-    if (!viewRef.current || isUpdatingRef.current) return;
+    if (!viewRef.current || isUpdatingRef.current) {
+      return;
+    }
 
     const currentContent = viewRef.current.state.doc.toString();
     if (currentContent !== value) {
@@ -205,12 +210,13 @@ export function JsonEditor({
   return (
     <div className={className}>
       <div
+        className={`rounded-md ${isValid ? '' : 'ring-1 ring-destructive'}`}
         ref={editorRef}
-        className={`rounded-md ${!isValid ? 'ring-1 ring-destructive' : ''}`}
       />
       {!isValid && (
-        <p className="mt-1 text-sm text-destructive">
-          {error || `Invalid ${language === 'javascript' ? 'JavaScript' : 'JSON'}. Please check your syntax.`}
+        <p className="mt-1 text-destructive text-sm">
+          {error ||
+            `Invalid ${language === 'javascript' ? 'JavaScript' : 'JSON'}. Please check your syntax.`}
         </p>
       )}
     </div>

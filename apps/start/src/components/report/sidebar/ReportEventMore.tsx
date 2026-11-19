@@ -1,3 +1,5 @@
+import { CopyIcon, MoreHorizontal, TrashIcon } from 'lucide-react';
+import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,8 +9,6 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { CopyIcon, MoreHorizontal, TrashIcon } from 'lucide-react';
-import * as React from 'react';
 
 export interface ReportEventMoreProps {
   onClick: (action: 'remove' | 'duplicate') => void;
@@ -18,9 +18,9 @@ export function ReportEventMore({ onClick }: ReportEventMoreProps) {
   const [open, setOpen] = React.useState(false);
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm">
+        <Button size="sm" variant="ghost">
           <MoreHorizontal />
         </Button>
       </DropdownMenuTrigger>

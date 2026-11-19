@@ -1,21 +1,18 @@
-import { ButtonContainer } from '@/components/button-container';
-import { SelectDashboard } from '@/components/dashboards/select-dashboard';
-import { InputWithLabel } from '@/components/forms/input-with-label';
-import { Button } from '@/components/ui/button';
-import { useAppParams } from '@/hooks/use-app-params';
-import { handleError } from '@/integrations/trpc/react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { IReport } from '@openpanel/core/modules/report/report.constants';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter, useSearch } from '@tanstack/react-router';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
-
-import type { IReport } from '@openpanel/validation';
-
-import { useTRPC } from '@/integrations/trpc/react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
+import { SelectDashboard } from '@/components/dashboards/select-dashboard';
+import { InputWithLabel } from '@/components/forms/input-with-label';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { useAppParams } from '@/hooks/use-app-params';
+import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type SaveReportProps = {
   report: IReport;
@@ -51,7 +48,7 @@ export default function SaveReport({
           trpc.report.list.queryFilter({
             dashboardId: res.dashboardId,
             projectId,
-          }),
+          })
         );
         queryClient.invalidateQueries(trpc.dashboard.list.pathFilter());
 
@@ -81,7 +78,7 @@ export default function SaveReport({
 
         popModal();
       },
-    }),
+    })
   );
 
   const { register, handleSubmit, formState, control, setValue } =
@@ -120,28 +117,27 @@ export default function SaveReport({
           render={({ field }) => {
             return (
               <SelectDashboard
-                value={field.value}
                 onChange={field.onChange}
                 projectId={projectId!}
+                value={field.value}
               />
             );
           }}
         />
-        <ButtonContainer>
+        <DialogFooter>
           <Button
-            type="button"
-            variant="outline"
             onClick={() => popModal()}
             size="default"
+            type="button"
+            variant="outline"
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={!formState.isValid} size="default">
+          <Button disabled={!formState.isValid} size="default" type="submit">
             Save
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );
 }
-

@@ -1,27 +1,27 @@
+import type { IServiceEvent, IServiceProfile } from '@openpanel/core';
+import { TagIcon } from 'lucide-react';
+import { parseAsStringEnum, useQueryState } from 'nuqs';
+import { EmptyState } from '../empty-state';
+import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
-import { parseAsStringEnum, useQueryState } from 'nuqs';
 
-import type { IServiceEvent, IServiceProfile } from '@openpanel/db';
-import { FullPageEmptyState } from '../full-page-empty-state';
-import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
-
-type Props = {
+interface Props {
   profile: IServiceProfile;
-};
+}
 
 export const ProfileProperties = ({ profile }: Props) => {
   const [tab, setTab] = useQueryState(
     'tab',
-    parseAsStringEnum(['profile', 'properties']).withDefault('profile'),
+    parseAsStringEnum(['profile', 'properties']).withDefault('profile')
   );
 
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Profile Information</div>
+        <div className="title">Profile</div>
         <WidgetButtons>
           {[
             {
@@ -34,10 +34,10 @@ export const ProfileProperties = ({ profile }: Props) => {
             },
           ].map((w) => (
             <button
-              type="button"
+              className={cn(w.key === tab && 'active')}
               key={w.key}
               onClick={() => setTab(w.key as 'profile' | 'properties')}
-              className={cn(w.key === tab && 'active')}
+              type="button"
             >
               {w.btn}
             </button>
@@ -47,9 +47,9 @@ export const ProfileProperties = ({ profile }: Props) => {
 
       {tab === 'profile' && profile && (
         <KeyValueGrid
-          copyable
           className="border-0"
-          columns={3}
+          columns={1}
+          copyable
           data={[
             { name: 'id', value: profile.id },
             { name: 'firstName', value: profile.firstName },
@@ -99,14 +99,14 @@ export const ProfileProperties = ({ profile }: Props) => {
 
       {tab === 'properties' && profile && (
         <KeyValueGrid
-          copyable
           className="border-0"
-          columns={3}
+          columns={1}
+          copyable
           data={Object.entries(profile.properties)
             .filter(([, value]) => value !== undefined && value !== '')
             .map(([key, value]) => ({
               name: key,
-              value: value,
+              value,
               event: {
                 ...profile,
                 ...profile.properties,
@@ -114,8 +114,13 @@ export const ProfileProperties = ({ profile }: Props) => {
             }))}
         />
       )}
-      {(!profile || !profile.properties) && (
-        <FullPageEmptyState title="No properties found" />
+      {!profile?.properties && (
+        <EmptyState
+          description="Properties you pass to identify show up here."
+          icon={TagIcon}
+          title="No properties yet"
+          variant="inline"
+        />
       )}
     </Widget>
   );

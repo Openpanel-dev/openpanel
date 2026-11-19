@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { IServiceGroup } from '@openpanel/db';
-import { zUpdateGroup } from '@openpanel/validation';
+import type { IServiceGroup } from '@openpanel/core';
+import { zUpdateGroup } from '@openpanel/core/modules/group/group.constants';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, Trash2Icon } from 'lucide-react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -8,9 +8,9 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
-import { ButtonContainer } from '@/components/button-container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const zForm = zUpdateGroup
@@ -130,7 +130,7 @@ export default function EditGroup({
           ))}
         </div>
 
-        <ButtonContainer>
+        <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
             Cancel
           </Button>
@@ -140,7 +140,7 @@ export default function EditGroup({
           >
             Update
           </Button>
-        </ButtonContainer>
+        </DialogFooter>
       </form>
     </ModalContent>
   );

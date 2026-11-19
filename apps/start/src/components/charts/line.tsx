@@ -1,32 +1,51 @@
-"use client";
+'use client';
 
-import { curveNatural } from "@visx/curve";
-import { LinePath } from "@visx/shape";
+import { curveNatural } from '@visx/curve';
+import { LinePath } from '@visx/shape';
 
 // CurveFactory type - simplified version compatible with visx
 // biome-ignore lint/suspicious/noExplicitAny: d3 curve factory type
 type CurveFactory = any;
 
-import { useCallback, useId, useRef } from "react";
-import { chartCssVars, useChartStable } from "./chart-context";
+import {
+  type RefObject,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import { chartCssVars, useChartStable, useYScale } from './chart-context';
+import type { LoadingStyle } from './chart-phase';
 import {
   type FadeEdges,
   fadeGradientStops,
   resolveFadeSides,
-} from "./fade-edges";
+  viewportFadeGradientAttrs,
+} from './fade-edges';
+import {
+  type LineLoadingPulseMode,
+  LineLoadingPulseStroke,
+  resolveLineLoadingPulseMode,
+} from './line-loading-pulse';
+import { LINE_LOADING_LOOP_PAUSE_MS } from './line-loading-timing';
+import { LineLoadingSweep } from './loading-sweep';
 import {
   resolveDashTailBounds,
   usePathStrokeMetrics,
-} from "./path-stroke-utils";
-import { SeriesDashTailOverlay } from "./series-dash-tail-overlay";
-import { SeriesHighlightLayer } from "./series-highlight-layer";
-import { SeriesHoverDim } from "./series-hover-dim";
-import { SeriesMarkers } from "./series-markers";
-import type { SeriesPointMarkerStyle } from "./series-point-marker";
+} from './path-stroke-utils';
+import { SeriesDashTailOverlay } from './series-dash-tail-overlay';
+import { SeriesHighlightLayer } from './series-highlight-layer';
+import { SeriesHoverDim } from './series-hover-dim';
+import { SeriesMarkers } from './series-markers';
+import type { SeriesPointMarkerStyle } from './series-point-marker';
+import { useAnimatedSeriesPath } from './use-animated-series-path';
 
 export interface LineProps {
   /** Key in data to use for y values */
   dataKey: string;
+  /** Y-scale group id (Recharts `yAxisId`). Default: `"left"`. */
+  yAxisId?: string | number;
   /** Stroke color. Default: var(--chart-line-primary) */
   stroke?: string;
   /** Stroke width. Default: 2.5 */
@@ -39,7 +58,7 @@ export interface LineProps {
    * Fade the line stroke toward transparent at the chart edges.
    * - `true` fades both edges, `false` disables the fade entirely.
    * - `"left"` / `"right"` fades only that side.
-   * Default: true
+   * Default: `"left"` — the right edge is usually "now" and must stay legible.
    */
   fadeEdges?: FadeEdges;
   /** Whether to show highlight segment on hover. Default: true */
@@ -55,20 +74,157 @@ export interface LineProps {
   dashFromIndex?: number;
   /** Dash pattern for the tail segment when `dashFromIndex` is set. Default: "6,4" */
   dashArray?: string;
+  /**
+   * Show the loading pulse overlay. Default: follows chart loading phase.
+   * Set `false` to disable even during loading.
+   */
+  loading?: boolean;
+  /** Stroke color for the loading pulse overlay. Default: var(--foreground) */
+  loadingStroke?: string;
+  /** Loading pulse stroke opacity. Default: 0.5 */
+  loadingStrokeOpacity?: number;
+  /** Override pulse animation mode (loop / exit / enter). */
+  loadingPulseMode?: LineLoadingPulseMode;
+  /** Called when a loop-mode pulse cycle completes. */
+  onLoadingPulseCycleComplete?: () => void;
+  /**
+   * Loading animation while the chart is in loading status: the default
+   * traveling `"pulse"`, or a diagonal `"sweep"` shimmer across the skeleton
+   * line. Default: `"pulse"`.
+   */
+  loadingStyle?: LoadingStyle;
+}
+
+function LineSeriesStroke({
+  animatedPathD,
+  curve,
+  getY,
+  hasValue,
+  pathRef,
+  renderData,
+  strokeWidth,
+  useDataTransitionPath,
+  visibleStroke,
+  xAccessor,
+  xScale,
+}: {
+  animatedPathD: string;
+  curve: CurveFactory;
+  getY: (datum: Record<string, unknown>) => number;
+  hasValue: (datum: Record<string, unknown>) => boolean;
+  pathRef: RefObject<SVGPathElement | null>;
+  renderData: Record<string, unknown>[];
+  strokeWidth: number;
+  useDataTransitionPath: boolean;
+  visibleStroke: string;
+  xAccessor: (datum: Record<string, unknown>) => Date;
+  xScale: (value: Date) => number | undefined;
+}) {
+  if (useDataTransitionPath && animatedPathD) {
+    return (
+      <path
+        d={animatedPathD}
+        fill="none"
+        ref={pathRef}
+        stroke={visibleStroke}
+        strokeLinecap="round"
+        strokeWidth={strokeWidth}
+      />
+    );
+  }
+
+  return (
+    <LinePath
+      curve={curve}
+      data={renderData}
+      defined={hasValue}
+      innerRef={pathRef}
+      stroke={visibleStroke}
+      strokeLinecap="round"
+      strokeWidth={strokeWidth}
+      x={(d) => xScale(xAccessor(d)) ?? 0}
+      y={getY}
+    />
+  );
+}
+
+function LineLoadingOverlays({
+  curve,
+  handleLoadingPulseComplete,
+  innerWidth,
+  loadingStroke,
+  loadingStrokeOpacity,
+  loadingStyle,
+  pathD,
+  pulseEpoch,
+  pulseMode,
+  showLoadingPulse,
+  strokeWidth,
+}: {
+  curve: CurveFactory;
+  handleLoadingPulseComplete: () => void;
+  innerWidth: number;
+  loadingStroke: string;
+  loadingStrokeOpacity: number;
+  loadingStyle: LoadingStyle;
+  pathD: string | null;
+  pulseEpoch: number;
+  pulseMode: LineLoadingPulseMode | null;
+  showLoadingPulse: boolean;
+  strokeWidth: number;
+}) {
+  const sweepLoading =
+    showLoadingPulse && innerWidth > 0 && loadingStyle === 'sweep';
+  const pulseLoading = showLoadingPulse && innerWidth > 0 && !sweepLoading;
+
+  return (
+    <>
+      {sweepLoading ? (
+        <LineLoadingSweep
+          curve={curve}
+          key="loading-sweep"
+          mode={pulseMode ?? 'loop'}
+          onTransitionComplete={handleLoadingPulseComplete}
+          stroke={loadingStroke}
+          strokeOpacity={loadingStrokeOpacity}
+          strokeWidth={strokeWidth}
+        />
+      ) : null}
+      {pulseLoading && pathD ? (
+        <LineLoadingPulseStroke
+          key="loading-pulse"
+          loopEpoch={pulseEpoch}
+          mode={pulseMode ?? undefined}
+          onCycleComplete={handleLoadingPulseComplete}
+          pathD={pathD}
+          stroke={loadingStroke}
+          strokeOpacity={loadingStrokeOpacity}
+          strokeWidth={strokeWidth}
+        />
+      ) : null}
+    </>
+  );
 }
 
 export function Line({
   dataKey,
+  yAxisId,
   stroke = chartCssVars.linePrimary,
   strokeWidth = 2.5,
   curve = curveNatural,
   animate = true,
-  fadeEdges = true,
+  fadeEdges = 'left',
   showHighlight = true,
   showMarkers = false,
   markers,
   dashFromIndex,
-  dashArray = "6,4",
+  dashArray = '6,4',
+  loading,
+  loadingStroke = chartCssVars.foreground,
+  loadingStrokeOpacity = 0.5,
+  loadingPulseMode,
+  onLoadingPulseCycleComplete,
+  loadingStyle = 'pulse',
 }: LineProps) {
   // Stable slice only: hover state lives inside `<SeriesHoverDim>` and
   // `<SeriesHighlightLayer>` so this component (and its expensive
@@ -80,15 +236,64 @@ export function Line({
     data,
     renderData,
     xScale,
-    yScale,
     innerHeight,
     innerWidth,
     xAccessor,
+    lines,
+    chartPhase,
+    notifyLoadingPulseComplete,
+    yDomainTweenDuration,
   } = useChartStable();
+  const yScale = useYScale(yAxisId);
+  const useDataTransitionPath = animate && chartPhase === 'ready';
+  const { pathD: animatedPathD } = useAnimatedSeriesPath({
+    chartPhase,
+    curve,
+    dataKey,
+    durationMs: yDomainTweenDuration,
+    enabled: useDataTransitionPath,
+    innerWidth,
+    renderData,
+    xAccessor,
+    xScale,
+    yScale,
+  });
+
+  const phasePulseMode = resolveLineLoadingPulseMode(chartPhase);
+  const pulseMode =
+    loading === false
+      ? null
+      : (loadingPulseMode ?? (loading === true ? 'loop' : phasePulseMode));
+  const showLoadingPulse = pulseMode != null;
+  const [pulseEpoch, setPulseEpoch] = useState(0);
+  const effectiveShowHighlight = showHighlight && !showLoadingPulse;
+
+  const handleLoadingPulseComplete = useCallback(() => {
+    onLoadingPulseCycleComplete?.();
+    if (pulseMode === 'loop') {
+      window.setTimeout(() => {
+        setPulseEpoch((epoch) => epoch + 1);
+      }, LINE_LOADING_LOOP_PAUSE_MS);
+      return;
+    }
+    notifyLoadingPulseComplete?.();
+  }, [notifyLoadingPulseComplete, onLoadingPulseCycleComplete, pulseMode]);
+
+  const seriesIndex = useMemo(() => {
+    const index = lines.findIndex((line) => line.dataKey === dataKey);
+    return index >= 0 ? index : 0;
+  }, [lines, dataKey]);
 
   const pathRef = useRef<SVGPathElement>(null);
-  const pathMetricsKey = `${renderData.length}:${innerWidth}:${dashFromIndex}:${animate}`;
-  const { pathLength, pathD } = usePathStrokeMetrics(pathRef, pathMetricsKey);
+  const { pathLength, pathD } = usePathStrokeMetrics(pathRef, [
+    renderData,
+    innerWidth,
+    innerHeight,
+    yScale,
+    dashFromIndex,
+    animate,
+    useDataTransitionPath ? animatedPathD : null,
+  ]);
 
   const reactId = useId();
   const gradientId = `line-gradient-${dataKey}-${reactId}`;
@@ -96,21 +301,37 @@ export function Line({
   const getY = useCallback(
     (d: Record<string, unknown>) => {
       const value = d[dataKey];
-      return typeof value === "number" ? (yScale(value) ?? 0) : 0;
+      return typeof value === 'number' ? (yScale(value) ?? 0) : 0;
     },
     [dataKey, yScale]
+  );
+
+  const hasValue = useCallback(
+    (d: Record<string, unknown>) => typeof d[dataKey] === 'number',
+    [dataKey]
   );
 
   const hasDashTail = resolveDashTailBounds(dashFromIndex, data.length);
   const fadeSides = resolveFadeSides(fadeEdges);
   const lineStroke = fadeSides.any ? `url(#${gradientId})` : stroke;
   const fadeStops = fadeSides.any ? fadeGradientStops(fadeSides) : null;
+  const showSeriesStroke =
+    chartPhase === 'revealing' ||
+    chartPhase === 'ready' ||
+    chartPhase === 'exitingReady';
+  let visibleStroke = 'transparent';
+  if (showSeriesStroke && !hasDashTail) {
+    visibleStroke = lineStroke;
+  }
 
   return (
     <>
       {fadeStops ? (
         <defs>
-          <linearGradient id={gradientId} x1="0%" x2="100%" y1="0%" y2="0%">
+          <linearGradient
+            id={gradientId}
+            {...viewportFadeGradientAttrs(innerWidth)}
+          >
             {fadeStops.map((stop) => (
               <stop
                 key={stop.offset}
@@ -122,16 +343,23 @@ export function Line({
         </defs>
       ) : null}
 
-      <SeriesHoverDim dimOpacity={0.3} enabled={showHighlight}>
-        <LinePath
+      <SeriesHoverDim
+        dimOpacity={0.3}
+        enabled={effectiveShowHighlight}
+        seriesIndex={seriesIndex}
+      >
+        <LineSeriesStroke
+          animatedPathD={animatedPathD}
           curve={curve}
-          data={renderData}
-          innerRef={pathRef}
-          stroke={hasDashTail ? "transparent" : lineStroke}
-          strokeLinecap="round"
+          getY={getY}
+          hasValue={hasValue}
+          pathRef={pathRef}
+          renderData={renderData}
           strokeWidth={strokeWidth}
-          x={(d) => xScale(xAccessor(d)) ?? 0}
-          y={getY}
+          useDataTransitionPath={useDataTransitionPath}
+          visibleStroke={visibleStroke}
+          xAccessor={xAccessor}
+          xScale={xScale}
         />
 
         <SeriesDashTailOverlay
@@ -160,16 +388,30 @@ export function Line({
       ) : null}
 
       <SeriesHighlightLayer
-        enabled={showHighlight}
+        enabled={effectiveShowHighlight}
         height={innerHeight}
         pathRef={pathRef}
         stroke={stroke}
+        strokeWidth={strokeWidth}
+      />
+
+      <LineLoadingOverlays
+        curve={curve}
+        handleLoadingPulseComplete={handleLoadingPulseComplete}
+        innerWidth={innerWidth}
+        loadingStroke={loadingStroke}
+        loadingStrokeOpacity={loadingStrokeOpacity}
+        loadingStyle={loadingStyle}
+        pathD={pathD}
+        pulseEpoch={pulseEpoch}
+        pulseMode={pulseMode}
+        showLoadingPulse={showLoadingPulse}
         strokeWidth={strokeWidth}
       />
     </>
   );
 }
 
-Line.displayName = "Line";
+Line.displayName = 'Line';
 
 export default Line;

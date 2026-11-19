@@ -1,0 +1,59 @@
+diff --git a/node_modules/react-grid-layout/.bun-tag-b2fa34526007af71 b/.bun-tag-b2fa34526007af71
+new file mode 100644
+index 0000000000000000000000000000000000000000..e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+diff --git a/dist/chunk-CUP5Y2ZG.js b/dist/chunk-CUP5Y2ZG.js
+index 23399caefebeefb2038279331382aa20e5932bc1..753d04df620086ae0462080d48ca1f8af906c7d8 100644
+--- a/dist/chunk-CUP5Y2ZG.js
++++ b/dist/chunk-CUP5Y2ZG.js
+@@ -124,6 +124,7 @@ function GridItemInner(props) {
+     onResizeStop: onResizeStopProp
+   } = props;
+   const [dragging, setDragging] = React2.useState(false);
++  const [, bumpFrame] = React2.useState(0);
+   const [resizing, setResizing] = React2.useState(false);
+   const elementRef = React2.useRef(null);
+   const dragPositionRef = React2.useRef({ left: 0, top: 0 });
+@@ -334,6 +335,7 @@ function GridItemInner(props) {
+       }
+       const newPosition = { top, left };
+       dragPositionRef.current = newPosition;
++      bumpFrame((frame) => frame + 1);
+       const rawPos = chunkVJJIA3HC_js.calcXYRaw(positionParams, top, left);
+       const { x: newX, y: newY } = chunkQAIA5KAO_js.applyPositionConstraints(
+         constraints,
+@@ -430,6 +432,7 @@ function GridItemInner(props) {
+         };
+       }
+       resizePositionRef.current = updatedSize;
++      bumpFrame((frame) => frame + 1);
+       const containerHeight = node?.offsetParent?.clientHeight ?? 0;
+       const rawSize = chunkVJJIA3HC_js.calcWHRaw(
+         positionParams,
+diff --git a/dist/chunk-Z6CWRR74.mjs b/dist/chunk-Z6CWRR74.mjs
+index 5d3ee00ad7b14cfe15445fcf7bfdbee04408236e..5659a9713ad4b8d5ab096fa7359d55aae4fa8d46 100644
+--- a/dist/chunk-Z6CWRR74.mjs
++++ b/dist/chunk-Z6CWRR74.mjs
+@@ -117,6 +117,7 @@ function GridItemInner(props) {
+     onResizeStop: onResizeStopProp
+   } = props;
+   const [dragging, setDragging] = useState(false);
++  const [, bumpFrame] = useState(0);
+   const [resizing, setResizing] = useState(false);
+   const elementRef = useRef(null);
+   const dragPositionRef = useRef({ left: 0, top: 0 });
+@@ -327,6 +328,7 @@ function GridItemInner(props) {
+       }
+       const newPosition = { top, left };
+       dragPositionRef.current = newPosition;
++      bumpFrame((frame) => frame + 1);
+       const rawPos = calcXYRaw(positionParams, top, left);
+       const { x: newX, y: newY } = applyPositionConstraints(
+         constraints,
+@@ -423,6 +425,7 @@ function GridItemInner(props) {
+         };
+       }
+       resizePositionRef.current = updatedSize;
++      bumpFrame((frame) => frame + 1);
+       const containerHeight = node?.offsetParent?.clientHeight ?? 0;
+       const rawSize = calcWHRaw(
+         positionParams,

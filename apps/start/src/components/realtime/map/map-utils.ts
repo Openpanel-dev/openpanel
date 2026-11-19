@@ -1,11 +1,15 @@
-import type { Coordinate, CoordinateCluster } from './coordinates';
-import { getClusterDetailLevel } from './coordinates';
-import type { DisplayMarker } from './map-types';
-
-export const PILL_W = 220;
-export const PILL_H = 32;
-export const ANCHOR_R = 3;
-export const PILL_GAP = 6;
+import {
+  DETAIL_CARD_ANCHOR_OFFSET,
+  DETAIL_CARD_GAP,
+  DETAIL_CARD_INSET,
+  DETAIL_CARD_MIN_HEIGHT,
+  DETAIL_CARD_WIDTH,
+  MARKER_MAX_RADIUS,
+  MARKER_MIN_RADIUS,
+  MARKER_RADIUS_PER_SQRT_VISITOR,
+  PLACE_MAX_LOCATIONS,
+} from './map-constants';
+import type { DisplayMarker, MapLocation, RealtimeMapPoint } from './map-types';
 
 const COUNTRY_CODE_PATTERN = /^[A-Z]{2}$/;
 
@@ -14,57 +18,70 @@ const regionDisplayNames =
     ? new Intl.DisplayNames(['en'], { type: 'region' })
     : null;
 
-export function normalizeLocationValue(value?: string) {
+function normalizeLocationValue(value?: string) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
 }
 
-export function isValidCoordinate(coordinate: Coordinate) {
-  return Number.isFinite(coordinate.lat) && Number.isFinite(coordinate.long);
+function isValidPoint(point: RealtimeMapPoint) {
+  return Number.isFinite(point.lat) && Number.isFinite(point.long);
 }
 
-export function getCoordinateIdentity(coordinate: Coordinate) {
-  return [
-    normalizeLocationValue(coordinate.country) ?? '',
-    normalizeLocationValue(coordinate.city) ?? '',
-    isValidCoordinate(coordinate) ? coordinate.long.toFixed(4) : 'invalid-long',
-    isValidCoordinate(coordinate) ? coordinate.lat.toFixed(4) : 'invalid-lat',
-  ].join(':');
+export interface MapPlace {
+  id: string;
+  label: string;
+  count: number;
+  lat: number;
+  long: number;
+  locations: MapLocation[];
 }
 
-export function getDisplayMarkerId(members: Coordinate[]) {
-  const validMembers = members.filter(isValidCoordinate);
-
-  if (validMembers.length === 0) {
-    return 'invalid-cluster';
+/** A city is one dot: GeoIP gives one city several nearby coordinates, which would stack. */
+function getPlaceId(point: RealtimeMapPoint) {
+  const country = normalizeLocationValue(point.country) ?? '';
+  const city = normalizeLocationValue(point.city);
+  if (city) {
+    return `${country}:${city}`;
   }
-
-  return validMembers.map(getCoordinateIdentity).sort().join('|');
+  return `${country}:${point.long.toFixed(2)}:${point.lat.toFixed(2)}`;
 }
 
-export function getWeightedScreenPoint(
-  markers: Array<{
-    count: number;
-    screenPoint: {
-      x: number;
-      y: number;
+export function groupPointsByPlace(points: RealtimeMapPoint[]): MapPlace[] {
+  const places = new Map<string, MapPlace>();
+
+  for (const point of points) {
+    if (!isValidPoint(point)) {
+      continue;
+    }
+    const id = getPlaceId(point);
+    const location: MapLocation = {
+      city: point.city,
+      country: point.country,
+      lat: point.lat,
+      long: point.long,
     };
-  }>
-) {
-  let weightedX = 0;
-  let weightedY = 0;
-  let totalWeight = 0;
-
-  for (const marker of markers) {
-    weightedX += marker.screenPoint.x * marker.count;
-    weightedY += marker.screenPoint.y * marker.count;
-    totalWeight += marker.count;
+    const place = places.get(id);
+    if (!place) {
+      places.set(id, {
+        id,
+        label: getPointLabel(point),
+        count: point.count,
+        lat: point.lat,
+        long: point.long,
+        locations: [location],
+      });
+      continue;
+    }
+    const total = place.count + point.count;
+    place.lat = (place.lat * place.count + point.lat * point.count) / total;
+    place.long = (place.long * place.count + point.long * point.count) / total;
+    place.count = total;
+    if (place.locations.length < PLACE_MAX_LOCATIONS) {
+      place.locations.push(location);
+    }
   }
 
-  return {
-    x: weightedX / totalWeight,
-    y: weightedY / totalWeight,
-  };
+  return [...places.values()];
 }
 
 export function formatCountryLabel(country?: string) {
@@ -81,149 +98,41 @@ export function formatCountryLabel(country?: string) {
   return regionDisplayNames?.of(normalized) ?? normalized;
 }
 
-export function summarizeLocation(members: Coordinate[]) {
-  const cities = new Set<string>();
-  const countries = new Set<string>();
-
-  for (const member of members) {
-    const city = normalizeLocationValue(member.city);
-    const country = normalizeLocationValue(member.country);
-
-    if (city) {
-      cities.add(city);
-    }
-
-    if (country) {
-      countries.add(country);
-    }
-  }
-
-  return {
-    cityCount: cities.size,
-    countryCount: countries.size,
-    firstCity: [...cities][0],
-    firstCountry: [...countries][0],
-  };
+function getPointLabel(point: RealtimeMapPoint) {
+  const city = normalizeLocationValue(point.city);
+  const country = formatCountryLabel(point.country);
+  return [city, country].filter(Boolean).join(', ') || 'Unknown location';
 }
 
-export function createDisplayLabel(
-  marker: CoordinateCluster,
-  zoom: number
-): string {
-  const detailLevel = getClusterDetailLevel(zoom);
-
-  if (detailLevel === 'country') {
-    return (
-      formatCountryLabel(marker.location.country) ?? marker.location.city ?? '?'
-    );
-  }
-
-  if (detailLevel === 'city') {
-    return (
-      marker.location.city ?? formatCountryLabel(marker.location.country) ?? '?'
-    );
-  }
-
-  const cityMember = marker.members.find((member) => member.city?.trim());
-  return (
-    cityMember?.city?.trim() ??
-    formatCountryLabel(marker.location.country) ??
-    '?'
-  );
+export function getMarkerRadius(count: number) {
+  const radius =
+    MARKER_MIN_RADIUS + Math.sqrt(count) * MARKER_RADIUS_PER_SQRT_VISITOR;
+  return Math.min(MARKER_MAX_RADIUS, radius);
 }
 
-export function getDetailQueryScope(
-  marker: CoordinateCluster,
-  zoom: number
-): DisplayMarker['detailScope'] {
-  const detailLevel = getClusterDetailLevel(zoom);
-
-  if (detailLevel === 'country') {
-    return 'country';
-  }
-
-  if (detailLevel === 'city') {
-    return marker.location.city ? 'city' : 'country';
-  }
-
-  return 'coordinate';
-}
-
-export function getMergedDetailQueryScope(
-  zoom: number
-): DisplayMarker['detailScope'] {
-  const detailLevel = getClusterDetailLevel(zoom);
-
-  return detailLevel === 'country' ? 'country' : 'city';
-}
-
-export function createMergedDisplayLabel(
-  marker: CoordinateCluster,
-  zoom: number
-): string {
-  const detailLevel = getClusterDetailLevel(zoom);
-  const summary = summarizeLocation(marker.members);
-
-  if (detailLevel === 'country') {
-    if (summary.countryCount <= 1) {
-      return (
-        formatCountryLabel(summary.firstCountry) ?? summary.firstCity ?? '?'
-      );
-    }
-
-    return `${summary.countryCount} countries`;
-  }
-
-  if (detailLevel === 'city') {
-    if (summary.cityCount === 1 && summary.firstCity) {
-      return summary.firstCity;
-    }
-
-    if (summary.countryCount === 1) {
-      const country = formatCountryLabel(summary.firstCountry);
-
-      if (country && summary.cityCount > 1) {
-        return `${country}, ${summary.cityCount} cities`;
-      }
-
-      return country ?? `${summary.cityCount} places`;
-    }
-
-    if (summary.countryCount > 1) {
-      return `${summary.countryCount} countries`;
-    }
-  }
-
-  if (summary.cityCount === 1 && summary.firstCity) {
-    return summary.firstCity;
-  }
-
-  if (summary.countryCount === 1) {
-    const country = formatCountryLabel(summary.firstCountry);
-
-    if (country && summary.cityCount > 1) {
-      return `${country}, ${summary.cityCount} places`;
-    }
-
-    return country ?? `${marker.members.length} places`;
-  }
-
-  return `${Math.max(summary.countryCount, summary.cityCount, 2)} places`;
-}
-
+/** Sits beside the dot, never on it, so the place you clicked stays in view. */
 export function getBadgeOverlayPosition(
   marker: DisplayMarker,
   size: { width: number; height: number }
 ) {
-  const overlayWidth = Math.min(380, size.width - 24);
-  const preferredLeft = marker.screenPoint.x - overlayWidth / 2;
+  const overlayWidth = Math.min(
+    DETAIL_CARD_WIDTH,
+    size.width - DETAIL_CARD_INSET * 2
+  );
+  const rightOfDot = marker.screenPoint.x + DETAIL_CARD_GAP;
+  const leftOfDot = marker.screenPoint.x - DETAIL_CARD_GAP - overlayWidth;
+  const fitsOnRight =
+    rightOfDot + overlayWidth <= size.width - DETAIL_CARD_INSET;
   const left = Math.max(
-    12,
-    Math.min(preferredLeft, size.width - overlayWidth - 12)
+    DETAIL_CARD_INSET,
+    fitsOnRight ? rightOfDot : leftOfDot
   );
   const top = Math.max(
-    12,
-    Math.min(marker.screenPoint.y + 16, size.height - 340)
+    DETAIL_CARD_INSET,
+    Math.min(
+      marker.screenPoint.y - DETAIL_CARD_ANCHOR_OFFSET,
+      size.height - DETAIL_CARD_MIN_HEIGHT
+    )
   );
 
   return { left, overlayWidth, top };
@@ -237,62 +146,4 @@ export function getProfileDisplayName(profile: {
 }) {
   const name = [profile.firstName, profile.lastName].filter(Boolean).join(' ');
   return name || profile.email || profile.id;
-}
-
-export function getUniqueCoordinateDetailLocations(members: Coordinate[]) {
-  const locationsByKey: Record<
-    string,
-    {
-      city?: string;
-      country?: string;
-      lat: number;
-      long: number;
-    }
-  > = {};
-
-  for (const member of members) {
-    if (!isValidCoordinate(member)) {
-      continue;
-    }
-
-    const key = [
-      normalizeLocationValue(member.country) ?? '',
-      normalizeLocationValue(member.city) ?? '',
-      member.long.toFixed(4),
-      member.lat.toFixed(4),
-    ].join(':');
-
-    locationsByKey[key] = {
-      city: member.city,
-      country: member.country,
-      lat: member.lat,
-      long: member.long,
-    };
-  }
-
-  return Object.values(locationsByKey);
-}
-
-export function getUniquePlaceDetailLocations(members: Coordinate[]) {
-  const locationsByKey: Record<
-    string,
-    {
-      city?: string;
-      country?: string;
-    }
-  > = {};
-
-  for (const member of members) {
-    const key = [
-      normalizeLocationValue(member.country) ?? '',
-      normalizeLocationValue(member.city) ?? '',
-    ].join(':');
-
-    locationsByKey[key] = {
-      city: member.city,
-      country: member.country,
-    };
-  }
-
-  return Object.values(locationsByKey);
 }

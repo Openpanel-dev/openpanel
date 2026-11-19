@@ -1,3 +1,7 @@
+import type {
+  IChartEventFilterOperator,
+  IFilterValueType,
+} from '@openpanel/core/modules/report/report.constants';
 import type { Options as NuqsOptions } from 'nuqs';
 import {
   createParser,
@@ -7,17 +11,17 @@ import {
 } from 'nuqs';
 import { useCallback } from 'react';
 
-import type { IChartEventFilterOperator } from '@openpanel/validation';
-
 const nuqsOptions = { history: 'push' } as const;
 
 export const eventQueryFiltersParser = createParser({
   parse: (query: string) => {
-    if (query === '') return [];
+    if (query === '') {
+      return [];
+    }
     const filters = query.split(';');
 
     return filters.map((filter) => {
-      const [key, operator, value, cohortIdSegment] = filter.split(',');
+      const [key, operator, value, cohortIdSegment, type] = filter.split(',');
       const name = key ?? '';
       // 4th segment is pipe-separated cohort ids. Old single-id URLs split
       // to a one-element array; new URLs may carry many.
@@ -33,14 +37,11 @@ export const eventQueryFiltersParser = createParser({
         id: name,
         name,
         operator: (operator ?? 'is') as IChartEventFilterOperator,
-        value: value
-          ? value.split('|').map((v) => decodeURIComponent(v))
-          : [],
+        value: value ? value.split('|').map((v) => decodeURIComponent(v)) : [],
         // Keep both fields populated for legacy consumers that read
         // `cohortId` directly. `cohortIds` is the source of truth.
-        ...(cohortIds.length > 0
-          ? { cohortId: cohortIds[0], cohortIds }
-          : {}),
+        ...(cohortIds.length > 0 ? { cohortId: cohortIds[0], cohortIds } : {}),
+        ...(type ? { type: type as IFilterValueType } : {}),
       };
     });
   },
@@ -59,14 +60,16 @@ export const eventQueryFiltersParser = createParser({
             : filter.cohortId
               ? [filter.cohortId]
               : [];
-        const cohortSegment =
-          cohortIds.length > 0
-            ? `,${cohortIds.map((c) => encodeURIComponent(c)).join('|')}`
-            : '';
+        const cohortSegment = cohortIds
+          .map((c) => encodeURIComponent(c))
+          .join('|');
+        const trailingSegments = filter.type
+          ? `,${cohortSegment},${filter.type}`
+          : cohortSegment && `,${cohortSegment}`;
         // Always serialize by `name` — `id` may be a random shortId used only
         // for React reconciliation and would otherwise clobber the human
         // label on the next page load.
-        return `${filter.name},${filter.operator},${encodedValue}${cohortSegment}`;
+        return `${filter.name},${filter.operator},${encodedValue}${trailingSegments}`;
       })
       .join(';');
   },
@@ -78,7 +81,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
     eventQueryFiltersParser.withDefault([]).withOptions({
       ...nuqsOptions,
       ...options,
-    }),
+    })
   );
 
   const setFilter = useCallback(
@@ -91,7 +94,7 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         | undefined
         | null
         | (string | number | boolean | undefined | null)[],
-      operator?: IChartEventFilterOperator,
+      operator?: IChartEventFilterOperator
     ) => {
       setFilters((prev) => {
         const exists = prev.find((filter) => filter.name === name);
@@ -137,21 +140,21 @@ export function useEventQueryFilters(options: NuqsOptions = {}) {
         ];
       });
     },
-    [setFilters],
+    [setFilters]
   );
 
   const removeFilter = useCallback(
     (name: string) => {
       setFilters((prev) => prev.filter((filter) => filter.name !== name));
     },
-    [setFilters],
+    [setFilters]
   );
 
   return [filters, setFilter, setFilters, removeFilter] as const;
 }
 
 export const eventQueryNamesFilter = parseAsArrayOf(parseAsString).withDefault(
-  [],
+  []
 );
 
 export function useEventQueryNamesFilter(options: NuqsOptions = {}) {

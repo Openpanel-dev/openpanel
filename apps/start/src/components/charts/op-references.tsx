@@ -2,9 +2,9 @@ import { FlagIcon } from 'lucide-react';
 import { useMemo } from 'react';
 import type { ChartMarker } from './markers/marker-group';
 import {
-  OPMarkerLayer,
   type OPMarkerCluster,
   type OPMarkerItem,
+  OPMarkerLayer,
 } from './op-marker-layer';
 
 export interface OPReferenceItem {
@@ -20,9 +20,11 @@ export interface OPReferenceItem {
  * marker rendering, which goes through OPMarkerLayer).
  */
 export function toChartMarkers(
-  items: OPReferenceItem[] | null | undefined,
+  items: OPReferenceItem[] | null | undefined
 ): ChartMarker[] {
-  if (!items || items.length === 0) return [];
+  if (!items || items.length === 0) {
+    return [];
+  }
   return items.map((item) => ({
     date: typeof item.date === 'string' ? new Date(item.date) : item.date,
     icon: <FlagIcon className="size-2.5" />,
@@ -52,7 +54,9 @@ export function OPReferences({
   showLines = true,
 }: OPReferencesProps) {
   const clusters = useMemo<OPMarkerCluster[]>(() => {
-    if (!items || items.length === 0) return [];
+    if (!items || items.length === 0) {
+      return [];
+    }
     return items.map((ref) => {
       const date = typeof ref.date === 'string' ? new Date(ref.date) : ref.date;
       const item: OPMarkerItem = {
@@ -64,5 +68,7 @@ export function OPReferences({
       return { anchorDate: date, items: [item] };
     });
   }, [items]);
-  return <OPMarkerLayer clusters={clusters} showLines={showLines} size={size} />;
+  return (
+    <OPMarkerLayer clusters={clusters} showLines={showLines} size={size} />
+  );
 }

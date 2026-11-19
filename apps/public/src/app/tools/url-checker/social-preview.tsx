@@ -20,24 +20,23 @@ export function SocialPreview({
   const hasImage = !!image;
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden bg-card shadow-sm">
+    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
       {/* Platform header */}
-      <div className="px-3 py-2 bg-muted border-b border-border flex items-center gap-2">
+      <div className="flex items-center gap-2 border-border border-b bg-muted px-3 py-2">
         <img
-          src={`https://api.openpanel.dev/misc/favicon?url=${encodeURIComponent(url)}`}
           alt="Favicon"
           className="size-4"
+          src={`https://api.openpanel.dev/misc/favicon?url=${encodeURIComponent(url)}`}
         />
-        <span className="text-xs font-semibold text-foreground">{domain}</span>
+        <span className="font-semibold text-foreground text-xs">{domain}</span>
       </div>
 
       {/* Image */}
       {hasImage ? (
-        <div className="relative w-full aspect-[1.91/1] bg-muted">
+        <div className="relative aspect-[1.91/1] w-full bg-muted">
           <img
-            src={image}
             alt=""
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
@@ -47,26 +46,27 @@ export function SocialPreview({
                   '<div class="w-full h-full flex items-center justify-center text-muted-foreground text-sm">Image failed to load</div>';
               }
             }}
+            src={image}
           />
         </div>
       ) : (
-        <div className="w-full aspect-[1.91/1] bg-muted flex items-center justify-center">
+        <div className="flex aspect-[1.91/1] w-full items-center justify-center bg-muted">
           <span className="text-muted-foreground text-sm">No image</span>
         </div>
       )}
 
       {/* Content */}
-      <div className="p-3 space-y-1">
-        <div className="text-xs text-muted-foreground uppercase tracking-wide">
+      <div className="space-y-1 p-3">
+        <div className="text-muted-foreground text-xs uppercase tracking-wide">
           {domain}
         </div>
-        <div className="text-base font-semibold text-foreground line-clamp-2">
+        <div className="line-clamp-2 font-semibold text-base text-foreground">
           {displayTitle}
         </div>
-        <div className="text-sm text-muted-foreground line-clamp-2">
+        <div className="line-clamp-2 text-muted-foreground text-sm">
           {displayDescription}
         </div>
-        <div className="flex items-center gap-1 text-xs text-muted-foreground pt-1">
+        <div className="flex items-center gap-1 pt-1 text-muted-foreground text-xs">
           <ExternalLink className="size-3" />
           <span className="truncate">{url}</span>
         </div>

@@ -1,10 +1,8 @@
-import { cn } from '@/utils/cn';
+import { NOT_SET_VALUE } from '@openpanel/core/modules/report/report.constants';
 import { ChevronRightIcon } from 'lucide-react';
-
-import { NOT_SET_VALUE } from '@openpanel/constants';
-
-import React, { Fragment } from 'react';
+import { Fragment } from 'react';
 import { useReportChartContext } from '../context';
+import { cn } from '@/utils/cn';
 
 interface SerieNameProps {
   name: string | string[];

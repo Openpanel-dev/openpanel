@@ -25,7 +25,7 @@ export function TooltipComplete({
         {children}
       </TooltipTrigger>
       <TooltipPortal>
-        <TooltipContent side={side} disabled={disabled}>
+        <TooltipContent disabled={disabled} side={side}>
           {content}
         </TooltipContent>
       </TooltipPortal>

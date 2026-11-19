@@ -1,7 +1,7 @@
 export function truncate(
   str: string,
   len: number,
-  mode: 'start' | 'end' | 'middle' = 'end',
+  mode: 'start' | 'end' | 'middle' = 'end'
 ) {
   if (str.length <= len) {
     return str;

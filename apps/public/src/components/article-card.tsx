@@ -1,42 +1,75 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { Logo } from './logo';
+import { cn } from '@/lib/utils';
+
+export function formatArticleDate(date: Date) {
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 export function ArticleCard({
   url,
   title,
+  description,
   tag,
   cover,
-  team,
   date,
+  featured = false,
 }: {
   url: string;
   title: string;
+  description?: string;
   tag?: string;
-  cover: string;
-  team?: string;
+  cover?: string;
   date: Date;
+  featured?: boolean;
 }) {
   return (
     <Link
+      className={cn(
+        'group col gap-4',
+        featured && 'md:grid md:grid-cols-2 md:items-center md:gap-10'
+      )}
       href={url}
-      key={url}
-      className="border rounded-lg overflow-hidden bg-background-light col hover:scale-105 transition-all duration-300 hover:shadow-lg hover:shadow-background-dark"
     >
-      <Image
-        src={cover}
-        alt={title}
-        width={323}
-        height={181}
-        className="w-full"
-      />
-      <span className="p-4 col flex-1">
-        {tag && <span className="font-mono text-xs mb-2">{tag}</span>}
-        <span className="flex-1 mb-6">
-          <h2 className="text-xl font-semibold">{title}</h2>
+      <span className="block overflow-hidden rounded-2xl border bg-muted">
+        {cover ? (
+          <Image
+            alt=""
+            className="aspect-video w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            height={featured ? 450 : 225}
+            src={cover}
+            width={featured ? 800 : 400}
+          />
+        ) : (
+          <span className="center-center aspect-video w-full bg-linear-to-br from-muted to-border/60">
+            <Logo className="h-8 w-auto text-foreground/30" />
+          </span>
+        )}
+      </span>
+      <span className="col gap-2">
+        <span className="row items-center gap-2 text-muted-foreground text-sm">
+          {tag && <span className="font-medium text-foreground">{tag}</span>}
+          {tag && <span aria-hidden>·</span>}
+          <time dateTime={date.toISOString()}>{formatArticleDate(date)}</time>
         </span>
-        <p className="text-sm text-muted-foreground">
-          {[team, date.toLocaleDateString()].filter(Boolean).join(' · ')}
-        </p>
+        <span
+          className={cn(
+            'text-balance font-semibold leading-snug tracking-tight transition-colors group-hover:text-blue-700',
+            featured ? 'text-2xl md:text-3xl' : 'text-lg'
+          )}
+        >
+          {title}
+        </span>
+        {featured && description && (
+          <span className="line-clamp-3 text-muted-foreground">
+            {description}
+          </span>
+        )}
       </span>
     </Link>
   );
