@@ -35,9 +35,11 @@ services:
       sh -c "
         set -e
         echo 'Running migrations...'
-        cd /app/packages/db && prisma migrate deploy
+        cd /app/packages/db
+        prisma migrate deploy
 
-        cd /app/apps/api && bun run start
+        cd /app/apps/api
+        bun run start
       "
     environment:
       - NODE_ENV=production
