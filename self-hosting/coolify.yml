@@ -33,6 +33,7 @@ services:
     # run inside the api once it is listening (AUTOMATIC_MIGRATIONS=true).
     command: >
       sh -c "
+        set -e
         echo 'Running migrations...'
         cd /app/packages/db && prisma migrate deploy
 
