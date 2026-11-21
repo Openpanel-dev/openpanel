@@ -14,7 +14,7 @@ import { SelfHostingVersionBanner } from '@/components/self-hosting-version-bann
 ## Prerequisites
 
 - A Coolify instance installed and running
-- A server with at least 2GB RAM (4GB+ recommended)
+- A server with at least 4GB RAM (6GB+ recommended): the stack includes Redpanda alongside Postgres, Redis and ClickHouse
 - Domain name configured in Coolify (optional but recommended)
 
 ## Quick Start
@@ -35,6 +35,10 @@ import { SelfHostingVersionBanner } from '@/components/self-hosting-version-bann
 1. Search for **"OpenPanel"** in the services list
 2. Click on **OpenPanel** to select it
 3. The service template will be automatically filled in with the required configuration
+
+<Callout>
+Until Coolify's one-click template is updated to OpenPanel 3, choose **"Docker Compose Empty"** instead and paste [`self-hosting/coolify.yml`](https://github.com/Openpanel-dev/openpanel/blob/main/self-hosting/coolify.yml) from our repository. It is the same template, already on v3.
+</Callout>
 </Step>
 
 <Step>
@@ -55,6 +59,7 @@ Coolify automatically handles:
 - Database setup (PostgreSQL)
 - Redis configuration
 - ClickHouse setup
+- Redpanda (the event queue)
 - SSL certificates
 - Service health checks
 - Automatic restarts
@@ -90,12 +95,13 @@ By default, registration is disabled after the first user is created. Make sure 
 
 Coolify deploys OpenPanel with the following services:
 
-- **opapi**: OpenPanel API server (handles `/api` routes)
-- **opdashboard**: OpenPanel dashboard (frontend)
-- **opworker**: Background worker for processing events
-- **opdb**: PostgreSQL database
-- **opkv**: Redis cache
-- **opch**: ClickHouse analytics database
+- **openpanel-api**: OpenPanel API server
+- **openpanel-dashboard**: OpenPanel dashboard (frontend)
+- **openpanel-worker**: the API image with `ROLE=worker`; runs the queues, scheduled jobs and the event consumer
+- **postgres**: PostgreSQL database
+- **redis**: Redis cache
+- **redpanda**: Redpanda (Kafka-compatible); every tracked event goes through it
+- **clickhouse**: ClickHouse analytics database
 
 ## Configuration
 
@@ -111,10 +117,15 @@ Coolify automatically handles these variables:
 - `DATABASE_URL`: PostgreSQL connection string
 - `REDIS_URL`: Redis connection string
 - `CLICKHOUSE_URL`: ClickHouse connection string
-- `API_URL`: API endpoint URL (set via `SERVICE_FQDN_OPAPI`)
-- `DASHBOARD_URL`: Dashboard URL (set via `SERVICE_FQDN_OPDASHBOARD`)
-- `COOKIE_SECRET`: Automatically generated secret
+- `KAFKA_BROKERS`: the bundled Redpanda (`redpanda:9092`)
+- `API_URL`: API endpoint URL (set via `SERVICE_URL_OPAPI`)
+- `DASHBOARD_URL`: Dashboard URL (set via `SERVICE_URL_OPDASHBOARD`)
+- `API_URL_SSR`: the dashboard's server side calls the API over the internal network (`http://openpanel-api:3000`)
+- `COOKIE_SECRET` and `AUTH_SECRET`: Automatically generated secret, the same value for both
 - `ENCRYPTION_KEY`: Automatically generated key (shared by the API and worker)
+- `ADMIN_USERNAME` and `ADMIN_PASSWORD`: Automatically generated credentials for the worker's queue dashboard (`/bullboard`), which is off unless you set `DISABLE_BULLBOARD=0`
+
+Redpanda gets 2GB of memory by default. Set `OPENPANEL_REDPANDA_MEMORY` (for example `1G` or `4G`) to change it.
 
 You can configure optional variables like `ALLOW_REGISTRATION`, `RESEND_API_KEY`, `OPENAI_API_KEY`, etc. through Coolify's environment variable interface.
 
@@ -138,6 +149,21 @@ To update OpenPanel in Coolify:
 Database migrations run automatically when the API service starts, so updates are seamless.
 </Callout>
 
+Coming from OpenPanel 2? Follow the [v2 to v3 migration guide](/docs/migration/migrate-v2-to-v3#coolify).
+
+### Using the supporter images
+
+[Supporters](/docs/self-hosting/supporter-access-latest-docker-images) can run the images built from every commit on `main`:
+
+1. On the Coolify server, log in to the registry as the user Coolify runs Docker as (usually `root`):
+   ```bash
+   echo "your_api_key" | docker login docker.openpanel.dev -u user --password-stdin
+   ```
+2. In the compose file of your OpenPanel service, replace the images:
+   - `lindesvard/openpanel-dashboard:3` → `docker.openpanel.dev/openpanel-dev/dashboard:3`
+   - `lindesvard/openpanel-api:3` → `docker.openpanel.dev/openpanel-dev/api:3` (used by both `openpanel-api` and `openpanel-worker`)
+3. Redeploy
+
 ## Troubleshooting
 
 ### Services Not Starting
@@ -148,7 +174,7 @@ Database migrations run automatically when the API service starts, so updates ar
 
 ### Database Connection Issues
 
-1. Verify the database service (`opdb`) is running
+1. Verify the database service (`postgres`) is running
 2. Check that `DATABASE_URL` is correctly formatted
 3. Review database logs in Coolify
 
@@ -185,7 +211,7 @@ The same applies to Redis and ClickHouse if you want to use external services.
 
 Coolify provides built-in backup functionality:
 
-1. Navigate to your database service (`opdb`)
+1. Navigate to your database service (`postgres`)
 2. Configure backup settings
 3. Set up backup schedule
 4. Backups will be stored according to your Coolify configuration
@@ -194,10 +220,10 @@ Coolify provides built-in backup functionality:
 
 You can also create manual backups:
 
-1. Use Coolify's terminal access
+1. Use Coolify's terminal access on the server and find the Postgres container (`docker ps`; Coolify names it `postgres-<service id>`)
 2. Export the database:
    ```bash
-   docker exec opdb pg_dump -U postgres openpanel-db > backup.sql
+   docker exec <postgres container> sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > backup.sql
    ```
 
 ### Restore
@@ -207,7 +233,7 @@ To restore from a backup:
 1. Use Coolify's terminal access
 2. Restore the database:
    ```bash
-   docker exec -i opdb psql -U postgres openpanel-db < backup.sql
+   docker exec -i <postgres container> sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"' < backup.sql
    ```
 
 ## Next Steps

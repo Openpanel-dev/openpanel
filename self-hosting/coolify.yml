@@ -1,15 +1,141 @@
 # documentation: https://openpanel.dev/docs
 # slogan: Open source alternative to Mixpanel and Plausible for product analytics
+# category: analytics
 # tags: analytics, insights, privacy, mixpanel, plausible, google, alternative
 # logo: svgs/openpanel.svg
 # port: 3000
 
 services:
-  opdb:
+  openpanel-dashboard:
+    image: lindesvard/openpanel-dashboard:3
+    environment:
+      - NODE_ENV=production
+      - SELF_HOSTED=true
+      - SERVICE_URL_OPDASHBOARD_3000
+      - API_URL=${SERVICE_URL_OPAPI}
+      - DASHBOARD_URL=${SERVICE_URL_OPDASHBOARD}
+      # SSR calls the api over the internal network, not through the public URL
+      - API_URL_SSR=http://openpanel-api:3000
+    depends_on:
+      openpanel-api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -f http://localhost:3000/api/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  openpanel-api:
+    image: lindesvard/openpanel-api:3
+    # Prisma migrations run before the api starts; ClickHouse code migrations
+    # run inside the api once it is listening (AUTOMATIC_MIGRATIONS=true).
+    command: >
+      sh -c "
+        set -e
+        echo 'Running migrations...'
+        cd /app/packages/db
+        prisma migrate deploy
+
+        cd /app/apps/api
+        bun run start
+      "
+    environment:
+      - NODE_ENV=production
+      - SELF_HOSTED=true
+      - AUTOMATIC_MIGRATIONS=true
+      - SERVICE_URL_OPAPI_3000
+      - API_URL=${SERVICE_URL_OPAPI}
+      - DASHBOARD_URL=${SERVICE_URL_OPDASHBOARD}
+      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
+      - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
+      - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@redis:6379
+      - CLICKHOUSE_URL=http://clickhouse:8123/openpanel
+      - KAFKA_BROKERS=redpanda:9092
+      - KAFKA_EVENTS_TOPIC_PARTITIONS=24
+      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      # Same value as COOKIE_SECRET so existing sign-ins survive the upgrade
+      - AUTH_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
+      - ALLOW_REGISTRATION=${OPENPANEL_ALLOW_REGISTRATION:-false}
+      - ALLOW_INVITATION=${OPENPANEL_ALLOW_INVITATION:-true}
+      - EMAIL_SENDER=${OPENPANEL_EMAIL_SENDER}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      # Optional: AI chat assistant
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Optional: social login (https://openpanel.dev/docs/self-hosting/social-login)
+      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${OPENPANEL_GOOGLE_REDIRECT_URI}
+      - GITHUB_CLIENT_ID=${OPENPANEL_GITHUB_CLIENT_ID}
+      - GITHUB_CLIENT_SECRET=${OPENPANEL_GITHUB_CLIENT_SECRET}
+      - GITHUB_REDIRECT_URI=${OPENPANEL_GITHUB_REDIRECT_URI}
+      # Optional: Google Search Console (https://openpanel.dev/docs/self-hosting/google-search-console)
+      - GSC_GOOGLE_REDIRECT_URI=${OPENPANEL_GSC_GOOGLE_REDIRECT_URI}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # The worker is the api image with ROLE=worker: queues, scheduled jobs and
+  # the event consumer. The separate openpanel-worker image is gone in v3.
+  openpanel-worker:
+    image: lindesvard/openpanel-api:3
+    environment:
+      - ROLE=worker
+      - DISABLE_BULLBOARD=${DISABLE_BULLBOARD:-1}
+      - NODE_ENV=production
+      - SELF_HOSTED=true
+      - AUTOMATIC_MIGRATIONS=true
+      - SERVICE_URL_OPBULLBOARD
+      - API_URL=${SERVICE_URL_OPAPI}
+      - DASHBOARD_URL=${SERVICE_URL_OPDASHBOARD}
+      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
+      - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
+      - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@redis:6379
+      - CLICKHOUSE_URL=http://clickhouse:8123/openpanel
+      - KAFKA_BROKERS=redpanda:9092
+      - KAFKA_EVENTS_TOPIC_PARTITIONS=24
+      # Must match the api: unsubscribe links and stored credentials
+      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      - AUTH_SECRET=${SERVICE_BASE64_COOKIESECRET}
+      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
+      - EMAIL_SENDER=${OPENPANEL_EMAIL_SENDER}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      # HTTP Basic credentials for /bullboard (only used when DISABLE_BULLBOARD=0)
+      - ADMIN_USERNAME=${SERVICE_USER_ADMIN}
+      - ADMIN_PASSWORD=${SERVICE_PASSWORD_ADMIN}
+      # Optional: Google Search Console sync needs the Google OAuth client
+      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
+    depends_on:
+      openpanel-api:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  postgres:
     image: postgres:16-alpine
-    restart: always
     volumes:
-      - opdb-data:/var/lib/postgresql/data
+      - openpanel_postgres_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${OPENPANEL_POSTGRES_DB:-openpanel-db}
       - POSTGRES_USER=${SERVICE_USER_POSTGRES}
@@ -20,11 +146,12 @@ services:
       timeout: 5s
       retries: 5
 
-  opkv:
+  redis:
     image: redis:7.4-alpine
-    restart: always
     volumes:
-      - opkv-data:/data
+      - openpanel_redis_data:/data
+    environment:
+      - REDIS_PASSWORD=${SERVICE_PASSWORD_REDIS}
     command: redis-server --requirepass ${SERVICE_PASSWORD_REDIS} --maxmemory-policy noeviction
     healthcheck:
       test: [CMD, redis-cli, -a, "${SERVICE_PASSWORD_REDIS}", ping]
@@ -32,11 +159,47 @@ services:
       timeout: 5s
       retries: 5
 
-  opch:
-    image: clickhouse/clickhouse-server:24.3.2-alpine
-    restart: always
+  # Required in v3: every tracked event goes through Redpanda (Kafka-compatible).
+  redpanda:
+    image: redpandadata/redpanda:v25.1.4
+    command:
+      - redpanda
+      - start
+      - --kafka-addr=internal://0.0.0.0:9092
+      - --advertise-kafka-addr=internal://redpanda:9092
+      - --rpc-addr=0.0.0.0:33145
+      - --advertise-rpc-addr=redpanda:33145
+      - --smp=1
+      - --memory=${OPENPANEL_REDPANDA_MEMORY:-2G}
+      - --default-log-level=info
     volumes:
-      - opch-data:/var/lib/clickhouse
+      - openpanel_redpanda_data:/var/lib/redpanda/data
+      - type: bind
+        source: ./redpanda-bootstrap.yaml
+        target: /etc/redpanda/.bootstrap.yaml
+        read_only: true
+        # Applied once, on first boot with an empty volume. Keep
+        # default_topic_partitions equal to KAFKA_EVENTS_TOPIC_PARTITIONS and
+        # never change it once the events topic exists.
+        content: |
+          default_topic_partitions: 24
+          default_topic_replications: 1
+          auto_create_topics_enabled: true
+          log_compression_type: lz4
+          log_retention_ms: 172800000
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health", "--exit-when-healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.10.2.65
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
+    volumes:
+      - openpanel_clickhouse_data:/var/lib/clickhouse
       - type: bind
         source: ./clickhouse-config.xml
         target: /etc/clickhouse-server/config.d/op-config.xml
@@ -64,7 +227,7 @@ services:
               <part_log remove="remove"/>
               <listen_host>0.0.0.0</listen_host>
               <interserver_listen_host>0.0.0.0</interserver_listen_host>
-              <interserver_http_host>opch</interserver_http_host>
+              <interserver_http_host>clickhouse</interserver_http_host>
               <!-- Disable cgroup memory observer -->
               <cgroups_memory_usage_observer_wait_time>0</cgroups_memory_usage_observer_wait_time>
               <!-- Not used anymore, but kept for backwards compatibility -->
@@ -97,148 +260,12 @@ services:
           clickhouse client -n <<-EOSQL
             CREATE DATABASE IF NOT EXISTS openpanel;
           EOSQL
-    healthcheck:
-      test: [CMD-SHELL, 'clickhouse-client --query "SELECT 1"']
-      interval: 10s
-      timeout: 5s
-      retries: 5
     ulimits:
       nofile:
         soft: 262144
         hard: 262144
-
-  opapi:
-    image: lindesvard/openpanel-api:latest
-    restart: always
-    # Same contract as docker-compose.template.yml's op-api: no second package
-    # manager exists in this image (P13 / ADR-014), migrations run in this
-    # container's start command, with the Prisma CLI the image ships. See the
-    # long note there.
-    command: >
-      sh -c "
-        echo 'Waiting for PostgreSQL to be ready...'
-        while ! nc -z opdb 5432; do
-          sleep 1
-        done
-        echo 'PostgreSQL is ready'
-
-        echo 'Waiting for ClickHouse to be ready...'
-        while ! nc -z opch 8123; do
-          sleep 1
-        done
-        echo 'ClickHouse is ready'
-
-        echo 'Running migrations...'
-        cd /app/packages/db && prisma migrate deploy
-
-        cd /app/apps/api && bun run start
-      "
-    depends_on:
-      opdb:
-        condition: service_healthy
-      opch:
-        condition: service_healthy
-      opkv:
-        condition: service_healthy
-    environment:
-      # Common
-      - NODE_ENV=production
-      - SELF_HOSTED=true
-      - AUTOMATIC_MIGRATIONS=true
-      # URLs
-      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
-      - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
-      - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
-      - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
-      - SERVICE_FQDN_OPAPI=/api
-      # Set coolify FQDN domain
-      - API_URL=$SERVICE_FQDN_OPAPI
-      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
-      # Others
-      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
-      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
-      - ALLOW_REGISTRATION=${OPENPANEL_ALLOW_REGISTRATION:-false}
-      - ALLOW_INVITATION=${OPENPANEL_ALLOW_INVITATION:-true}
-      - EMAIL_SENDER=${OPENPANEL_EMAIL_SENDER}
-      - RESEND_API_KEY=${RESEND_API_KEY}
-      # Optional: social login (https://openpanel.dev/docs/self-hosting/social-login)
-      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
-      - GOOGLE_REDIRECT_URI=${OPENPANEL_GOOGLE_REDIRECT_URI}
-      - GITHUB_CLIENT_ID=${OPENPANEL_GITHUB_CLIENT_ID}
-      - GITHUB_CLIENT_SECRET=${OPENPANEL_GITHUB_CLIENT_SECRET}
-      - GITHUB_REDIRECT_URI=${OPENPANEL_GITHUB_REDIRECT_URI}
-      # Optional: Google Search Console (https://openpanel.dev/docs/self-hosting/google-search-console)
-      - GSC_GOOGLE_REDIRECT_URI=${OPENPANEL_GSC_GOOGLE_REDIRECT_URI}
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthcheck || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  opdashboard:
-    image: lindesvard/openpanel-dashboard:latest
-    restart: always
-    depends_on:
-      opapi:
-        condition: service_healthy
-    environment:
-      # Common
-      - NODE_ENV=production
-      - SELF_HOSTED=true
-      # URLs
-      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
-      - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
-      - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
-      - SERVICE_FQDN_OPDASHBOARD
-      # Set coolify FQDN domain
-      - API_URL=$SERVICE_FQDN_OPAPI
-      - DASHBOARD_URL=$SERVICE_FQDN_OPDASHBOARD
-    healthcheck:
-      test:
-        ["CMD-SHELL", "curl -f http://localhost:3000/api/healthcheck || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ONE image, two roles — see the note on op-worker in
-  # docker-compose.template.yml. ROLE=worker turns the api image into the
-  # queue/scheduler/Kafka half.
-  opworker:
-    image: lindesvard/openpanel-api:latest
-    restart: always
-    depends_on:
-      opapi:
-        condition: service_healthy
-    environment:
-      - ROLE=worker
-      # FQDN
-      - SERVICE_FQDN_OPBULLBOARD
-      # Common
-      - NODE_ENV=production
-      - SELF_HOSTED=true
-      - AUTOMATIC_MIGRATIONS=true
-      # URLs
-      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
-      - DATABASE_URL_DIRECT=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@opdb:5432/${OPENPANEL_POSTGRES_DB:-openpanel-db}?schema=public
-      - REDIS_URL=redis://default:${SERVICE_PASSWORD_REDIS}@opkv:6379
-      - CLICKHOUSE_URL=${OPENPANEL_CLICKHOUSE_URL:-http://opch:8123/openpanel}
-      # Set coolify FQDN domain
-      - API_URL=$SERVICE_FQDN_OPAPI
-      # Must match the API's key: the worker decrypts GSC tokens during sync
-      - ENCRYPTION_KEY=${SERVICE_HEX_64_ENCRYPTIONKEY}
-      # Must match the API's secret: unsubscribe links in worker emails are
-      # verified by the API, and signing them needs a real secret
-      - COOKIE_SECRET=${SERVICE_BASE64_COOKIESECRET}
-      # Operator credentials for the queue dashboard (HTTP Basic, on top of
-      # the dashboard session guard)
-      - ADMIN_USERNAME=${SERVICE_USER_ADMIN}
-      - ADMIN_PASSWORD=${SERVICE_PASSWORD_ADMIN}
-      # Optional: Google Search Console sync needs the Google OAuth client
-      - GOOGLE_CLIENT_ID=${OPENPANEL_GOOGLE_CLIENT_ID}
-      - GOOGLE_CLIENT_SECRET=${OPENPANEL_GOOGLE_CLIENT_SECRET}
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/healthz/ready || exit 1"]
+      test: [CMD-SHELL, 'clickhouse-client --query "SELECT 1"']
       interval: 10s
       timeout: 5s
       retries: 5
