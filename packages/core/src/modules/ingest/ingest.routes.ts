@@ -101,6 +101,11 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
       });
     case 'duplicate':
       return status(200, { duplicate: true });
+    case 'in-progress':
+      return status(409, {
+        status: 409,
+        message: 'An event with this id is still being processed; retry',
+      });
     default: {
       // `outcome` narrows to `never`: an eighth TrackOutcome variant fails the
       // compile here instead of silently getting the 400 above.

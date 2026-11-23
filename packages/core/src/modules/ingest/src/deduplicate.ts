@@ -26,8 +26,9 @@ export const EVENT_ID_CLAIM_TTL_MS = 10 * 60 * 1000;
 
 // Both scripts act only while the key still holds this request's token, so a
 // request can never overwrite or delete a claim another request now owns.
+const ACCEPTED = 'accepted';
 const CONFIRM_IF_OWNER = `if redis.call('GET', KEYS[1]) == ARGV[1] then
-  return redis.call('SET', KEYS[1], 'accepted', 'PX', ARGV[2])
+  return redis.call('SET', KEYS[1], '${ACCEPTED}', 'PX', ARGV[2])
 end
 return false`;
 const RELEASE_IF_OWNER = `if redis.call('GET', KEYS[1]) == ARGV[1] then
@@ -77,6 +78,15 @@ export async function claimEventId(
     EVENT_ID_CLAIM_TTL_MS
   );
   return claimed ? token : null;
+}
+
+/** Whether a held id belongs to an accepted event or one still in flight. */
+export async function eventIdState(
+  projectId: string,
+  eventId: string
+): Promise<'accepted' | 'in-progress'> {
+  const value = await getRedisCache().get(eventIdKey(projectId, eventId));
+  return value === ACCEPTED ? 'accepted' : 'in-progress';
 }
 
 /** The event was accepted: remember the id for the full window. */

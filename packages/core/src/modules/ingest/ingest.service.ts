@@ -46,6 +46,7 @@ import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
 import {
   claimEventId,
   confirmEventId,
+  eventIdState,
   isDuplicatedEvent,
   releaseEventId,
 } from './src/deduplicate';
@@ -73,6 +74,7 @@ export {
 export {
   claimEventId,
   confirmEventId,
+  eventIdState,
   isDuplicatedEvent,
   releaseEventId,
 } from './src/deduplicate';
@@ -269,7 +271,8 @@ export type TrackOutcome =
   | { status: 'replay-missing-session-id' }
   | { status: 'profile-not-found' }
   | { status: 'profile-property-not-a-number' }
-  | { status: 'duplicate' };
+  | { status: 'duplicate' }
+  | { status: 'in-progress' };
 
 async function buildContext(
   deps: IngestScope,
@@ -575,7 +578,10 @@ export async function ingestTrack(
       }
       const claim = await claimEventId(context.projectId, eventId);
       if (!claim) {
-        return { status: 'duplicate' };
+        // Only an accepted event is final; one still in flight may yet fail
+        // and release its claim, so the sender has to retry.
+        const state = await eventIdState(context.projectId, eventId);
+        return { status: state === 'accepted' ? 'duplicate' : 'in-progress' };
       }
       try {
         await handleTrack(body.payload, context, transport);

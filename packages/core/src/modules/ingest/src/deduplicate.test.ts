@@ -53,7 +53,12 @@ const realRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
   getLock,
-  getRedisCache: () => ({ set, del, eval: evalScript }),
+  getRedisCache: () => ({
+    set,
+    del,
+    eval: evalScript,
+    get: async (key: string) => live(key)?.value ?? null,
+  }),
 }));
 mock.module('../../../clients/geo', () => ({
   getGeoLocation: mock(
@@ -184,7 +189,7 @@ describe('client-supplied event id', () => {
     expect(produce).toHaveBeenCalledTimes(1);
   });
 
-  it('answers duplicate to a concurrent request while the first is in flight', async () => {
+  it('asks a concurrent request to retry while the first is in flight', async () => {
     let finish: () => void = () => undefined;
     const slow = mock(
       () =>
@@ -199,7 +204,7 @@ describe('client-supplied event id', () => {
       purchase('order-42'),
       mock(async () => undefined)
     );
-    expect(second.status).toBe('duplicate');
+    expect(second.status).toBe('in-progress');
 
     finish();
     expect((await first).status).toBe('ok');
@@ -215,7 +220,7 @@ describe('client-supplied event id', () => {
 
     now += RETRY_DELAY_MS;
     expect((await send(purchase('order-42'), produce)).status).toBe(
-      'duplicate'
+      'in-progress'
     );
     expect(produce).toHaveBeenCalledTimes(1);
   });
@@ -242,6 +247,29 @@ describe('client-supplied event id', () => {
     expect((await send(purchase('order-42'), produce)).status).toBe(
       'duplicate'
     );
+    expect(produce).toHaveBeenCalledTimes(1);
+  });
+
+  it('stores the retry when the in-flight attempt fails', async () => {
+    let fail: (error: Error) => void = () => undefined;
+    const failing = mock(
+      () =>
+        new Promise<void>((_, reject) => {
+          fail = reject;
+        })
+    );
+    const first = send(purchase('order-42'), failing);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const produce = mock(async () => undefined);
+    expect((await send(purchase('order-42'), produce)).status).toBe(
+      'in-progress'
+    );
+
+    fail(new Error('kafka unavailable'));
+    await expect(first).rejects.toThrow('kafka unavailable');
+
+    expect((await send(purchase('order-42'), produce)).status).toBe('ok');
     expect(produce).toHaveBeenCalledTimes(1);
   });
 
