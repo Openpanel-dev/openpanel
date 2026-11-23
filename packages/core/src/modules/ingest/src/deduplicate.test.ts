@@ -21,6 +21,29 @@ const set = mock(
   }
 );
 const del = mock(async (key: string) => (store.delete(key) ? 1 : 0));
+let failConfirm = false;
+// Runs the two owner-checked scripts deduplicate.ts sends.
+const evalScript = mock(
+  async (
+    script: string,
+    _keys: number,
+    key: string,
+    token: string,
+    ttl?: string
+  ) => {
+    if (live(key)?.value !== token) {
+      return script.includes("'DEL'") ? 0 : null;
+    }
+    if (script.includes("'DEL'")) {
+      return store.delete(key) ? 1 : 0;
+    }
+    if (failConfirm) {
+      throw new Error('redis unavailable');
+    }
+    store.set(key, { value: 'accepted', expiresAt: now + Number(ttl) });
+    return 'OK';
+  }
+);
 const getLock = mock(
   async (key: string, value: string, ttlMs: number) =>
     (await set(key, value, 'PX', ttlMs, 'NX')) === 'OK'
@@ -30,7 +53,7 @@ const realRedis = await import('@openpanel/redis');
 mock.module('@openpanel/redis', () => ({
   ...realRedis,
   getLock,
-  getRedisCache: () => ({ set, del }),
+  getRedisCache: () => ({ set, del, eval: evalScript }),
 }));
 mock.module('../../../clients/geo', () => ({
   getGeoLocation: mock(
@@ -70,9 +93,14 @@ beforeEach(() => {
   store.clear();
   set.mockClear();
   del.mockClear();
+  evalScript.mockClear();
+  warn.mockClear();
+  failConfirm = false;
 });
 
 const RETRY_DELAY_MS = 2000;
+const ELEVEN_MINUTES_MS = 11 * 60 * 1000;
+const warn = mock(() => undefined);
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
 const purchase = (id?: string): ITrackHandlerPayload =>
@@ -98,7 +126,7 @@ const transport = (produce: ReturnType<typeof mock>) =>
       group: { add: mock(async () => undefined) },
     },
     produceIncomingEvent: produce,
-    deps: { buffers: {}, config: testCoreConfig() },
+    deps: { buffers: {}, config: testCoreConfig(), logger: { warn } },
   }) as unknown as Parameters<typeof ingestTrack>[1];
 
 const send = (
@@ -148,7 +176,7 @@ describe('client-supplied event id', () => {
     await expect(send(purchase('order-42'), failing)).rejects.toThrow(
       'kafka unavailable'
     );
-    expect(del).toHaveBeenCalledTimes(1);
+    expect(evalScript).toHaveBeenCalledTimes(1);
 
     const produce = mock(async () => undefined);
     now += RETRY_DELAY_MS;
@@ -176,6 +204,45 @@ describe('client-supplied event id', () => {
     finish();
     expect((await first).status).toBe('ok');
     expect(slow).toHaveBeenCalledTimes(1);
+  });
+
+  it('still answers ok when the accepted marker cannot be written', async () => {
+    const produce = mock(async () => undefined);
+    failConfirm = true;
+
+    expect((await send(purchase('order-42'), produce)).status).toBe('ok');
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    now += RETRY_DELAY_MS;
+    expect((await send(purchase('order-42'), produce)).status).toBe(
+      'duplicate'
+    );
+    expect(produce).toHaveBeenCalledTimes(1);
+  });
+
+  it('a late failure never deletes a claim another request now owns', async () => {
+    let fail: (error: Error) => void = () => undefined;
+    const stalled = mock(
+      () =>
+        new Promise<void>((_, reject) => {
+          fail = reject;
+        })
+    );
+    const first = send(purchase('order-42'), stalled);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // The first request outlives its claim; a retry takes over and succeeds.
+    now += ELEVEN_MINUTES_MS;
+    const produce = mock(async () => undefined);
+    expect((await send(purchase('order-42'), produce)).status).toBe('ok');
+
+    fail(new Error('kafka timeout'));
+    await expect(first).rejects.toThrow('kafka timeout');
+
+    expect((await send(purchase('order-42'), produce)).status).toBe(
+      'duplicate'
+    );
+    expect(produce).toHaveBeenCalledTimes(1);
   });
 
   it('keys the id on the project, not across projects', async () => {

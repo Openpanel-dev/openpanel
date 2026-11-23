@@ -573,16 +573,27 @@ export async function ingestTrack(
         await handleTrack(body.payload, context, transport);
         break;
       }
-      if (!(await claimEventId(context.projectId, eventId))) {
+      const claim = await claimEventId(context.projectId, eventId);
+      if (!claim) {
         return { status: 'duplicate' };
       }
       try {
         await handleTrack(body.payload, context, transport);
       } catch (error) {
-        await releaseEventId(context.projectId, eventId);
+        await releaseEventId(context.projectId, eventId, claim);
         throw error;
       }
-      await confirmEventId(context.projectId, eventId);
+      // The event is already produced, so a failure here must not reach the
+      // sender as an error it would retry; the claim still covers retries for
+      // its remaining TTL.
+      await confirmEventId(context.projectId, eventId, claim).catch(
+        (error: unknown) => {
+          transport.deps.logger.warn(
+            { err: error, projectId: context.projectId },
+            'could not confirm event id; the claim covers retries until it expires'
+          );
+        }
+      );
       break;
     }
     case 'identify':
