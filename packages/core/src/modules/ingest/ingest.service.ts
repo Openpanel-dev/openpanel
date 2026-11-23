@@ -43,7 +43,7 @@ import {
 } from './ingest.constants';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
-import { isDuplicatedEvent } from './src/deduplicate';
+import { isDuplicatedEvent, isDuplicatedEventId } from './src/deduplicate';
 import { getDeviceId } from './src/device-id';
 import type {
   IncomingEventPayload,
@@ -65,7 +65,7 @@ export {
   type IngestAuthOutcome,
   validateIngestRequest,
 } from './src/client-auth';
-export { isDuplicatedEvent } from './src/deduplicate';
+export { isDuplicatedEvent, isDuplicatedEventId } from './src/deduplicate';
 export { getDeviceId } from './src/device-id';
 export type {
   IncomingEventPayload,
@@ -897,6 +897,15 @@ export async function isDuplicateIngestRequest(request: {
   const ip = request.clientIp;
   const origin = headerValue(request.headers, 'origin');
   const clientId = headerValue(request.headers, 'openpanel-client-id');
+
+  // A sender-supplied event id is a durable idempotency key. It works for
+  // server-side senders too, which usually send no Origin header and so skip
+  // the payload-hash check below entirely.
+  const eventId = trackEventId(request);
+  if (clientId && eventId) {
+    return await isDuplicatedEventId({ eventId, projectId: clientId });
+  }
+
   const isReplay = isTrackBody(request) && request.body.type === 'replay';
   const shouldCheck = ip && origin && clientId && !isReplay;
 
@@ -910,6 +919,19 @@ export async function isDuplicateIngestRequest(request: {
     payload: request.body as Record<string, unknown>,
     projectId: clientId,
   });
+}
+
+function trackEventId(request: {
+  method: string;
+  body: unknown;
+}): string | undefined {
+  if (!isTrackBody(request) || request.body.type !== 'track') {
+    return undefined;
+  }
+  const id = (request.body.payload as { id?: unknown } | undefined)?.id;
+  return typeof id === 'string' && id.length > 0 && id.length <= 128
+    ? id
+    : undefined;
 }
 
 function isTrackBody(request: {
