@@ -32,7 +32,7 @@ describe('chart SQL / device segment', () => {
   it('exposes device through the shared label and validation schema', () => {
     expect(chartSegments.device).toBe('Unique devices');
     for (const segment of Object.keys(chartSegments)) {
-      expect(zChartEventSegment.parse(segment)).toBe(segment);
+      expect(segment).toBe(zChartEventSegment.parse(segment));
     }
     expect(zChartEventSegment.safeParse('unsupported-segment').success).toBe(
       false
