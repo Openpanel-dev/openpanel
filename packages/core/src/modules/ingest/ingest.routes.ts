@@ -99,6 +99,8 @@ function respondToOutcome(outcome: TrackOutcome, status: StatusFn) {
         status: 400,
         message: 'Property value is not a number',
       });
+    case 'duplicate':
+      return status(200, { duplicate: true });
     default: {
       // `outcome` narrows to `never`: an eighth TrackOutcome variant fails the
       // compile here instead of silently getting the 400 above.
