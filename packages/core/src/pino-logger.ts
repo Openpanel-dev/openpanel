@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module';
 import * as HyperDX from '@hyperdx/node-opentelemetry';
 import { getLogTimestamp } from '@openpanel/shared';
-import pino, { type Logger as PinoLogger } from 'pino';
+import pino, { type LoggerOptions, type Logger as PinoLogger } from 'pino';
 import type { CoreConfig } from './config';
 import {
   isSensitiveKey,
@@ -101,7 +101,7 @@ export function createLogger({
   const useHyperDX = exporter === 'otlp' && !!hyperdxApiKey;
   const usePretty = !(useHyperDX || isBun || config.isProduction);
 
-  return pino({
+  const options: LoggerOptions = {
     name: service,
     level,
     enabled: !silent,
@@ -126,7 +126,14 @@ export function createLogger({
             },
           }
         : undefined,
-  });
+  };
+
+  // Bun's default Pino stream can call the intercepted stdout.write again.
+  const destination =
+    isBun && exporter === 'stdout' && config.logging.interceptProcessOutput
+      ? pino.destination(1)
+      : undefined;
+  return pino(options, destination);
 }
 
 const MAX_INTERCEPTED_LINE_LENGTH = 8192;
