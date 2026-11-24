@@ -308,6 +308,7 @@ describe('client-supplied event id', () => {
     await expect(send(identifiedPurchase('order-42'), produce)).rejects.toThrow(
       'profile store unavailable'
     );
+    expect(identifyProfile).toHaveBeenCalledTimes(1);
 
     identifyProfile.mockImplementation(async () => undefined);
     now += RETRY_DELAY_MS;
@@ -365,6 +366,10 @@ describe('client-supplied event id', () => {
     await expect(
       send(identifiedPurchase('order-42'), failing)
     ).rejects.toThrow();
+    // Both failing paths ran: the id is freed because production failed, not
+    // because identification was skipped.
+    expect(identifyProfile).toHaveBeenCalledTimes(1);
+    expect(failing).toHaveBeenCalledTimes(1);
 
     identifyProfile.mockImplementation(async () => undefined);
     const produce = mock(async () => undefined);
