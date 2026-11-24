@@ -77,6 +77,10 @@ mock.module('../../../clients/geo', () => ({
   })),
 }));
 
+// Identification runs next to production in handleTrack; the tests decide
+// whether it succeeds.
+const identifyProfile = mock(async (): Promise<void> => undefined);
+
 let ingestTrack: typeof import('../ingest.service').ingestTrack;
 let isDuplicateIngestRequest: typeof import('../ingest.service').isDuplicateIngestRequest;
 beforeAll(async () => {
@@ -87,6 +91,11 @@ beforeAll(async () => {
       current: 'salt-current',
       previous: 'salt-previous',
     })),
+  }));
+  const profile = await import('../../profile/profile.service');
+  mock.module('../../profile/profile.service', () => ({
+    ...profile,
+    identifyProfile,
   }));
   ({ ingestTrack, isDuplicateIngestRequest } = await import(
     '../ingest.service'
@@ -100,6 +109,8 @@ beforeEach(() => {
   del.mockClear();
   evalScript.mockClear();
   warn.mockClear();
+  identifyProfile.mockReset();
+  identifyProfile.mockImplementation(async () => undefined);
   failConfirm = false;
 });
 
@@ -116,6 +127,21 @@ const purchase = (id?: string): ITrackHandlerPayload =>
       profileId: 'u1',
       properties: { __revenue: 999 },
       ...(id ? { id } : {}),
+    },
+  }) as ITrackHandlerPayload;
+
+// A purchase that also identifies its profile, as the SDKs send it.
+const identifiedPurchase = (id: string): ITrackHandlerPayload =>
+  ({
+    type: 'track',
+    payload: {
+      name: 'purchase',
+      profileId: 'u1',
+      properties: {
+        __revenue: 999,
+        __identify: { profileId: 'u1', email: 'buyer@example.com' },
+      },
+      id,
     },
   }) as ITrackHandlerPayload;
 
@@ -270,6 +296,82 @@ describe('client-supplied event id', () => {
     await expect(first).rejects.toThrow('kafka unavailable');
 
     expect((await send(purchase('order-42'), produce)).status).toBe('ok');
+    expect(produce).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the id when the event was produced but identification failed', async () => {
+    identifyProfile.mockImplementation(() =>
+      Promise.reject(new Error('profile store unavailable'))
+    );
+    const produce = mock(async () => undefined);
+
+    await expect(send(identifiedPurchase('order-42'), produce)).rejects.toThrow(
+      'profile store unavailable'
+    );
+
+    identifyProfile.mockImplementation(async () => undefined);
+    now += RETRY_DELAY_MS;
+    expect((await send(identifiedPurchase('order-42'), produce)).status).toBe(
+      'duplicate'
+    );
+    expect(produce).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the id when identification fails before the produce finishes', async () => {
+    identifyProfile.mockImplementation(() =>
+      Promise.reject(new Error('profile store unavailable'))
+    );
+    let finish: () => void = () => undefined;
+    const slow = mock(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        })
+    );
+    const first = send(identifiedPurchase('order-42'), slow);
+    const settled = first.then(
+      () => 'ok',
+      (error: Error) => error.message
+    );
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Identification has already failed, but the event may still be stored.
+    expect(
+      (
+        await send(
+          identifiedPurchase('order-42'),
+          mock(async () => undefined)
+        )
+      ).status
+    ).toBe('in-progress');
+
+    finish();
+    expect(await settled).toBe('profile store unavailable');
+
+    identifyProfile.mockImplementation(async () => undefined);
+    const produce = mock(async () => undefined);
+    expect((await send(identifiedPurchase('order-42'), produce)).status).toBe(
+      'duplicate'
+    );
+    expect(slow).toHaveBeenCalledTimes(1);
+    expect(produce).not.toHaveBeenCalled();
+  });
+
+  it('frees the id when identification and the produce both fail', async () => {
+    identifyProfile.mockImplementation(() =>
+      Promise.reject(new Error('profile store unavailable'))
+    );
+    const failing = mock(() => Promise.reject(new Error('kafka unavailable')));
+    await expect(
+      send(identifiedPurchase('order-42'), failing)
+    ).rejects.toThrow();
+
+    identifyProfile.mockImplementation(async () => undefined);
+    const produce = mock(async () => undefined);
+    now += RETRY_DELAY_MS;
+    expect((await send(identifiedPurchase('order-42'), produce)).status).toBe(
+      'ok'
+    );
     expect(produce).toHaveBeenCalledTimes(1);
   });
 

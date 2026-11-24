@@ -349,7 +349,8 @@ async function buildContext(
 async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext,
-  transport: IngestTransport
+  transport: IngestTransport,
+  onProduced?: () => void
 ): Promise<void> {
   const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
@@ -392,9 +393,18 @@ async function handleTrack(
 
   const partitionKey = groupId || generateId();
 
-  promises.push(transport.produceIncomingEvent(queueData, partitionKey));
+  promises.push(
+    transport.produceIncomingEvent(queueData, partitionKey).then(onProduced)
+  );
 
-  await Promise.all(promises);
+  // Wait for both: when identification fails first, the caller still has to
+  // learn whether the event was produced before it decides about a retry.
+  const failed = (await Promise.allSettled(promises)).find(
+    (result) => result.status === 'rejected'
+  );
+  if (failed) {
+    throw failed.reason;
+  }
 }
 
 /**
@@ -583,23 +593,34 @@ export async function ingestTrack(
         const state = await eventIdState(context.projectId, eventId);
         return { status: state === 'accepted' ? 'duplicate' : 'in-progress' };
       }
-      try {
-        await handleTrack(body.payload, context, transport);
-      } catch (error) {
-        await releaseEventId(context.projectId, eventId, claim);
-        throw error;
-      }
       // The event is already produced, so a failure here must not reach the
       // sender as an error it would retry; the claim still covers retries for
       // its remaining TTL.
-      await confirmEventId(context.projectId, eventId, claim).catch(
-        (error: unknown) => {
-          transport.deps.logger.warn(
-            { err: error, projectId: context.projectId },
-            'could not confirm event id; the claim covers retries until it expires'
-          );
+      const confirm = () =>
+        confirmEventId(context.projectId, eventId, claim).catch(
+          (error: unknown) => {
+            transport.deps.logger.warn(
+              { err: error, projectId: context.projectId },
+              'could not confirm event id; the claim covers retries until it expires'
+            );
+          }
+        );
+      let produced = false;
+      try {
+        await handleTrack(body.payload, context, transport, () => {
+          produced = true;
+        });
+      } catch (error) {
+        // Identification can fail after the event went out. The id stays
+        // taken then, or the sender's retry would store the event twice.
+        if (produced) {
+          await confirm();
+        } else {
+          await releaseEventId(context.projectId, eventId, claim);
         }
-      );
+        throw error;
+      }
+      await confirm();
       break;
     }
     case 'identify':
