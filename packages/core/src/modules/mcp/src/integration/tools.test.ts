@@ -673,6 +673,41 @@ describe('get_funnel', () => {
     });
     expect(res.completedUsers).toBe(0);
   });
+
+  it('returns time to convert when asked for', async () => {
+    const server = makeServer();
+    registerFunnelTools(server as any, TOOLS);
+    const res = await server.invoke('get_funnel', {
+      projectId: TEST_PROJECT_ID,
+      startDate: '2000-01-01',
+      endDate: '2099-01-01',
+      steps: ['session_start', 'purchase'],
+      timeToConvert: 'avg',
+    });
+    // Charlie is the only one who purchases, 15 minutes after session_start.
+    expect(
+      res.steps.map((step: any) => [step.users, step.timeToConvertSeconds])
+    ).toEqual([
+      [2, null],
+      [1, 900],
+    ]);
+    expect(res.timeToConvertSeconds).toBe(900);
+  });
+
+  it('leaves time to convert out unless it is asked for', async () => {
+    const server = makeServer();
+    registerFunnelTools(server as any, TOOLS);
+    const res = await server.invoke('get_funnel', {
+      projectId: TEST_PROJECT_ID,
+      startDate: '2000-01-01',
+      endDate: '2099-01-01',
+      steps: ['session_start', 'purchase'],
+    });
+    expect(res).not.toHaveProperty('timeToConvertSeconds');
+    for (const step of res.steps) {
+      expect(step).not.toHaveProperty('timeToConvertSeconds');
+    }
+  });
 });
 
 describe('get_user_flow', () => {

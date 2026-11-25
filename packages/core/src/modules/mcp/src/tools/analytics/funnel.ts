@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { getFunnelCore } from '../../../../chart/funnel.service';
+import { zTimeToConvertAggregation } from '../../../../report/report.constants';
 import {
   type McpToolDeps,
   projectIdSchema,
@@ -16,7 +17,7 @@ export function registerFunnelTools(
 ) {
   server.tool(
     'get_funnel',
-    'Analyze a conversion funnel between 2 or more events. Returns step-by-step conversion rates and drop-off percentages. For example, analyze sign-up flows, checkout funnels, or onboarding sequences.',
+    'Analyze a conversion funnel between 2 or more events. Returns step-by-step conversion rates and drop-off percentages, and optionally how long users take to convert. For example, analyze sign-up flows, checkout funnels, or onboarding sequences.',
     {
       projectId: projectIdSchema(context),
       ...zDateRange,
@@ -43,6 +44,11 @@ export function registerFunnelTools(
         .describe(
           '"session_id" counts within-session completions, "profile_id" counts cross-session completions (default: session_id)'
         ),
+      timeToConvert: zTimeToConvertAggregation
+        .optional()
+        .describe(
+          'Also return time to convert, aggregated over the sessions or profiles (per groupBy) that reached each step: avg, median, min, max, or the p25/p75/p90/p99 percentile. Each step gets timeToConvertSeconds (seconds from the previous step, null on the first step) and the result gets timeToConvertSeconds from the first step to the last. Omit to leave it out.'
+        ),
     },
     async ({
       projectId: inputProjectId,
@@ -51,6 +57,7 @@ export function registerFunnelTools(
       steps,
       windowHours,
       groupBy,
+      timeToConvert,
     }) =>
       withErrorHandling(deps, async () => {
         const projectId = await resolveProjectId(deps, context, inputProjectId);
@@ -62,6 +69,7 @@ export function registerFunnelTools(
           steps,
           windowHours,
           groupBy,
+          timeToConvert,
         });
       })
   );
