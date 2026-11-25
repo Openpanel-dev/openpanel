@@ -8,6 +8,7 @@ import { Skeleton } from '../skeleton';
 import { LinkButton } from '../ui/button';
 import { ProjectChart } from './project-chart';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -116,6 +117,8 @@ function Metric({
 }
 
 function ProjectMetrics({ id }: { id: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const trpc = useTRPC();
   const { data } = useQuery(
@@ -128,7 +131,7 @@ function ProjectMetrics({ id }: { id: string }) {
     <FadeIn className="row flex-1 flex-wrap gap-3">
       {typeof data?.trend?.percentage === 'number' && (
         <Metric
-          label="3M DIFF"
+          label={translateUi('3M DIFF')}
           value={
             <span
               className={cn(
@@ -154,7 +157,7 @@ function ProjectMetrics({ id }: { id: string }) {
       )}
       {!!data?.metrics?.revenue && (
         <Metric
-          label="Revenue"
+          label={translateUi('Revenue')}
           value={number.currency(data?.metrics?.revenue / 100, {
             short: true,
           })}

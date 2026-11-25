@@ -11,6 +11,7 @@ import { ChartTooltip, type ChartTooltipProps } from './tooltip/chart-tooltip';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useFormatDateInterval } from '@/hooks/use-format-date-interval';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const TOOLTIP_MIN_WIDTH = 168;
@@ -303,7 +304,7 @@ function OPAnnotationsBlock({
       ))}
       {hiddenRefs > 0 && (
         <div className="pl-8 text-muted-foreground text-xs">
-          +{hiddenRefs} more
+          +{hiddenRefs} <DashboardText i18nKey={'more'} />{' '}
         </div>
       )}
       {spike && <OPSpikeAnnotation spike={spike} />}
@@ -326,7 +327,8 @@ function OPSpikeAnnotation({ spike }: { spike: OPReferrerSpikeItem }) {
       </div>
       {spike.others.length > 0 && (
         <div className="mt-0.5 truncate">
-          + also: {spike.others.map((o) => o.referrer_name).join(', ')}
+          <DashboardText i18nKey={'+ also:'} />{' '}
+          {spike.others.map((o) => o.referrer_name).join(', ')}
         </div>
       )}
     </>

@@ -4,6 +4,10 @@ import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import {
+  useTranslation as useDashboardTranslation,
+  useTranslation,
+} from '@/i18n/provider';
 
 export const Route = createFileRoute('/_app/$organizationId/account/_tabs')({
   component: Component,
@@ -11,12 +15,15 @@ export const Route = createFileRoute('/_app/$organizationId/account/_tabs')({
 });
 
 function Component() {
+  const { t } = useTranslation();
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const { organizationId } = Route.useParams();
   const { activeTab, tabs } = usePageTabs([
-    { id: 'account', label: 'Profile' },
-    { id: 'email-preferences', label: 'Email preferences' },
-    { id: 'two-factor', label: 'Two-factor auth' },
+    { id: 'account', label: t('Profile') },
+    { id: 'email-preferences', label: t('Email preferences') },
+    { id: 'two-factor', label: t('Two-factor auth') },
   ]);
 
   const handleTabChange = (tabId: string) => {
@@ -35,7 +42,7 @@ function Component() {
 
   return (
     <PageContainer>
-      <PageHeader title="Your account" />
+      <PageHeader title={translateUi('Your account')} />
       <Tabs
         className="mt-2 mb-8"
         onValueChange={handleTabChange}

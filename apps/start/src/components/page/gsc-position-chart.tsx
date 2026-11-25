@@ -4,6 +4,7 @@ import {
   type OPLineChartSeries,
 } from '@/components/charts/op-line-chart';
 import { Skeleton } from '@/components/skeleton';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 
 const CHART_HEIGHT = 160;
@@ -42,8 +43,12 @@ export function GscPositionChart({
   return (
     <div className="card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-medium text-sm">Avg Position</h3>
-        <span className="text-muted-foreground text-xs">Lower is better</span>
+        <h3 className="font-medium text-sm">
+          <DashboardText i18nKey={'Avg Position'} />
+        </h3>
+        <span className="text-muted-foreground text-xs">
+          <DashboardText i18nKey={'Lower is better'} />
+        </span>
       </div>
       {isLoading ? (
         <Skeleton className="h-40 w-full" />

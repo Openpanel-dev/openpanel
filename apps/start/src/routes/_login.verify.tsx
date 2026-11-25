@@ -10,6 +10,10 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@/components/ui/input-otp';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -24,6 +28,8 @@ export const Route = createFileRoute('/_login/verify')({
 });
 
 function VerifyPage() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const authClient = useAuthClient();
   const [mode, setMode] = useState<'totp' | 'recovery'>('totp');
   const [code, setCode] = useState('');
@@ -64,7 +70,7 @@ function VerifyPage() {
             ? 'Enter the 6-digit code from your authenticator app.'
             : 'Enter one of your recovery codes. Each code can be used only once.'
         }
-        title="Two-factor authentication"
+        title={translateUi('Two-factor authentication')}
       />
 
       {mode === 'totp' ? (
@@ -93,12 +99,12 @@ function VerifyPage() {
         </div>
       ) : (
         <Input
-          aria-label="Recovery code"
+          aria-label={translateUi('Recovery code')}
           autoCapitalize="off"
           autoFocus
           disabled={mutation.isPending}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="AbCdE-fGhIj"
+          placeholder={translateUi('AbCdE-fGhIj')}
           size="xl"
           value={code}
         />
@@ -110,7 +116,7 @@ function VerifyPage() {
         size="xl"
         type="submit"
       >
-        Verify
+        <DashboardText i18nKey={'Verify'} />{' '}
       </Button>
 
       <button
@@ -129,7 +135,7 @@ function VerifyPage() {
         className="text-center text-muted-foreground text-sm hover:text-foreground hover:underline"
         href="/login"
       >
-        Sign in with a different account
+        <DashboardText i18nKey={'Sign in with a different account'} />{' '}
       </a>
     </form>
   );

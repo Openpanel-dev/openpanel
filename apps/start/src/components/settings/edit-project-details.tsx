@@ -16,6 +16,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type Props = { project: IServiceProjectWithClients };
@@ -31,6 +35,8 @@ const validator = zProject.pick({
 type IForm = z.infer<typeof validator>;
 
 export default function EditProjectDetails({ project }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [hasDomain, setHasDomain] = useState(project.domain !== null);
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
@@ -94,18 +100,22 @@ export default function EditProjectDetails({ project }: Props) {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead>
-        <span className="title">Details</span>
+        <span className="title">
+          <DashboardText i18nKey={'Details'} />
+        </span>
       </WidgetHead>
       <WidgetBody>
         <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <InputWithLabel
-            label="Name"
+            label={translateUi('Name')}
             {...form.register('name')}
             defaultValue={project.name}
           />
 
           <div className="-mb-2 flex items-center justify-between gap-2">
-            <Label className="mb-0">Domain</Label>
+            <Label className="mb-0">
+              <DashboardText i18nKey={'Domain'} />
+            </Label>
             <Switch checked={hasDomain} onCheckedChange={setHasDomain} />
           </div>
           <AnimateHeight open={hasDomain}>
@@ -123,7 +133,7 @@ export default function EditProjectDetails({ project }: Props) {
               render={({ field }) => (
                 <WithLabel
                   error={form.formState.errors.cors?.message}
-                  label="Allowed domains"
+                  label={translateUi('Allowed domains')}
                 >
                   <TagInput
                     {...field}
@@ -143,7 +153,7 @@ export default function EditProjectDetails({ project }: Props) {
                         })
                       );
                     }}
-                    placeholder="Add a domain"
+                    placeholder={translateUi('Add a domain')}
                     renderTag={(tag) =>
                       tag === '*' ? 'Allow all domains' : tag
                     }
@@ -157,16 +167,27 @@ export default function EditProjectDetails({ project }: Props) {
               name="crossDomain"
               render={({ field }) => {
                 return (
-                  <WithLabel className="mt-4" label="Cross domain support">
+                  <WithLabel
+                    className="mt-4"
+                    label={translateUi('Cross domain support')}
+                  >
                     <CheckboxInput
                       defaultChecked={field.value}
                       onBlur={field.onBlur}
                       onCheckedChange={field.onChange}
                       ref={field.ref}
                     >
-                      <div>Enable cross domain support</div>
+                      <div>
+                        <DashboardText
+                          i18nKey={'Enable cross domain support'}
+                        />
+                      </div>
                       <div className="font-normal text-muted-foreground">
-                        This will let you track users across multiple domains
+                        <DashboardText
+                          i18nKey={
+                            'This will let you track users across multiple domains'
+                          }
+                        />{' '}
                       </div>
                     </CheckboxInput>
                   </WithLabel>
@@ -180,16 +201,24 @@ export default function EditProjectDetails({ project }: Props) {
             name="allowUnsafeRevenueTracking"
             render={({ field }) => {
               return (
-                <WithLabel label="Revenue tracking">
+                <WithLabel label={translateUi('Revenue tracking')}>
                   <CheckboxInput
                     defaultChecked={field.value}
                     onBlur={field.onBlur}
                     onCheckedChange={field.onChange}
                     ref={field.ref}
                   >
-                    <div>Allow "unsafe" revenue tracking</div>
+                    <div>
+                      <DashboardText
+                        i18nKey={'Allow "unsafe" revenue tracking'}
+                      />
+                    </div>
                     <div className="font-normal text-muted-foreground">
-                      With this enabled, you can track revenue from client code.
+                      <DashboardText
+                        i18nKey={
+                          'With this enabled, you can track revenue from client code.'
+                        }
+                      />{' '}
                     </div>
                   </CheckboxInput>
                 </WithLabel>
@@ -203,7 +232,7 @@ export default function EditProjectDetails({ project }: Props) {
             loading={mutation.isPending}
             type="submit"
           >
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </form>
       </WidgetBody>

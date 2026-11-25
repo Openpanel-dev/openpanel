@@ -9,6 +9,10 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type EditClientProps = IPublicClient;
@@ -21,6 +25,8 @@ const validator = z.object({
 type IForm = z.infer<typeof validator>;
 
 export default function EditClient({ id, name }: EditClientProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset, formState, control, setError } =
     useForm<IForm>({
@@ -48,15 +54,19 @@ export default function EditClient({ id, name }: EditClientProps) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit client" />
+      <ModalHeader title={translateUi('Edit client')} />
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
-        <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
+        <InputWithLabel
+          label={translateUi('Name')}
+          placeholder={translateUi('Name')}
+          {...register('name')}
+        />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </DialogFooter>
       </form>

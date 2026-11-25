@@ -6,6 +6,7 @@ import { Tooltiper } from '../ui/tooltip';
 import { WidgetTable, type Props as WidgetTableProps } from '../widget-table';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
@@ -317,7 +318,9 @@ export function OverviewWidgetTablePages({
                         )}
                       </>
                     ) : (
-                      <span className="opacity-40">Not set</span>
+                      <span className="opacity-40">
+                        <DashboardText i18nKey={'Not set'} />
+                      </span>
                     )}
                   </button>
                   <a
@@ -452,7 +455,9 @@ export function OverviewWidgetTableEntries({
                         )}
                       </>
                     ) : (
-                      <span className="opacity-40">Not set</span>
+                      <span className="opacity-40">
+                        <DashboardText i18nKey={'Not set'} />
+                      </span>
                     )}
                   </button>
                   <a
@@ -573,7 +578,9 @@ export function OverviewWidgetTableBots({
           render(item) {
             return (
               <div className="row justify-end gap-2">
-                <span className="font-semibold">Google bot</span>
+                <span className="font-semibold">
+                  <DashboardText i18nKey={'Google bot'} />
+                </span>
               </div>
             );
           },
@@ -584,7 +591,9 @@ export function OverviewWidgetTableBots({
           render(item) {
             return (
               <div className="row justify-end gap-2">
-                <span className="font-semibold">Google bot</span>
+                <span className="font-semibold">
+                  <DashboardText i18nKey={'Google bot'} />
+                </span>
               </div>
             );
           },

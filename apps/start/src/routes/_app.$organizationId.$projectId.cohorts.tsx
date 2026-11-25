@@ -18,6 +18,10 @@ import { ProjectLink } from '@/components/links';
 import { PageContainer } from '@/components/page-container';
 import { PageHeader } from '@/components/page-header';
 import { Button } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -43,6 +47,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -102,22 +108,30 @@ function Component() {
       <PageHeader
         actions={
           <Button icon={PlusIcon} onClick={() => pushModal('AddCohort')}>
-            <span className="max-sm:hidden">Create cohort</span>
-            <span className="sm:hidden">Cohort</span>
+            <span className="max-sm:hidden">
+              <DashboardText i18nKey={'Create cohort'} />
+            </span>
+            <span className="sm:hidden">
+              <DashboardText i18nKey={'Cohort'} />
+            </span>
           </Button>
         }
         className="mb-8"
-        description="Create and manage user segments based on events and properties"
-        title="Cohorts"
+        description={translateUi(
+          'Create and manage user segments based on events and properties'
+        )}
+        title={translateUi('Cohorts')}
       />
       {cohorts.length === 0 ? (
         <EmptyState
-          description="Group people by what they did or who they are, then filter any report or funnel by that group."
+          description={translateUi(
+            'Group people by what they did or who they are, then filter any report or funnel by that group.'
+          )}
           icon={UsersIcon}
-          title="No cohorts yet"
+          title={translateUi('No cohorts yet')}
         >
           <Button icon={PlusIcon} onClick={() => pushModal('AddCohort')}>
-            Create cohort
+            <DashboardText i18nKey={'Create cohort'} />{' '}
           </Button>
         </EmptyState>
       ) : (
@@ -152,14 +166,14 @@ function Component() {
                       </div>
                       {cohort.lastComputedAt && (
                         <div className={cn('text-xs')}>
-                          Updated{' '}
+                          <DashboardText i18nKey={'Updated'} />{' '}
                           {format(cohort.lastComputedAt, 'MMM d, HH:mm')}
                         </div>
                       )}
                     </div>
                     {cohort.isStatic && (
                       <div className="mt-1 inline-flex w-fit rounded bg-blue-100 px-2 py-0.5 text-blue-700 text-xs">
-                        Static
+                        <DashboardText i18nKey={'Static'} />{' '}
                       </div>
                     )}
                   </div>
@@ -172,7 +186,7 @@ function Component() {
                       type="button"
                     >
                       <DownloadIcon size={16} />
-                      Download
+                      <DashboardText i18nKey={'Download'} />{' '}
                     </button>
                   </CardActionsItem>
                   {!cohort.isStatic && (
@@ -184,7 +198,7 @@ function Component() {
                         type="button"
                       >
                         <RefreshCwIcon size={16} />
-                        Refresh
+                        <DashboardText i18nKey={'Refresh'} />{' '}
                       </button>
                     </CardActionsItem>
                   )}
@@ -202,7 +216,7 @@ function Component() {
                       type="button"
                     >
                       <PencilIcon size={16} />
-                      Edit
+                      <DashboardText i18nKey={'Edit'} />{' '}
                     </button>
                   </CardActionsItem>
                   <CardActionsItem asChild className="w-full">
@@ -212,7 +226,7 @@ function Component() {
                       type="button"
                     >
                       <CopyIcon size={16} />
-                      Duplicate
+                      <DashboardText i18nKey={'Duplicate'} />{' '}
                     </button>
                   </CardActionsItem>
                   <CardActionsItem asChild className="w-full text-destructive">
@@ -227,7 +241,7 @@ function Component() {
                       type="button"
                     >
                       <TrashIcon size={16} />
-                      Delete
+                      <DashboardText i18nKey={'Delete'} />{' '}
                     </button>
                   </CardActionsItem>
                 </CardActions>

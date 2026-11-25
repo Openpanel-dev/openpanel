@@ -18,6 +18,7 @@ import OverviewTopPages from '@/components/overview/overview-top-pages';
 import OverviewTopSources from '@/components/overview/overview-top-sources';
 import OverviewUserJourney from '@/components/overview/overview-user-journey';
 import OverviewWeeklyTrends from '@/components/overview/overview-weekly-trends';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const shareSearchSchema = z.object({
@@ -79,7 +80,11 @@ function RouteComponent() {
   );
 
   if (shareQuery.isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div>
+        <DashboardText i18nKey={'Loading...'} />
+      </div>
+    );
   }
 
   const share = shareQuery.data;

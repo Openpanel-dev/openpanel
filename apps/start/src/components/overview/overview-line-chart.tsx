@@ -16,6 +16,7 @@ import {
   MARKERS_MAX_POINTS,
   POINT_MARKER,
 } from '@/components/report-chart/common/time-series';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -162,7 +163,9 @@ export function OverviewLineChart({
               }
               return (
                 <div className="text-muted-foreground text-sm">
-                  and {hidden} more {hidden === 1 ? 'item' : 'items'}
+                  <DashboardText i18nKey={'and'} /> {hidden}{' '}
+                  <DashboardText i18nKey={'more'} />{' '}
+                  {hidden === 1 ? 'item' : 'items'}
                 </div>
               );
             }}
@@ -321,7 +324,9 @@ export function OverviewLineChartLoading({
     <div
       className={cn('flex h-[358px] items-center justify-center', className)}
     >
-      <div className="text-muted-foreground text-sm">Loading...</div>
+      <div className="text-muted-foreground text-sm">
+        <DashboardText i18nKey={'Loading...'} />
+      </div>
     </div>
   );
 }
@@ -331,7 +336,9 @@ export function OverviewLineChartEmpty({ className }: { className?: string }) {
     <div
       className={cn('flex h-[358px] items-center justify-center', className)}
     >
-      <div className="text-muted-foreground text-sm">No data available</div>
+      <div className="text-muted-foreground text-sm">
+        <DashboardText i18nKey={'No data available'} />
+      </div>
     </div>
   );
 }

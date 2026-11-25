@@ -7,6 +7,10 @@ import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -19,6 +23,8 @@ export function SlackIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
 
   const form = useForm<IForm>({
@@ -56,12 +62,14 @@ export function SlackIntegrationForm({
       onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. My personal slack"
+        label={translateUi('Name')}
+        placeholder={translateUi('Eg. My personal slack')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
-      <Button type="submit">Create</Button>
+      <Button type="submit">
+        <DashboardText i18nKey={'Create'} />
+      </Button>
     </form>
   );
 }

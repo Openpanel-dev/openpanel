@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { useDataTableColumnVisibility } from '@/components/ui/data-table/data-table-hooks';
 import { DataTableToolbarContainer } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -141,6 +142,8 @@ const VirtualizedEventsTable = ({
   isLoading,
   onRowClick,
 }: VirtualizedEventsTableProps & { onRowClick?: (row: any) => void }) => {
+  const { t: translateUi } = useDashboardTranslation();
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -195,9 +198,11 @@ const VirtualizedEventsTable = ({
       {!isLoading && data.length === 0 && (
         <EmptyState
           className="py-16"
-          description="Nothing matches this date range and filters. Events appear within seconds of your site or app sending them."
+          description={translateUi(
+            'Nothing matches this date range and filters. Events appear within seconds of your site or app sending them.'
+          )}
           icon={ZapIcon}
-          title="No events"
+          title={translateUi('No events')}
           variant="inline"
         />
       )}

@@ -1,12 +1,15 @@
 import { SerieIcon } from '../common/serie-icon';
 import { Stat, StatStrip } from '../common/stat-strip';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 
 type Funnel = RouterOutputs['chart']['funnel']['current'][number];
 
 /** Which breakdown converts best and which converts most, for a funnel with breakdowns. */
 export function Summary({ data }: { data: RouterOutputs['chart']['funnel'] }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const byRate = [...data.current].sort(
     (a, b) => b.lastStep.percent - a.lastStep.percent
@@ -23,12 +26,12 @@ export function Summary({ data }: { data: RouterOutputs['chart']['funnel'] }) {
     <StatStrip>
       <Stat
         detail={<Breakdown funnel={bestRate} />}
-        label="Highest conversion rate"
+        label={translateUi('Highest conversion rate')}
         value={number.formatWithUnit(bestRate.lastStep.percent / 100, '%')}
       />
       <Stat
         detail={<Breakdown funnel={mostConversions} />}
-        label="Most conversions"
+        label={translateUi('Most conversions')}
         value={number.format(mostConversions.lastStep.count)}
       />
     </StatStrip>

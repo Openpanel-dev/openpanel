@@ -17,6 +17,10 @@ import { ComboboxAdvanced } from '@/components/ui/combobox-advanced';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 interface CohortCriteriaBuilderProps {
   definition: CohortDefinition;
@@ -53,7 +57,7 @@ export function CohortCriteriaBuilder({
           type="button"
           variant={definition.type === 'event' ? 'default' : 'outline'}
         >
-          Event-based
+          <DashboardText i18nKey={'Event-based'} />{' '}
         </Button>
         <Button
           className="flex-1"
@@ -61,7 +65,7 @@ export function CohortCriteriaBuilder({
           type="button"
           variant={definition.type === 'property' ? 'default' : 'outline'}
         >
-          Property-based
+          <DashboardText i18nKey={'Property-based'} />{' '}
         </Button>
       </div>
 
@@ -91,6 +95,8 @@ function EventBasedBuilder({
   onChange,
   eventNames: eventNamesArray,
 }: EventBasedBuilderProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const eventNames = eventNamesArray.map((event) => ({
     value: event.name,
     label: event.name,
@@ -147,13 +153,15 @@ function EventBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">Match</span>
+        <span className="text-muted-foreground text-sm">
+          <DashboardText i18nKey={'Match'} />
+        </span>
         <DropdownMenuComposed
           items={[
             { value: 'or', label: 'Any of these events' },
             { value: 'and', label: 'All of these events' },
           ]}
-          label="Operator"
+          label={translateUi('Operator')}
           onChange={updateOperator}
         >
           <Button size="sm" variant="outline">
@@ -178,7 +186,7 @@ function EventBasedBuilder({
         type="button"
         variant="outline"
       >
-        Add event criteria
+        <DashboardText i18nKey={'Add event criteria'} />{' '}
       </Button>
     </div>
   );
@@ -197,6 +205,8 @@ function EventCriteriaItem({
   onRemove,
   eventNames,
 }: EventCriteriaItemProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const addFilter = (propertyName: string) => {
     onChange({
       ...criteria,
@@ -247,14 +257,16 @@ function EventCriteriaItem({
     <div className="rounded border p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex-1">
-          <label className="mb-1 block font-medium text-sm">Event</label>
+          <label className="mb-1 block font-medium text-sm">
+            <DashboardText i18nKey={'Event'} />
+          </label>
           <ComboboxAdvanced
             className="w-full"
             items={eventNames}
             onChange={(values) =>
               onChange({ ...criteria, name: String(values[0] ?? '') })
             }
-            placeholder="Select event..."
+            placeholder={translateUi('Select event...')}
             value={criteria.name ? [criteria.name] : []}
           />
         </div>
@@ -270,7 +282,9 @@ function EventCriteriaItem({
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block font-medium text-sm">Frequency</label>
+        <label className="mb-1 block font-medium text-sm">
+          <DashboardText i18nKey={'Frequency'} />
+        </label>
         <div className="flex gap-2">
           <DropdownMenuComposed
             items={[
@@ -278,7 +292,7 @@ function EventCriteriaItem({
               { value: 'eq', label: 'Exactly' },
               { value: 'lte', label: 'At most' },
             ]}
-            label="Operator"
+            label={translateUi('Operator')}
             onChange={(operator) => {
               const count = criteria.frequency?.count ?? 1;
               onChange({
@@ -325,13 +339,15 @@ function EventCriteriaItem({
             value={criteria.frequency?.count ?? 1}
           />
           <span className="flex items-center text-muted-foreground text-sm">
-            times
+            <DashboardText i18nKey={'times'} />{' '}
           </span>
         </div>
       </div>
 
       <div className="mb-3">
-        <label className="mb-1 block font-medium text-sm">Timeframe</label>
+        <label className="mb-1 block font-medium text-sm">
+          <DashboardText i18nKey={'Timeframe'} />
+        </label>
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <DropdownMenuComposed
@@ -340,7 +356,7 @@ function EventCriteriaItem({
                 { value: 'since', label: 'Since' },
                 { value: 'between', label: 'Between' },
               ]}
-              label="Type"
+              label={translateUi('Type')}
               onChange={(type) => {
                 if (type === 'relative') {
                   onChange({
@@ -390,7 +406,7 @@ function EventCriteriaItem({
                   { value: '180d', label: '180 days' },
                   { value: '365d', label: '365 days' },
                 ]}
-                label="Period"
+                label={translateUi('Period')}
                 onChange={(value) =>
                   onChange({
                     ...criteria,
@@ -440,7 +456,9 @@ function EventCriteriaItem({
                 type="date"
                 value={criteria.timeframe.start}
               />
-              <span className="text-muted-foreground text-sm">to</span>
+              <span className="text-muted-foreground text-sm">
+                <DashboardText i18nKey={'to'} />
+              </span>
               <input
                 className="flex-1 rounded border px-2 py-1 text-sm"
                 onChange={(e) =>
@@ -467,7 +485,7 @@ function EventCriteriaItem({
       {criteria.filters.length > 0 && (
         <div className="mb-2">
           <label className="mb-2 block font-medium text-sm">
-            Event Filters
+            <DashboardText i18nKey={'Event Filters'} />{' '}
           </label>
           <div className="space-y-2">
             {criteria.filters.map((filter) => (
@@ -501,7 +519,7 @@ function EventCriteriaItem({
             type="button"
             variant="outline"
           >
-            Add filter
+            <DashboardText i18nKey={'Add filter'} />{' '}
           </Button>
         )}
       </PropertiesCombobox>
@@ -518,6 +536,8 @@ function PropertyBasedBuilder({
   definition,
   onChange,
 }: PropertyBasedBuilderProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const addPropertyFilter = (propertyName: string) => {
     onChange({
       ...definition,
@@ -590,13 +610,15 @@ function PropertyBasedBuilder({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground text-sm">Match</span>
+        <span className="text-muted-foreground text-sm">
+          <DashboardText i18nKey={'Match'} />
+        </span>
         <DropdownMenuComposed
           items={[
             { value: 'or', label: 'Any of these properties' },
             { value: 'and', label: 'All of these properties' },
           ]}
-          label="Operator"
+          label={translateUi('Operator')}
           onChange={updateOperator}
         >
           <Button size="sm" variant="outline">
@@ -634,7 +656,7 @@ function PropertyBasedBuilder({
             type="button"
             variant="outline"
           >
-            Add property filter
+            <DashboardText i18nKey={'Add property filter'} />{' '}
           </Button>
         )}
       </PropertiesCombobox>

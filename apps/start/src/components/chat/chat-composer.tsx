@@ -3,6 +3,7 @@ import { ArrowUpIcon, SquareIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ChatModelPicker } from './chat-model-picker';
 import { Button } from '@/components/ui/button';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const MAX_ROWS_HEIGHT_PX = 200;
@@ -26,6 +27,8 @@ export function ChatComposer({
   autoFocus?: boolean;
   initialText?: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [text, setText] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -77,7 +80,7 @@ export function ChatComposer({
         )}
       >
         <textarea
-          aria-label="Message"
+          aria-label={translateUi('Message')}
           className={cn(
             'block w-full resize-none bg-transparent px-4 pt-3 pb-1 text-base text-foreground sm:text-sm',
             'placeholder:text-muted-foreground/70',
@@ -90,7 +93,9 @@ export function ChatComposer({
               submit();
             }
           }}
-          placeholder="Ask about your data, build a chart, or ask how something works…"
+          placeholder={translateUi(
+            'Ask about your data, build a chart, or ask how something works…'
+          )}
           ref={textareaRef}
           rows={1}
           value={text}
@@ -107,7 +112,7 @@ export function ChatComposer({
           )}
           {busy ? (
             <Button
-              aria-label="Stop generating"
+              aria-label={translateUi('Stop generating')}
               className="size-8 rounded-full"
               onClick={onStop}
               size="icon"
@@ -118,7 +123,7 @@ export function ChatComposer({
             </Button>
           ) : (
             <Button
-              aria-label="Send message"
+              aria-label={translateUi('Send message')}
               className="size-8 rounded-full"
               disabled={!text.trim()}
               size="icon"

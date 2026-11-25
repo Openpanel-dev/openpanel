@@ -14,6 +14,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useLogout } from '@/hooks/use-logout';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  TranslationText as DashboardText,
+  useTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -21,6 +25,7 @@ interface Props {
 }
 
 export function ProfileToggle({ className }: Props) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { organizationId } = useParams({ strict: false });
   const { setTheme, userTheme, themes } = useTheme();
@@ -42,18 +47,22 @@ export function ProfileToggle({ className }: Props) {
       <DropdownMenuTrigger asChild>
         <button className={cn('outline-0', className)} type="button">
           <UserIcon className="size-4" />
-          <span className="sr-only">Profile</span>
+          <span className="sr-only">
+            <DashboardText i18nKey={'Profile'} />
+          </span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-56">
-        <DropdownMenuItem onClick={goToAccount}>Account</DropdownMenuItem>
+        <DropdownMenuItem onClick={goToAccount}>
+          <DashboardText i18nKey={'Account'} />
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="flex w-full items-center justify-between">
-            Theme
+            <DashboardText i18nKey={'Theme'} />{' '}
             <DropdownMenuShortcut>
               <span className="mr-2">{themeConfig[userTheme].icon}</span>
-              {themeConfig[userTheme].label}
+              {t(themeConfig[userTheme].label)}
             </DropdownMenuShortcut>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="p-0">
@@ -64,7 +73,7 @@ export function ProfileToggle({ className }: Props) {
                 onClick={() => setTheme(themeOption.key)}
               >
                 <span className="mr-2">{themeOption.icon}</span>
-                {themeOption.label}
+                {t(themeOption.label)}
                 {userTheme === themeOption.key && (
                   <CheckIcon className="ml-2 h-4 w-4" />
                 )}
@@ -77,7 +86,7 @@ export function ProfileToggle({ className }: Props) {
           className="text-red-600"
           onClick={() => logout.mutate()}
         >
-          Logout
+          <DashboardText i18nKey={'Logout'} />{' '}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

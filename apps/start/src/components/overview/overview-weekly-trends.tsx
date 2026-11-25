@@ -16,6 +16,7 @@ import {
 } from '@/components/charts/chart-tooltip';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -173,7 +174,7 @@ export default function OverviewWeeklyTrends({
       <WidgetBody>
         {query.isLoading ? (
           <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
-            Loading...
+            <DashboardText i18nKey={'Loading...'} />{' '}
           </div>
         ) : heatmap ? (
           <div className="flex">
@@ -259,7 +260,7 @@ export default function OverviewWeeklyTrends({
           </div>
         ) : (
           <div className="flex h-48 items-center justify-center text-muted-foreground text-sm">
-            No data available
+            <DashboardText i18nKey={'No data available'} />{' '}
           </div>
         )}
       </WidgetBody>

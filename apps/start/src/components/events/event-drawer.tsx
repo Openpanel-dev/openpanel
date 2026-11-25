@@ -24,6 +24,10 @@ import {
 } from '@/hooks/use-event-query-filters';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useResizableDrawer } from '@/hooks/use-resizable-drawer';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
@@ -66,6 +70,8 @@ type Tab = (typeof TABS)[keyof typeof TABS];
  * covering it, so the list stays usable while stepping through events.
  */
 export function EventDrawer() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const { eventId, createdAt, chatId, closeEvent } = useEventDrawer();
   const { width, dragHandleProps } = useResizableDrawer({
@@ -118,12 +124,12 @@ export function EventDrawer() {
       {/* The aside is `fixed`; this spacer makes the page shrink on `lg+`. */}
       <div aria-hidden className="hidden shrink-0 lg:block" style={{ width }} />
       <aside
-        aria-label="Event details"
+        aria-label={translateUi('Event details')}
         className="fixed top-0 right-0 z-40 flex h-screen flex-col border-l bg-background shadow-2xl"
         style={{ width }}
       >
         <div
-          aria-label="Resize event details"
+          aria-label={translateUi('Resize event details')}
           aria-valuemax={MAX_WIDTH}
           aria-valuemin={MIN_WIDTH}
           aria-valuenow={width}
@@ -164,6 +170,8 @@ function EventDetailsContent({
   projectId,
   onClose,
 }: ContentProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [, setEvents] = useEventQueryNamesFilter();
   const [, setFilter] = useEventQueryFilters();
   const [tab, setTab] = useState<Tab>(TABS.pretty);
@@ -256,7 +264,7 @@ function EventDetailsContent({
           <div className="title truncate">{event.name}</div>
           <div className="row items-center gap-2 pr-2">
             <Button
-              aria-label="Close event details"
+              aria-label={translateUi('Close event details')}
               onClick={onClose}
               size="icon"
               variant={'ghost'}
@@ -323,13 +331,14 @@ function EventDetailsContent({
             </div>
             {!!session && (
               <div className="text-muted-foreground">
-                This session has{' '}
+                <DashboardText i18nKey={'This session has'} />{' '}
                 <span className="font-medium text-foreground">
-                  {session.screenViewCount} screen views
+                  {session.screenViewCount}{' '}
+                  <DashboardText i18nKey={'screen views'} />{' '}
                 </span>{' '}
-                and{' '}
+                <DashboardText i18nKey={'and'} />{' '}
                 <span className="font-medium text-foreground">
-                  {session.eventCount} events
+                  {session.eventCount} <DashboardText i18nKey={'events'} />{' '}
                 </span>
                 . Visit duration is{' '}
                 <span className="font-medium text-foreground">
@@ -344,7 +353,9 @@ function EventDetailsContent({
         {tab.id === TABS.pretty.id && properties.length > 0 && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
-              <div>Properties</div>
+              <div>
+                <DashboardText i18nKey={'Properties'} />
+              </div>
             </div>
             <KeyValueGrid
               columns={1}
@@ -365,7 +376,9 @@ function EventDetailsContent({
         {tab.id === TABS.pretty.id && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
-              <div>Information</div>
+              <div>
+                <DashboardText i18nKey={'Information'} />
+              </div>
             </div>
             <KeyValueGrid
               columns={1}
@@ -408,7 +421,9 @@ function EventDetailsContent({
         {tab.id === TABS.pretty.id && (
           <section>
             <div className="mb-2 flex justify-between font-medium">
-              <div>All events for {event.name}</div>
+              <div>
+                <DashboardText i18nKey={'All events for'} /> {event.name}
+              </div>
               <button
                 className="text-muted-foreground hover:underline"
                 onClick={() => {
@@ -416,7 +431,7 @@ function EventDetailsContent({
                 }}
                 type="button"
               >
-                Show all
+                <DashboardText i18nKey={'Show all'} />{' '}
               </button>
             </div>
             <div className="card p-4">
@@ -450,14 +465,18 @@ function EventDetailsError({
   message: string;
   onClose: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <>
       <WidgetHead className="shrink-0 rounded-none">
         <div className="row items-center justify-between">
-          <div className="p-4 font-semibold">Event details</div>
+          <div className="p-4 font-semibold">
+            <DashboardText i18nKey={'Event details'} />
+          </div>
           <div className="row items-center gap-2 pr-2">
             <Button
-              aria-label="Close event details"
+              aria-label={translateUi('Close event details')}
               onClick={onClose}
               size="icon"
               variant={'ghost'}
@@ -469,7 +488,9 @@ function EventDetailsError({
       </WidgetHead>
       <WidgetBody className="col flex-1 gap-2 bg-def-100">
         <div className="card p-4">
-          <div className="font-medium">This event could not be loaded</div>
+          <div className="font-medium">
+            <DashboardText i18nKey={'This event could not be loaded'} />
+          </div>
           <p className="mt-1 text-muted-foreground">{message}</p>
         </div>
       </WidgetBody>
@@ -478,6 +499,8 @@ function EventDetailsError({
 }
 
 function EventDetailsSkeleton({ onClose }: { onClose: () => void }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <>
       <WidgetHead className="shrink-0 rounded-none">
@@ -487,7 +510,7 @@ function EventDetailsSkeleton({ onClose }: { onClose: () => void }) {
           </div>
           <div className="row items-center gap-2 pr-2">
             <Button
-              aria-label="Close event details"
+              aria-label={translateUi('Close event details')}
               onClick={onClose}
               size="icon"
               variant={'ghost'}

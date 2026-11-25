@@ -8,6 +8,7 @@ import { SaveIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { resetDirty } from './reportSlice';
 import { Button } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { useDispatch, useSelector } from '@/redux';
@@ -58,7 +59,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
           });
         }}
       >
-        Update
+        <DashboardText i18nKey={'Update'} />{' '}
       </Button>
     );
   }
@@ -74,7 +75,7 @@ export function ReportSaveButton({ className }: ReportSaveButtonProps) {
         });
       }}
     >
-      Save
+      <DashboardText i18nKey={'Save'} />{' '}
     </Button>
   );
 }

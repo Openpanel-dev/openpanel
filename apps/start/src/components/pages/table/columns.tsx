@@ -5,6 +5,7 @@ import { PageSparkline } from '@/components/pages/page-sparkline';
 import { createHeaderColumn } from '@/components/ui/data-table/data-table-helpers';
 import { useAppContext } from '@/hooks/use-app-context';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 
 // `avg_duration` arrives in MINUTES — the MCP `get_page_performance` tool
@@ -129,7 +130,9 @@ export function useColumns({
             return (
               <div className="flex items-center gap-2">
                 {count}
-                <span className="text-muted-foreground">new</span>
+                <span className="text-muted-foreground">
+                  <DashboardText i18nKey={'new'} />
+                </span>
               </div>
             );
           }

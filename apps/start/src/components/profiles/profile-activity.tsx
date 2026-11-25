@@ -19,6 +19,7 @@ import {
 import { Button } from '../ui/button';
 import { Tooltiper } from '../ui/tooltip';
 import { Widget, WidgetBody } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const VISIBLE_MONTH_OFFSETS = [1, 0];
@@ -75,7 +76,9 @@ const MonthCalendar = ({
                     {hit.count} {hit.count === 1 ? 'event' : 'events'}
                   </div>
                 ) : (
-                  <div className="text-muted-foreground">No activity</div>
+                  <div className="text-muted-foreground">
+                    <DashboardText i18nKey={'No activity'} />
+                  </div>
                 )}
               </div>
             }
@@ -112,7 +115,9 @@ export const ProfileActivity = ({ data }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead className="row relative justify-between">
-        <WidgetTitle icon={ActivityIcon}>Activity</WidgetTitle>
+        <WidgetTitle icon={ActivityIcon}>
+          <DashboardText i18nKey={'Activity'} />
+        </WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button
             onClick={() => setStartDate(subMonths(startDate, 1))}

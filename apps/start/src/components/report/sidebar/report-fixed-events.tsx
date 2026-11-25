@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useDebounceFn } from '@/hooks/use-debounce-fn';
 import { useEventNames } from '@/hooks/use-event-names';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 
 export function ReportFixedEvents({
@@ -27,6 +28,8 @@ export function ReportFixedEvents({
 }: {
   numberOfEvents: number;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const selectedSeries = useSelector((state) => state.report.series);
   const chartType = useSelector((state) => state.report.chartType);
   const dispatch = useDispatch();
@@ -75,7 +78,7 @@ export function ReportFixedEvents({
     chartType !== 'sankey';
 
   return (
-    <SidebarSection title="Metrics">
+    <SidebarSection title={translateUi('Metrics')}>
       <BuilderList>
         {Array.from({ length: numberOfEvents }, (_, index) => ({
           slotId: `fixed-event-slot-${index}`,
@@ -123,7 +126,7 @@ export function ReportFixedEvents({
                         );
                       }
                     }}
-                    placeholder="Select event"
+                    placeholder={translateUi('Select event')}
                     searchable
                     value={''}
                     variant="input"
@@ -178,7 +181,7 @@ export function ReportFixedEvents({
                     )
                   );
                 }}
-                placeholder="Select event"
+                placeholder={translateUi('Select event')}
                 searchable
                 value={
                   (isSelectManyEvents

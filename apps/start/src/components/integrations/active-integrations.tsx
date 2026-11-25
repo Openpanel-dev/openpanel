@@ -12,10 +12,16 @@ import {
 import { INTEGRATIONS } from './integrations';
 import { EmptyState } from '@/components/empty-state';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 
 export function ActiveIntegrations() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId, projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -64,15 +70,17 @@ export function ActiveIntegrations() {
       {!isLoading && data.length === 0 && (
         <EmptyState
           className="md:col-span-2"
-          description="Connect Slack, Discord or a webhook to send notifications and data to the tools you already use."
+          description={translateUi(
+            'Connect Slack, Discord or a webhook to send notifications and data to the tools you already use.'
+          )}
           icon={PlugIcon}
-          title="No integrations yet"
+          title={translateUi('No integrations yet')}
         >
           <LinkButton
             params={{ organizationId, projectId }}
             to="/$organizationId/$projectId/integrations/available"
           >
-            Browse integrations
+            <DashboardText i18nKey={'Browse integrations'} />{' '}
           </LinkButton>
         </EmptyState>
       )}
@@ -82,7 +90,9 @@ export function ActiveIntegrations() {
             <motion.div key={item.id} layout="position">
               <IntegrationCard {...item.integration} name={item.name}>
                 <IntegrationCardFooter className="row items-center justify-between">
-                  <PingBadge>Connected</PingBadge>
+                  <PingBadge>
+                    <DashboardText i18nKey={'Connected'} />
+                  </PingBadge>
                   <div className="row gap-2">
                     <Button
                       className="text-destructive"
@@ -99,7 +109,7 @@ export function ActiveIntegrations() {
                       }}
                       variant="ghost"
                     >
-                      Delete
+                      <DashboardText i18nKey={'Delete'} />{' '}
                     </Button>
                     <Button
                       onClick={() => {
@@ -110,7 +120,7 @@ export function ActiveIntegrations() {
                       }}
                       variant="ghost"
                     >
-                      Edit
+                      <DashboardText i18nKey={'Edit'} />{' '}
                     </Button>
                   </div>
                 </IntegrationCardFooter>

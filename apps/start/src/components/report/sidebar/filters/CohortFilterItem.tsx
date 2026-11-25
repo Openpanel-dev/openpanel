@@ -13,6 +13,7 @@ import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
 import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useCohorts } from '@/hooks/use-cohorts';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useDispatch } from '@/redux';
 import { cn } from '@/utils/cn';
 
@@ -100,6 +101,8 @@ export function PureCohortFilterItem({
   onChangeCohort,
   className,
 }: PureCohortFilterItemProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
 
   const cohorts = useCohorts({ projectId, includeCount: false });
@@ -145,7 +148,7 @@ export function PureCohortFilterItem({
           {cohortLabel}
         </RenderDots>
         <Button
-          aria-label="Delete filter"
+          aria-label={translateUi('Delete filter')}
           className="ml-auto size-6 text-muted-foreground hover:text-foreground"
           onClick={removeFilter}
           size="icon"
@@ -160,7 +163,7 @@ export function PureCohortFilterItem({
             { value: 'inCohort', label: 'In cohort' },
             { value: 'notInCohort', label: 'Not in cohort' },
           ]}
-          label="Operator"
+          label={translateUi('Operator')}
           onChange={changeFilterOperator}
         >
           <Button className="whitespace-nowrap" size="sm" variant="input">
@@ -171,7 +174,7 @@ export function PureCohortFilterItem({
           className="min-w-40 flex-1"
           items={cohortsCombobox}
           onChange={changeCohort}
-          placeholder="Select cohorts..."
+          placeholder={translateUi('Select cohorts...')}
           size="sm"
           value={selectedIds}
         />

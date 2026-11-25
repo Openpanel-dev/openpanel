@@ -16,6 +16,10 @@ import { Switch } from '@/components/ui/switch';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export const Route = createFileRoute(
@@ -137,6 +141,8 @@ function RealtimeWidgetSection({
   onToggle,
   onUpdateOptions,
 }: RealtimeWidgetSectionProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const isEnabled = widget?.public ?? false;
   const widgetUrl =
     isEnabled && widget?.id
@@ -178,11 +184,15 @@ function RealtimeWidgetSection({
     <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Realtime Widget</span>
+          <span className="title">
+            <DashboardText i18nKey={'Realtime Widget'} />
+          </span>
           <p className="text-muted-foreground">
-            Embed a realtime visitor counter widget on your website. The widget
-            shows live visitor count, activity histogram, top countries,
-            referrers and paths.
+            <DashboardText
+              i18nKey={
+                'Embed a realtime visitor counter widget on your website. The widget shows live visitor count, activity histogram, top countries, referrers and paths.'
+              }
+            />{' '}
           </p>
         </div>
         <Switch
@@ -194,11 +204,13 @@ function RealtimeWidgetSection({
       {isEnabled && (
         <WidgetBody className="space-y-6">
           <div className="space-y-4">
-            <h3 className="font-medium text-sm">Widget Options</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Widget Options'} />
+            </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm" htmlFor="referrers">
-                  Show Referrers
+                  <DashboardText i18nKey={'Show Referrers'} />{' '}
                 </Label>
                 <Switch
                   checked={options.referrers}
@@ -211,7 +223,7 @@ function RealtimeWidgetSection({
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm" htmlFor="countries">
-                  Show Countries
+                  <DashboardText i18nKey={'Show Countries'} />{' '}
                 </Label>
                 <Switch
                   checked={options.countries}
@@ -224,7 +236,7 @@ function RealtimeWidgetSection({
               </div>
               <div className="flex items-center justify-between">
                 <Label className="text-sm" htmlFor="paths">
-                  Show Paths
+                  <DashboardText i18nKey={'Show Paths'} />{' '}
                 </Label>
                 <Switch
                   checked={options.paths}
@@ -238,32 +250,44 @@ function RealtimeWidgetSection({
             </div>
           </div>
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Widget URL</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Widget URL'} />
+            </h3>
             <CopyInput className="w-full" label="" value={widgetUrl!} />
             <p className="text-muted-foreground text-xs">
-              Direct link to the widget. You can open this in a new tab or embed
-              it.
+              <DashboardText
+                i18nKey={
+                  'Direct link to the widget. You can open this in a new tab or embed it.'
+                }
+              />{' '}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Embed Code</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Embed Code'} />
+            </h3>
             <Syntax code={embedCode!} language="bash" />
             <p className="text-muted-foreground text-xs">
-              Copy this code and paste it into your website HTML where you want
-              the widget to appear.
+              <DashboardText
+                i18nKey={
+                  'Copy this code and paste it into your website HTML where you want the widget to appear.'
+                }
+              />{' '}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Preview</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Preview'} />
+            </h3>
             <div className="overflow-hidden rounded-lg border">
               <iframe
                 className="border-0"
                 height="600"
                 key={widgetChecksum}
                 src={`${widgetUrl}&checksum=${widgetChecksum}`}
-                title="Realtime Widget Preview"
+                title={translateUi('Realtime Widget Preview')}
                 width="100%"
               />
             </div>
@@ -276,7 +300,7 @@ function RealtimeWidgetSection({
                 size="sm"
                 variant="outline"
               >
-                Open in new tab
+                <DashboardText i18nKey={'Open in new tab'} />{' '}
               </Button>
             </div>
           </div>
@@ -302,6 +326,8 @@ function CounterWidgetSection({
   isToggling,
   onToggle,
 }: CounterWidgetSectionProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const isEnabled = widget?.public ?? false;
   const counterUrl =
     isEnabled && widget?.id
@@ -315,10 +341,15 @@ function CounterWidgetSection({
     <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Counter Widget</span>
+          <span className="title">
+            <DashboardText i18nKey={'Counter Widget'} />
+          </span>
           <p className="text-muted-foreground">
-            A compact live visitor counter badge you can embed anywhere. Shows
-            the current number of unique visitors with a live indicator.
+            <DashboardText
+              i18nKey={
+                'A compact live visitor counter badge you can embed anywhere. Shows the current number of unique visitors with a live indicator.'
+              }
+            />{' '}
           </p>
         </div>
         <Switch
@@ -330,30 +361,41 @@ function CounterWidgetSection({
       {isEnabled && counterUrl && (
         <WidgetBody className="space-y-6">
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Widget URL</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Widget URL'} />
+            </h3>
             <CopyInput className="w-full" label="" value={counterUrl} />
             <p className="text-muted-foreground text-xs">
-              Direct link to the counter widget.
+              <DashboardText
+                i18nKey={'Direct link to the counter widget.'}
+              />{' '}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Embed Code</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Embed Code'} />
+            </h3>
             <Syntax code={counterEmbedCode!} language="bash" />
             <p className="text-muted-foreground text-xs">
-              Copy this code and paste it into your website HTML where you want
-              the counter to appear.
+              <DashboardText
+                i18nKey={
+                  'Copy this code and paste it into your website HTML where you want the counter to appear.'
+                }
+              />{' '}
             </p>
           </div>
 
           <div className="space-y-2">
-            <h3 className="font-medium text-sm">Preview</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Preview'} />
+            </h3>
             <div className="rounded-lg border bg-muted/30 p-4">
               <iframe
                 className="border-0"
                 height="32"
                 src={counterUrl}
-                title="Counter Widget Preview"
+                title={translateUi('Counter Widget Preview')}
               />
             </div>
             <div className="flex gap-2">
@@ -365,7 +407,7 @@ function CounterWidgetSection({
                 size="sm"
                 variant="outline"
               >
-                Open in new tab
+                <DashboardText i18nKey={'Open in new tab'} />{' '}
               </Button>
             </div>
           </div>
@@ -384,6 +426,8 @@ interface BadgeWidgetSectionProps {
 }
 
 function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const isEnabled = widget?.public ?? false;
   const badgeUrl =
     isEnabled && widget?.id
@@ -403,33 +447,49 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
     <Widget className="w-full max-w-screen-md">
       <WidgetHead className="row items-center justify-between gap-6">
         <div className="space-y-2">
-          <span className="title">Analytics Badge</span>
+          <span className="title">
+            <DashboardText i18nKey={'Analytics Badge'} />
+          </span>
           <p className="text-muted-foreground">
-            A Product Hunt-style badge showing your 30-day unique visitor count.
-            Perfect for showcasing your analytics powered by OpenPanel.
+            <DashboardText
+              i18nKey={
+                'A Product Hunt-style badge showing your 30-day unique visitor count. Perfect for showcasing your analytics powered by OpenPanel.'
+              }
+            />{' '}
           </p>
         </div>
       </WidgetHead>
       <WidgetBody className="space-y-6">
         <div className="space-y-2">
-          <h3 className="font-medium text-sm">Widget URL</h3>
+          <h3 className="font-medium text-sm">
+            <DashboardText i18nKey={'Widget URL'} />
+          </h3>
           <CopyInput className="w-full" label="" value={badgeUrl} />
           <p className="text-muted-foreground text-xs">
-            Direct link to the analytics badge widget.
+            <DashboardText
+              i18nKey={'Direct link to the analytics badge widget.'}
+            />{' '}
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="font-medium text-sm">Embed Code</h3>
+          <h3 className="font-medium text-sm">
+            <DashboardText i18nKey={'Embed Code'} />
+          </h3>
           <Syntax code={badgeEmbedCode!} language="bash" />
           <p className="text-muted-foreground text-xs">
-            Copy this code and paste it into your website HTML where you want
-            the badge to appear.
+            <DashboardText
+              i18nKey={
+                'Copy this code and paste it into your website HTML where you want the badge to appear.'
+              }
+            />{' '}
           </p>
         </div>
 
         <div className="space-y-2">
-          <h3 className="font-medium text-sm">Preview</h3>
+          <h3 className="font-medium text-sm">
+            <DashboardText i18nKey={'Preview'} />
+          </h3>
           <div className="rounded-lg border bg-muted/30 p-4">
             <a
               href="https://openpanel.dev"
@@ -445,7 +505,7 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
                 className="pointer-events-none border-0"
                 height="48"
                 src={badgeUrl}
-                title="Analytics Badge Preview"
+                title={translateUi('Analytics Badge Preview')}
                 width="250"
               />
             </a>
@@ -459,7 +519,7 @@ function BadgeWidgetSection({ widget, dashboardUrl }: BadgeWidgetSectionProps) {
               size="sm"
               variant="outline"
             >
-              Open in new tab
+              <DashboardText i18nKey={'Open in new tab'} />{' '}
             </Button>
           </div>
         </div>

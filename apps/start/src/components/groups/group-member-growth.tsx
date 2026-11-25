@@ -10,6 +10,10 @@ import { EmptyState } from '@/components/empty-state';
 import { Widget, WidgetBody } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 
 const MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
@@ -31,6 +35,8 @@ const formatDateLabel = (date: Date) =>
   formatDateInterval({ interval: 'day', date, short: true });
 
 export function GroupMemberGrowth({ data }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
 
   let cumulative = 0;
@@ -43,16 +49,18 @@ export function GroupMemberGrowth({ data }: Props) {
     <Widget className="w-full">
       <WidgetHead>
         <WidgetTitle icon={TrendingUpIcon}>
-          New members last 30 days
+          <DashboardText i18nKey={'New members last 30 days'} />{' '}
         </WidgetTitle>
       </WidgetHead>
       <WidgetBody>
         {data.length === 0 ? (
           <EmptyState
             className="h-[200px]"
-            description="New members in the last 30 days will be charted here."
+            description={translateUi(
+              'New members in the last 30 days will be charted here.'
+            )}
             icon={TrendingUpIcon}
-            title="No new members yet"
+            title={translateUi('No new members yet')}
             variant="inline"
           />
         ) : (

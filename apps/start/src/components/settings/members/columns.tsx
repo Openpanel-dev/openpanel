@@ -6,6 +6,7 @@ import { ColumnCreatedAt } from '@/components/column-created-at';
 import { Badge } from '@/components/ui/badge';
 import { createActionColumn } from '@/components/ui/data-table/data-table-helpers';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -69,10 +70,18 @@ export function useColumns() {
       header: 'Access',
       cell: ({ row }) => {
         if (row.original.projectScope === 'all') {
-          return <div className="text-muted-foreground">All projects</div>;
+          return (
+            <div className="text-muted-foreground">
+              <DashboardText i18nKey={'All projects'} />
+            </div>
+          );
         }
         if (row.original.projects.length === 0) {
-          return <div className="text-muted-foreground">No projects</div>;
+          return (
+            <div className="text-muted-foreground">
+              <DashboardText i18nKey={'No projects'} />
+            </div>
+          );
         }
         return (
           <div className="row flex-wrap gap-2">
@@ -119,7 +128,7 @@ export function useColumns() {
               pushModal('EditMember', row.original);
             }}
           >
-            Edit access
+            <DashboardText i18nKey={'Edit access'} />{' '}
           </DropdownMenuItem>
           <DropdownMenuItem
             className="text-destructive"
@@ -131,7 +140,7 @@ export function useColumns() {
               });
             }}
           >
-            Remove member
+            <DashboardText i18nKey={'Remove member'} />{' '}
           </DropdownMenuItem>
         </>
       );

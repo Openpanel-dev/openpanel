@@ -23,12 +23,18 @@ import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
 import { rememberOnboardingKeys } from '@/hooks/use-client-secret';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = zOnboardingProject;
 type IForm = z.infer<typeof validator>;
 
 export default function AddProject() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId } = useAppParams();
   const navigate = useNavigate();
   const form = useForm<IForm>({
@@ -104,13 +110,16 @@ export default function AddProject() {
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader text={'Your project is created'} title="Success" />
+          <ModalHeader
+            text={'Your project is created'}
+            title={translateUi('Success')}
+          />
           {mutation.data.client && (
             <CreateClientSuccess {...mutation.data.client} />
           )}
           <DialogFooter>
             <Button onClick={() => popModal()} variant="outline">
-              Close
+              <DashboardText i18nKey={'Close'} />{' '}
             </Button>
             {/* Route through the same connect -> verify steps as onboarding so
                 a second project doesn't skip the install instructions. The
@@ -125,18 +134,18 @@ export default function AddProject() {
                   })
                 }
               >
-                Set up tracking
+                <DashboardText i18nKey={'Set up tracking'} />{' '}
               </a>
             </Button>
           </DialogFooter>
         </>
       ) : (
         <>
-          <ModalHeader title="Create project" />
+          <ModalHeader title={translateUi('Create project')} />
           <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
             <InputWithLabel
-              label="Project name"
-              placeholder="Eg. My music site"
+              label={translateUi('Project name')}
+              placeholder={translateUi('Eg. My music site')}
               {...form.register('project')}
               error={form.formState.errors.project?.message}
             />
@@ -147,18 +156,20 @@ export default function AddProject() {
                 name="website"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your website"
+                    description={translateUi(
+                      'Track events and conversion for your website'
+                    )}
                     disabled={isApp}
                     error={form.formState.errors.website?.message}
                     Icon={MonitorIcon}
-                    label="Website"
+                    label={translateUi('Website')}
                     {...field}
                   >
                     <AnimateHeight open={isWebsite && !isApp}>
                       <div className="p-4 pl-14">
                         <InputWithLabel
-                          label="Domain"
-                          placeholder="Your website address"
+                          label={translateUi('Domain')}
+                          placeholder={translateUi('Your website address')}
                           {...form.register('domain')}
                           className="mb-4"
                           error={form.formState.errors.domain?.message}
@@ -178,7 +189,7 @@ export default function AddProject() {
                           control={form.control}
                           name="cors"
                           render={({ field }) => (
-                            <WithLabel label="Allowed domains">
+                            <WithLabel label={translateUi('Allowed domains')}>
                               <TagInput
                                 {...field}
                                 error={form.formState.errors.cors?.message}
@@ -197,7 +208,9 @@ export default function AddProject() {
                                     })
                                   );
                                 }}
-                                placeholder="Accept events from these domains"
+                                placeholder={translateUi(
+                                  'Accept events from these domains'
+                                )}
                                 renderTag={(tag) =>
                                   tag === '*'
                                     ? 'Accept events from any domains'
@@ -218,11 +231,13 @@ export default function AddProject() {
                 name="app"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your app"
+                    description={translateUi(
+                      'Track events and conversion for your app'
+                    )}
                     disabled={isWebsite}
                     error={form.formState.errors.app?.message}
                     Icon={SmartphoneIcon}
-                    label="App"
+                    label={translateUi('App')}
                     {...field}
                   />
                 )}
@@ -232,10 +247,12 @@ export default function AddProject() {
                 name="backend"
                 render={({ field }) => (
                   <CheckboxItem
-                    description="Track events and conversion for your backend / API"
+                    description={translateUi(
+                      'Track events and conversion for your backend / API'
+                    )}
                     error={form.formState.errors.backend?.message}
                     Icon={ServerIcon}
-                    label="Backend / API"
+                    label={translateUi('Backend / API')}
                     {...field}
                   />
                 )}
@@ -248,7 +265,7 @@ export default function AddProject() {
                 loading={mutation.isPending}
                 type="submit"
               >
-                Create project
+                <DashboardText i18nKey={'Create project'} />{' '}
               </Button>
             </DialogFooter>
           </form>

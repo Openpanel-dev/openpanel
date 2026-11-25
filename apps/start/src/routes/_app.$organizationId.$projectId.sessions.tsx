@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/page-header';
 import { SessionsTable } from '@/components/sessions/table';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
 import { useTableFilters } from '@/hooks/use-table-filters';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -24,6 +25,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const { debouncedSearch } = useSearchQueryState();
@@ -47,8 +50,8 @@ function Component() {
     <PageContainer>
       <PageHeader
         className="mb-8"
-        description="Access all your sessions here"
-        title="Sessions"
+        description={translateUi('Access all your sessions here')}
+        title={translateUi('Sessions')}
       />
       <SessionsTable query={query} />
     </PageContainer>

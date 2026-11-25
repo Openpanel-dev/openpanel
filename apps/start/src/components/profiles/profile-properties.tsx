@@ -5,6 +5,10 @@ import { EmptyState } from '../empty-state';
 import { WidgetButtons, WidgetHead } from '../overview/overview-widget';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { Widget } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { formatDateTime } from '@/utils/date';
 
@@ -13,6 +17,8 @@ interface Props {
 }
 
 export const ProfileProperties = ({ profile }: Props) => {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [tab, setTab] = useQueryState(
     'tab',
     parseAsStringEnum(['profile', 'properties']).withDefault('profile')
@@ -21,7 +27,9 @@ export const ProfileProperties = ({ profile }: Props) => {
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <div className="title">Profile</div>
+        <div className="title">
+          <DashboardText i18nKey={'Profile'} />
+        </div>
         <WidgetButtons>
           {[
             {
@@ -116,9 +124,11 @@ export const ProfileProperties = ({ profile }: Props) => {
       )}
       {!profile?.properties && (
         <EmptyState
-          description="Properties you pass to identify show up here."
+          description={translateUi(
+            'Properties you pass to identify show up here.'
+          )}
           icon={TagIcon}
-          title="No properties yet"
+          title={translateUi('No properties yet')}
           variant="inline"
         />
       )}

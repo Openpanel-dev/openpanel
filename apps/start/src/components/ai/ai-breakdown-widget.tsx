@@ -17,6 +17,7 @@ import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { Skeleton } from '@/components/skeleton';
 import { Widget, WidgetBody } from '@/components/widget';
 import { useAiFilters } from '@/hooks/use-ai-filters';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { getProfileName } from '@/utils/getters';
@@ -75,7 +76,11 @@ function RowLabel({
 }) {
   const isAnonymous = dimension === 'profile' && !row.key;
   if (isAnonymous) {
-    return <span className="truncate text-muted-foreground">Anonymous</span>;
+    return (
+      <span className="truncate text-muted-foreground">
+        <DashboardText i18nKey={'Anonymous'} />
+      </span>
+    );
   }
   if (dimension === 'profile') {
     const profile = row.profile;
@@ -158,7 +163,7 @@ export function AiBreakdownWidget({
             ))}
           {query.isSuccess && rows.length === 0 && (
             <div className="px-3 py-6 text-center text-muted-foreground text-sm">
-              Nothing in this range
+              <DashboardText i18nKey={'Nothing in this range'} />{' '}
             </div>
           )}
           {rows.map((row) => (

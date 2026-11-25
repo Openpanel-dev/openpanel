@@ -10,6 +10,10 @@ import { EmptyState } from '@/components/empty-state';
 import { Widget, WidgetBody } from '@/components/widget';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 
 const MARGIN = { top: 12, right: 12, bottom: 28, left: 40 };
@@ -30,6 +34,8 @@ const formatDateLabel = (date: Date) =>
   formatDateInterval({ interval: 'day', date, short: true });
 
 export function CohortEventsChart({ data }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const total = data.reduce((acc, point) => acc + point.count, 0);
 
@@ -37,16 +43,19 @@ export function CohortEventsChart({ data }: Props) {
     <Widget className="w-full">
       <WidgetHead>
         <WidgetTitle icon={ActivityIcon}>
-          Events last 30 days ({total.toLocaleString()})
+          <DashboardText i18nKey={'Events last 30 days ('} />
+          {total.toLocaleString()})
         </WidgetTitle>
       </WidgetHead>
       <WidgetBody>
         {total === 0 ? (
           <EmptyState
             className="h-[200px]"
-            description="Events from people in this cohort will be charted here."
+            description={translateUi(
+              'Events from people in this cohort will be charted here.'
+            )}
             icon={ActivityIcon}
-            title="No events in the last 30 days"
+            title={translateUi('No events in the last 30 days')}
             variant="inline"
           />
         ) : (

@@ -11,6 +11,10 @@ import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { InputDateTime } from '@/components/ui/input-date-time';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type IForm = z.infer<typeof zCreateReference>;
@@ -26,6 +30,8 @@ export default function AddReference({
   description,
   datetime,
 }: AddReferenceProps = {}) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const queryClient = useQueryClient();
   const { register, handleSubmit, formState, control } = useForm<IForm>({
@@ -54,26 +60,33 @@ export default function AddReference({
 
   return (
     <ModalContent>
-      <ModalHeader title="Add reference" />
+      <ModalHeader title={translateUi('Add reference')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit((values) => mutation.mutate(values))}
       >
-        <InputWithLabel label="Title" {...register('title')} autoFocus />
-        <InputWithLabel label="Description" {...register('description')} />
+        <InputWithLabel
+          label={translateUi('Title')}
+          {...register('title')}
+          autoFocus
+        />
+        <InputWithLabel
+          label={translateUi('Description')}
+          {...register('description')}
+        />
         <Controller
           control={control}
           name="datetime"
           render={({ field }) => (
-            <InputDateTime {...field} label="Date and time" />
+            <InputDateTime {...field} label={translateUi('Date and time')} />
           )}
         />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Create
+            <DashboardText i18nKey={'Create'} />{' '}
           </Button>
         </DialogFooter>
       </form>

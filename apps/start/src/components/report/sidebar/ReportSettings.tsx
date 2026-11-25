@@ -30,6 +30,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 
@@ -44,6 +48,8 @@ const TIME_TO_CONVERT_ITEMS = [
 ];
 
 export function ReportSettings() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const chartType = useSelector((state) => state.report.chartType);
   const previous = useSelector((state) => state.report.previous);
   const unit = useSelector((state) => state.report.unit);
@@ -125,12 +131,12 @@ export function ReportSettings() {
   }
 
   return (
-    <SidebarSection title="Settings">
+    <SidebarSection title={translateUi('Settings')}>
       <div className="flex flex-col gap-3">
         {fields.includes('previous') && (
           <Label className="mb-0 flex items-center justify-between">
             <span className="whitespace-nowrap">
-              Compare to previous period
+              <DashboardText i18nKey={'Compare to previous period'} />{' '}
             </span>
             <Switch
               checked={previous}
@@ -141,7 +147,7 @@ export function ReportSettings() {
         {fields.includes('criteria') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">
-              Criteria
+              <DashboardText i18nKey={'Criteria'} />{' '}
             </Label>
             <Combobox
               align="end"
@@ -156,7 +162,7 @@ export function ReportSettings() {
                 },
               ]}
               onChange={(val) => dispatch(changeCriteria(val))}
-              placeholder="Select criteria"
+              placeholder={translateUi('Select criteria')}
               size="sm"
               value={criteria}
               variant="input"
@@ -165,7 +171,9 @@ export function ReportSettings() {
         )}
         {fields.includes('unit') && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="mb-0 whitespace-nowrap font-medium">Unit</Label>
+            <Label className="mb-0 whitespace-nowrap font-medium">
+              <DashboardText i18nKey={'Unit'} />
+            </Label>
             <Combobox
               align="end"
               items={[
@@ -181,7 +189,7 @@ export function ReportSettings() {
               onChange={(val) => {
                 dispatch(changeUnit(val === 'count' ? undefined : val));
               }}
-              placeholder="Unit"
+              placeholder={translateUi('Unit')}
               size="sm"
               value={unit || 'count'}
               variant="input"
@@ -191,7 +199,7 @@ export function ReportSettings() {
         {fields.includes('metric') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">
-              Aggregation
+              <DashboardText i18nKey={'Aggregation'} />{' '}
             </Label>
             <Combobox
               align="end"
@@ -203,7 +211,7 @@ export function ReportSettings() {
                 { label: 'Max', value: 'max' },
               ]}
               onChange={(val) => dispatch(changeMetric(val as IChartMetric))}
-              placeholder="Aggregation"
+              placeholder={translateUi('Aggregation')}
               size="sm"
               value={metric}
               // Same labels the report table uses for these columns.
@@ -214,7 +222,7 @@ export function ReportSettings() {
         {fields.includes('funnelGroup') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">
-              Funnel Group
+              <DashboardText i18nKey={'Funnel Group'} />{' '}
             </Label>
             <Combobox
               align="end"
@@ -238,7 +246,7 @@ export function ReportSettings() {
                   changeFunnelGroup(val === 'session_id' ? undefined : val)
                 );
               }}
-              placeholder="Default: Session"
+              placeholder={translateUi('Default: Session')}
               size="sm"
               value={shownFunnelGroup}
               variant="input"
@@ -248,7 +256,7 @@ export function ReportSettings() {
         {fields.includes('funnelWindow') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">
-              Funnel Window
+              <DashboardText i18nKey={'Funnel Window'} />{' '}
             </Label>
             <InputEnter
               className="w-36"
@@ -260,7 +268,7 @@ export function ReportSettings() {
                   dispatch(changeFunnelWindow(parsed));
                 }
               }}
-              placeholder="Default: 24h"
+              placeholder={translateUi('Default: 24h')}
               size="sm"
               type="number"
               value={funnelWindow ? String(funnelWindow) : ''}
@@ -270,7 +278,7 @@ export function ReportSettings() {
         {fields.includes('timeToConvert') && (
           <div className="flex items-center justify-between gap-4">
             <Label className="mb-0 whitespace-nowrap font-medium">
-              Time to convert
+              <DashboardText i18nKey={'Time to convert'} />{' '}
             </Label>
             <Combobox
               align="end"
@@ -282,7 +290,7 @@ export function ReportSettings() {
                   )
                 );
               }}
-              placeholder="Default: Off"
+              placeholder={translateUi('Default: Off')}
               size="sm"
               value={timeToConvert}
               variant="input"
@@ -291,7 +299,9 @@ export function ReportSettings() {
         )}
         {fields.includes('conversionYAxisScale') && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="mb-0 whitespace-nowrap font-medium">Y axis</Label>
+            <Label className="mb-0 whitespace-nowrap font-medium">
+              <DashboardText i18nKey={'Y axis'} />
+            </Label>
             <Combobox
               align="end"
               items={objectToZodEnums(conversionYAxisScales).map((key) => ({
@@ -305,7 +315,7 @@ export function ReportSettings() {
                   )
                 );
               }}
-              placeholder="Default: Fixed"
+              placeholder={translateUi('Default: Fixed')}
               size="sm"
               value={conversionYAxisScale}
               variant="input"
@@ -314,7 +324,9 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeyMode') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="mb-0 whitespace-nowrap font-medium">Mode</Label>
+            <Label className="mb-0 whitespace-nowrap font-medium">
+              <DashboardText i18nKey={'Mode'} />
+            </Label>
             <Combobox
               align="end"
               items={[
@@ -336,7 +348,7 @@ export function ReportSettings() {
                   changeSankeyMode(val as 'between' | 'after' | 'before')
                 );
               }}
-              placeholder="Select mode"
+              placeholder={translateUi('Select mode')}
               size="sm"
               value={options?.mode || 'after'}
               variant="input"
@@ -345,7 +357,9 @@ export function ReportSettings() {
         )}
         {fields.includes('sankeySteps') && options?.type === 'sankey' && (
           <div className="flex items-center justify-between gap-4">
-            <Label className="mb-0 whitespace-nowrap font-medium">Steps</Label>
+            <Label className="mb-0 whitespace-nowrap font-medium">
+              <DashboardText i18nKey={'Steps'} />
+            </Label>
             <InputEnter
               className="w-36"
               onChangeValue={(value) => {
@@ -356,7 +370,7 @@ export function ReportSettings() {
                   dispatch(changeSankeySteps(parsed));
                 }
               }}
-              placeholder="Default: 5"
+              placeholder={translateUi('Default: 5')}
               size="sm"
               type="number"
               value={options?.steps ? String(options.steps) : '5'}
@@ -366,7 +380,7 @@ export function ReportSettings() {
         {fields.includes('sankeyExclude') && options?.type === 'sankey' && (
           <div className="flex flex-col">
             <Label className="whitespace-nowrap font-medium">
-              Exclude Events
+              <DashboardText i18nKey={'Exclude Events'} />{' '}
             </Label>
             <ComboboxEvents
               items={eventNames.filter((item) => item.name !== '*')}
@@ -374,7 +388,7 @@ export function ReportSettings() {
               onChange={(value) => {
                 dispatch(changeSankeyExclude(value));
               }}
-              placeholder="Select events to exclude"
+              placeholder={translateUi('Select events to exclude')}
               searchable
               value={options?.exclude || []}
               variant="input"
@@ -384,7 +398,7 @@ export function ReportSettings() {
         {fields.includes('sankeyInclude') && options?.type === 'sankey' && (
           <div className="flex flex-col">
             <Label className="whitespace-nowrap font-medium">
-              Include events
+              <DashboardText i18nKey={'Include events'} />{' '}
             </Label>
             <ComboboxEvents
               items={eventNames.filter((item) => item.name !== '*')}
@@ -394,7 +408,7 @@ export function ReportSettings() {
                   changeSankeyInclude(value.length > 0 ? value : undefined)
                 );
               }}
-              placeholder="Leave empty to include all"
+              placeholder={translateUi('Leave empty to include all')}
               searchable
               value={options?.include || []}
               variant="input"
@@ -403,7 +417,9 @@ export function ReportSettings() {
         )}
         {fields.includes('stacked') && (
           <Label className="mb-0 flex items-center justify-between">
-            <span className="whitespace-nowrap">Stack series</span>
+            <span className="whitespace-nowrap">
+              <DashboardText i18nKey={'Stack series'} />
+            </span>
             <Switch
               checked={stacked}
               onCheckedChange={(val) => dispatch(changeStacked(!!val))}

@@ -39,6 +39,7 @@ import {
 } from '@/components/widget';
 import { fancyMinutes } from '@/hooks/use-numer-formatter';
 import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { clipboard } from '@/utils/clipboard';
 import { formatDateTime } from '@/utils/date';
@@ -145,7 +146,9 @@ function SessionEventsNotice({
     return (
       <div className="row items-center gap-2 text-muted-foreground text-sm">
         <Loader2Icon className="size-4 animate-spin" />
-        Loading the rest of this session's events…
+        <DashboardText
+          i18nKey={"Loading the rest of this session's events…"}
+        />{' '}
       </div>
     );
   }
@@ -158,7 +161,7 @@ function SessionEventsNotice({
       </AlertDescription>
       {status === 'failed' && (
         <Button onClick={onRetry} size="sm" variant="outline">
-          Retry
+          <DashboardText i18nKey={'Retry'} />{' '}
         </Button>
       )}
     </Alert>
@@ -182,7 +185,9 @@ function VisitorCard({
   return (
     <Widget className="w-full overflow-hidden">
       <WidgetHead>
-        <WidgetTitle>Visitor</WidgetTitle>
+        <WidgetTitle>
+          <DashboardText i18nKey={'Visitor'} />
+        </WidgetTitle>
       </WidgetHead>
       <WidgetBody className="p-0">
         <Link
@@ -228,7 +233,9 @@ function SessionGroups({
   return (
     <Widget className="w-full">
       <WidgetHead>
-        <WidgetTitle>Groups</WidgetTitle>
+        <WidgetTitle>
+          <DashboardText i18nKey={'Groups'} />
+        </WidgetTitle>
       </WidgetHead>
       <div className="divide-y">
         {groups.map((group) => (
@@ -312,7 +319,7 @@ function Component() {
                 }
                 variant="outline"
               >
-                Watch replay
+                <DashboardText i18nKey={'Watch replay'} />{' '}
               </Button>
             )}
             <Button
@@ -320,7 +327,7 @@ function Component() {
               onClick={() => clipboard(session.id, 'Session id copied')}
               variant="outline"
             >
-              Copy id
+              <DashboardText i18nKey={'Copy id'} />{' '}
             </Button>
           </>
         }
@@ -329,7 +336,7 @@ function Component() {
             <ProfileAvatar {...profile} />
             <span className="truncate">{title}</span>
             <span className="shrink-0 rounded-md bg-def-200 px-2 py-0.5 font-medium text-muted-foreground text-xs">
-              Session
+              <DashboardText i18nKey={'Session'} />{' '}
             </span>
           </div>
         }

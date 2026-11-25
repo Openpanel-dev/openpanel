@@ -8,6 +8,10 @@ import FullPageLoadingState from '@/components/full-page-loading-state';
 import { IntegrationCardSkeleton } from '@/components/integrations/integration-card';
 import { RuleCard } from '@/components/notifications/rule-card';
 import { Button } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -26,6 +30,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -44,12 +50,14 @@ function Component() {
   if (!isLoading && data.length === 0) {
     return (
       <EmptyState
-        description="Get a message when an event fires or a funnel is completed, in Slack, Discord, email or a webhook."
+        description={translateUi(
+          'Get a message when an event fires or a funnel is completed, in Slack, Discord, email or a webhook.'
+        )}
         icon={BellRingIcon}
-        title="No notification rules yet"
+        title={translateUi('No notification rules yet')}
       >
         <Button icon={PlusIcon} onClick={addRule}>
-          Add rule
+          <DashboardText i18nKey={'Add rule'} />{' '}
         </Button>
       </EmptyState>
     );
@@ -59,7 +67,7 @@ function Component() {
     <div>
       <div className="mb-2">
         <Button icon={PlusIcon} onClick={addRule} variant="outline">
-          Add rule
+          <DashboardText i18nKey={'Add rule'} />{' '}
         </Button>
       </div>
       <div className="col grid w-full gap-4 md:grid-cols-2">

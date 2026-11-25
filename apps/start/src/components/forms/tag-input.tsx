@@ -1,3 +1,4 @@
+import { TranslationText as DashboardText } from '@/i18n/provider';
 // Based on Christin Alares tag input component (https://github.com/christianalares/seventy-seven)
 
 import { useAnimate } from 'framer-motion';
@@ -130,7 +131,9 @@ const TagInput = ({
               size="icon"
               variant="outline"
             >
-              <span className="sr-only">Remove tag</span>
+              <span className="sr-only">
+                <DashboardText i18nKey={'Remove tag'} />
+              </span>
               <XIcon className="size-3" name="close" />
             </Button>
           </span>

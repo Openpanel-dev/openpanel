@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 
@@ -55,7 +56,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
           {(!data || data.public === false) && (
             <DropdownMenuItem onClick={() => pushModal('ShareOverviewModal')}>
               <Globe2Icon className="mr-2" size={16} />
-              Make public
+              <DashboardText i18nKey={'Make public'} />{' '}
             </DropdownMenuItem>
           )}
           {data?.public && (
@@ -65,7 +66,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
                 to={'/share/overview/$shareId'}
               >
                 <EyeIcon className="mr-2" size={16} />
-                View
+                <DashboardText i18nKey={'View'} />{' '}
               </Link>
             </DropdownMenuItem>
           )}
@@ -81,7 +82,7 @@ export function OverviewShare({ projectId }: OverviewShareProps) {
               }}
             >
               <LockIcon className="mr-2" size={16} />
-              Make private
+              <DashboardText i18nKey={'Make private'} />{' '}
             </DropdownMenuItem>
           )}
         </DropdownMenuGroup>

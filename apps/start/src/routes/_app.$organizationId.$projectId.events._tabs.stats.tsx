@@ -20,6 +20,10 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 export const Route = createFileRoute(
   '/_app/$organizationId/$projectId/events/_tabs/stats'
@@ -41,6 +45,8 @@ const breakdownChartOptions = {
 };
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   const [filters] = useEventQueryFilters();
@@ -72,7 +78,7 @@ function Component() {
             maxDisplayItems={2}
             multiple
             onChange={setEventNames}
-            placeholder="All events"
+            placeholder={translateUi('All events')}
             searchable
             value={eventNames}
           />
@@ -86,7 +92,9 @@ function Component() {
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Events over time</span>
+            <span className="title">
+              <DashboardText i18nKey={'Events over time'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -102,7 +110,9 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Share of events</span>
+            <span className="title">
+              <DashboardText i18nKey={'Share of events'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -117,7 +127,9 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Events by name</span>
+            <span className="title">
+              <DashboardText i18nKey={'Events by name'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut
@@ -132,7 +144,9 @@ function Component() {
         </Widget>
         <Widget className="w-full">
           <WidgetHead>
-            <span className="title">Trend by event</span>
+            <span className="title">
+              <DashboardText i18nKey={'Trend by event'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChartShortcut

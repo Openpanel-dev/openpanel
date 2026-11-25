@@ -11,6 +11,7 @@ import {
 } from '@/components/integrations/integrations';
 import { SheetContent } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface Props {
@@ -18,6 +19,8 @@ interface Props {
   type: IIntegrationConfig['type'];
 }
 export default function AddIntegration(props: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId, projectId } = useAppParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -76,7 +79,7 @@ export default function AddIntegration(props: Props) {
 
   return (
     <SheetContent className="[&>button.absolute]:hidden">
-      <ModalHeader title="Create an integration" />
+      <ModalHeader title={translateUi('Create an integration')} />
       {renderCard()}
       {renderForm()}
     </SheetContent>

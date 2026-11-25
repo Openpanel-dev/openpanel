@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toolPhrase } from '../tool-labels';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export function ToolActivity({ toolName }: { toolName: string }) {
   return (
@@ -29,7 +30,8 @@ export function ToolError({
     <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-destructive text-sm">
       <AlertCircleIcon className="mt-0.5 size-3.5 shrink-0" />
       <span>
-        {toolPhrase(toolName, 'active')} failed{message ? `: ${message}` : '.'}
+        {toolPhrase(toolName, 'active')} <DashboardText i18nKey={'failed'} />
+        {message ? `: ${message}` : '.'}
       </span>
     </div>
   );

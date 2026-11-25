@@ -8,6 +8,10 @@ import { EmptyState } from '@/components/empty-state';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PublicPageCard } from '@/components/public-page-card';
 import { Button, LinkButton } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const unsubscribeSearchSchema = z.object({
@@ -32,6 +36,8 @@ export const Route = createFileRoute('/unsubscribe')({
 });
 
 function RouteComponent() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const search = useSearch({ from: '/unsubscribe' });
   const { email, category, token } = search;
   const trpc = useTRPC();
@@ -67,7 +73,7 @@ function RouteComponent() {
       <PublicPageCard
         description={`You've been unsubscribed from ${categoryName} emails. You won't receive any more ${categoryName.toLowerCase()} emails from
           us.`}
-        title="Unsubscribed"
+        title={translateUi('Unsubscribed')}
       />
     );
   }
@@ -76,12 +82,14 @@ function RouteComponent() {
     <PublicPageCard
       description={
         <>
-          Unsubscribe from {categoryName} emails? You'll stop receiving{' '}
-          {categoryName.toLowerCase()} emails sent to&nbsp;
+          <DashboardText i18nKey={'Unsubscribe from'} /> {categoryName}{' '}
+          <DashboardText i18nKey={"emails? You'll stop receiving"} />{' '}
+          {categoryName.toLowerCase()}{' '}
+          <DashboardText i18nKey={'emails sent to&nbsp;'} />{' '}
           <span className="">{email}</span>
         </>
       }
-      title="Unsubscribe"
+      title={translateUi('Unsubscribe')}
     >
       <div className="col gap-3">
         {error && (
@@ -93,7 +101,7 @@ function RouteComponent() {
           {isUnsubscribing ? 'Unsubscribing...' : 'Confirm Unsubscribe'}
         </Button>
         <LinkButton href="/" variant="ghost">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </LinkButton>
       </div>
     </PublicPageCard>

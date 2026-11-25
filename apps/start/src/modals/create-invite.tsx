@@ -19,11 +19,17 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 type IForm = z.infer<typeof zInviteUser>;
 
 export default function CreateInvite() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId } = useAppParams();
   const trpc = useTRPC();
   const projectsQuery = useQuery(
@@ -70,30 +76,43 @@ export default function CreateInvite() {
       {mutation.isSuccess ? (
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>User has been invited</SheetTitle>
+            <SheetTitle>
+              <DashboardText i18nKey={'User has been invited'} />
+            </SheetTitle>
           </SheetHeader>
           <div className="prose dark:prose-invert">
             {mutation.data.type === 'is_member' ? (
               <>
                 <p>
-                  Since the user already has an account we have added him/her to
-                  your organization. This means you will not see this user in
-                  the list of invites.
+                  <DashboardText
+                    i18nKey={
+                      'Since the user already has an account we have added him/her to your organization. This means you will not see this user in the list of invites.'
+                    }
+                  />{' '}
                 </p>
-                <p>We have also notified the user by email about this.</p>
+                <p>
+                  <DashboardText
+                    i18nKey={
+                      'We have also notified the user by email about this.'
+                    }
+                  />
+                </p>
               </>
             ) : (
               <p>
-                We have sent an email with instructions to join the
-                organization.
+                <DashboardText
+                  i18nKey={
+                    'We have sent an email with instructions to join the organization.'
+                  }
+                />{' '}
               </p>
             )}
             <div className="row mt-8 gap-4">
               <Button onClick={() => mutation.reset()}>
-                Invite another user
+                <DashboardText i18nKey={'Invite another user'} />{' '}
               </Button>
               <Button onClick={() => closeSheet()} variant="outline">
-                Close
+                <DashboardText i18nKey={'Close'} />{' '}
               </Button>
             </div>
           </div>
@@ -102,10 +121,15 @@ export default function CreateInvite() {
         <SheetContent>
           <SheetHeader>
             <div>
-              <SheetTitle>Invite a user</SheetTitle>
+              <SheetTitle>
+                <DashboardText i18nKey={'Invite a user'} />
+              </SheetTitle>
               <SheetDescription>
-                Invite users to your organization. They will receive an email
-                will instructions.
+                <DashboardText
+                  i18nKey={
+                    'Invite users to your organization. They will receive an email will instructions.'
+                  }
+                />{' '}
               </SheetDescription>
             </div>
           </SheetHeader>
@@ -116,12 +140,14 @@ export default function CreateInvite() {
             <InputWithLabel
               className="w-full max-w-sm"
               error={formState.errors.email?.message}
-              label="Email"
-              placeholder="Who do you want to invite?"
+              label={translateUi('Email')}
+              placeholder={translateUi('Who do you want to invite?')}
               {...register('email')}
             />
             <div>
-              <Label>What role?</Label>
+              <Label>
+                <DashboardText i18nKey={'What role?'} />
+              </Label>
               <Controller
                 control={control}
                 name="role"
@@ -136,27 +162,30 @@ export default function CreateInvite() {
                     <div className="flex items-center gap-2">
                       <RadioGroupItem id="member" value="member" />
                       <Label className="mb-0" htmlFor="member">
-                        Member
+                        <DashboardText i18nKey={'Member'} />{' '}
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem id="viewer" value="viewer" />
                       <Label className="mb-0" htmlFor="viewer">
-                        Viewer
+                        <DashboardText i18nKey={'Viewer'} />{' '}
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem id="admin" value="admin" />
                       <Label className="mb-0" htmlFor="admin">
-                        Admin
+                        <DashboardText i18nKey={'Admin'} />{' '}
                       </Label>
                     </div>
                   </RadioGroup>
                 )}
               />
               <p className="mt-1 text-muted-foreground text-sm">
-                Admins manage members and projects. Members can edit the
-                projects they have access to, viewers can only look at them.
+                <DashboardText
+                  i18nKey={
+                    'Admins manage members and projects. Members can edit the projects they have access to, viewers can only look at them.'
+                  }
+                />{' '}
               </p>
             </div>
             <Controller
@@ -164,7 +193,9 @@ export default function CreateInvite() {
               name="access"
               render={({ field }) => (
                 <div>
-                  <Label>Project access</Label>
+                  <Label>
+                    <DashboardText i18nKey={'Project access'} />
+                  </Label>
                   <Controller
                     control={control}
                     name="projectScope"
@@ -188,7 +219,7 @@ export default function CreateInvite() {
                 loading={mutation.isPending}
                 type="submit"
               >
-                Invite user
+                <DashboardText i18nKey={'Invite user'} />{' '}
               </Button>
             </SheetFooter>
           </form>

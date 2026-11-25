@@ -1,6 +1,7 @@
 import { LogoSquare } from '../logo';
 import { AuthShowcase } from './auth-showcase';
 import { useAppContext } from '@/hooks/use-app-context';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 const SELF_HOSTED_LINKS = [
   { label: 'OpenPanel Cloud', href: 'https://openpanel.dev' },
@@ -34,7 +35,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           </a>
           {isSelfHosted && (
             <span className="rounded-full bg-def-200 px-2.5 py-1 text-muted-foreground text-xs">
-              Self-hosted
+              <DashboardText i18nKey={'Self-hosted'} />{' '}
             </span>
           )}
         </header>
@@ -55,7 +56,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
               </ul>
             </nav>
           ) : (
-            <span>Open source product analytics · openpanel.dev</span>
+            <span>
+              <DashboardText
+                i18nKey={'Open source product analytics · openpanel.dev'}
+              />
+            </span>
           )}
         </footer>
       </div>

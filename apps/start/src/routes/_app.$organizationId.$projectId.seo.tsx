@@ -24,6 +24,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -38,6 +42,8 @@ export const Route = createFileRoute('/_app/$organizationId/$projectId/seo')({
 const CHART_HEIGHT = 200;
 
 function SeoPage() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId, organizationId } = useAppParams();
   useRangePageContext('seo');
   const trpc = useTRPC();
@@ -144,7 +150,10 @@ function SeoPage() {
   if (connectionQuery.isLoading) {
     return (
       <PageContainer>
-        <PageHeader description="Google Search Console data" title="SEO" />
+        <PageHeader
+          description={translateUi('Google Search Console data')}
+          title={translateUi('SEO')}
+        />
         <div className="mt-8 space-y-4">
           <Skeleton className="h-64 w-full" />
           <Skeleton className="h-96 w-full" />
@@ -158,13 +167,15 @@ function SeoPage() {
       <PageContainer>
         <PageHeader
           className="mb-8"
-          description="Google Search Console data"
-          title="SEO"
+          description={translateUi('Google Search Console data')}
+          title={translateUi('SEO')}
         />
         <EmptyState
-          description="See which queries and pages bring you search traffic, with clicks, impressions and positions next to the rest of your analytics."
+          description={translateUi(
+            'See which queries and pages bring you search traffic, with clicks, impressions and positions next to the rest of your analytics.'
+          )}
           icon={SearchIcon}
-          title="Connect Google Search Console"
+          title={translateUi('Connect Google Search Console')}
         >
           <Button
             onClick={() =>
@@ -174,7 +185,7 @@ function SeoPage() {
               })
             }
           >
-            Connect Google Search Console
+            <DashboardText i18nKey={'Connect Google Search Console'} />{' '}
           </Button>
         </EmptyState>
       </PageContainer>
@@ -210,7 +221,7 @@ function SeoPage() {
           </>
         }
         description={`Search performance for ${connection.siteUrl}`}
-        title="SEO"
+        title={translateUi('SEO')}
       />
 
       <div className="mt-8 space-y-8">
@@ -220,7 +231,7 @@ function SeoPage() {
               data={overview.map((r) => ({ current: r.clicks, date: r.date }))}
               id="clicks"
               isLoading={overviewQuery.isLoading}
-              label="Clicks"
+              label={translateUi('Clicks')}
               metric={{ current: totals.clicks, previous: prevTotals.clicks }}
             />
             <OverviewMetricCard
@@ -230,7 +241,7 @@ function SeoPage() {
               }))}
               id="impressions"
               isLoading={overviewQuery.isLoading}
-              label="Impressions"
+              label={translateUi('Impressions')}
               metric={{
                 current: totals.impressions,
                 previous: prevTotals.impressions,
@@ -243,7 +254,7 @@ function SeoPage() {
               }))}
               id="ctr"
               isLoading={overviewQuery.isLoading}
-              label="Avg CTR"
+              label={translateUi('Avg CTR')}
               metric={{
                 current: (totals.ctr / n) * 100,
                 previous: (prevTotals.ctr / pn) * 100,
@@ -258,7 +269,7 @@ function SeoPage() {
               id="position"
               inverted
               isLoading={overviewQuery.isLoading}
-              label="Avg Position"
+              label={translateUi('Avg Position')}
               metric={{
                 current: totals.position / n,
                 previous: prevTotals.position / pn,
@@ -320,7 +331,7 @@ function SeoPage() {
             rows={paginatedPages}
             searchPlaceholder="Search pages"
             searchValue={pagesSearch}
-            title="Top pages"
+            title={translateUi('Top pages')}
             totalCount={filteredPages.length}
           />
           <GscTable
@@ -345,7 +356,7 @@ function SeoPage() {
             rows={paginatedQueries}
             searchPlaceholder="Search queries"
             searchValue={queriesSearch}
-            title="Top queries"
+            title={translateUi('Top queries')}
             totalCount={filteredQueries.length}
           />
         </div>
@@ -470,11 +481,13 @@ function SearchEngines(props: {
   previousTotal: number;
   isLoading: boolean;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <TrafficSourceWidget
       {...props}
-      emptyMessage="No search traffic in this period"
-      title="Search engines"
+      emptyMessage={translateUi('No search traffic in this period')}
+      title={translateUi('Search engines')}
     />
   );
 }
@@ -485,11 +498,13 @@ function AiEngines(props: {
   previousTotal: number;
   isLoading: boolean;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <TrafficSourceWidget
       {...props}
-      emptyMessage="No AI traffic in this period"
-      title="AI referrals"
+      emptyMessage={translateUi('No AI traffic in this period')}
+      title={translateUi('AI referrals')}
     />
   );
 }
@@ -505,7 +520,9 @@ function GscChart({
 }) {
   return (
     <div className="card p-4">
-      <h3 className="mb-4 font-medium text-sm">Clicks & Impressions</h3>
+      <h3 className="mb-4 font-medium text-sm">
+        <DashboardText i18nKey={'Clicks & Impressions'} />
+      </h3>
       {isLoading ? (
         <Skeleton className="h-48 w-full" />
       ) : (

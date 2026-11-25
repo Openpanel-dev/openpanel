@@ -1,6 +1,10 @@
 import { CopyIcon, DownloadIcon, KeyRoundIcon } from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
 import { Button } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { clipboard } from '@/utils/clipboard';
 import { trackFunnel } from '@/utils/funnel-tracking';
 
@@ -20,6 +24,8 @@ export function ClientCredentials({
   mcpToken,
   projectId,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const isOneTimeView = Boolean(clientSecret);
   const credentials = [
     `CLIENT_ID=${clientId}`,
@@ -47,17 +53,19 @@ export function ClientCredentials({
     <section className="col gap-4 rounded-xl border p-5">
       <div className="row items-center gap-2">
         <KeyRoundIcon className="text-muted-foreground" size={16} />
-        <h2 className="font-semibold text-base">Your keys</h2>
+        <h2 className="font-semibold text-base">
+          <DashboardText i18nKey={'Your keys'} />
+        </h2>
       </div>
       <div className="grid gap-3 [&>*]:min-w-0">
         <CopyInput
-          label="Client ID"
+          label={translateUi('Client ID')}
           onCopy={() => copied('clientId')}
           value={clientId}
         />
         {clientSecret && (
           <CopyInput
-            label="Client secret"
+            label={translateUi('Client secret')}
             onCopy={() => copied('clientSecret')}
             value={clientSecret}
           />
@@ -79,7 +87,7 @@ export function ClientCredentials({
             size="sm"
             variant="outline"
           >
-            Copy all
+            <DashboardText i18nKey={'Copy all'} />{' '}
           </Button>
           <Button
             icon={DownloadIcon}
@@ -87,7 +95,7 @@ export function ClientCredentials({
             size="sm"
             variant="outline"
           >
-            Download
+            <DashboardText i18nKey={'Download'} />{' '}
           </Button>
         </div>
       )}

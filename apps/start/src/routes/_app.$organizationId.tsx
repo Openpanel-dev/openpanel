@@ -16,6 +16,10 @@ import FeedbackPrompt from '@/components/organization/feedback-prompt';
 import SupporterPrompt from '@/components/organization/supporter-prompt';
 import YearlySwitchPrompt from '@/components/organization/yearly-switch-prompt';
 import { LinkButton } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -79,7 +83,9 @@ export const Route = createFileRoute('/_app/$organizationId')({
       title="Workspace not found"
       variant="page"
     >
-      <LinkButton href="/">Go to home</LinkButton>
+      <LinkButton href="/">
+        <DashboardText i18nKey={'Go to home'} />
+      </LinkButton>
     </EmptyState>
   ),
 });
@@ -112,6 +118,8 @@ function Alert({
 }
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const { data: organization } = useSuspenseQuery(
@@ -169,7 +177,7 @@ function Component() {
           organization.subscriptionPeriodEventsLimit * 0.8 && (
           <Alert
             description={`You've used ${Math.round((organization.subscriptionPeriodEventsCount / organization.subscriptionPeriodEventsLimit) * 100)}% of your ${organization.subscriptionPeriodEventsLimit.toLocaleString()} monthly events. If you go over, we keep collecting your events but charts pause until you upgrade.`}
-            title="Approaching your events limit"
+            title={translateUi('Approaching your events limit')}
           >
             <LinkButton
               params={{
@@ -177,7 +185,7 @@ function Component() {
               }}
               to="/$organizationId/billing"
             >
-              See plans
+              <DashboardText i18nKey={'See plans'} />{' '}
             </LinkButton>
           </Alert>
         )}
@@ -186,7 +194,7 @@ function Component() {
         organization.isExceeded && (
           <Alert
             description={`You hit your monthly events limit on ${format(organization.subscriptionPeriodEventsCountExceededAt, 'PPP')}. We're still collecting your events — nothing is lost — but charts won't show new data until you upgrade or your next cycle starts.`}
-            title="Events limit exceeded"
+            title={translateUi('Events limit exceeded')}
           >
             <LinkButton
               params={{
@@ -194,7 +202,7 @@ function Component() {
               }}
               to="/$organizationId/billing"
             >
-              Upgrade now
+              <DashboardText i18nKey={'Upgrade now'} />{' '}
             </LinkButton>
           </Alert>
         )}

@@ -28,6 +28,10 @@ import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolb
 import { TableButtons } from '@/components/ui/table';
 import { ToolbarSelect } from '@/components/ui/toolbar-select';
 import { useRangePageContext } from '@/hooks/use-page-context-helpers';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
@@ -100,6 +104,8 @@ function getModuleDisplayName(moduleKey: string): string {
 }
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   useRangePageContext('insights');
   const trpc = useTRPC();
@@ -307,7 +313,7 @@ function Component() {
   if (isLoading) {
     return (
       <PageContainer>
-        <PageHeader className="mb-8" title="Insights" />
+        <PageHeader className="mb-8" title={translateUi('Insights')} />
         <div className="space-y-8">
           {Array.from({ length: 3 }, (_, i) => `section-${i}`).map((key) => (
             <div className="space-y-4" key={key}>
@@ -351,39 +357,41 @@ function Component() {
     <PageContainer>
       <PageHeader
         className="mb-8"
-        description="Discover trends and changes in your analytics"
-        title="Insights"
+        description={translateUi(
+          'Discover trends and changes in your analytics'
+        )}
+        title={translateUi('Insights')}
       />
       <TableButtons className="mb-8">
         <AnimatedSearchInput
           onChange={(value) => setSearch(value || null)}
-          placeholder="Search insights"
+          placeholder={translateUi('Search insights')}
           value={search ?? ''}
         />
         <ToolbarSelect
           icon={CalendarRangeIcon}
-          label="Time window"
+          label={translateUi('Time window')}
           onChange={setWindowKindFilter}
           options={WINDOW_OPTIONS}
           value={windowKindFilter ?? 'all'}
         />
         <ToolbarSelect
           icon={GaugeIcon}
-          label="Severity"
+          label={translateUi('Severity')}
           onChange={setSeverityFilter}
           options={SEVERITY_OPTIONS}
           value={severityFilter ?? 'all'}
         />
         <ToolbarSelect
           icon={ArrowUpDownIcon}
-          label="Direction"
+          label={translateUi('Direction')}
           onChange={setDirectionFilter}
           options={DIRECTION_OPTIONS}
           value={directionFilter ?? 'all'}
         />
         <ToolbarSelect
           icon={ArrowDownWideNarrowIcon}
-          label="Sort by"
+          label={translateUi('Sort by')}
           onChange={setSortBy}
           options={SORT_OPTIONS}
           value={sortBy ?? 'relevance'}
@@ -460,7 +468,9 @@ function Component() {
 
       {filteredAndSorted.length > 0 && (
         <div className="mt-8 text-center text-muted-foreground text-sm">
-          Showing {filteredAndSorted.length} of {insights?.length ?? 0} insights
+          <DashboardText i18nKey={'Showing'} /> {filteredAndSorted.length}{' '}
+          <DashboardText i18nKey={'of'} /> {insights?.length ?? 0}{' '}
+          <DashboardText i18nKey={'insights'} />{' '}
         </div>
       )}
     </PageContainer>
@@ -474,24 +484,30 @@ function InsightsEmptyState({
   isFiltered: boolean;
   onClearFilters: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   if (isFiltered) {
     return (
       <EmptyState
-        description="Nothing matches the current search and filters."
+        description={translateUi(
+          'Nothing matches the current search and filters.'
+        )}
         icon={SearchIcon}
-        title="No matching insights"
+        title={translateUi('No matching insights')}
       >
         <Button onClick={onClearFilters} variant="outline">
-          Clear filters
+          <DashboardText i18nKey={'Clear filters'} />{' '}
         </Button>
       </EmptyState>
     );
   }
   return (
     <EmptyState
-      description="Insights are detected automatically from your traffic. Give it a few days of data and check back."
+      description={translateUi(
+        'Insights are detected automatically from your traffic. Give it a few days of data and check back.'
+      )}
       icon={SparklesIcon}
-      title="No insights yet"
+      title={translateUi('No insights yet')}
     />
   );
 }

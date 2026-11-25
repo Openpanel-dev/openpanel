@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
 import { changeLineType } from './reportSlice';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useDispatch, useSelector } from '@/redux';
 import { cn } from '@/utils/cn';
 import { objectToZodEnums } from '@/utils/object-to-zod-enums';
@@ -52,7 +53,9 @@ export function ReportLineType({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="max-h-(--radix-dropdown-menu-content-available-height) w-56 overflow-y-auto">
-        <DropdownMenuLabel>Line type</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <DashboardText i18nKey={'Line type'} />
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           {objectToZodEnums(lineTypes).map((key) => (

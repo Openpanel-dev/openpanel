@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ChatPreview } from './chat-preview';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const ROTATE_EVERY_MS = 7000;
@@ -63,11 +64,16 @@ export function AuthShowcase() {
       />
       <div className="col relative max-w-lg shrink-0 gap-4">
         <h2 className="font-semibold text-3xl leading-tight tracking-tight">
-          Ask your analytics a question. Get the chart back.
+          <DashboardText
+            i18nKey={'Ask your analytics a question. Get the chart back.'}
+          />{' '}
         </h2>
         <p className="text-base text-muted-foreground [@media(max-height:820px)]:hidden">
-          Web and product analytics in one place, open source, and a chat that
-          answers with charts.
+          <DashboardText
+            i18nKey={
+              'Web and product analytics in one place, open source, and a chat that answers with charts.'
+            }
+          />{' '}
         </p>
       </div>
       <div className="relative mt-6 min-h-0 max-w-lg flex-1">

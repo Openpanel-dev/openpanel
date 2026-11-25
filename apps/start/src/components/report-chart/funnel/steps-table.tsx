@@ -17,6 +17,7 @@ import {
 } from '@/components/report-table/report-data-table';
 import { Button } from '@/components/ui/button';
 import { fancyMinutes, useNumber } from '@/hooks/use-numer-formatter';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { getChartColor } from '@/utils/theme';
@@ -40,6 +41,8 @@ export function StepsTable({
   funnel: Funnel;
   previous: Funnel | null;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { report, shareId } = useReportChartContext();
   const timeToConvert =
     report.options?.type === 'funnel'
@@ -150,7 +153,7 @@ export function StepsTable({
                   className="h-7 w-7 p-0"
                   onClick={() => inspectStep(row)}
                   size="sm"
-                  title="View users who completed this step"
+                  title={translateUi('View users who completed this step')}
                   variant="ghost"
                 >
                   <UsersIcon size={14} />
@@ -190,6 +193,8 @@ function FunnelMetrics({
   previous: Funnel | null;
   timeToConvert: ITimeToConvertAggregation | undefined;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const change = (
     current: number,
@@ -215,18 +220,18 @@ function FunnelMetrics({
     >
       <Stat
         change={change(funnel.lastStep.percent, previous?.lastStep.percent)}
-        label="Conversion"
+        label={translateUi('Conversion')}
         value={number.formatWithUnit(funnel.lastStep.percent / 100, '%')}
       />
       <Stat
         change={change(funnel.lastStep.count, previous?.lastStep.count)}
-        label="Completed"
+        label={translateUi('Completed')}
         value={number.format(funnel.lastStep.count)}
       />
       {funnel.mostDropoffsStep && (
         <Stat
           detail={`${number.format(funnel.mostDropoffsStep.dropoffCount ?? 0)} dropped after this step`}
-          label="Most drop-offs after"
+          label={translateUi('Most drop-offs after')}
           value={funnel.mostDropoffsStep.event.displayName}
         />
       )}
@@ -235,7 +240,7 @@ function FunnelMetrics({
           // Faster is better, so a drop reads as an improvement.
           change={change(totalTimeToConvert, previous?.timeToConvert, true)}
           detail={`${timeToConvertAggregations[timeToConvert]}, first to last step`}
-          label="Time to convert"
+          label={translateUi('Time to convert')}
           value={fancyMinutes(totalTimeToConvert)}
         />
       )}

@@ -16,6 +16,7 @@ import {
   ReportItemReadOnly,
   ReportItemSkeleton,
 } from '@/components/report/report-item';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const shareSearchSchema = z.object({
@@ -78,6 +79,8 @@ export const Route = createFileRoute('/share/dashboard/$shareId')({
 });
 
 function RouteComponent() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { shareId } = Route.useParams();
   const { header } = useSearch({ from: '/share/dashboard/$shareId' });
   const trpc = useTRPC();
@@ -148,9 +151,11 @@ function RouteComponent() {
           </div>
         ) : reports.length === 0 ? (
           <EmptyState
-            description="Reports added to this dashboard will show up here."
+            description={translateUi(
+              'Reports added to this dashboard will show up here.'
+            )}
             icon={LayoutPanelTopIcon}
-            title="This dashboard is empty"
+            title={translateUi('This dashboard is empty')}
           />
         ) : (
           <DashboardGrid layout={layout}>

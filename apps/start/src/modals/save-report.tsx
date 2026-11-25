@@ -12,6 +12,10 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type SaveReportProps = {
@@ -30,6 +34,8 @@ export default function SaveReport({
   report,
   disableRedirect,
 }: SaveReportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const queryClient = useQueryClient();
   const { organizationId, projectId } = useAppParams();
@@ -92,7 +98,7 @@ export default function SaveReport({
 
   return (
     <ModalContent>
-      <ModalHeader title="Create report" />
+      <ModalHeader title={translateUi('Create report')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ name, ...values }) => {
@@ -106,8 +112,8 @@ export default function SaveReport({
         })}
       >
         <InputWithLabel
-          label="Report name"
-          placeholder="Name"
+          label={translateUi('Report name')}
+          placeholder={translateUi('Name')}
           {...register('name')}
           defaultValue={report.name}
         />
@@ -131,10 +137,10 @@ export default function SaveReport({
             type="button"
             variant="outline"
           >
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isValid} size="default" type="submit">
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </DialogFooter>
       </form>

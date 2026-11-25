@@ -10,6 +10,7 @@ import { SerieIcon } from '../report-chart/common/serie-icon';
 import { Skeleton } from '../skeleton';
 import { MetricCardShell } from './overview-metric-card';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -77,7 +78,7 @@ export function OverviewLiveHistogram({
       <div className="px-3 pt-2.5">
         <div className="flex items-start justify-between gap-2">
           <span className="truncate font-medium text-3xs text-muted-foreground uppercase tracking-wider">
-            Live · 30 min
+            <DashboardText i18nKey={'Live · 30 min'} />{' '}
           </span>
           <span className="relative flex h-2 w-2 items-center justify-center">
             <span

@@ -5,6 +5,7 @@ import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json';
 import markdown from 'react-syntax-highlighter/dist/esm/languages/hljs/markdown';
 import ts from 'react-syntax-highlighter/dist/esm/languages/hljs/typescript';
 import docco from 'react-syntax-highlighter/dist/esm/styles/hljs/vs2015';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 
@@ -41,7 +42,9 @@ export default function Syntax({
           }}
           type="button"
         >
-          <span>Copy</span>
+          <span>
+            <DashboardText i18nKey={'Copy'} />
+          </span>
           <CopyIcon size={12} />
         </button>
       )}

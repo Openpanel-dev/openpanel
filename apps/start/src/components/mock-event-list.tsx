@@ -2,6 +2,7 @@ import type { IServiceEventMinimal } from '@openpanel/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { EventListItem } from '@/components/events/event-list-item';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 const useWebEventGenerator = () => {
   const [events, setEvents] = useState<IServiceEventMinimal[]>([]);
@@ -116,9 +117,8 @@ export const MockEventList = () => {
   return (
     <div className="hide-scrollbar h-screen overflow-y-auto">
       <div className="py-16 text-center font-bold text-2xl text-background-foreground">
-        Real time data
-        <br />
-        at your fingertips
+        <DashboardText i18nKey={'Real time data'} /> <br />
+        <DashboardText i18nKey={'at your fingertips'} />{' '}
       </div>
       <AnimatePresence initial mode="popLayout">
         <div className="flex flex-col gap-4 p-4">

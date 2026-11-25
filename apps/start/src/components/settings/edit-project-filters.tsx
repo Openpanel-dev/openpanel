@@ -24,6 +24,10 @@ import { Button } from '@/components/ui/button';
 import { ComboboxEvents } from '@/components/ui/combobox-events';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
 import { useEventNames } from '@/hooks/use-event-names';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -53,6 +57,8 @@ function EventRuleItem({
   onChange,
   onRemove,
 }: EventRuleItemProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const eventNames = useEventNames({ projectId, anyEvents: true });
 
   const addFilter = (action: {
@@ -110,7 +116,7 @@ function EventRuleItem({
             className="w-full"
             items={eventNames}
             onChange={(name) => onChange({ ...rule, name })}
-            placeholder="Select event name..."
+            placeholder={translateUi('Select event name...')}
             searchable
             value={rule.name}
           />
@@ -141,7 +147,7 @@ function EventRuleItem({
               size="sm"
               variant="outline"
             >
-              Add property filter
+              <DashboardText i18nKey={'Add property filter'} />{' '}
             </Button>
           )}
         </PropertiesCombobox>
@@ -151,6 +157,8 @@ function EventRuleItem({
 }
 
 export default function EditProjectFilters({ project }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const form = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: {
@@ -234,9 +242,13 @@ export default function EditProjectFilters({ project }: Props) {
   return (
     <Widget className="w-full max-w-screen-md">
       <WidgetHead className="space-y-2">
-        <span className="title">Exclude events</span>
+        <span className="title">
+          <DashboardText i18nKey={'Exclude events'} />
+        </span>
         <p className="text-muted-foreground">
-          Exclude events from being tracked by adding filters.
+          <DashboardText
+            i18nKey={'Exclude events from being tracked by adding filters.'}
+          />{' '}
         </p>
       </WidgetHead>
       <WidgetBody>
@@ -247,13 +259,13 @@ export default function EditProjectFilters({ project }: Props) {
             control={form.control}
             name="ips"
             render={({ field }) => (
-              <WithLabel label="IP addresses">
+              <WithLabel label={translateUi('IP addresses')}>
                 <TagInput
                   {...field}
                   error={form.formState.errors.ips?.message}
                   id="IP addresses"
                   onChange={field.onChange}
-                  placeholder="Exclude IP addresses"
+                  placeholder={translateUi('Exclude IP addresses')}
                   value={field.value}
                 />
               </WithLabel>
@@ -264,20 +276,20 @@ export default function EditProjectFilters({ project }: Props) {
             control={form.control}
             name="profileIds"
             render={({ field }) => (
-              <WithLabel label="Profile IDs">
+              <WithLabel label={translateUi('Profile IDs')}>
                 <TagInput
                   {...field}
                   error={form.formState.errors.profileIds?.message}
                   id="Profile IDs"
                   onChange={field.onChange}
-                  placeholder="Exclude Profile IDs"
+                  placeholder={translateUi('Exclude Profile IDs')}
                   value={field.value}
                 />
               </WithLabel>
             )}
           />
 
-          <WithLabel label="Event rules">
+          <WithLabel label={translateUi('Event rules')}>
             <div className="space-y-3">
               {eventRules.map((rule, index) => (
                 <EventRuleItem
@@ -296,7 +308,7 @@ export default function EditProjectFilters({ project }: Props) {
                 type="button"
                 variant="outline"
               >
-                Add event rule
+                <DashboardText i18nKey={'Add event rule'} />{' '}
               </Button>
             </div>
           </WithLabel>
@@ -308,7 +320,7 @@ export default function EditProjectFilters({ project }: Props) {
             onClick={form.handleSubmit(onSubmit)}
             type="button"
           >
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </div>
       </WidgetBody>

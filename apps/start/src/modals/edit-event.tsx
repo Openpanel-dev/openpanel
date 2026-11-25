@@ -16,6 +16,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -24,6 +28,8 @@ interface Props {
 }
 
 export default function EditEvent({ id }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const client = useQueryClient();
@@ -71,7 +77,9 @@ export default function EditEvent({ id }: Props) {
       />
       <div className="col gap-4">
         <div>
-          <Label className="mb-4 block">Conversion</Label>
+          <Label className="mb-4 block">
+            <DashboardText i18nKey={'Conversion'} />
+          </Label>
           <label className="flex cursor-pointer select-none items-center gap-4 rounded-md border border-border p-4">
             <Checkbox
               checked={conversion}
@@ -83,7 +91,9 @@ export default function EditEvent({ id }: Props) {
               }}
             />
             <div>
-              <span>Yes, this event is important!</span>
+              <span>
+                <DashboardText i18nKey={'Yes, this event is important!'} />
+              </span>
             </div>
           </label>
         </div>
@@ -97,11 +107,13 @@ export default function EditEvent({ id }: Props) {
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
-                <div className="font-medium">Pick an icon</div>
+                <div className="font-medium">
+                  <DashboardText i18nKey={'Pick an icon'} />
+                </div>
                 {
                   <button onClick={() => setStep('color')} type="button">
                     <Badge variant="outline">
-                      Select color
+                      <DashboardText i18nKey={'Select color'} />{' '}
                       <PaintBucketIcon className="ml-1 h-3 w-3" />
                     </Badge>
                   </button>
@@ -110,7 +122,7 @@ export default function EditEvent({ id }: Props) {
               <Input
                 className="mb-4"
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for an icon"
+                placeholder={translateUi('Search for an icon')}
                 value={search}
               />
               <div className={iconGrid}>
@@ -147,10 +159,12 @@ export default function EditEvent({ id }: Props) {
               transition={{ duration: 0.15 }}
             >
               <div className="row mb-4 items-center justify-between">
-                <div className="font-medium">Pick a color</div>
+                <div className="font-medium">
+                  <DashboardText i18nKey={'Pick a color'} />
+                </div>
                 <button onClick={() => setStep('icon')} type="button">
                   <Badge variant="outline">
-                    Select icon
+                    <DashboardText i18nKey={'Select icon'} />{' '}
                     <UndoIcon className="ml-1 h-3 w-3" />
                   </Badge>
                 </button>
@@ -206,7 +220,7 @@ export default function EditEvent({ id }: Props) {
             })
           }
         >
-          Update event
+          <DashboardText i18nKey={'Update event'} />{' '}
         </Button>
       </div>
     </ModalContent>

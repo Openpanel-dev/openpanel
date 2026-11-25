@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useRouter } from '@tanstack/react-router';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
@@ -20,6 +21,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
 
   const { activeTab, tabs } = usePageTabs([
@@ -38,8 +41,10 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        description="If you haven't called identify your profiles will be anonymous"
-        title="Profiles"
+        description={translateUi(
+          "If you haven't called identify your profiles will be anonymous"
+        )}
+        title={translateUi('Profiles')}
       />
 
       <Tabs

@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import EditProjectAi from '@/components/settings/edit-project-ai';
 import { useAppParams } from '@/hooks/use-app-params';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export const Route = createFileRoute(
@@ -22,7 +23,11 @@ function Component() {
     return <FullPageLoadingState />;
   }
   if (!query.data) {
-    return <div>Project not found</div>;
+    return (
+      <div>
+        <DashboardText i18nKey={'Project not found'} />
+      </div>
+    );
   }
   return <EditProjectAi project={query.data} />;
 }

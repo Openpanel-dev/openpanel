@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { AnimatedNumber } from '@/components/animated-number';
 import { Ping } from '@/components/ping';
 import useWS from '@/hooks/use-ws';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -19,7 +20,7 @@ export const Route = createFileRoute('/widget/counter')({
   // `error.message` — for a ZodError that is the raw issues array.
   errorComponent: () => (
     <div className="p-2 text-muted-foreground text-xs">
-      Missing or invalid widget link.
+      <DashboardText i18nKey={'Missing or invalid widget link.'} />{' '}
     </div>
   ),
   component: RouteComponent,

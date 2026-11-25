@@ -5,6 +5,7 @@ import type React from 'react';
 import { useMemo, useRef, useState } from 'react';
 import { Input } from '../ui/input';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { ModalContent } from '@/modals/Modal/Container';
 
 const ROW_HEIGHT = 36;
@@ -147,9 +148,21 @@ export function OverviewListModal<T extends OverviewListItem>({
           }}
         >
           <div className="truncate text-left">{columnName}</div>
-          {hasRevenue && <div className="text-right">Revenue</div>}
-          {hasPageviews && <div className="text-right">Views</div>}
-          {showSessions && <div className="text-right">Sessions</div>}
+          {hasRevenue && (
+            <div className="text-right">
+              <DashboardText i18nKey={'Revenue'} />
+            </div>
+          )}
+          {hasPageviews && (
+            <div className="text-right">
+              <DashboardText i18nKey={'Views'} />
+            </div>
+          )}
+          {showSessions && (
+            <div className="text-right">
+              <DashboardText i18nKey={'Sessions'} />
+            </div>
+          )}
         </div>
       </div>
 

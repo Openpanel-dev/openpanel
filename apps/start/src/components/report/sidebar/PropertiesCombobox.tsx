@@ -23,6 +23,10 @@ import {
 import { Input } from '@/components/ui/input';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventProperties } from '@/hooks/use-event-properties';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export type PropertiesComboboxAction = {
@@ -102,6 +106,8 @@ function SearchHeader({
   onSearch: (value: string) => void;
   value: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <div className="row items-center gap-1">
       {!!onBack && (
@@ -112,7 +118,7 @@ function SearchHeader({
       <Input
         autoFocus
         onChange={(e) => onSearch(e.target.value)}
-        placeholder="Search"
+        placeholder={translateUi('Search')}
         size="sm"
         value={value}
       />
@@ -234,7 +240,7 @@ export function PropertiesCombobox({
               handleStateChange('event');
             }}
           >
-            Event properties
+            <DashboardText i18nKey={'Event properties'} />{' '}
             <DatabaseIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -246,7 +252,7 @@ export function PropertiesCombobox({
               handleStateChange('profile');
             }}
           >
-            Profile properties
+            <DashboardText i18nKey={'Profile properties'} />{' '}
             <UserIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -258,7 +264,7 @@ export function PropertiesCombobox({
               handleStateChange('group');
             }}
           >
-            Group properties
+            <DashboardText i18nKey={'Group properties'} />{' '}
             <Building2Icon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -274,7 +280,7 @@ export function PropertiesCombobox({
               });
             }}
           >
-            Cohorts
+            <DashboardText i18nKey={'Cohorts'} />{' '}
             <TargetIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}
@@ -286,7 +292,7 @@ export function PropertiesCombobox({
               handleStateChange('session');
             }}
           >
-            Session metrics
+            <DashboardText i18nKey={'Session metrics'} />{' '}
             <ActivityIcon className="size-4 transition-all group-hover:rotate-12 group-hover:scale-125 group-hover:text-blue-500" />
           </DropdownMenuItem>
         )}

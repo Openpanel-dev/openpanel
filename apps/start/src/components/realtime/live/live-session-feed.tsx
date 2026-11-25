@@ -4,10 +4,13 @@ import { FEED_CLOCK_MS } from './live-constants';
 import { formatAge, LiveFeed, LiveFeedItem } from './live-feed';
 import { useLiveFeed, useNow } from './use-live-feed';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getCountry } from '@/translations/countries';
 
 export function LiveSessionFeed({ projectId }: { projectId: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const query = useQuery(
     trpc.realtime.recentSessions.queryOptions({ projectId })
@@ -42,7 +45,7 @@ export function LiveSessionFeed({ projectId }: { projectId: string }) {
         />
       )}
       storageKey="sessions"
-      title="New sessions"
+      title={translateUi('New sessions')}
     />
   );
 }

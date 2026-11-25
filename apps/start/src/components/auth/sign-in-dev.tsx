@@ -2,6 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { TerminalIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 /** Only rendered when the API reports `DEV_LOGIN`, which production refuses. */
@@ -30,7 +31,7 @@ export function SignInDev({ inviteId }: { inviteId?: string }) {
       size="xl"
       variant="secondary"
     >
-      Dev login
+      <DashboardText i18nKey={'Dev login'} />{' '}
     </Button>
   );
 }

@@ -2,6 +2,7 @@ import type { IChartFilterValueType } from '@openpanel/core/modules/report/repor
 import { filterValueTypes } from '@openpanel/core/modules/report/report.constants';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { mapKeys } from '@/utils/object-to-zod-enums';
 
 interface FilterTypeSelectProps {
@@ -18,6 +19,8 @@ export function FilterTypeSelect({
   onChange,
   children,
 }: FilterTypeSelectProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trigger = children ?? (
     <Button className="whitespace-nowrap" size="sm" variant="input">
       {filterValueTypes[value ?? 'string']}
@@ -30,7 +33,7 @@ export function FilterTypeSelect({
         value: key,
         label: filterValueTypes[key],
       }))}
-      label="Value type"
+      label={translateUi('Value type')}
       onChange={onChange}
     >
       {trigger}

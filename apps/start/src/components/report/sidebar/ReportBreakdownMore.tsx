@@ -9,6 +9,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export interface ReportBreakdownMoreProps {
   onClick: (action: 'remove') => void;
@@ -31,7 +32,7 @@ export function ReportBreakdownMore({ onClick }: ReportBreakdownMoreProps) {
             onClick={() => onClick('remove')}
           >
             <Trash className="mr-2 h-4 w-4" />
-            Delete
+            <DashboardText i18nKey={'Delete'} />{' '}
             <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>

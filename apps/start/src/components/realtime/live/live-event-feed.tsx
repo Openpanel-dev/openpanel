@@ -5,6 +5,7 @@ import { formatAge, LiveFeed, LiveFeedItem } from './live-feed';
 import { useLiveFeed, useNow } from './use-live-feed';
 import { EventIcon } from '@/components/events/event-icon';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getCountry } from '@/translations/countries';
 
@@ -13,6 +14,8 @@ const PAGE_VIEW_EVENT = 'screen_view';
 const SESSION_EVENTS = new Set(['session_start', 'session_end']);
 
 export function LiveEventFeed({ projectId }: { projectId: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const query = useQuery(
     trpc.realtime.activeSessions.queryOptions({ projectId })
@@ -45,7 +48,7 @@ export function LiveEventFeed({ projectId }: { projectId: string }) {
         );
       }}
       storageKey="events"
-      title="Events"
+      title={translateUi('Events')}
     />
   );
 }

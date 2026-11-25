@@ -7,6 +7,7 @@ import {
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { PageHeader } from '@/components/page-header';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
@@ -34,6 +35,8 @@ export const Route = createFileRoute(
 });
 
 function ProjectDashboard() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const location = useLocation();
   const tab = location.pathname.split('/').pop();
@@ -60,8 +63,8 @@ function ProjectDashboard() {
   return (
     <div className="container p-8">
       <PageHeader
-        description="Manage your project settings here"
-        title="Project settings"
+        description={translateUi('Manage your project settings here')}
+        title={translateUi('Project settings')}
       />
 
       <Tabs className="mt-2 mb-8" onValueChange={handleTabChange} value={tab}>

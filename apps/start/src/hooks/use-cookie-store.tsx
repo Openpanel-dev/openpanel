@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 const VALID_COOKIES = [
   'ui-theme',
+  'ui-language',
   'chartType',
   'range',
   'supporter-prompt-closed',

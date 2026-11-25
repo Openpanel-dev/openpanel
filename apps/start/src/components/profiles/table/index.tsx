@@ -18,6 +18,7 @@ import {
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { arePropsEqual } from '@/utils/are-props-equal';
 
@@ -117,6 +118,8 @@ export const ProfilesTable = memo(
 );
 
 function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { search, setSearch } = useSearchQueryState();
 
   return (
@@ -124,12 +127,12 @@ function ProfileTableToolbar({ table }: { table: Table<IServiceProfile> }) {
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search profiles"
+          placeholder={translateUi('Search profiles')}
           value={search}
         />
         <TableFilterPills
           categories={['profile', 'group', 'cohort']}
-          title="Profile filters"
+          title={translateUi('Profile filters')}
           urlKey="f"
         />
       </div>

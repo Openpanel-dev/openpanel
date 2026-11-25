@@ -11,6 +11,10 @@ import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Pagination } from '@/components/pagination';
 import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -67,6 +71,8 @@ interface PagesInsightsProps {
 }
 
 export function PagesInsights({ projectId }: PagesInsightsProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { range, interval, startDate, endDate } = useOverviewOptions();
   const { apiUrl } = useAppContext();
@@ -248,7 +254,9 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
       <div className="border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-sm">Opportunities</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Opportunities'} />
+            </h3>
             {filteredInsights.length > 0 && (
               <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
                 {filteredInsights.length}
@@ -280,7 +288,7 @@ export function PagesInsights({ projectId }: PagesInsightsProps) {
               setSearch(e.target.value);
               setPage(0);
             }}
-            placeholder="Search pages"
+            placeholder={translateUi('Search pages')}
             size="sm"
             type="search"
             value={search}

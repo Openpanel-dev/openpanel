@@ -23,6 +23,10 @@ import {
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import type { RouterInputs, RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 
@@ -171,6 +175,8 @@ const VirtualizedSessionsTable = ({
   isLoading,
   onRowClick,
 }: VirtualizedSessionsTableProps & { onRowClick?: (row: any) => void }) => {
+  const { t: translateUi } = useDashboardTranslation();
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const headerColumns = table.getAllLeafColumns().filter((col) => {
@@ -226,9 +232,11 @@ const VirtualizedSessionsTable = ({
       {!isLoading && data.length === 0 && (
         <EmptyState
           className="py-16"
-          description="Nothing matches this date range and filters. Sessions appear as soon as your site or app sends events."
+          description={translateUi(
+            'Nothing matches this date range and filters. Sessions appear as soon as your site or app sends events.'
+          )}
           icon={UsersIcon}
-          title="No sessions"
+          title={translateUi('No sessions')}
           variant="inline"
         />
       )}
@@ -269,6 +277,8 @@ const VirtualizedSessionsTable = ({
 };
 
 export const SessionsTable = ({ query }: Props) => {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isLoading } = query;
   const columns = useColumns();
   const navigate = useNavigate();
@@ -339,8 +349,10 @@ export const SessionsTable = ({ query }: Props) => {
       <>
         <SessionTableToolbar table={table} />
         <FullPageErrorState
-          description="We could not load this data. Try again in a moment."
-          title="Something went wrong"
+          description={translateUi(
+            'We could not load this data. Try again in a moment.'
+          )}
+          title={translateUi('Something went wrong')}
           variant="inline"
         >
           <Button
@@ -349,7 +361,7 @@ export const SessionsTable = ({ query }: Props) => {
             onClick={() => query.refetch()}
             variant="outline"
           >
-            Try again
+            <DashboardText i18nKey={'Try again'} />{' '}
           </Button>
         </FullPageErrorState>
       </>
@@ -380,6 +392,8 @@ export const SessionsTable = ({ query }: Props) => {
 };
 
 function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { search, setSearch } = useSearchQueryState();
 
   return (
@@ -387,12 +401,12 @@ function SessionTableToolbar({ table }: { table: Table<IServiceSession> }) {
       <div className="flex flex-1 flex-wrap items-center gap-2">
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search sessions by path, referrer..."
+          placeholder={translateUi('Search sessions by path, referrer...')}
           value={search}
         />
         <TableFilterPills
           categories={['profile', 'group', 'cohort', 'session']}
-          title="Session filters"
+          title={translateUi('Session filters')}
           urlKey="f"
         />
       </div>

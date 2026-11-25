@@ -20,6 +20,10 @@ import {
 } from './ui/dropdown-menu';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
+import {
+  TranslationText as DashboardText,
+  useTranslation,
+} from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
@@ -42,7 +46,9 @@ export default function SidebarOrganizationMenu({
         to="/$organizationId"
       >
         <SidebarIcon icon={LayoutListIcon} />
-        <div className="flex-1">Projects</div>
+        <div className="flex-1">
+          <DashboardText i18nKey={'Projects'} />
+        </div>
       </Link>
       <Link
         activeOptions={{ exact: true }}
@@ -51,7 +57,9 @@ export default function SidebarOrganizationMenu({
         to="/$organizationId/settings"
       >
         <SidebarIcon icon={CogIcon} />
-        <div className="flex-1">Settings</div>
+        <div className="flex-1">
+          <DashboardText i18nKey={'Settings'} />
+        </div>
       </Link>
       {isAdmin && !isSelfHosted && (
         <Link
@@ -61,7 +69,9 @@ export default function SidebarOrganizationMenu({
           to="/$organizationId/billing"
         >
           <SidebarIcon icon={CreditCardIcon} />
-          <div className="flex-1">Billing</div>
+          <div className="flex-1">
+            <DashboardText i18nKey={'Billing'} />
+          </div>
           {(() => {
             if (!organization) {
               return null;
@@ -86,7 +96,9 @@ export default function SidebarOrganizationMenu({
           to="/$organizationId/members"
         >
           <SidebarIcon icon={UsersIcon} />
-          <div className="flex-1">Members</div>
+          <div className="flex-1">
+            <DashboardText i18nKey={'Members'} />
+          </div>
         </Link>
       )}
     </>
@@ -94,6 +106,7 @@ export default function SidebarOrganizationMenu({
 }
 
 export function ActionCTAButton() {
+  const { t } = useTranslation();
   const { organizationId } = useParams({ strict: false });
   const { isAdmin } = useOrganizationAccess(organizationId);
 
@@ -101,12 +114,12 @@ export function ActionCTAButton() {
     ...(isAdmin
       ? [
           {
-            label: 'Create a project',
+            label: t('Create project'),
             icon: PlusIcon,
             onClick: () => pushModal('AddProject'),
           },
           {
-            label: 'Invite a user',
+            label: t('Invite a user'),
             icon: UsersIcon,
             onClick: () => pushModal('CreateInvite'),
           },

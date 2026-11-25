@@ -4,6 +4,10 @@ import { ChatLimitNotice, parseChatLimit } from './chat-limit-notice';
 import { ChatMessage } from './chat-message';
 import type { AssistantUIMessage } from './types';
 import { Button } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 export function ChatMessages({
   messages,
@@ -38,7 +42,9 @@ export function ChatMessages({
           />
         ))}
         {status === 'submitted' && (
-          <div className="op-shimmer font-medium text-sm">Thinking…</div>
+          <div className="op-shimmer font-medium text-sm">
+            <DashboardText i18nKey={'Thinking…'} />
+          </div>
         )}
         {limit && <ChatLimitNotice limit={limit} />}
         {status === 'error' && !limit && (
@@ -48,7 +54,7 @@ export function ChatMessages({
               {error?.message ?? 'Something went wrong.'}
             </span>
             <button className="underline" onClick={onRetry} type="button">
-              Retry
+              <DashboardText i18nKey={'Retry'} />{' '}
             </button>
           </div>
         )}
@@ -59,13 +65,15 @@ export function ChatMessages({
 }
 
 function ScrollToBottom() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { isAtBottom, scrollToBottom } = useStickToBottomContext();
   if (isAtBottom) {
     return null;
   }
   return (
     <Button
-      aria-label="Scroll to latest"
+      aria-label={translateUi('Scroll to latest')}
       className="absolute bottom-3 left-1/2 h-7 -translate-x-1/2 gap-1 rounded-full px-3 shadow-md"
       onClick={() => scrollToBottom()}
       size="sm"
@@ -73,7 +81,7 @@ function ScrollToBottom() {
       variant="secondary"
     >
       <ArrowDownIcon className="size-3" />
-      Latest
+      <DashboardText i18nKey={'Latest'} />{' '}
     </Button>
   );
 }

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { differenceInMonths } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { op } from '@/utils/op';
@@ -76,11 +77,14 @@ export default function YearlySwitchPrompt({
   return (
     <div className="col gap-1 border-b bg-card p-4 lg:p-8">
       <div className="font-medium text-lg">
-        Switch to yearly — get 2 months free
+        <DashboardText i18nKey={'Switch to yearly — get 2 months free'} />{' '}
       </div>
       <div className="mb-1">
-        You've been with us for a while. Pay for 10 months and get 12: same
-        plan, same limits, one invoice a year.
+        <DashboardText
+          i18nKey={
+            "You've been with us for a while. Pay for 10 months and get 12: same plan, same limits, one invoice a year."
+          }
+        />{' '}
       </div>
       <div className="row gap-2">
         <Button
@@ -96,10 +100,10 @@ export default function YearlySwitchPrompt({
             });
           }}
         >
-          See my yearly price
+          <DashboardText i18nKey={'See my yearly price'} />{' '}
         </Button>
         <Button onClick={dismiss} variant="outline">
-          Maybe later
+          <DashboardText i18nKey={'Maybe later'} />{' '}
         </Button>
       </div>
     </div>

@@ -5,6 +5,7 @@ import { OPChartTooltip } from '@/components/charts/op-tooltip';
 import { SeriesBar } from '@/components/charts/series-bar';
 import { YAxis } from '@/components/charts/y-axis';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { getChartColor } from '@/utils/theme';
 
 const MARGIN = { top: 10, right: 10, bottom: 10, left: 32 };
@@ -132,10 +133,12 @@ function EmptyState() {
 
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-4 text-center">
         <p className="font-medium text-foreground/85 text-sm">
-          No activity yet
+          <DashboardText i18nKey={'No activity yet'} />{' '}
         </p>
         <p className="text-muted-foreground text-xs">
-          Sessions will show up here once tracking starts.
+          <DashboardText
+            i18nKey={'Sessions will show up here once tracking starts.'}
+          />{' '}
         </p>
       </div>
     </div>

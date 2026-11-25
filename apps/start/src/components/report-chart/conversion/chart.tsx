@@ -20,6 +20,7 @@ import { YAxis } from '@/components/charts/y-axis';
 import { useConversionRechartDataModel } from '@/hooks/use-conversion-rechart-data-model';
 import { formatDateInterval } from '@/hooks/use-format-date-interval';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import type { RouterOutputs } from '@/trpc/client';
@@ -199,7 +200,8 @@ export function Chart({
           className="pointer-events-none absolute top-0 right-3 font-medium text-xs"
           style={{ color: averageColor }}
         >
-          Average ({round(averageRate, 2)}%)
+          <DashboardText i18nKey={'Average ('} />
+          {round(averageRate, 2)}%)
         </div>
       </div>
       {series.length > 1 && chrome.legendLimit > 0 && (
@@ -216,7 +218,8 @@ export function Chart({
           ))}
           {series.length > chrome.legendLimit && (
             <div className="text-muted-foreground">
-              +{series.length - chrome.legendLimit} more
+              +{series.length - chrome.legendLimit}{' '}
+              <DashboardText i18nKey={'more'} />{' '}
             </div>
           )}
         </div>

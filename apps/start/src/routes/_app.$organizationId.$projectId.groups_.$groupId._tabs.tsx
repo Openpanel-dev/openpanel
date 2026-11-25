@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEntityPageContext } from '@/hooks/use-page-context-helpers';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { createProjectTitle } from '@/utils/title';
@@ -93,7 +94,9 @@ function Component() {
       <PageContainer>
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
           <Building2Icon className="size-10 opacity-30" />
-          <p className="text-sm">Group not found</p>
+          <p className="text-sm">
+            <DashboardText i18nKey={'Group not found'} />
+          </p>
         </div>
       </PageContainer>
     );
@@ -118,7 +121,7 @@ function Component() {
               variant="outline"
             >
               <PencilIcon className="mr-2 size-4" />
-              Edit
+              <DashboardText i18nKey={'Edit'} />{' '}
             </Button>
             <Button
               onClick={() =>
@@ -133,7 +136,7 @@ function Component() {
               variant="outline"
             >
               <Trash2Icon className="mr-2 size-4" />
-              Delete
+              <DashboardText i18nKey={'Delete'} />{' '}
             </Button>
           </div>
         }

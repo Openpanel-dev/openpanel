@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/ui/data-table/data-table';
 import { useAiFilters } from '@/hooks/use-ai-filters';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 const PAGE_SIZE = 50;
@@ -137,7 +138,7 @@ function useColumns(): ColumnDef<IServiceAiEvent>[] {
             </Badge>
           ) : (
             <Badge variant="outline">
-              <CheckIcon /> OK
+              <CheckIcon /> <DashboardText i18nKey={'OK'} />{' '}
             </Badge>
           ),
       },
@@ -202,7 +203,7 @@ export function AiGenerationsTable({ projectId }: { projectId: string }) {
           onClick={() => query.fetchNextPage()}
           variant="outline"
         >
-          Load more
+          <DashboardText i18nKey={'Load more'} />{' '}
         </Button>
       )}
     </div>

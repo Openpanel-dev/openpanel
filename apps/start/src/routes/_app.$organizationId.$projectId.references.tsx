@@ -24,6 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal, showConfirm } from '@/modals';
 import { formatDateTime } from '@/utils/date';
@@ -122,7 +126,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
             })
           }
         >
-          Edit
+          <DashboardText i18nKey={'Edit'} />{' '}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -139,7 +143,7 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
           }
           variant="destructive"
         >
-          Delete
+          <DashboardText i18nKey={'Delete'} />{' '}
         </DropdownMenuItem>
       </>
     );
@@ -147,6 +151,8 @@ export const columnDefs: ColumnDef<IServiceReference>[] = [
 ];
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
   const query = useQuery(
@@ -173,13 +179,19 @@ function Component() {
     <PageContainer>
       <PageHeader
         className="mb-8"
-        description="References is a good way to keep track of important events. They will show up in your reports."
-        title="References"
+        description={translateUi(
+          'References is a good way to keep track of important events. They will show up in your reports.'
+        )}
+        title={translateUi('References')}
       />
       <DataTableToolbar table={table}>
         <Button icon={PlusIcon} onClick={() => pushModal('AddReference')}>
-          <span className="max-sm:hidden">Create reference</span>
-          <span className="sm:hidden">Reference</span>
+          <span className="max-sm:hidden">
+            <DashboardText i18nKey={'Create reference'} />
+          </span>
+          <span className="sm:hidden">
+            <DashboardText i18nKey={'Reference'} />
+          </span>
         </Button>
       </DataTableToolbar>
       <DataTable error={query.isError} loading={loading} table={table} />

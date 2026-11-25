@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useOrganizationAccess } from '@/hooks/use-organization-access';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 
 interface ProjectSelectorProps {
@@ -90,7 +91,9 @@ export default function ProjectSelector({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-[200px]">
-        <DropdownMenuLabel>Projects</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <DashboardText i18nKey={'Projects'} />
+        </DropdownMenuLabel>
         <DropdownMenuGroup>
           {projects.slice(0, 10).map((project) => (
             <DropdownMenuItem
@@ -113,7 +116,7 @@ export default function ProjectSelector({
                 }}
                 to={'/$organizationId'}
               >
-                All projects
+                <DashboardText i18nKey={'All projects'} />{' '}
               </Link>
             </DropdownMenuItem>
           )}
@@ -124,7 +127,7 @@ export default function ProjectSelector({
                 pushModal('AddProject');
               }}
             >
-              Create new project
+              <DashboardText i18nKey={'Create new project'} />{' '}
               <DropdownMenuShortcut>
                 <PlusIcon size={16} />
               </DropdownMenuShortcut>
@@ -134,7 +137,9 @@ export default function ProjectSelector({
         {!!organizations && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuLabel>Organizations</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              <DashboardText i18nKey={'Organizations'} />
+            </DropdownMenuLabel>
             <DropdownMenuGroup>
               {organizations.map((organization) => (
                 <DropdownMenuItem
@@ -152,7 +157,7 @@ export default function ProjectSelector({
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link to={'/onboarding/project'}>
-                  New organization
+                  <DashboardText i18nKey={'New organization'} />{' '}
                   <DropdownMenuShortcut>
                     <PlusIcon size={16} />
                   </DropdownMenuShortcut>

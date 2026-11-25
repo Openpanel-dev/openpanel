@@ -11,12 +11,18 @@ import { Button } from '@/components/ui/button';
 import { AnimatedSearchInput } from '@/components/ui/data-table/data-table-toolbar';
 import { ToolbarMultiSelect } from '@/components/ui/toolbar-select';
 import { useAiFilters } from '@/hooks/use-ai-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
 const NO_VALUES_TEXT = 'Nothing in this range';
 
 export function AiFilters({ projectId }: { projectId: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { range, startDate, endDate } = useOverviewOptions();
   const { state, setState, activeCount, clear } = useAiFilters();
@@ -32,7 +38,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
       <ToolbarMultiSelect
         emptyText={NO_VALUES_TEXT}
         icon={CpuIcon}
-        label="Model"
+        label={translateUi('Model')}
         onChange={(models) =>
           setState({ models: models.length ? models : null })
         }
@@ -42,7 +48,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
       <ToolbarMultiSelect
         emptyText={NO_VALUES_TEXT}
         icon={ServerIcon}
-        label="Provider"
+        label={translateUi('Provider')}
         onChange={(providers) =>
           setState({ providers: providers.length ? providers : null })
         }
@@ -52,7 +58,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
       <ToolbarMultiSelect
         emptyText={NO_VALUES_TEXT}
         icon={LayersIcon}
-        label="Feature"
+        label={translateUi('Feature')}
         onChange={(names) => setState({ names: names.length ? names : null })}
         options={values.data?.name ?? []}
         selected={state.names ?? []}
@@ -63,11 +69,11 @@ export function AiFilters({ projectId }: { projectId: string }) {
         onClick={() => setState({ errors: state.errors ? null : true })}
         variant="outline"
       >
-        Errors only
+        <DashboardText i18nKey={'Errors only'} />{' '}
       </Button>
       <AnimatedSearchInput
         onChange={(value) => setState({ q: value || null })}
-        placeholder="Search prompts, trace id…"
+        placeholder={translateUi('Search prompts, trace id…')}
         value={state.q ?? ''}
       />
       {state.profile && (
@@ -96,7 +102,7 @@ export function AiFilters({ projectId }: { projectId: string }) {
       )}
       {activeCount > 0 && (
         <Button onClick={clear} variant="ghost">
-          Clear
+          <DashboardText i18nKey={'Clear'} />{' '}
         </Button>
       )}
     </div>

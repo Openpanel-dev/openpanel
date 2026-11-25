@@ -11,6 +11,10 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 
 const validation = zRequestResetPassword;
@@ -21,6 +25,8 @@ interface Props {
 }
 
 export default function RequestPasswordReset({ email }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const form = useForm<IForm>({
     resolver: zodResolver(validation),
     defaultValues: {
@@ -52,12 +58,12 @@ export default function RequestPasswordReset({ email }: Props) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Request password reset" />
+      <ModalHeader title={translateUi('Request password reset')} />
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
         <InputWithLabel
           error={form.formState.errors.email?.message}
-          label="Email"
-          placeholder="Your email address"
+          label={translateUi('Email')}
+          placeholder={translateUi('Your email address')}
           {...form.register('email')}
         />
 
@@ -67,10 +73,10 @@ export default function RequestPasswordReset({ email }: Props) {
             type="button"
             variant={'secondary'}
           >
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button icon={SendIcon} loading={mutation.isPending} type="submit">
-            Continue
+            <DashboardText i18nKey={'Continue'} />{' '}
           </Button>
         </DialogFooter>
       </form>

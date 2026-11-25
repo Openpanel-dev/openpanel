@@ -1,5 +1,6 @@
 import { round } from '@openpanel/shared';
 import { isNil } from 'ramda';
+import { useTranslation } from '@/i18n/provider';
 
 export function fancyMinutes(time: number) {
   // Round before splitting, or 239.9s reads as "3m 60s".
@@ -75,7 +76,7 @@ export const formatCurrency =
   };
 
 export function useNumber() {
-  const locale = 'en-US';
+  const { language: locale } = useTranslation();
   const format = formatNumber(locale);
   const short = shortNumber(locale);
   const currency = formatCurrency(locale);

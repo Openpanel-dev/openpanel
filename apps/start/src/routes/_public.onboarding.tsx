@@ -9,6 +9,10 @@ import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { SignUpEmailForm } from '@/components/auth/sign-up-email-form';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { trackFunnel } from '@/utils/funnel-tracking';
 import { isSignedIn } from '@/utils/route-session';
@@ -66,6 +70,8 @@ export const Route = createFileRoute('/_public/onboarding')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { inviteId } = Route.useSearch();
   const { isSelfHosted } = useAppContext();
   const trpc = useTRPC();
@@ -102,17 +108,25 @@ function Component() {
 
   return (
     <div className="col w-full gap-8">
-      <AuthHeading description={description} title="Create your account" />
+      <AuthHeading
+        description={description}
+        title={translateUi('Create your account')}
+      />
 
       {invite && !invite.isExpired && (
         <div className="row items-start gap-3 rounded-xl bg-def-200 p-4">
           <MailOpenIcon className="mt-0.5 shrink-0 text-highlight" size={18} />
           <div className="col gap-0.5">
             <div className="font-medium">
-              You are invited to {invite.organization?.name}
+              <DashboardText i18nKey={'You are invited to'} />{' '}
+              {invite.organization?.name}
             </div>
             <p className="text-muted-foreground text-sm">
-              Create your account and you will join the workspace right away.
+              <DashboardText
+                i18nKey={
+                  'Create your account and you will join the workspace right away.'
+                }
+              />{' '}
             </p>
           </div>
         </div>
@@ -125,11 +139,16 @@ function Component() {
           />
           <div className="col gap-0.5">
             <div className="font-medium">
-              The invitation to {invite.organization?.name} has expired
+              <DashboardText i18nKey={'The invitation to'} />{' '}
+              {invite.organization?.name}{' '}
+              <DashboardText i18nKey={'has expired'} />{' '}
             </div>
             <p className="text-muted-foreground text-sm">
-              Ask the workspace owner for a new one. You can still create an
-              account now and join later.
+              <DashboardText
+                i18nKey={
+                  'Ask the workspace owner for a new one. You can still create an account now and join later.'
+                }
+              />{' '}
             </p>
           </div>
         </div>
@@ -153,38 +172,40 @@ function Component() {
               />
             )}
           </div>
-          <Or>or sign up with email</Or>
+          <Or>
+            <DashboardText i18nKey={'or sign up with email'} />
+          </Or>
         </>
       )}
 
       <SignUpEmailForm inviteId={inviteId} />
 
       <p className="text-center text-muted-foreground text-xs leading-relaxed">
-        By creating an account you agree to the{' '}
+        <DashboardText i18nKey={'By creating an account you agree to the'} />{' '}
         <a
           className="underline hover:text-foreground"
           href="https://openpanel.dev/terms"
           rel="noreferrer"
           target="_blank"
         >
-          Terms of Service
+          <DashboardText i18nKey={'Terms of Service'} />{' '}
         </a>{' '}
-        and{' '}
+        <DashboardText i18nKey={'and'} />{' '}
         <a
           className="underline hover:text-foreground"
           href="https://openpanel.dev/privacy"
           rel="noreferrer"
           target="_blank"
         >
-          Privacy Policy
+          <DashboardText i18nKey={'Privacy Policy'} />{' '}
         </a>
         .
       </p>
 
       <p className="text-center text-muted-foreground text-sm">
-        Already have an account?{' '}
+        <DashboardText i18nKey={'Already have an account?'} />{' '}
         <a className="font-medium text-foreground underline" href={signInHref}>
-          Sign in
+          <DashboardText i18nKey={'Sign in'} />{' '}
         </a>
       </p>
     </div>

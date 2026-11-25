@@ -6,6 +6,7 @@ import { useEventDrawer } from '../use-event-drawer';
 import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { Tooltiper } from '@/components/ui/tooltip';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 import { formatTimeAgoOrDateTime } from '@/utils/date';
@@ -75,7 +76,9 @@ export const EventItem = memo<EventItemProps>(
             <span className="wrap-break-word min-w-0 whitespace-break-spaces break-all text-sm">
               {event.name === 'screen_view' ? (
                 <>
-                  <span className="mr-2 text-muted-foreground">Visit:</span>
+                  <span className="mr-2 text-muted-foreground">
+                    <DashboardText i18nKey={'Visit:'} />
+                  </span>
                   <span className="min-w-0 font-medium">
                     {url ? url : event.path}
                   </span>

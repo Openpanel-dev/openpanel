@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/data-table/data-table-toolbar';
 import { DataTableViewOptions } from '@/components/ui/data-table/data-table-view-options';
 import { useSearchQueryState } from '@/hooks/use-search-query-state';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { arePropsEqual } from '@/utils/are-props-equal';
 
@@ -113,6 +114,8 @@ function GroupsTableToolbar({
   table: Table<IServiceGroupWithStats>;
   toolbarLeft?: React.ReactNode;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { search, setSearch } = useSearchQueryState();
   return (
     <DataTableToolbarContainer>
@@ -120,7 +123,7 @@ function GroupsTableToolbar({
         {toolbarLeft}
         <AnimatedSearchInput
           onChange={setSearch}
-          placeholder="Search groups..."
+          placeholder={translateUi('Search groups...')}
           value={search}
         />
       </div>

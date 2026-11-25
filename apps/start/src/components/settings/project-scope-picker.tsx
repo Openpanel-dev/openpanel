@@ -7,6 +7,7 @@ import { useId } from 'react';
 import { ProjectAccessGrants } from '@/components/settings/project-access-grants';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 interface ProjectScopePickerProps {
   projectScope: ProjectScope;
@@ -42,13 +43,13 @@ export function ProjectScopePicker({
         <div className="flex items-center gap-2">
           <RadioGroupItem id={allId} value="all" />
           <Label className="mb-0" htmlFor={allId}>
-            All projects
+            <DashboardText i18nKey={'All projects'} />{' '}
           </Label>
         </div>
         <div className="flex items-center gap-2">
           <RadioGroupItem id={selectedId} value="selected" />
           <Label className="mb-0" htmlFor={selectedId}>
-            Selected projects
+            <DashboardText i18nKey={'Selected projects'} />{' '}
           </Label>
         </div>
       </RadioGroup>

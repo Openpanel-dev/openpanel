@@ -26,6 +26,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { objectToZodEnums } from '@/utils/object-to-zod-enums';
 
@@ -78,7 +79,9 @@ export function ReportChartType({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel>Available charts</DropdownMenuLabel>
+        <DropdownMenuLabel>
+          <DashboardText i18nKey={'Available charts'} />
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>

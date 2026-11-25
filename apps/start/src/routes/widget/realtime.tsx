@@ -11,6 +11,7 @@ import { Ping } from '@/components/ping';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import useWS from '@/hooks/use-ws';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { countries } from '@/translations/countries';
 import type { RouterOutputs } from '@/trpc/client';
@@ -40,7 +41,7 @@ export const Route = createFileRoute('/widget/realtime')({
   // `error.message` — for a ZodError that is the raw issues array.
   errorComponent: () => (
     <div className="p-2 text-muted-foreground text-xs">
-      Missing or invalid widget link.
+      <DashboardText i18nKey={'Missing or invalid widget link.'} />{' '}
     </div>
   ),
   component: RouteComponent,
@@ -64,9 +65,13 @@ function RouteComponent() {
     return (
       <div className="center-center col flex h-screen w-full bg-background p-4 text-foreground">
         <LogoSquare className="mb-4 size-10" />
-        <h1 className="font-semibold text-xl">Widget not found</h1>
+        <h1 className="font-semibold text-xl">
+          <DashboardText i18nKey={'Widget not found'} />
+        </h1>
         <p className="mt-2 text-muted-foreground text-sm">
-          This widget is not available or has been removed.
+          <DashboardText
+            i18nKey={'This widget is not available or has been removed.'}
+          />{' '}
         </p>
       </div>
     );
@@ -136,7 +141,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
           <div className="flex w-full items-center gap-3">
             <Ping />
             <div className="flex-1 font-medium text-muted-foreground text-sm">
-              USERS IN LAST 30 MINUTES
+              <DashboardText i18nKey={'USERS IN LAST 30 MINUTES'} />{' '}
             </div>
             {data.project.domain && <SerieIcon name={data.project.domain} />}
           </div>
@@ -195,7 +200,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
             {data.countries.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
-                  COUNTRY
+                  <DashboardText i18nKey={'COUNTRY'} />{' '}
                 </div>
                 <div className="col">
                   {(() => {
@@ -239,7 +244,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
             {data.referrers.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
-                  REFERRER
+                  <DashboardText i18nKey={'REFERRER'} />{' '}
                 </div>
                 <div className="col">
                   {(() => {
@@ -277,7 +282,7 @@ function RealtimeWidget({ shareId, data, limit, color }: RealtimeWidgetProps) {
             {data.paths.length > 0 && (
               <div className="flex flex-col">
                 <div className="mb-3 font-medium text-muted-foreground text-xs">
-                  PATH
+                  <DashboardText i18nKey={'PATH'} />{' '}
                 </div>
                 <div className="col">
                   {(() => {
@@ -370,7 +375,8 @@ function RestRow({
   return (
     <div className="-mx-3 flex h-10 items-center justify-between border-b px-3 py-2 text-sm hover:bg-foreground/5">
       <span className="truncate">
-        {firstName} and {otherCount} more {typeLabel}...
+        {firstName} <DashboardText i18nKey={'and'} /> {otherCount}{' '}
+        <DashboardText i18nKey={'more'} /> {typeLabel}...
       </span>
       <span className="font-semibold">{number.short(totalCount)}</span>
     </div>
@@ -433,7 +439,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
           <div className="flex w-full items-center gap-3">
             <div className="size-2 rounded-full bg-muted" />
             <div className="flex-1 font-medium text-muted-foreground text-sm">
-              USERS IN LAST 30 MINUTES
+              <DashboardText i18nKey={'USERS IN LAST 30 MINUTES'} />{' '}
             </div>
           </div>
           <div className="size-4 shrink-0 rounded bg-muted" />
@@ -467,7 +473,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
-              COUNTRY
+              <DashboardText i18nKey={'COUNTRY'} />{' '}
             </div>
             <div className="col">
               {SKELETON_KEYS.countries.slice(0, itemCount).map((key) => (
@@ -478,7 +484,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
 
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
-              REFERRER
+              <DashboardText i18nKey={'REFERRER'} />{' '}
             </div>
             <div className="col">
               {SKELETON_KEYS.referrers.slice(0, itemCount).map((key) => (
@@ -489,7 +495,7 @@ function RealtimeWidgetSkeleton({ limit }: { limit: number }) {
 
           <div className="flex flex-col">
             <div className="mb-3 font-medium text-muted-foreground text-xs">
-              PATH
+              <DashboardText i18nKey={'PATH'} />{' '}
             </div>
             <div className="col">
               {SKELETON_KEYS.paths.slice(0, itemCount).map((key) => (

@@ -6,6 +6,7 @@ import {
   useReducedMotion,
 } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 // A scripted replay of the dashboard chat: the visitor sees a question go
@@ -159,7 +160,7 @@ export function ChatPreview({ className }: { className?: string }) {
                 layout="position"
                 transition={reducedMotion ? INSTANT : ENTER_TRANSITION}
               >
-                Thinking…
+                <DashboardText i18nKey={'Thinking…'} />{' '}
               </motion.div>
             )}
           </AnimatePresence>
@@ -168,7 +169,11 @@ export function ChatPreview({ className }: { className?: string }) {
       <div className="row m-3 mt-0 items-center gap-3 rounded-2xl border bg-card px-4 py-2.5">
         <SparklesIcon className="size-4 shrink-0 text-muted-foreground" />
         <span className="flex-1 truncate text-muted-foreground/70 text-sm">
-          Ask about your data, build a chart, or ask how something works…
+          <DashboardText
+            i18nKey={
+              'Ask about your data, build a chart, or ask how something works…'
+            }
+          />{' '}
         </span>
         <span className="center-center size-7 shrink-0 rounded-full bg-primary text-primary-foreground">
           <ArrowUpIcon className="size-3.5" />
@@ -228,7 +233,9 @@ function TrendChart() {
         preserveAspectRatio="none"
         viewBox={`0 0 ${TREND_WIDTH} ${TREND_HEIGHT}`}
       >
-        <title>Signups trend</title>
+        <title>
+          <DashboardText i18nKey={'Signups trend'} />
+        </title>
         <polygon
           className="fill-chart-0/15"
           points={area}

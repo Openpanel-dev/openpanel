@@ -14,6 +14,10 @@ import type { z } from 'zod';
 import { InputWithLabel } from '../forms/input-with-label';
 import { Button } from '../ui/button';
 import { PasswordInput } from './password-input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
@@ -25,6 +29,8 @@ export function SignUpEmailForm({
 }: {
   inviteId: string | undefined;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const authClient = useAuthClient();
   const mutation = useMutation({
     mutationFn: ({ firstName, lastName, email, password }: IForm) =>
@@ -78,8 +84,8 @@ export function SignUpEmailForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <InputWithLabel
           autoComplete="given-name"
-          label="First name"
-          placeholder="Ada"
+          label={translateUi('First name')}
+          placeholder={translateUi('Ada')}
           size="xl"
           type="text"
           {...form.register('firstName')}
@@ -87,8 +93,8 @@ export function SignUpEmailForm({
         />
         <InputWithLabel
           autoComplete="family-name"
-          label="Last name"
-          placeholder="Lovelace"
+          label={translateUi('Last name')}
+          placeholder={translateUi('Lovelace')}
           size="xl"
           type="text"
           {...form.register('lastName')}
@@ -98,7 +104,7 @@ export function SignUpEmailForm({
       <InputWithLabel
         autoComplete="email"
         inputMode="email"
-        label="Email"
+        label={translateUi('Email')}
         placeholder="you@company.com"
         size="xl"
         type="email"
@@ -107,9 +113,9 @@ export function SignUpEmailForm({
       />
       <PasswordInput
         autoComplete="new-password"
-        hint="At least 8 characters"
-        label="Password"
-        placeholder="Pick a strong password"
+        hint={translateUi('At least 8 characters')}
+        label={translateUi('Password')}
+        placeholder={translateUi('Pick a strong password')}
         size="xl"
         {...form.register('password')}
         error={form.formState.errors.password?.message}
@@ -120,7 +126,7 @@ export function SignUpEmailForm({
         size="xl"
         type="submit"
       >
-        Create account
+        <DashboardText i18nKey={'Create account'} />{' '}
       </Button>
     </form>
   );

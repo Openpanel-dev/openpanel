@@ -7,6 +7,10 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 const validator = z.object({
   name: z.string().min(1),
@@ -20,6 +24,8 @@ type EditReportProps = {
 };
 
 export default function EditReport({ form, onSubmit }: EditReportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { register, handleSubmit, formState } = useForm<IForm>({
     resolver: zodResolver(validator),
     defaultValues: form,
@@ -27,15 +33,19 @@ export default function EditReport({ form, onSubmit }: EditReportProps) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Edit report" />
+      <ModalHeader title={translateUi('Edit report')} />
       <form onSubmit={handleSubmit(onSubmit)}>
-        <InputWithLabel label="Name" placeholder="Name" {...register('name')} />
+        <InputWithLabel
+          label={translateUi('Name')}
+          placeholder={translateUi('Name')}
+          {...register('name')}
+        />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Update
+            <DashboardText i18nKey={'Update'} />{' '}
           </Button>
         </DialogFooter>
       </form>

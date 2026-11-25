@@ -21,6 +21,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 interface ReportIntervalProps {
@@ -115,7 +116,7 @@ export function ReportInterval({
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel className="row items-center justify-between">
-          Select interval
+          <DashboardText i18nKey={'Select interval'} />{' '}
           {!!selectedItem && (
             <CommandShortcut>{selectedItem?.label}</CommandShortcut>
           )}

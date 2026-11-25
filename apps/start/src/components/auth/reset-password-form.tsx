@@ -8,12 +8,18 @@ import type { z } from 'zod';
 import { Button } from '../ui/button';
 import { AuthHeading } from './auth-shell';
 import { PasswordInput } from './password-input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 
 const validator = zResetPassword;
 type IForm = z.infer<typeof validator>;
 
 export function ResetPasswordForm({ token }: { token: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const navigate = useNavigate();
   const authClient = useAuthClient();
   const mutation = useMutation({
@@ -45,27 +51,27 @@ export function ResetPasswordForm({ token }: { token: string }) {
   return (
     <div className="col gap-8">
       <AuthHeading
-        description="Choose a new password for your account."
-        title="Reset your password"
+        description={translateUi('Choose a new password for your account.')}
+        title={translateUi('Reset your password')}
       />
       <form className="col gap-5" method="post" onSubmit={onSubmit}>
         <PasswordInput
           autoComplete="new-password"
           error={form.formState.errors.password?.message}
-          hint="At least 8 characters"
-          label="New password"
-          placeholder="New password"
+          hint={translateUi('At least 8 characters')}
+          label={translateUi('New password')}
+          placeholder={translateUi('New password')}
           size="xl"
           {...form.register('password')}
         />
         <Button loading={mutation.isPending} size="xl" type="submit">
-          Reset password
+          <DashboardText i18nKey={'Reset password'} />{' '}
         </Button>
       </form>
       <p className="text-center text-muted-foreground text-sm">
-        Remembered it after all?{' '}
+        <DashboardText i18nKey={'Remembered it after all?'} />{' '}
         <a className="font-medium text-foreground underline" href="/login">
-          Sign in
+          <DashboardText i18nKey={'Sign in'} />{' '}
         </a>
       </p>
     </div>

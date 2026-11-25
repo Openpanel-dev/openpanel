@@ -33,6 +33,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { useEventProperties } from '@/hooks/use-event-properties';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -43,6 +47,8 @@ interface Props {
 type IForm = z.infer<typeof zCreateNotificationRule>;
 
 export default function AddNotificationRule({ rule }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const typeId = useId();
   const client = useQueryClient();
   const { projectId } = useAppParams();
@@ -122,12 +128,12 @@ export default function AddNotificationRule({ rule }: Props) {
       <form className="col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
         <InputWithLabel
           error={form.formState.errors.name?.message}
-          label="Rule name"
-          placeholder="Eg. Sign ups on android"
+          label={translateUi('Rule name')}
+          placeholder={translateUi('Eg. Sign ups on android')}
           {...form.register('name')}
         />
 
-        <WithLabel error={typeError} id={typeId} label="Type">
+        <WithLabel error={typeError} id={typeId} label={translateUi('Type')}>
           <Controller
             control={form.control}
             name="config.type"
@@ -150,12 +156,12 @@ export default function AddNotificationRule({ rule }: Props) {
                     value: 'funnel',
                   },
                 ]}
-                placeholder="Select type"
+                placeholder={translateUi('Select type')}
               />
             )}
           />
         </WithLabel>
-        <WithLabel label="Events">
+        <WithLabel label={translateUi('Events')}>
           <div className="col gap-2">
             {eventsArray.fields.map((field, index) => {
               return (
@@ -179,7 +185,7 @@ export default function AddNotificationRule({ rule }: Props) {
               }
               variant={'outline'}
             >
-              Add event
+              <DashboardText i18nKey={'Add event'} />{' '}
             </Button>
           </div>
         </WithLabel>
@@ -188,28 +194,37 @@ export default function AddNotificationRule({ rule }: Props) {
           info={
             <div className="prose dark:prose-invert">
               <p>
-                Customize your notification message. You can grab any property
-                from your event.
+                <DashboardText
+                  i18nKey={
+                    'Customize your notification message. You can grab any property from your event.'
+                  }
+                />{' '}
               </p>
 
               <ul>
                 <li>
-                  <code>{'{{name}}'}</code> - The name of the event
+                  <code>{'{{name}}'}</code>{' '}
+                  <DashboardText i18nKey={'- The name of the event'} />{' '}
                 </li>
                 <li>
-                  <code>{'{{rule_name}}'}</code> - The name of the rule
+                  <code>{'{{rule_name}}'}</code>{' '}
+                  <DashboardText i18nKey={'- The name of the rule'} />{' '}
                 </li>
                 <li>
-                  <code>{'{{properties.your.property}}'}</code> - Get the value
-                  of a custom property
+                  <code>{'{{properties.your.property}}'}</code>{' '}
+                  <DashboardText
+                    i18nKey={'- Get the value of a custom property'}
+                  />{' '}
                 </li>
                 <li>
-                  <code>{'{{profile.firstName}}'}</code> - Get the value of a
-                  profile property
+                  <code>{'{{profile.firstName}}'}</code>{' '}
+                  <DashboardText
+                    i18nKey={'- Get the value of a profile property'}
+                  />{' '}
                 </li>
                 <li>
                   <div className="flex flex-wrap gap-x-2">
-                    And many more...
+                    <DashboardText i18nKey={'And many more...'} />{' '}
                     <code>profileId</code>
                     <code>createdAt</code>
                     <code>country</code>
@@ -231,11 +246,11 @@ export default function AddNotificationRule({ rule }: Props) {
               </ul>
             </div>
           }
-          label="Template"
+          label={translateUi('Template')}
         >
           <Textarea
             {...form.register('template')}
-            placeholder="You received a new '$EVENT_NAME' event"
+            placeholder={translateUi("You received a new '$EVENT_NAME' event")}
           />
         </WithLabel>
 
@@ -243,7 +258,7 @@ export default function AddNotificationRule({ rule }: Props) {
           control={form.control}
           name="integrations"
           render={({ field }) => (
-            <WithLabel label="Integrations">
+            <WithLabel label={translateUi('Integrations')}>
               <ComboboxAdvanced
                 {...field}
                 className="w-full"
@@ -251,7 +266,7 @@ export default function AddNotificationRule({ rule }: Props) {
                   label: integration.name,
                   value: integration.id,
                 }))}
-                placeholder="Pick integrations"
+                placeholder={translateUi('Pick integrations')}
                 value={field.value ?? []}
               />
             </WithLabel>
@@ -275,6 +290,8 @@ function EventField({
   index: number;
   remove: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const eventNames = useEventNames({ projectId });
   const filtersArray = useFieldArray({
@@ -299,7 +316,7 @@ function EventField({
               className="flex-1"
               items={eventNames}
               onChange={field.onChange}
-              placeholder="Select event"
+              placeholder={translateUi('Select event')}
               searchable
               value={field.value}
             />
@@ -318,7 +335,7 @@ function EventField({
               value: [],
             });
           }}
-          placeholder="Select a filter"
+          placeholder={translateUi('Select a filter')}
           searchable
           value=""
         >

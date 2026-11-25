@@ -10,6 +10,10 @@ import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
@@ -23,6 +27,8 @@ export interface AddDashboardProps {
 }
 
 export default function AddDashboard({ name }: AddDashboardProps = {}) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId, organizationId } = useAppParams();
   const router = useRouter();
   const trpc = useTRPC();
@@ -58,7 +64,7 @@ export default function AddDashboard({ name }: AddDashboardProps = {}) {
 
   return (
     <ModalContent>
-      <ModalHeader title="Add dashboard" />
+      <ModalHeader title={translateUi('Add dashboard')} />
       <form
         className="flex flex-col gap-4"
         onSubmit={handleSubmit(({ name }) => {
@@ -69,16 +75,16 @@ export default function AddDashboard({ name }: AddDashboardProps = {}) {
         })}
       >
         <InputWithLabel
-          label="Name"
-          placeholder="Name of the dashboard"
+          label={translateUi('Name')}
+          placeholder={translateUi('Name of the dashboard')}
           {...register('name')}
         />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!formState.isDirty} type="submit">
-            Create
+            <DashboardText i18nKey={'Create'} />{' '}
           </Button>
         </DialogFooter>
       </form>

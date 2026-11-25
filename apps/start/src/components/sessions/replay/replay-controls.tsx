@@ -17,6 +17,10 @@ import {
 } from './replay-context';
 import { type EventWithOffset, formatDuration } from './replay-utils';
 import { Tooltiper } from '@/components/ui/tooltip';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const JUMP_MS = 10_000;
@@ -250,6 +254,8 @@ export function ReplayControls({
   events: EventWithOffset[];
   fullscreenTarget: React.RefObject<HTMLElement | null>;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const {
     isReady,
     seek,
@@ -278,21 +284,21 @@ export function ReplayControls({
       <ReplayPlayPauseButton />
       <div className="row ml-2 items-center">
         <ControlButton
-          label="Previous event"
+          label={translateUi('Previous event')}
           onClick={jumps.previous}
           shortcut=","
         >
           <SkipBackIcon className="size-4" />
         </ControlButton>
         <ControlButton
-          label="Back 10 seconds"
+          label={translateUi('Back 10 seconds')}
           onClick={() => seek(currentTimeRef.current - JUMP_MS)}
           shortcut="J"
         >
           <RotateCcwIcon className="size-4" />
         </ControlButton>
         <ControlButton
-          label="Forward 10 seconds"
+          label={translateUi('Forward 10 seconds')}
           onClick={() =>
             seek(Math.min(duration, currentTimeRef.current + JUMP_MS))
           }
@@ -300,7 +306,11 @@ export function ReplayControls({
         >
           <RotateCwIcon className="size-4" />
         </ControlButton>
-        <ControlButton label="Next event" onClick={jumps.next} shortcut=".">
+        <ControlButton
+          label={translateUi('Next event')}
+          onClick={jumps.next}
+          shortcut="."
+        >
           <SkipForwardIcon className="size-4" />
         </ControlButton>
       </div>
@@ -317,11 +327,13 @@ export function ReplayControls({
           shortcut="I"
         >
           <FastForwardIcon className="size-3.5" />
-          <span className="hidden sm:inline">Skip idle</span>
+          <span className="hidden sm:inline">
+            <DashboardText i18nKey={'Skip idle'} />
+          </span>
         </ControlButton>
         <ControlButton
           className="w-11 font-mono font-semibold text-xs tabular-nums"
-          label="Playback speed"
+          label={translateUi('Playback speed')}
           onClick={() => {
             const index = SPEED_OPTIONS.indexOf(speed);
             setSpeed(SPEED_OPTIONS[(index + 1) % SPEED_OPTIONS.length]!);

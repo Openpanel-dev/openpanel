@@ -9,6 +9,7 @@ import {
 } from '@openpanel/core/modules/report/report.constants';
 import { Button } from '@/components/ui/button';
 import { DropdownMenuComposed } from '@/components/ui/dropdown-menu';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 
 interface FilterOperatorSelectProps {
   value: IChartEventFilterOperator;
@@ -25,6 +26,8 @@ export function FilterOperatorSelect({
   type,
   children,
 }: FilterOperatorSelectProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trigger = children ?? (
     <Button className="whitespace-nowrap" size="sm" variant="input">
       {operatorsShort[value]}
@@ -41,7 +44,7 @@ export function FilterOperatorSelect({
         description:
           operatorsShort[key] === operators[key] ? undefined : operators[key],
       }))}
-      label="Operator"
+      label={translateUi('Operator')}
       onChange={onChange}
     >
       {trigger}

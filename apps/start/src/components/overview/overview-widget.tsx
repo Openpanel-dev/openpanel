@@ -12,6 +12,7 @@ import { Input } from '../ui/input';
 import type { WidgetHeadProps, WidgetTitleProps } from '../widget';
 import { WidgetHead as WidgetHeadBase } from '../widget';
 import { useThrottle } from '@/hooks/use-throttle';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 export function WidgetHead({ className, ...props }: WidgetHeadProps) {
@@ -146,7 +147,7 @@ export function WidgetButtons({
             )}
             type="button"
           >
-            More <ChevronsUpDownIcon size={12} />
+            <DashboardText i18nKey={'More'} /> <ChevronsUpDownIcon size={12} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="[&_button]:w-full">

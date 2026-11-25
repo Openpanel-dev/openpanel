@@ -13,6 +13,10 @@ import DeleteOrganization from '@/components/settings/delete-organization';
 import { Button } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { createOrganizationTitle, PAGE_TITLES } from '@/utils/title';
 
@@ -34,6 +38,8 @@ export const Route = createFileRoute('/_app/$organizationId/settings')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { organizationId } = Route.useParams();
   const trpc = useTRPC();
   const {
@@ -53,9 +59,11 @@ function Component() {
   if (!organization) {
     return (
       <EmptyState
-        description="This workspace doesn't exist or you don't have access to it."
+        description={translateUi(
+          "This workspace doesn't exist or you don't have access to it."
+        )}
         icon={Building2Icon}
-        title="Workspace not found"
+        title={translateUi('Workspace not found')}
         variant="page"
       />
     );
@@ -89,8 +97,8 @@ function Component() {
     <div className="container p-8">
       <PageHeader
         className="mb-8"
-        description="Manage your workspace settings here"
-        title="Workspace settings"
+        description={translateUi('Manage your workspace settings here')}
+        title={translateUi('Workspace settings')}
       />
 
       <form
@@ -100,12 +108,14 @@ function Component() {
       >
         <Widget>
           <WidgetHead className="flex items-center justify-between">
-            <span className="title">Details</span>
+            <span className="title">
+              <DashboardText i18nKey={'Details'} />
+            </span>
           </WidgetHead>
           <WidgetBody className="col gap-4">
             <InputWithLabel
               className="flex-1"
-              label="Name"
+              label={translateUi('Name')}
               {...register('name')}
               defaultValue={organization?.name}
             />
@@ -113,7 +123,7 @@ function Component() {
               control={control}
               name="timezone"
               render={({ field }) => (
-                <WithLabel label="Timezone">
+                <WithLabel label={translateUi('Timezone')}>
                   <Combobox
                     className="w-full"
                     items={['UTC', ...Intl.supportedValuesOf('timeZone')].map(
@@ -123,7 +133,7 @@ function Component() {
                       })
                     )}
                     onChange={field.onChange}
-                    placeholder="Select timezone"
+                    placeholder={translateUi('Select timezone')}
                     value={field.value}
                     variant="input"
                   />
@@ -136,7 +146,7 @@ function Component() {
               size="sm"
               type="submit"
             >
-              Save
+              <DashboardText i18nKey={'Save'} />{' '}
             </Button>
           </WidgetBody>
         </Widget>

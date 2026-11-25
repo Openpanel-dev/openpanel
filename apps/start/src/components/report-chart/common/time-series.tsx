@@ -21,6 +21,7 @@ import {
   useRechartDataModel,
 } from '@/hooks/use-rechart-data-model';
 import type { IVisibleSeries } from '@/hooks/use-visible-series';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import type { IChartData } from '@/trpc/client';
@@ -108,7 +109,8 @@ export function useTimeSeriesChart({
       }
       return (
         <div className="text-muted-foreground text-sm">
-          and {hidden} more...
+          <DashboardText i18nKey={'and'} /> {hidden}{' '}
+          <DashboardText i18nKey={'more...'} />{' '}
         </div>
       );
     },
@@ -249,7 +251,9 @@ export function SeriesLegend({ series }: { series: IVisibleSeries }) {
         </div>
       ))}
       {hiddenCount > 0 && (
-        <div className="text-muted-foreground">+{hiddenCount} more</div>
+        <div className="text-muted-foreground">
+          +{hiddenCount} <DashboardText i18nKey={'more'} />
+        </div>
       )}
     </div>
   );

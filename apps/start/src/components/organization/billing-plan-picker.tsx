@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 import { op } from '@/utils/op';
@@ -192,7 +193,7 @@ export default function BillingPlanPicker({
           size="lg"
           variant="destructive"
         >
-          Cancel subscription
+          <DashboardText i18nKey={'Cancel subscription'} />{' '}
         </Button>
       );
     }
@@ -262,13 +263,17 @@ export default function BillingPlanPicker({
       <div className="col shrink-0 gap-4">
         {currentProduct && (
           <div className="font-medium">
-            Your current usage is{' '}
-            {number.format(organization.subscriptionPeriodEventsCount)} out of{' '}
+            <DashboardText i18nKey={'Your current usage is'} />{' '}
+            {number.format(organization.subscriptionPeriodEventsCount)}{' '}
+            <DashboardText i18nKey={'out of'} />{' '}
             {number.format(Number(currentProduct?.metadata.eventsLimit))}{' '}
-            events.{' '}
+            <DashboardText i18nKey={'events.'} />{' '}
             <span className="text-muted-foreground">
-              You cannot downgrade if your usage exceeds the limit of the new
-              plan.
+              <DashboardText
+                i18nKey={
+                  'You cannot downgrade if your usage exceeds the limit of the new plan.'
+                }
+              />{' '}
             </span>
           </div>
         )}
@@ -276,17 +281,19 @@ export default function BillingPlanPicker({
           <div className="font-medium">
             {recurringInterval === 'year' ? (
               <>
-                Yearly billing —{' '}
-                <span className="text-emerald-500">2 months free</span>{' '}
+                <DashboardText i18nKey={'Yearly billing —'} />{' '}
+                <span className="text-emerald-500">
+                  <DashboardText i18nKey={'2 months free'} />
+                </span>{' '}
                 <span className="font-normal text-muted-foreground">
-                  (pay for 10 months, get 12)
+                  <DashboardText i18nKey={'(pay for 10 months, get 12)'} />{' '}
                 </span>
               </>
             ) : (
               <>
-                Switch to yearly and get{' '}
+                <DashboardText i18nKey={'Switch to yearly and get'} />{' '}
                 <span className="text-emerald-500 underline">
-                  2 months for free
+                  <DashboardText i18nKey={'2 months for free'} />{' '}
                 </span>
               </>
             )}

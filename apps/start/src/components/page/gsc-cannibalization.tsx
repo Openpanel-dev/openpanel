@@ -8,6 +8,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pagination } from '@/components/pagination';
 import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
@@ -27,6 +31,8 @@ export function GscCannibalization({
   startDate,
   endDate,
 }: GscCannibalizationProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { apiUrl } = useAppContext();
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -93,7 +99,9 @@ export function GscCannibalization({
       <div className="border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
-            <h3 className="font-medium text-sm">Keyword Cannibalization</h3>
+            <h3 className="font-medium text-sm">
+              <DashboardText i18nKey={'Keyword Cannibalization'} />
+            </h3>
             {items.length > 0 && (
               <span className="rounded-full bg-muted px-2 py-0.5 font-medium text-muted-foreground text-xs">
                 {items.length}
@@ -125,7 +133,7 @@ export function GscCannibalization({
               setSearch(e.target.value);
               setPage(0);
             }}
-            placeholder="Search keywords"
+            placeholder={translateUi('Search keywords')}
             size="sm"
             type="search"
             value={search}
@@ -160,7 +168,7 @@ export function GscCannibalization({
                     )}
                   >
                     <AlertCircleIcon className="size-3" />
-                    {item.pages.length} pages
+                    {item.pages.length} <DashboardText i18nKey={'pages'} />{' '}
                   </div>
                   <span className="truncate font-medium text-sm">
                     {item.query}
@@ -168,8 +176,10 @@ export function GscCannibalization({
                 </div>
                 <div className="flex shrink-0 items-center gap-4">
                   <span className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
-                    {item.totalImpressions.toLocaleString()} impr ·{' '}
-                    {(avgCtr * 100).toFixed(1)}% avg CTR
+                    {item.totalImpressions.toLocaleString()}{' '}
+                    <DashboardText i18nKey={'impr ·'} />{' '}
+                    {(avgCtr * 100).toFixed(1)}
+                    <DashboardText i18nKey={'% avg CTR'} />{' '}
                   </span>
                   <ChevronsUpDownIcon
                     className={cn(
@@ -183,7 +193,7 @@ export function GscCannibalization({
               {isOpen && (
                 <div className="border-t bg-muted/20 px-4 py-3">
                   <p className="mb-3 text-muted-foreground text-xs">
-                    These pages all rank for{' '}
+                    <DashboardText i18nKey={'These pages all rank for'} />{' '}
                     <span className="font-medium text-foreground">
                       "{item.query}"
                     </span>
@@ -240,9 +250,12 @@ export function GscCannibalization({
                             </span>
                           )}
                           <span className="shrink-0 whitespace-nowrap text-muted-foreground text-xs tabular-nums">
-                            pos {page.position.toFixed(1)} ·{' '}
-                            {(page.ctr * 100).toFixed(1)}% CTR ·{' '}
-                            {page.impressions.toLocaleString()} impr
+                            <DashboardText i18nKey={'pos'} />{' '}
+                            {page.position.toFixed(1)} ·{' '}
+                            {(page.ctr * 100).toFixed(1)}
+                            <DashboardText i18nKey={'% CTR ·'} />{' '}
+                            {page.impressions.toLocaleString()}{' '}
+                            <DashboardText i18nKey={'impr'} />{' '}
                           </span>
                         </button>
                       );

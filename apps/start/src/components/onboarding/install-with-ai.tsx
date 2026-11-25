@@ -8,6 +8,7 @@ import {
 import { FrameworkPicker } from './framework-picker';
 import type { SnippetContext } from './install-snippets';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { clipboard } from '@/utils/clipboard';
 import { trackFunnel } from '@/utils/funnel-tracking';
 
@@ -45,8 +46,10 @@ export function InstallWithAi({
     <div className="col gap-6">
       <div className="row flex-wrap items-center gap-3">
         <span className="font-medium" id={frameworkLabelId}>
-          Framework{' '}
-          <span className="font-normal text-muted-foreground">(optional)</span>
+          <DashboardText i18nKey={'Framework'} />{' '}
+          <span className="font-normal text-muted-foreground">
+            <DashboardText i18nKey={'(optional)'} />
+          </span>
         </span>
         <FrameworkPicker
           allowNone
@@ -69,7 +72,7 @@ export function InstallWithAi({
         </pre>
         <div className="row flex-wrap gap-2">
           <Button icon={CopyIcon} onClick={copyPrompt} size="xl">
-            Copy prompt
+            <DashboardText i18nKey={'Copy prompt'} />{' '}
           </Button>
           <a
             className={buttonVariants({ variant: 'outline', size: 'xl' })}
@@ -82,13 +85,15 @@ export function InstallWithAi({
             }
           >
             <SparklesIcon className="mr-2 size-4" />
-            Open in Cursor
+            <DashboardText i18nKey={'Open in Cursor'} />{' '}
           </a>
         </div>
         <p className="text-muted-foreground text-sm">
-          Works with Claude Code, Cursor, Copilot, Windsurf or any agent that
-          can edit your code. It installs the SDK, adds your client ID and sends
-          a first event. This page lights up when it arrives.
+          <DashboardText
+            i18nKey={
+              'Works with Claude Code, Cursor, Copilot, Windsurf or any agent that can edit your code. It installs the SDK, adds your client ID and sends a first event. This page lights up when it arrives.'
+            }
+          />{' '}
         </p>
       </div>
     </div>

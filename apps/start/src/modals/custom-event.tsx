@@ -14,6 +14,10 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 interface CustomEventProps {
@@ -21,6 +25,8 @@ interface CustomEventProps {
 }
 
 export default function CustomEvent({ customEvent }: CustomEventProps = {}) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -88,18 +94,20 @@ export default function CustomEvent({ customEvent }: CustomEventProps = {}) {
         }}
       >
         <InputWithLabel
-          label="Name"
+          label={translateUi('Name')}
           onChange={(event) => setName(event.target.value)}
-          placeholder="eg. Used navigation"
+          placeholder={translateUi('eg. Used navigation')}
           value={name}
         />
         <div className="col gap-2">
-          <Label>Events</Label>
+          <Label>
+            <DashboardText i18nKey={'Events'} />
+          </Label>
           <ComboboxEvents
             items={eventNames}
             multiple
             onChange={setSelectedNames}
-            placeholder="Select events"
+            placeholder={translateUi('Select events')}
             searchable
             value={selectedNames}
           />
@@ -134,10 +142,10 @@ export default function CustomEvent({ customEvent }: CustomEventProps = {}) {
         </div>
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button disabled={!isValid} loading={isPending} type="submit">
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </DialogFooter>
       </form>

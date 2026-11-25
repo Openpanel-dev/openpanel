@@ -10,6 +10,10 @@ import {
 } from '@/components/ui/accordion';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { useAppContext } from '@/hooks/use-app-context';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
@@ -43,9 +47,12 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Claude Desktop',
       description: (
         <>
-          Add the following block to <code>claude_desktop_config.json</code>.
-          You can open it from{' '}
-          <strong>Settings → Developer → Edit Config</strong>.
+          <DashboardText i18nKey={'Add the following block to'} />{' '}
+          <code>claude_desktop_config.json</code>. You can open it from{' '}
+          <strong>
+            <DashboardText i18nKey={'Settings → Developer → Edit Config'} />
+          </strong>
+          .
         </>
       ),
       configFile:
@@ -71,9 +78,14 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Claude Code (CLI)',
       description: (
         <>
-          Run this once in your terminal. If your setup can't pass headers, use{' '}
-          <code>"{urlWithToken}"</code> as the URL instead and drop the{' '}
-          <code>--header</code> flag.
+          <DashboardText
+            i18nKey={
+              "Run this once in your terminal. If your setup can't pass headers, use"
+            }
+          />{' '}
+          <code>"{urlWithToken}"</code>{' '}
+          <DashboardText i18nKey={'as the URL instead and drop the'} />{' '}
+          <code>--header</code> <DashboardText i18nKey={'flag.'} />{' '}
         </>
       ),
       language: 'bash',
@@ -85,8 +97,9 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Cursor',
       description: (
         <>
-          Add the server to your global config at{' '}
-          <code>~/.cursor/mcp.json</code> or your project config at{' '}
+          <DashboardText i18nKey={'Add the server to your global config at'} />{' '}
+          <code>~/.cursor/mcp.json</code>{' '}
+          <DashboardText i18nKey={'or your project config at'} />{' '}
           <code>.cursor/mcp.json</code>.
         </>
       ),
@@ -112,8 +125,10 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Windsurf',
       description: (
         <>
-          Add the server to <code>~/.codeium/windsurf/mcp_config.json</code>.
-          Windsurf accepts both <code>serverUrl</code> and <code>url</code>.
+          <DashboardText i18nKey={'Add the server to'} />{' '}
+          <code>~/.codeium/windsurf/mcp_config.json</code>. Windsurf accepts
+          both <code>serverUrl</code> <DashboardText i18nKey={'and'} />{' '}
+          <code>url</code>.
         </>
       ),
       configFile: '~/.codeium/windsurf/mcp_config.json',
@@ -137,8 +152,11 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'VS Code (Copilot)',
       description: (
         <>
-          Add the server to <code>.vscode/mcp.json</code> in your workspace, or
-          to your user-level MCP config.
+          <DashboardText i18nKey={'Add the server to'} />{' '}
+          <code>.vscode/mcp.json</code>{' '}
+          <DashboardText
+            i18nKey={'in your workspace, or to your user-level MCP config.'}
+          />{' '}
         </>
       ),
       configFile: '.vscode/mcp.json',
@@ -163,9 +181,15 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
       name: 'Raycast',
       description: (
         <>
-          Copy the JSON below, then run the <strong>Install Server</strong>{' '}
-          command in Raycast — it auto-fills the form from your clipboard. The
-          install form takes a URL only, so the token goes in the query string.
+          <DashboardText i18nKey={'Copy the JSON below, then run the'} />{' '}
+          <strong>
+            <DashboardText i18nKey={'Install Server'} />
+          </strong>{' '}
+          <DashboardText
+            i18nKey={
+              'command in Raycast — it auto-fills the form from your clipboard. The install form takes a URL only, so the token goes in the query string.'
+            }
+          />{' '}
         </>
       ),
       language: 'json',
@@ -184,6 +208,8 @@ const buildClients = (mcpEndpoint: string): AiClient[] => {
 };
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { apiUrl } = useAppContext();
   const mcpEndpoint = `${apiUrl}/mcp`;
   const clients = buildClients(mcpEndpoint);
@@ -191,43 +217,58 @@ function Component() {
   return (
     <div className="col gap-6">
       <div className="col gap-2">
-        <h2 className="font-semibold text-lg">MCP Server</h2>
+        <h2 className="font-semibold text-lg">
+          <DashboardText i18nKey={'MCP Server'} />
+        </h2>
         <p className="text-muted-foreground text-sm">
-          Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to
-          your OpenPanel data. Most of its tools read — events, sessions,
-          profiles, funnels, retention and more — but it can also create, edit
-          and delete dashboards and reports, so treat the token as write access.
+          <DashboardText
+            i18nKey={
+              'Connect any MCP-compatible AI client (Claude, Cursor, Windsurf, …) to your OpenPanel data. Most of its tools read — events, sessions, profiles, funnels, retention and more — but it can also create, edit and delete dashboards and reports, so treat the token as write access.'
+            }
+          />{' '}
         </p>
       </div>
 
       <div className="col gap-2">
-        <CopyInput label="Endpoint" value={mcpEndpoint} />
+        <CopyInput label={translateUi('Endpoint')} value={mcpEndpoint} />
         <p className="text-muted-foreground text-xs">
-          Send your token as an <code>Authorization: Bearer</code> header, with{' '}
-          <code>base64(clientId:clientSecret)</code> in place of{' '}
+          <DashboardText i18nKey={'Send your token as an'} />{' '}
+          <code>Authorization: Bearer</code>{' '}
+          <DashboardText i18nKey={'header, with'} />{' '}
+          <code>base64(clientId:clientSecret)</code>{' '}
+          <DashboardText i18nKey={'in place of'} />{' '}
           <code>{TOKEN_PLACEHOLDER}</code>. Clients that can't set headers take
-          it as a <code>?token=</code> query param instead.
+          it as a <code>?token=</code>{' '}
+          <DashboardText i18nKey={'query param instead.'} />{' '}
         </p>
       </div>
 
       <div className="col gap-3 rounded-lg border bg-def-200 p-4">
         <div className="col gap-1">
-          <div className="font-medium">Need a token?</div>
+          <div className="font-medium">
+            <DashboardText i18nKey={'Need a token?'} />
+          </div>
           <p className="text-muted-foreground text-sm">
-            Only <code>read</code> and <code>root</code> clients can
-            authenticate with MCP. Create one and copy the MCP token from the
-            success screen — it's only shown once.
+            <DashboardText i18nKey={'Only'} /> <code>read</code>{' '}
+            <DashboardText i18nKey={'and'} /> <code>root</code>{' '}
+            <DashboardText
+              i18nKey={
+                "clients can authenticate with MCP. Create one and copy the MCP token from the success screen — it's only shown once."
+              }
+            />{' '}
           </p>
         </div>
         <div>
           <Button icon={PlusIcon} onClick={() => pushModal('AddClient')}>
-            Create MCP client
+            <DashboardText i18nKey={'Create MCP client'} />{' '}
           </Button>
         </div>
       </div>
 
       <div className="col gap-2">
-        <div className="font-medium">Configure your AI client</div>
+        <div className="font-medium">
+          <DashboardText i18nKey={'Configure your AI client'} />
+        </div>
         <Accordion className="rounded-lg border" collapsible type="single">
           {clients.map((client) => (
             <AccordionItem className="px-4" key={client.id} value={client.id}>
@@ -238,7 +279,9 @@ function Component() {
                 </p>
                 {client.configFile && (
                   <p className="text-muted-foreground text-xs">
-                    <span className="font-medium">Config file:</span>{' '}
+                    <span className="font-medium">
+                      <DashboardText i18nKey={'Config file:'} />
+                    </span>{' '}
                     <code>{client.configFile}</code>
                   </p>
                 )}
@@ -260,7 +303,7 @@ function Component() {
         target="_blank"
       >
         <ExternalLinkIcon className="h-4 w-4" />
-        Read the full MCP docs
+        <DashboardText i18nKey={'Read the full MCP docs'} />{' '}
       </a>
     </div>
   );

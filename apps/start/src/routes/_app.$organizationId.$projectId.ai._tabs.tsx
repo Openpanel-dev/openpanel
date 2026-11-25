@@ -8,6 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { zAiSearch } from '@/hooks/use-ai-filters';
 import { usePageTabs } from '@/hooks/use-page-tabs';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { createProjectTitle, PAGE_TITLES } from '@/utils/title';
 
 export const Route = createFileRoute(
@@ -21,6 +25,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const router = useRouter();
   const { projectId } = Route.useParams();
   const { activeTab, tabs } = usePageTabs([
@@ -40,11 +46,15 @@ function Component() {
   return (
     <div className="container p-8">
       <PageHeader
-        description="Every model call your product makes: cost, tokens, latency and errors, tied to the profiles and sessions behind them"
+        description={translateUi(
+          'Every model call your product makes: cost, tokens, latency and errors, tied to the profiles and sessions behind them'
+        )}
         title={
           <span className="row items-center gap-2">
-            AI
-            <Badge variant="outline">Beta</Badge>
+            <DashboardText i18nKey={'AI'} />{' '}
+            <Badge variant="outline">
+              <DashboardText i18nKey={'Beta'} />
+            </Badge>
           </span>
         }
       />

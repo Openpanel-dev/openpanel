@@ -9,6 +9,7 @@ import {
 import { useMemo } from 'react';
 import { AiCost, isUnpricedCall } from './ai-cost';
 import { formatLatency, formatTokens } from './ai-format';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 interface TraceNode {
@@ -91,8 +92,12 @@ export function AiTraceTree({ events, selectedId, onSelect }: Props) {
   return (
     <div className="col">
       <div className="row items-center justify-between px-3 py-1.5 font-medium text-3xs text-muted-foreground uppercase tracking-wider">
-        <span>Step</span>
-        <span>{formatLatency(totalMs)} total</span>
+        <span>
+          <DashboardText i18nKey={'Step'} />
+        </span>
+        <span>
+          {formatLatency(totalMs)} <DashboardText i18nKey={'total'} />
+        </span>
       </div>
       {nodes.map(({ event, depth, offsetMs }) => {
         const Icon = TYPE_ICON[event.type];

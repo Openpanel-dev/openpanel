@@ -29,6 +29,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +59,8 @@ function UmamiImport({
   isPending,
   organizationId,
 }: UmamiImportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { data: projects = [] } = useQuery(
     trpc.project.list.queryOptions({
@@ -87,7 +93,7 @@ function UmamiImport({
         <InputWithLabel
           error={form.formState.errors.fileUrl?.message}
           info="Provide a publicly accessible URL to your exported CSV file."
-          label="File URL"
+          label={translateUi('File URL')}
           placeholder="https://example.com/export.csv"
           {...form.register('fileUrl')}
         />
@@ -105,7 +111,7 @@ function UmamiImport({
 
       <div className="flex justify-between">
         <Button onClick={() => popModal()} type="button" variant="outline">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}
@@ -126,6 +132,8 @@ function MixpanelImport({
   isPending,
   organizationId,
 }: MixpanelImportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const form = useForm<MixpanelFormData>({
     resolver: zodResolver(zMixpanelImportConfig),
@@ -166,23 +174,23 @@ function MixpanelImport({
       <div className="space-y-4 py-4">
         <InputWithLabel
           error={form.formState.errors.serviceAccount?.message}
-          label="Service Account"
-          placeholder="Eg. xxx.xxx.mp-service-account"
+          label={translateUi('Service Account')}
+          placeholder={translateUi('Eg. xxx.xxx.mp-service-account')}
           {...form.register('serviceAccount')}
         />
 
         <InputWithLabel
           error={form.formState.errors.serviceSecret?.message}
-          label="Service Secret"
-          placeholder="Your Mixpanel service secret"
+          label={translateUi('Service Secret')}
+          placeholder={translateUi('Your Mixpanel service secret')}
           type="password"
           {...form.register('serviceSecret')}
         />
 
         <InputWithLabel
           error={form.formState.errors.projectId?.message}
-          label="Project ID"
-          placeholder="Your Mixpanel project ID"
+          label={translateUi('Project ID')}
+          placeholder={translateUi('Your Mixpanel project ID')}
           {...form.register('projectId')}
         />
 
@@ -192,7 +200,7 @@ function MixpanelImport({
               ? undefined
               : 'Select the date range for importing data'
           }
-          label="Date Range"
+          label={translateUi('Date Range')}
         >
           <Button
             className={cn(
@@ -211,7 +219,9 @@ function MixpanelImport({
                 {format(new Date(form.getValues('to')), 'LLL dd, y')}
               </>
             ) : (
-              <span>Pick a date range</span>
+              <span>
+                <DashboardText i18nKey={'Pick a date range'} />
+              </span>
             )}
           </Button>
         </WithLabel>
@@ -219,14 +229,16 @@ function MixpanelImport({
         <InputWithLabel
           error={form.formState.errors.mapScreenViewProperty?.message}
           info="Leave empty if not applicable"
-          label="Screen View Property"
-          placeholder="Enter the name of the property that contains the screen name"
+          label={translateUi('Screen View Property')}
+          placeholder={translateUi(
+            'Enter the name of the property that contains the screen name'
+          )}
           {...form.register('mapScreenViewProperty')}
         />
 
         <WithLabel
           info="Select the Mixpanel data center your project uses"
-          label="Data Residency"
+          label={translateUi('Data Residency')}
         >
           <Select
             onValueChange={(value) =>
@@ -235,12 +247,18 @@ function MixpanelImport({
             value={form.watch('dataResidency') ?? 'us'}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="US (default)" />
+              <SelectValue placeholder={translateUi('US (default)')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="us">US (default)</SelectItem>
-              <SelectItem value="eu">EU</SelectItem>
-              <SelectItem value="in">India</SelectItem>
+              <SelectItem value="us">
+                <DashboardText i18nKey={'US (default)'} />
+              </SelectItem>
+              <SelectItem value="eu">
+                <DashboardText i18nKey={'EU'} />
+              </SelectItem>
+              <SelectItem value="in">
+                <DashboardText i18nKey={'India'} />
+              </SelectItem>
             </SelectContent>
           </Select>
         </WithLabel>
@@ -248,7 +266,7 @@ function MixpanelImport({
 
       <div className="flex justify-between">
         <Button onClick={() => popModal()} type="button" variant="outline">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}
@@ -265,6 +283,8 @@ interface AmplitudeImportProps {
 }
 
 function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const form = useForm<AmplitudeFormData>({
     resolver: zodResolver(zAmplitudeImportConfig),
     defaultValues: {
@@ -304,15 +324,15 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
         <InputWithLabel
           error={form.formState.errors.apiKey?.message}
           info="Settings → Projects → General in Amplitude."
-          label="API Key"
-          placeholder="Your Amplitude API key"
+          label={translateUi('API Key')}
+          placeholder={translateUi('Your Amplitude API key')}
           {...form.register('apiKey')}
         />
 
         <InputWithLabel
           error={form.formState.errors.secretKey?.message}
-          label="Secret Key"
-          placeholder="Your Amplitude secret key"
+          label={translateUi('Secret Key')}
+          placeholder={translateUi('Your Amplitude secret key')}
           type="password"
           {...form.register('secretKey')}
         />
@@ -323,7 +343,7 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
               ? undefined
               : 'Select the date range for importing data'
           }
-          label="Date Range"
+          label={translateUi('Date Range')}
         >
           <Button
             className={cn(
@@ -342,7 +362,9 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
                 {format(new Date(form.getValues('to')), 'LLL dd, y')}
               </>
             ) : (
-              <span>Pick a date range</span>
+              <span>
+                <DashboardText i18nKey={'Pick a date range'} />
+              </span>
             )}
           </Button>
         </WithLabel>
@@ -350,14 +372,16 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
         <InputWithLabel
           error={form.formState.errors.mapScreenViewProperty?.message}
           info="Leave empty if not applicable"
-          label="Screen View Property"
-          placeholder="Enter the name of the property that contains the screen name"
+          label={translateUi('Screen View Property')}
+          placeholder={translateUi(
+            'Enter the name of the property that contains the screen name'
+          )}
           {...form.register('mapScreenViewProperty')}
         />
 
         <WithLabel
           info="Select the Amplitude data region your project uses"
-          label="Data Residency"
+          label={translateUi('Data Residency')}
         >
           <Select
             onValueChange={(value) =>
@@ -366,11 +390,15 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
             value={form.watch('dataResidency') ?? 'us'}
           >
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="US (default)" />
+              <SelectValue placeholder={translateUi('US (default)')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="us">US (default)</SelectItem>
-              <SelectItem value="eu">EU</SelectItem>
+              <SelectItem value="us">
+                <DashboardText i18nKey={'US (default)'} />
+              </SelectItem>
+              <SelectItem value="eu">
+                <DashboardText i18nKey={'EU'} />
+              </SelectItem>
             </SelectContent>
           </Select>
         </WithLabel>
@@ -378,7 +406,7 @@ function AmplitudeImport({ onSubmit, isPending }: AmplitudeImportProps) {
 
       <div className="flex justify-between">
         <Button onClick={() => popModal()} type="button" variant="outline">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button disabled={isPending} type="submit">
           {isPending ? 'Starting...' : 'Start Import'}

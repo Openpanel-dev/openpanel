@@ -15,6 +15,10 @@ import {
   InputOTPSlot,
 } from '@/components/ui/input-otp';
 import { Label } from '@/components/ui/label';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { toastAuthError } from '@/integrations/auth/toast-auth-error';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -39,6 +43,8 @@ async function toEnrollment(
 }
 
 export default function SetupTwoFactor() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const authClient = useAuthClient();
   const queryClient = useQueryClient();
@@ -84,11 +90,13 @@ export default function SetupTwoFactor() {
       <ModalContent>
         <ModalHeader
           text="Store these somewhere safe. Each can be used once if you lose access to your authenticator. You won't see them again."
-          title="Save your recovery codes"
+          title={translateUi('Save your recovery codes')}
         />
         <RecoveryCodesBlock codes={enrollment.backupCodes} />
         <DialogFooter>
-          <Button onClick={() => popModal()}>I've saved my codes</Button>
+          <Button onClick={() => popModal()}>
+            <DashboardText i18nKey={"I've saved my codes"} />
+          </Button>
         </DialogFooter>
       </ModalContent>
     );
@@ -99,11 +107,11 @@ export default function SetupTwoFactor() {
       <ModalContent>
         <ModalHeader
           text="Scan the QR code with your authenticator app, then enter the 6-digit code to enable."
-          title="Set up two-factor authentication"
+          title={translateUi('Set up two-factor authentication')}
         />
         <div className="col gap-4">
           <img
-            alt="Authenticator QR code"
+            alt={translateUi('Authenticator QR code')}
             className="rounded-md border border-border"
             height={QR_SIZE}
             src={enrollment.qrDataUrl}
@@ -111,11 +119,13 @@ export default function SetupTwoFactor() {
           />
           <CopyInput
             className="w-full"
-            label="Can't scan? Enter this secret manually"
+            label={translateUi("Can't scan? Enter this secret manually")}
             value={enrollment.secret}
           />
           <div className="col w-full gap-2">
-            <Label className="mb-1">Verification code</Label>
+            <Label className="mb-1">
+              <DashboardText i18nKey={'Verification code'} />
+            </Label>
             <InputOTP
               disabled={verifyMutation.isPending}
               maxLength={6}
@@ -135,14 +145,14 @@ export default function SetupTwoFactor() {
         </div>
         <DialogFooter>
           <Button onClick={() => popModal()} variant="secondary">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button
             disabled={code.length !== 6}
             loading={verifyMutation.isPending}
             onClick={() => verifyMutation.mutate()}
           >
-            Enable
+            <DashboardText i18nKey={'Enable'} />{' '}
           </Button>
         </DialogFooter>
       </ModalContent>
@@ -153,27 +163,27 @@ export default function SetupTwoFactor() {
     <ModalContent>
       <ModalHeader
         text="Enter your password to start setting up an authenticator app."
-        title="Set up two-factor authentication"
+        title={translateUi('Set up two-factor authentication')}
       />
       <Input
-        aria-label="Password"
+        aria-label={translateUi('Password')}
         autoComplete="current-password"
         autoFocus
         onChange={(e) => setPassword(e.target.value)}
-        placeholder="Your password"
+        placeholder={translateUi('Your password')}
         type="password"
         value={password}
       />
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           disabled={!password}
           loading={enableMutation.isPending}
           onClick={() => enableMutation.mutate()}
         >
-          Continue
+          <DashboardText i18nKey={'Continue'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>
@@ -204,7 +214,7 @@ function RecoveryCodesBlock({ codes }: { codes: string[] }) {
           size="sm"
           variant="outline"
         >
-          Download
+          <DashboardText i18nKey={'Download'} />{' '}
         </Button>
         <Button
           className="self-start"
@@ -215,7 +225,7 @@ function RecoveryCodesBlock({ codes }: { codes: string[] }) {
           size="sm"
           variant="outline"
         >
-          Copy all
+          <DashboardText i18nKey={'Copy all'} />{' '}
         </Button>
       </div>
     </div>

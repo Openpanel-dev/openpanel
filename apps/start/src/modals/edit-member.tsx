@@ -11,6 +11,7 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { ProjectScopePicker } from '@/components/settings/project-scope-picker';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type EditMemberProps = IServiceMember;
@@ -77,7 +78,7 @@ export default function EditMember(member: EditMemberProps) {
 
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
           <Button
             disabled={
@@ -93,7 +94,7 @@ export default function EditMember(member: EditMemberProps) {
               })
             }
           >
-            Save
+            <DashboardText i18nKey={'Save'} />{' '}
           </Button>
         </DialogFooter>
       </div>

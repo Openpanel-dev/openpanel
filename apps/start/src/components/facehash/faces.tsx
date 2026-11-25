@@ -1,4 +1,5 @@
 import type * as React from 'react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export type FaceProps = {
   className?: string;
@@ -12,7 +13,9 @@ export const RoundFace: React.FC<FaceProps> = ({ className, style }) => (
     style={style}
     viewBox="0 0 100 100"
   >
-    <title>Round Eyes</title>
+    <title>
+      <DashboardText i18nKey={'Round Eyes'} />
+    </title>
     <circle cx="35" cy="45" fill="currentColor" r="8" />
     <circle cx="65" cy="45" fill="currentColor" r="8" />
   </svg>
@@ -25,7 +28,9 @@ export const CrossFace: React.FC<FaceProps> = ({ className, style }) => (
     style={style}
     viewBox="0 0 100 100"
   >
-    <title>Cross Eyes</title>
+    <title>
+      <DashboardText i18nKey={'Cross Eyes'} />
+    </title>
     <path
       d="M27 37 L43 53 M43 37 L27 53"
       stroke="currentColor"
@@ -48,7 +53,9 @@ export const LineFace: React.FC<FaceProps> = ({ className, style }) => (
     style={style}
     viewBox="0 0 100 100"
   >
-    <title>Line Eyes</title>
+    <title>
+      <DashboardText i18nKey={'Line Eyes'} />
+    </title>
     <line
       stroke="currentColor"
       strokeLinecap="round"
@@ -77,7 +84,9 @@ export const CurvedFace: React.FC<FaceProps> = ({ className, style }) => (
     style={style}
     viewBox="0 0 100 100"
   >
-    <title>Curved Eyes</title>
+    <title>
+      <DashboardText i18nKey={'Curved Eyes'} />
+    </title>
     <path
       d="M27 50 Q35 38 43 50"
       fill="none"

@@ -11,8 +11,13 @@ import { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import FullPageLoadingState from '@/components/full-page-loading-state';
 import DeleteAccount from '@/components/settings/delete-account';
+import { LanguageSettings } from '@/components/settings/language-settings';
 import { Button } from '@/components/ui/button';
 import { Widget, WidgetBody, WidgetHead } from '@/components/widget';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 const validator = z.object({
@@ -28,6 +33,8 @@ export const Route = createFileRoute('/_app/$organizationId/account/_tabs/')({
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const session = useSuspenseQuery(trpc.auth.session.queryOptions());
@@ -69,22 +76,24 @@ function Component() {
       >
         <Widget className="w-full max-w-screen-md">
           <WidgetHead>
-            <span className="title">Profile</span>
+            <span className="title">
+              <DashboardText i18nKey={'Profile'} />
+            </span>
           </WidgetHead>
           <WidgetBody className="col gap-4">
             <InputWithLabel
               disabled
-              label="Email"
+              label={translateUi('Email')}
               readOnly
               value={user.email}
             />
             <InputWithLabel
-              label="First name"
+              label={translateUi('First name')}
               {...register('firstName')}
               defaultValue={user.firstName ?? ''}
             />
             <InputWithLabel
-              label="Last name"
+              label={translateUi('Last name')}
               {...register('lastName')}
               defaultValue={user.lastName ?? ''}
             />
@@ -96,11 +105,12 @@ function Component() {
               size="sm"
               type="submit"
             >
-              Save
+              <DashboardText i18nKey={'Save'} />{' '}
             </Button>
           </WidgetBody>
         </Widget>
       </form>
+      <LanguageSettings />
       <DeleteAccount />
     </div>
   );

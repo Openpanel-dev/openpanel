@@ -11,6 +11,7 @@ import { PieSlice } from '@/components/charts/pie-slice';
 import { useElementSize } from '@/hooks/use-element-size';
 import { useNumber } from '@/hooks/use-numer-formatter';
 import type { IVisibleSeries } from '@/hooks/use-visible-series';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
 
@@ -145,7 +146,7 @@ export function Chart({ series }: Props) {
             ))}
             {hiddenSliceCount > 0 && (
               <li className="px-1.5 py-1 text-muted-foreground text-xs">
-                +{hiddenSliceCount} more
+                +{hiddenSliceCount} <DashboardText i18nKey={'more'} />{' '}
               </li>
             )}
           </ul>

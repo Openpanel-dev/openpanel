@@ -18,6 +18,10 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import { Combobox } from '@/components/ui/combobox';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -48,6 +52,8 @@ export interface AddClientProps {
 }
 
 export default function AddClient({ name, type }: AddClientProps = {}) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const clientTypeId = useId();
   const { organizationId, projectId } = useAppParams();
   const form = useForm<IForm>({
@@ -87,7 +93,10 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
     <ModalContent>
       {mutation.isSuccess ? (
         <>
-          <ModalHeader text={'Your client is created'} title="Success" />
+          <ModalHeader
+            text={'Your client is created'}
+            title={translateUi('Success')}
+          />
           <CreateClientSuccess {...mutation.data} />
           <div className="mt-4 flex gap-4">
             <a
@@ -96,24 +105,24 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
               rel="noreferrer"
               target="_blank"
             >
-              Read docs
+              <DashboardText i18nKey={'Read docs'} />{' '}
             </a>
             <Button className="flex-1" onClick={() => popModal()}>
-              Close
+              <DashboardText i18nKey={'Close'} />{' '}
             </Button>
           </div>
         </>
       ) : (
         <>
-          <ModalHeader title="Create a client" />
+          <ModalHeader title={translateUi('Create a client')} />
           <form
             className="flex flex-col gap-4"
             onSubmit={form.handleSubmit(onSubmit)}
           >
             <InputWithLabel
               error={form.formState.errors.name?.message}
-              label="Client name"
-              placeholder="Eg. My App Client"
+              label={translateUi('Client name')}
+              placeholder={translateUi('Eg. My App Client')}
               {...form.register('name')}
             />
 
@@ -124,7 +133,7 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
                 <WithLabel
                   hint={CLIENT_TYPE_HINTS[field.value]}
                   id={clientTypeId}
-                  label="Type of client"
+                  label={translateUi('Type of client')}
                 >
                   <Combobox
                     {...field}
@@ -133,7 +142,7 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
                     id={clientTypeId}
                     items={CLIENT_TYPE_ITEMS}
                     onChange={field.onChange}
-                    placeholder="Select a client type"
+                    placeholder={translateUi('Select a client type')}
                   />
                 </WithLabel>
               )}
@@ -144,14 +153,14 @@ export default function AddClient({ name, type }: AddClientProps = {}) {
                 type="button"
                 variant={'secondary'}
               >
-                Cancel
+                <DashboardText i18nKey={'Cancel'} />{' '}
               </Button>
               <Button
                 icon={SaveIcon}
                 loading={mutation.isPending}
                 type="submit"
               >
-                Create
+                <DashboardText i18nKey={'Create'} />{' '}
               </Button>
             </DialogFooter>
           </form>

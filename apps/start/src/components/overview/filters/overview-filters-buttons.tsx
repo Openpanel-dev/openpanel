@@ -17,6 +17,10 @@ import {
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
 import { usePropertyValues } from '@/hooks/use-property-values';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import type { OverviewFiltersProps } from '@/modals/overview-filters';
 import { getPropertyLabel } from '@/translations/properties';
@@ -43,7 +47,7 @@ export function OverviewFilterButton(props: OverviewFiltersProps) {
       responsive
       variant="outline"
     >
-      Filters
+      <DashboardText i18nKey={'Filters'} />{' '}
     </Button>
   );
 }
@@ -74,6 +78,8 @@ function CohortFilterPill({
   onChangeOperator,
   onChangeCohorts,
 }: CohortFilterPillProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const cohorts = useCohorts({ projectId, includeCount: false });
   const selectedIds = getCohortIds(filter);
@@ -92,14 +98,14 @@ function CohortFilterPill({
         }
         type="button"
       >
-        Cohort
+        <DashboardText i18nKey={'Cohort'} />{' '}
       </button>
       <DropdownMenuComposed
         items={[
           { value: 'inCohort', label: 'In cohort' },
           { value: 'notInCohort', label: 'Not in cohort' },
         ]}
-        label="Operator"
+        label={translateUi('Operator')}
         onChange={onChangeOperator}
       >
         <button
@@ -123,12 +129,14 @@ function CohortFilterPill({
           type="button"
         >
           {valueLabel || (
-            <span className="font-normal italic opacity-40">pick cohort</span>
+            <span className="font-normal italic opacity-40">
+              <DashboardText i18nKey={'pick cohort'} />
+            </span>
           )}
         </button>
       </ComboboxAdvanced>
       <button
-        aria-label="Remove filter"
+        aria-label={translateUi('Remove filter')}
         className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
         onClick={onRemove}
         type="button"
@@ -147,6 +155,8 @@ function FilterPill({
   onChangeOperator,
   onChangeValue,
 }: FilterPillProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const potentialValues = usePropertyValues({
     event: '*',
@@ -193,14 +203,16 @@ function FilterPill({
             {filter.value.length > 0 ? (
               filter.value.join(', ')
             ) : (
-              <span className="font-normal italic opacity-40">pick value</span>
+              <span className="font-normal italic opacity-40">
+                <DashboardText i18nKey={'pick value'} />
+              </span>
             )}
           </button>
         </ComboboxAdvanced>
       )}
 
       <button
-        aria-label="Remove filter"
+        aria-label={translateUi('Remove filter')}
         className="cursor-pointer border-l px-2 transition-colors hover:bg-destructive hover:text-destructive-foreground"
         onClick={onRemove}
         type="button"

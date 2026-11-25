@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { OverviewWidgetTable } from '@/components/overview/overview-widget-table';
 import { useOverviewOptions } from '@/components/overview/useOverviewOptions';
 import { Skeleton } from '@/components/skeleton';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface GscBreakdownTableProps {
@@ -60,7 +61,9 @@ export function GscBreakdownTable({
   return (
     <div className="card overflow-hidden">
       <div className="border-b p-4">
-        <h3 className="font-medium text-sm">Top {pluralLabel}</h3>
+        <h3 className="font-medium text-sm">
+          <DashboardText i18nKey={'Top'} /> {pluralLabel}
+        </h3>
       </div>
       {isLoading ? (
         <OverviewWidgetTable

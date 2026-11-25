@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { WidgetHead } from '../overview/overview-widget';
 import { ReportChart } from '@/components/report-chart';
 import { Widget, WidgetBody } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 const CHART_OPTIONS = { hideTable: true };
 
@@ -92,7 +93,9 @@ export const ProfileCharts = memo(
       <>
         <Widget>
           <WidgetHead>
-            <span className="title">Page views</span>
+            <span className="title">
+              <DashboardText i18nKey={'Page views'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChart options={CHART_OPTIONS} report={pageViewsChart} />
@@ -100,7 +103,9 @@ export const ProfileCharts = memo(
         </Widget>
         <Widget>
           <WidgetHead>
-            <span className="title">Events per day</span>
+            <span className="title">
+              <DashboardText i18nKey={'Events per day'} />
+            </span>
           </WidgetHead>
           <WidgetBody>
             <ReportChart options={CHART_OPTIONS} report={eventsChart} />

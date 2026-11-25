@@ -6,6 +6,7 @@ import { SerieIcon } from '../common/serie-icon';
 import { Stat, StatStrip } from '../common/stat-strip';
 import { useReportChartContext } from '../context';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { cn } from '@/utils/cn';
 import { formatDate } from '@/utils/date';
@@ -31,6 +32,8 @@ const averageRate = (serie: { data: { rate: number }[] }) =>
 
 /** The report's headline numbers: overall conversion, how many converted, and the best and worst day and breakdown. */
 export function Summary({ data }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const number = useNumber();
   const { report } = useReportChartContext();
   const hasBreakdowns = data.current.length > 1;
@@ -92,7 +95,7 @@ export function Summary({ data }: Props) {
           )
         }
         detail={flow}
-        label="Conversion"
+        label={translateUi('Conversion')}
         value={formatRate(stats.rate)}
       />
       <Stat
@@ -108,30 +111,30 @@ export function Summary({ data }: Props) {
           )
         }
         detail={`of ${number.format(stats.opportunities)} opportunities`}
-        label="Conversions"
+        label={translateUi('Conversions')}
         value={number.format(stats.conversions)}
       />
       <Stat
         detail={stats.bestDay && <DayDetail match={stats.bestDay} />}
-        label="Best day"
+        label={translateUi('Best day')}
         value={stats.bestDay ? formatRate(stats.bestDay.point.rate) : '–'}
       />
       <Stat
         detail={stats.worstDay && <DayDetail match={stats.worstDay} />}
-        label="Worst day"
+        label={translateUi('Worst day')}
         value={stats.worstDay ? formatRate(stats.worstDay.point.rate) : '–'}
       />
       {hasBreakdowns && stats.bestSerie && (
         <Stat
           detail={<Breakdown serie={stats.bestSerie} />}
-          label="Best breakdown"
+          label={translateUi('Best breakdown')}
           value={formatRate(averageRate(stats.bestSerie))}
         />
       )}
       {hasBreakdowns && stats.worstSerie && (
         <Stat
           detail={<Breakdown serie={stats.worstSerie} />}
-          label="Worst breakdown"
+          label={translateUi('Worst breakdown')}
           value={formatRate(averageRate(stats.worstSerie))}
         />
       )}

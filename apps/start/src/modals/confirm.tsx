@@ -2,6 +2,7 @@ import { popModal } from '.';
 import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export type ConfirmProps = {
   title: string;
@@ -28,7 +29,7 @@ export default function Confirm({
           }}
           variant="outline"
         >
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           onClick={() => {
@@ -36,7 +37,7 @@ export default function Confirm({
             onConfirm();
           }}
         >
-          Yes
+          <DashboardText i18nKey={'Yes'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

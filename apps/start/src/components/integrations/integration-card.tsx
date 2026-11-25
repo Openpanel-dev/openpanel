@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/skeleton';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 export function IntegrationCardFooter({
   children,
@@ -56,6 +57,8 @@ export function IntegrationCardLogoImage({
   backgroundColor: string;
   className?: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <IntegrationCardLogo
       className={className}
@@ -63,7 +66,7 @@ export function IntegrationCardLogoImage({
         backgroundColor,
       }}
     >
-      <img alt="Integration Logo" src={src} />
+      <img alt={translateUi('Integration Logo')} src={src} />
     </IntegrationCardLogo>
   );
 }

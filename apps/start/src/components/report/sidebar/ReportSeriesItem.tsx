@@ -13,6 +13,10 @@ import { FiltersList } from './filters/FiltersList';
 import { PropertiesCombobox } from './PropertiesCombobox';
 import { BuilderChip } from './sidebar-section';
 import { ColorSquare } from '@/components/color-square';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useDispatch } from '@/redux';
 
 const ANY_EVENT = '*';
@@ -44,6 +48,8 @@ export function ReportSeriesItem({
   renderDragHandle,
   ...props
 }: ReportSeriesItemProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const dispatch = useDispatch();
 
   // Normalize event to have type field
@@ -131,9 +137,11 @@ export function ReportSeriesItem({
                     })
                   );
                 }}
-                title="Count only each user's first-ever occurrence of this event"
+                title={translateUi(
+                  "Count only each user's first-ever occurrence of this event"
+                )}
               >
-                First time
+                <DashboardText i18nKey={'First time'} />{' '}
               </BuilderChip>
             )}
             {showAddFilter && (
@@ -182,7 +190,7 @@ export function ReportSeriesItem({
                     icon={FilterIcon}
                     onClick={() => setOpen((p) => !p)}
                   >
-                    Add filter
+                    <DashboardText i18nKey={'Add filter'} />{' '}
                   </BuilderChip>
                 )}
               </PropertiesCombobox>

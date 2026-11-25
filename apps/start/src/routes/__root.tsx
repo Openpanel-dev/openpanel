@@ -23,6 +23,9 @@ import { Providers } from '@/components/providers';
 import { ThemeScriptOnce } from '@/components/theme-provider';
 import { LinkButton } from '@/components/ui/button';
 import { getCookiesFn } from '@/hooks/use-cookie-store';
+import { LANGUAGE_COOKIE, resolveLanguage } from '@/i18n/languages';
+import { loadMessages } from '@/i18n/messages';
+import { LanguageProvider, useTranslation } from '@/i18n/provider';
 import type { RouterOutputs } from '@/trpc/client';
 import { op } from '@/utils/op';
 
@@ -45,7 +48,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       getCookiesFn().catch(() => ({}) as Record<string, string>),
     ]);
 
-    return { session, cookies };
+    const language = resolveLanguage(cookies[LANGUAGE_COOKIE]);
+    const messages = await loadMessages(language);
+    return { session, cookies, language, messages };
   },
   head: () => ({
     meta: [
@@ -115,8 +120,20 @@ function OpIdentify() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const context = useRouteContext({ strict: false });
   return (
-    <html lang="en" suppressHydrationWarning>
+    <LanguageProvider
+      initialLanguage={context.language ?? 'en'}
+      initialMessages={context.messages ?? {}}
+    >
+      <LocalizedDocument>{children}</LocalizedDocument>
+    </LanguageProvider>
+  );
+}
+function LocalizedDocument({ children }: { children: React.ReactNode }) {
+  const { language, direction } = useTranslation();
+  return (
+    <html dir={direction} lang={language} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

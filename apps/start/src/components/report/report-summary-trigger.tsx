@@ -4,6 +4,7 @@ import { GanttChartSquareIcon, PencilIcon } from 'lucide-react';
 import { forwardRef } from 'react';
 import { ColorSquare } from '@/components/color-square';
 import { Button } from '@/components/ui/button';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useSelector } from '@/redux';
 import { cn } from '@/utils/cn';
 import { getChartColor } from '@/utils/theme';
@@ -78,7 +79,7 @@ export const ReportSummaryTrigger = forwardRef<HTMLButtonElement, Props>(
           variant="cta"
           {...props}
         >
-          Pick events
+          <DashboardText i18nKey={'Pick events'} />{' '}
         </Button>
       );
     }

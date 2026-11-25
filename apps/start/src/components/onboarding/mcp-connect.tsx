@@ -8,6 +8,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { Button, buttonVariants } from '@/components/ui/button';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { clipboard } from '@/utils/clipboard';
 import { cn } from '@/utils/cn';
 import { trackFunnel } from '@/utils/funnel-tracking';
@@ -118,6 +122,8 @@ export function McpConnect({
   apiUrl,
   mcpToken,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const connection: Connection | null = mcpToken
     ? { endpoint: `${apiUrl}/mcp`, token: mcpToken }
     : null;
@@ -138,7 +144,7 @@ export function McpConnect({
           onClick={() => track(host)}
         >
           <ZapIcon className="mr-1.5 size-3.5" />
-          Install
+          <DashboardText i18nKey={'Install'} />{' '}
         </a>
       );
     }
@@ -153,7 +159,7 @@ export function McpConnect({
           size="sm"
           variant="outline"
         >
-          Copy command
+          <DashboardText i18nKey={'Copy command'} />{' '}
         </Button>
       );
     }
@@ -171,7 +177,7 @@ export function McpConnect({
         size="sm"
         variant="outline"
       >
-        Copy URL
+        <DashboardText i18nKey={'Copy URL'} />{' '}
       </Button>
     );
   };
@@ -195,12 +201,15 @@ export function McpConnect({
             <span className="row items-center gap-2">
               <BotIcon className="shrink-0 text-muted-foreground" size={16} />
               <span className="font-semibold text-base">
-                Connect an AI assistant
+                <DashboardText i18nKey={'Connect an AI assistant'} />{' '}
               </span>
             </span>
             <span className="font-normal text-muted-foreground text-sm">
-              Give Cursor, Claude or ChatGPT read access to this project over
-              MCP and ask it questions instead of building reports.
+              <DashboardText
+                i18nKey={
+                  'Give Cursor, Claude or ChatGPT read access to this project over MCP and ask it questions instead of building reports.'
+                }
+              />{' '}
             </span>
           </span>
         </AccordionTrigger>
@@ -224,7 +233,7 @@ export function McpConnect({
                 ))}
               </ul>
               <CopyInput
-                label="MCP token"
+                label={translateUi('MCP token')}
                 onCopy={() =>
                   trackFunnel('onboarding_credentials_copied', {
                     projectId,
@@ -236,8 +245,11 @@ export function McpConnect({
             </>
           ) : (
             <p className="text-muted-foreground text-sm">
-              The MCP token was shown once when the project was created. Create
-              another MCP client to connect an assistant.
+              <DashboardText
+                i18nKey={
+                  'The MCP token was shown once when the project was created. Create another MCP client to connect an assistant.'
+                }
+              />{' '}
             </p>
           )}
           <Link
@@ -251,7 +263,9 @@ export function McpConnect({
             params={{ organizationId, projectId }}
             to="/$organizationId/$projectId/settings/mcp"
           >
-            Windsurf, Raycast and config files in Settings → MCP
+            <DashboardText
+              i18nKey={'Windsurf, Raycast and config files in Settings → MCP'}
+            />{' '}
           </Link>
         </AccordionContent>
       </AccordionItem>

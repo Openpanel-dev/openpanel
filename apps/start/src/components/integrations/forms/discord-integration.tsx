@@ -8,6 +8,10 @@ import type { z } from 'zod';
 import { InputWithLabel } from '@/components/forms/input-with-label';
 import { Button } from '@/components/ui/button';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import type { RouterOutputs } from '@/trpc/client';
 
@@ -20,6 +24,8 @@ export function DiscordIntegrationForm({
   defaultValues?: RouterOutputs['integration']['get'];
   onSuccess: () => void;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const form = useForm<IForm>({
     defaultValues: mergeDeepRight(
@@ -80,13 +86,13 @@ export function DiscordIntegrationForm({
       onSubmit={form.handleSubmit(handleSubmit, handleError)}
     >
       <InputWithLabel
-        label="Name"
-        placeholder="Eg. My personal discord"
+        label={translateUi('Name')}
+        placeholder={translateUi('Eg. My personal discord')}
         {...form.register('name')}
         error={form.formState.errors.name?.message}
       />
       <InputWithLabel
-        label="Discord Webhook URL"
+        label={translateUi('Discord Webhook URL')}
         // The URL is a credential and never sent back to the browser, so an
         // edit starts blank and blank means "keep the stored URL".
         placeholder={
@@ -97,10 +103,10 @@ export function DiscordIntegrationForm({
       />
       <div className="row gap-4">
         <Button onClick={handleTest} type="button" variant="outline">
-          Test connection
+          <DashboardText i18nKey={'Test connection'} />{' '}
         </Button>
         <Button className="flex-1" type="submit">
-          Create
+          <DashboardText i18nKey={'Create'} />{' '}
         </Button>
       </div>
     </form>

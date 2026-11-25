@@ -8,6 +8,7 @@ import { ProfileAvatar } from '@/components/profiles/profile-avatar';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { KeyValueGrid } from '@/components/ui/key-value-grid';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import { getProfileName } from '@/utils/getters';
 
@@ -45,7 +46,9 @@ export function useColumns() {
 
             return (
               <>
-                <span className="text-muted-foreground">Screen: </span>
+                <span className="text-muted-foreground">
+                  <DashboardText i18nKey={'Screen:'} />{' '}
+                </span>
                 {path}
               </>
             );
@@ -131,7 +134,7 @@ export function useColumns() {
               params={{ profileId }}
               to="/profiles/$profileId"
             >
-              Unknown
+              <DashboardText i18nKey={'Unknown'} />{' '}
             </ProjectLink>
           );
         }
@@ -143,7 +146,7 @@ export function useColumns() {
               params={{ profileId: deviceId }}
               to="/profiles/$profileId"
             >
-              Anonymous
+              <DashboardText i18nKey={'Anonymous'} />{' '}
             </ProjectLink>
           );
         }

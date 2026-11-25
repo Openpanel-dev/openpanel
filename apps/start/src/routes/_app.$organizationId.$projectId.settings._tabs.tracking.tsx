@@ -6,6 +6,7 @@ import { InstallGuide } from '@/components/onboarding/install-guide';
 import { Combobox } from '@/components/ui/combobox';
 import { useAppContext } from '@/hooks/use-app-context';
 import { useAppParams } from '@/hooks/use-app-params';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 export const Route = createFileRoute(
@@ -15,6 +16,8 @@ export const Route = createFileRoute(
 });
 
 function Component() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const trpc = useTRPC();
   const { apiUrl, isSelfHosted } = useAppContext();
@@ -43,7 +46,7 @@ function Component() {
             label: candidate.name,
           }))}
           onChange={setSelectedClientId}
-          placeholder="Select client"
+          placeholder={translateUi('Select client')}
           searchable
           value={client.id}
         />

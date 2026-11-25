@@ -20,6 +20,7 @@ import { RenderDots } from '@/components/ui/RenderDots';
 import { useAppParams } from '@/hooks/use-app-params';
 import { useEventNames } from '@/hooks/use-event-names';
 import { usePropertyValues } from '@/hooks/use-property-values';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useDispatch } from '@/redux';
 import { cn } from '@/utils/cn';
 
@@ -200,6 +201,8 @@ export function PureFilterItem({
   className,
   immediateInput,
 }: PureFilterProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
 
   const isBooleanSessionFilter = filter.name === 'session.is_bounce';
@@ -265,7 +268,7 @@ export function PureFilterItem({
           className="w-full"
           items={BOOLEAN_VALUE_ITEMS}
           onChange={(v) => changeFilterValue([v])}
-          placeholder="Yes / No"
+          placeholder={translateUi('Yes / No')}
           size="sm"
           value={filter.value[0] === undefined ? null : String(filter.value[0])}
           variant="input"
@@ -279,7 +282,7 @@ export function PureFilterItem({
           className="w-full"
           items={eventNames}
           onChange={(v: string) => changeFilterValue([v])}
-          placeholder="Select event"
+          placeholder={translateUi('Select event')}
           searchable
           size="sm"
           value={filter.value[0] ? String(filter.value[0]) : null}
@@ -294,7 +297,7 @@ export function PureFilterItem({
           className="w-full"
           items={valuesCombobox}
           onChange={changeFilterValue}
-          placeholder="Select..."
+          placeholder={translateUi('Select...')}
           size="sm"
           value={filter.value}
         />
@@ -320,7 +323,7 @@ export function PureFilterItem({
           {filter.name}
         </RenderDots>
         <Button
-          aria-label="Delete filter"
+          aria-label={translateUi('Delete filter')}
           className="ml-auto size-6 text-muted-foreground hover:text-foreground"
           onClick={removeFilter}
           size="icon"

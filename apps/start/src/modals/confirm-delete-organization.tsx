@@ -6,6 +6,10 @@ import { ModalContent, ModalHeader } from './Modal/Container';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 
 type Props = {
@@ -17,6 +21,8 @@ export default function ConfirmDeleteOrganization({
   organizationId,
   organizationName,
 }: Props) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [confirmation, setConfirmation] = useState('');
@@ -40,11 +46,13 @@ export default function ConfirmDeleteOrganization({
     <ModalContent>
       <ModalHeader
         text={`${organizationName} and all of its projects and events will be permanently deleted after 24 hours. You can cancel before then.`}
-        title="Delete organization"
+        title={translateUi('Delete organization')}
       />
       <div className="col gap-2">
         <label className="font-medium text-sm" htmlFor="confirm-org-name">
-          Type <span className="font-bold">{organizationName}</span> to confirm
+          <DashboardText i18nKey={'Type'} />{' '}
+          <span className="font-bold">{organizationName}</span>{' '}
+          <DashboardText i18nKey={'to confirm'} />{' '}
         </label>
         <Input
           autoComplete="off"
@@ -57,7 +65,7 @@ export default function ConfirmDeleteOrganization({
       </div>
       <DialogFooter>
         <Button onClick={() => popModal()} variant="secondary">
-          Cancel
+          <DashboardText i18nKey={'Cancel'} />{' '}
         </Button>
         <Button
           disabled={!canDelete}
@@ -65,7 +73,7 @@ export default function ConfirmDeleteOrganization({
           onClick={() => mutation.mutate({ organizationId })}
           variant="destructive"
         >
-          Delete organization
+          <DashboardText i18nKey={'Delete organization'} />{' '}
         </Button>
       </DialogFooter>
     </ModalContent>

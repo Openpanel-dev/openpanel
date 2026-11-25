@@ -14,6 +14,10 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Tooltiper } from '@/components/ui/tooltip';
 import { useAppParams } from '@/hooks/use-app-params';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import {
   getSharePasswordFieldValue,
@@ -30,6 +34,8 @@ export default function ShareDashboardModal({
 }: {
   dashboardId: string;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId, organizationId } = useAppParams();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
@@ -126,14 +132,16 @@ export default function ShareDashboardModal({
             ? 'Your dashboard is currently public and can be accessed by anyone with the link.'
             : 'You can choose if you want to add a password to make it a bit more private.'
         }
-        title="Dashboard public availability"
+        title={translateUi('Dashboard public availability')}
       />
 
       {isShared && (
         <div className="space-y-3 rounded-lg border bg-def-100 p-4">
           <div className="flex items-center gap-2 text-green-600 text-sm dark:text-green-400">
             <CheckCircle2 className="size-4" />
-            <span className="font-medium">Currently shared</span>
+            <span className="font-medium">
+              <DashboardText i18nKey={'Currently shared'} />
+            </span>
           </div>
           <div className="flex items-center gap-1">
             <Input className="flex-1 text-sm" readOnly value={shareUrl} />
@@ -187,13 +195,13 @@ export default function ShareDashboardModal({
       >
         <Input
           {...register('password')}
-          placeholder="Enter your password (optional)"
+          placeholder={translateUi('Enter your password (optional)')}
           size="large"
           type={password === STORED_PASSWORD_PLACEHOLDER ? 'text' : 'password'}
         />
         <DialogFooter>
           <Button onClick={() => popModal()} type="button" variant="outline">
-            Cancel
+            <DashboardText i18nKey={'Cancel'} />{' '}
           </Button>
 
           <Button type="submit">

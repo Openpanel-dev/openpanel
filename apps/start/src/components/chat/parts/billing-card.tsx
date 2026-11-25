@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { CreditCardIcon } from 'lucide-react';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export interface BillingOutput {
   selfHosted: boolean;
@@ -63,7 +64,8 @@ export function BillingCard({ output }: { output: BillingOutput }) {
               {plan.name ?? 'No plan'}
               {plan.eventsLimit && (
                 <span className="ml-2 font-normal text-muted-foreground">
-                  {number.format(plan.eventsLimit)} events
+                  {number.format(plan.eventsLimit)}{' '}
+                  <DashboardText i18nKey={'events'} />{' '}
                 </span>
               )}
             </div>
@@ -78,7 +80,9 @@ export function BillingCard({ output }: { output: BillingOutput }) {
       </div>
       <div className="border-t px-4 py-3">
         <div className="mb-1 flex justify-between text-xs">
-          <span className="text-muted-foreground">Used this period</span>
+          <span className="text-muted-foreground">
+            <DashboardText i18nKey={'Used this period'} />
+          </span>
           <span className="tabular-nums">
             {number.format(usage.eventsThisPeriod)}
             {usage.eventsLimit ? ` / ${number.format(usage.eventsLimit)}` : ''}
@@ -97,7 +101,9 @@ export function BillingCard({ output }: { output: BillingOutput }) {
       </div>
       {output.assistant && (
         <div className="flex justify-between border-t px-4 py-2 text-xs">
-          <span className="text-muted-foreground">AI messages today</span>
+          <span className="text-muted-foreground">
+            <DashboardText i18nKey={'AI messages today'} />
+          </span>
           <span className="tabular-nums">
             {number.format(output.assistant.messagesToday)}
             {output.assistant.messagesPerDay === null
@@ -109,7 +115,7 @@ export function BillingCard({ output }: { output: BillingOutput }) {
       {path && (
         <div className="border-t px-4 py-2 text-xs">
           <Link className="text-primary underline underline-offset-2" to={path}>
-            Manage billing
+            <DashboardText i18nKey={'Manage billing'} />{' '}
           </Link>
         </div>
       )}

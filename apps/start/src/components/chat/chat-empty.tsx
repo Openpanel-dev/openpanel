@@ -33,6 +33,10 @@ import {
   ZapIcon,
 } from 'lucide-react';
 import CopyInput from '@/components/forms/copy-input';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 
 interface Suggestion {
   icon: LucideIcon;
@@ -143,16 +147,19 @@ export function ChatEmpty({
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center gap-8 px-4 py-10">
       <div className="space-y-1.5 text-center">
         <h1 className="font-semibold text-2xl tracking-tight">
-          What do you want to know?
+          <DashboardText i18nKey={'What do you want to know?'} />{' '}
         </h1>
         <p className="mx-auto max-w-md text-muted-foreground">
-          Ask about your numbers, get charts inline, build dashboards, or ask
-          how OpenPanel works.
+          <DashboardText
+            i18nKey={
+              'Ask about your numbers, get charts inline, build dashboards, or ask how OpenPanel works.'
+            }
+          />{' '}
         </p>
       </div>
       <div className="space-y-2">
         <p className="px-1 font-medium text-muted-foreground text-xs">
-          Try asking
+          <DashboardText i18nKey={'Try asking'} />{' '}
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {promptsFor(hint).map(({ icon: Icon, text }) => (
@@ -174,21 +181,32 @@ export function ChatEmpty({
 }
 
 export function ChatNotConfigured() {
+  const { t: translateUi } = useDashboardTranslation();
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-5 px-6 py-10 text-center">
       <div className="flex size-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
         <KeyRoundIcon className="size-5" />
       </div>
       <div>
-        <h1 className="font-semibold text-2xl">AI chat is not configured</h1>
+        <h1 className="font-semibold text-2xl">
+          <DashboardText i18nKey={'AI chat is not configured'} />
+        </h1>
         <p className="mt-2 text-muted-foreground">
-          Set <code>OPENAI_API_KEY</code> or <code>ANTHROPIC_API_KEY</code> on
-          the API service and restart it.
+          <DashboardText i18nKey={'Set'} /> <code>OPENAI_API_KEY</code>{' '}
+          <DashboardText i18nKey={'or'} /> <code>ANTHROPIC_API_KEY</code>{' '}
+          <DashboardText i18nKey={'on the API service and restart it.'} />{' '}
         </p>
       </div>
       <div className="flex w-full flex-col gap-2">
-        <CopyInput label="OpenAI" value="OPENAI_API_KEY=sk-..." />
-        <CopyInput label="Anthropic" value="ANTHROPIC_API_KEY=sk-ant-..." />
+        <CopyInput
+          label={translateUi('OpenAI')}
+          value="OPENAI_API_KEY=sk-..."
+        />
+        <CopyInput
+          label={translateUi('Anthropic')}
+          value="ANTHROPIC_API_KEY=sk-ant-..."
+        />
       </div>
       <a
         className="inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
@@ -196,7 +214,7 @@ export function ChatNotConfigured() {
         rel="noopener"
         target="_blank"
       >
-        View setup docs
+        <DashboardText i18nKey={'View setup docs'} />{' '}
         <ExternalLinkIcon className="size-3.5" />
       </a>
     </div>

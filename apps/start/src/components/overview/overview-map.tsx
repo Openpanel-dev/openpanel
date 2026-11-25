@@ -4,6 +4,7 @@ import WorldMap from 'react-svg-worldmap';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewMapProps {
@@ -49,7 +50,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (query.isLoading) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <div className="text-muted-foreground">Loading map...</div>
+        <div className="text-muted-foreground">
+          <DashboardText i18nKey={'Loading map...'} />
+        </div>
       </div>
     );
   }
@@ -57,7 +60,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (query.isError) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <div className="text-muted-foreground">Error loading map</div>
+        <div className="text-muted-foreground">
+          <DashboardText i18nKey={'Error loading map'} />
+        </div>
       </div>
     );
   }
@@ -65,7 +70,9 @@ export function OverviewMap({ projectId, shareId }: OverviewMapProps) {
   if (!query.data || mapData.length === 0) {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <div className="text-muted-foreground">No data available</div>
+        <div className="text-muted-foreground">
+          <DashboardText i18nKey={'No data available'} />
+        </div>
       </div>
     );
   }

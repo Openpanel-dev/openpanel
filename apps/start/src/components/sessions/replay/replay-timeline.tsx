@@ -15,6 +15,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 const HISTOGRAM_BUCKETS = 140;
@@ -208,6 +212,8 @@ export function ReplayTimeline({
   segments: PageSegment[];
   currentSegmentId: string | null;
 }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const {
     currentTimeRef,
     duration,
@@ -337,7 +343,7 @@ export function ReplayTimeline({
           trackWidth={trackWidth}
         />
         <div
-          aria-label="Seek"
+          aria-label={translateUi('Seek')}
           aria-valuemax={Math.round(duration / 1000)}
           aria-valuemin={0}
           aria-valuenow={Math.round(currentTimeRef.current / 1000)}
@@ -375,9 +381,12 @@ export function ReplayTimeline({
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top">
-                <span className="font-medium text-destructive">Rage click</span>
+                <span className="font-medium text-destructive">
+                  <DashboardText i18nKey={'Rage click'} />
+                </span>
                 <span className="ml-2 text-muted-foreground">
-                  {rage.clicks} clicks at {formatDuration(rage.offsetMs)}
+                  {rage.clicks} <DashboardText i18nKey={'clicks at'} />{' '}
+                  {formatDuration(rage.offsetMs)}
                 </span>
               </TooltipContent>
             </Tooltip>

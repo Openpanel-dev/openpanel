@@ -5,6 +5,10 @@ import { Tooltiper } from '../ui/tooltip';
 import { OverviewListModal } from './overview-list-modal';
 import { useOverviewOptions } from './useOverviewOptions';
 import { useEventQueryFilters } from '@/hooks/use-event-query-filters';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface OverviewTopPagesProps {
@@ -16,6 +20,8 @@ export default function OverviewTopPagesModal({
   projectId,
   shareId,
 }: OverviewTopPagesProps) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [filters, setFilter] = useEventQueryFilters();
   const { startDate, endDate, range } = useOverviewOptions();
   const trpc = useTRPC();
@@ -48,7 +54,11 @@ export default function OverviewTopPagesModal({
               }}
               type="button"
             >
-              {item.path || <span className="opacity-40">Not set</span>}
+              {item.path || (
+                <span className="opacity-40">
+                  <DashboardText i18nKey={'Not set'} />
+                </span>
+              )}
             </button>
             <a
               className="flex-shrink-0"
@@ -67,7 +77,7 @@ export default function OverviewTopPagesModal({
         item.origin.toLowerCase().includes(query)
       }
       searchPlaceholder="Search pages..."
-      title="Top Pages"
+      title={translateUi('Top Pages')}
     />
   );
 }

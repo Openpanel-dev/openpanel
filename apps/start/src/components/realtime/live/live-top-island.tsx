@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ISLAND_TOP_COUNT } from './live-constants';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useNumber } from '@/hooks/use-numer-formatter';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { getCountry } from '@/translations/countries';
 
@@ -13,6 +14,8 @@ interface IslandItem {
 }
 
 export function LiveTopIsland({ projectId }: { projectId: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const trpc = useTRPC();
   const { data } = useQuery(
     trpc.realtime.topSources.queryOptions({ projectId })
@@ -41,8 +44,8 @@ export function LiveTopIsland({ projectId }: { projectId: string }) {
 
   return (
     <div className="pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-col gap-2 rounded-2xl border bg-card/85 px-4 py-3 shadow-lg backdrop-blur-md">
-      <IslandRow items={referrers} label="Referrers" />
-      <IslandRow items={countries} label="Countries" />
+      <IslandRow items={referrers} label={translateUi('Referrers')} />
+      <IslandRow items={countries} label={translateUi('Countries')} />
     </div>
   );
 }

@@ -22,6 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { cn } from '@/utils/cn';
 
 type TileView = IReportDisplay['view'];
@@ -158,7 +159,9 @@ export function ReportItem({
                 {timeWindows[chartRange as keyof typeof timeWindows]?.label}
               </span>
               {startDate && endDate ? (
-                <span>Custom dates</span>
+                <span>
+                  <DashboardText i18nKey={'Custom dates'} />
+                </span>
               ) : (
                 range !== null &&
                 chartRange !== range && (
@@ -188,7 +191,7 @@ export function ReportItem({
                 }}
               >
                 <CopyIcon className="mr-2" size={16} />
-                Duplicate
+                <DashboardText i18nKey={'Duplicate'} />{' '}
               </DropdownMenuItem>
               {onMove && (
                 <DropdownMenuItem
@@ -198,7 +201,7 @@ export function ReportItem({
                   }}
                 >
                   <LayoutPanelTopIcon className="mr-2" size={16} />
-                  Move to dashboard
+                  <DashboardText i18nKey={'Move to dashboard'} />{' '}
                 </DropdownMenuItem>
               )}
               <DropdownMenuGroup>
@@ -210,7 +213,7 @@ export function ReportItem({
                   }}
                 >
                   <Trash className="mr-2" size={16} />
-                  Delete
+                  <DashboardText i18nKey={'Delete'} />{' '}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -281,7 +284,9 @@ export function ReportItemReadOnly({
                 {timeWindows[chartRange as keyof typeof timeWindows]?.label}
               </span>
               {startDate && endDate ? (
-                <span>Custom dates</span>
+                <span>
+                  <DashboardText i18nKey={'Custom dates'} />
+                </span>
               ) : (
                 range !== null &&
                 chartRange !== range && (

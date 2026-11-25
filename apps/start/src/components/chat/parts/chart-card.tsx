@@ -9,6 +9,7 @@ import { useState } from 'react';
 import type { ChartOutput } from '../types';
 import { ReportChart } from '@/components/report-chart';
 import { Button } from '@/components/ui/button';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { pushModal } from '@/modals';
 import { cn } from '@/utils/cn';
 
@@ -25,6 +26,8 @@ function rangeCaption(report: ChartOutput['report']): string {
 
 /** A chart inline in the conversation: compact by default, expandable, saveable. */
 export function ChartCard({ output }: { output: ChartOutput }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const [expanded, setExpanded] = useState(false);
   const { report } = output;
   const isMetric = report.chartType === 'metric';
@@ -41,7 +44,7 @@ export function ChartCard({ output }: { output: ChartOutput }) {
         <div className="flex shrink-0 items-center gap-1">
           {output.dashboardUrl && (
             <Button
-              aria-label="Open report"
+              aria-label={translateUi('Open report')}
               asChild
               className="size-7"
               size="icon"
@@ -58,7 +61,7 @@ export function ChartCard({ output }: { output: ChartOutput }) {
           )}
           {!report.id && (
             <Button
-              aria-label="Save to dashboard"
+              aria-label={translateUi('Save to dashboard')}
               className="size-7"
               onClick={() =>
                 pushModal('SaveReport', {

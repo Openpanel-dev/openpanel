@@ -10,6 +10,7 @@ import {
   useEventQueryFilters,
   useEventQueryNamesFilter,
 } from '@/hooks/use-event-query-filters';
+import { useTranslation as useDashboardTranslation } from '@/i18n/provider';
 import { handleError, useTRPC } from '@/integrations/trpc/react';
 import { cn } from '@/utils/cn';
 
@@ -23,6 +24,8 @@ import { cn } from '@/utils/cn';
  * page header, `w-full` inside a filter sheet).
  */
 export function OverviewAICommand({ className }: { className?: string }) {
+  const { t: translateUi } = useDashboardTranslation();
+
   const { projectId } = useAppParams();
   const { range, startDate, endDate, interval } = useOverviewOptions();
   const [eventNames] = useEventQueryNamesFilter();
@@ -103,7 +106,7 @@ export function OverviewAICommand({ className }: { className?: string }) {
         <Loader2Icon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground" />
       )}
       <Input
-        aria-label="AI filter command"
+        aria-label={translateUi('AI filter command')}
         className="pl-8"
         disabled={pending}
         onChange={(e) => setValue(e.target.value)}
@@ -113,7 +116,7 @@ export function OverviewAICommand({ className }: { className?: string }) {
             submit();
           }
         }}
-        placeholder='Try: "last 7 days, mobile only"'
+        placeholder={translateUi('Try: "last 7 days, mobile only"')}
         value={value}
       />
     </div>

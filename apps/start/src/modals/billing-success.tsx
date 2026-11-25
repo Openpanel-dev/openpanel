@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { popModal } from '.';
 import { ModalContent } from './Modal/Container';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 
 export default function BillingSuccess() {
   return (
@@ -32,12 +33,14 @@ export default function BillingSuccess() {
         </div>
 
         <h2 className="mb-4 font-semibold text-2xl">
-          Subscription updated successfully
+          <DashboardText i18nKey={'Subscription updated successfully'} />{' '}
         </h2>
         <p className="mb-12 max-w-md text-center text-base">
-          Thank you for your purchase! You have now full access to OpenPanel. If
-          you have any questions or feedback, please don't hesitate to contact
-          us.
+          <DashboardText
+            i18nKey={
+              "Thank you for your purchase! You have now full access to OpenPanel. If you have any questions or feedback, please don't hesitate to contact us."
+            }
+          />{' '}
         </p>
       </div>
     </ModalContent>

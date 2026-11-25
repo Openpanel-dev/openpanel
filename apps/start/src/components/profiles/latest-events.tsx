@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from '../ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Widget } from '@/components/widget';
+import { TranslationText as DashboardText } from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 
 interface Props {
@@ -63,10 +64,12 @@ export const LatestEvents = ({
   return (
     <Widget className="h-full w-full overflow-hidden" ref={ref}>
       <WidgetHead>
-        <WidgetTitle icon={ActivityIcon}>Latest Events</WidgetTitle>
+        <WidgetTitle icon={ActivityIcon}>
+          <DashboardText i18nKey={'Latest Events'} />
+        </WidgetTitle>
         <WidgetAbsoluteButtons>
           <Button onClick={handleShowMore} size="sm" variant="outline">
-            All
+            <DashboardText i18nKey={'All'} />{' '}
           </Button>
         </WidgetAbsoluteButtons>
       </WidgetHead>

@@ -10,6 +10,10 @@ import { SignInEmailForm } from '@/components/auth/sign-in-email-form';
 import { SignInOAuth } from '@/components/auth/sign-in-oauth';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useCookieStore } from '@/hooks/use-cookie-store';
+import {
+  TranslationText as DashboardText,
+  useTranslation as useDashboardTranslation,
+} from '@/i18n/provider';
 import { useTRPC } from '@/integrations/trpc/react';
 import { trackFunnel } from '@/utils/funnel-tracking';
 import { createTitle, PAGE_TITLES } from '@/utils/title';
@@ -62,6 +66,8 @@ export const Route = createFileRoute('/_login/login')({
 });
 
 function LoginPage() {
+  const { t: translateUi } = useDashboardTranslation();
+
   const {
     error,
     error_description: errorDescription,
@@ -98,26 +104,28 @@ function LoginPage() {
   return (
     <div className="col w-full gap-8">
       <AuthHeading
-        description="Sign in to your OpenPanel account."
-        title="Welcome back"
+        description={translateUi('Sign in to your OpenPanel account.')}
+        title={translateUi('Welcome back')}
       />
 
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Could not sign you in</AlertTitle>
+          <AlertTitle>
+            <DashboardText i18nKey={'Could not sign you in'} />
+          </AlertTitle>
           <AlertDescription>
             <p>{signInErrorMessage(error, errorDescription)}</p>
             {correlationId && (
               <p className="mt-2">
-                Reference: {correlationId}.{' '}
+                <DashboardText i18nKey={'Reference:'} /> {correlationId}.{' '}
                 <a
                   className="font-medium underline"
                   href={`mailto:hello@openpanel.dev?subject=${encodeURIComponent(`Login Issue - Correlation ID: ${correlationId}`)}`}
                 >
-                  Email us
+                  <DashboardText i18nKey={'Email us'} />{' '}
                 </a>{' '}
-                and we will sort it out.
+                <DashboardText i18nKey={'and we will sort it out.'} />{' '}
               </p>
             )}
           </AlertDescription>
@@ -144,7 +152,9 @@ function LoginPage() {
               />
             )}
           </div>
-          <Or>or continue with email</Or>
+          <Or>
+            <DashboardText i18nKey={'or continue with email'} />
+          </Or>
         </>
       )}
 
@@ -155,19 +165,21 @@ function LoginPage() {
 
       {providers.devLogin && (
         <>
-          <Or>local development</Or>
+          <Or>
+            <DashboardText i18nKey={'local development'} />
+          </Or>
           <SignInDev inviteId={inviteId} />
         </>
       )}
 
       {registrationAllowed && (
         <p className="text-center text-muted-foreground text-sm">
-          New to OpenPanel?{' '}
+          <DashboardText i18nKey={'New to OpenPanel?'} />{' '}
           <a
             className="font-medium text-foreground underline"
             href={signUpHref}
           >
-            Create an account
+            <DashboardText i18nKey={'Create an account'} />{' '}
           </a>
         </p>
       )}
