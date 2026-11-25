@@ -1,0 +1,89 @@
+---
+title: Migration from v2 to v3
+description: How to move a self-hosted OpenPanel 2 install, with Docker Compose or Coolify, to OpenPanel 3.
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Step, Steps } from 'fumadocs-ui/components/steps';
+
+<Callout>
+OpenPanel 3 reaches [supporters](/docs/self-hosting/supporter-access-latest-docker-images) first. The public `:3` images on Docker Hub follow with the public release.
+</Callout>
+
+## What changes in v3
+
+- **Redpanda is required.** Every tracked event goes through Redpanda (Kafka-compatible) before it lands in ClickHouse. It is a new service with its own volume.
+- **The separate worker image is gone.** The worker runs the `openpanel-api` image with `ROLE=worker`.
+- **New required environment variables**: `KAFKA_BROKERS`, `KAFKA_EVENTS_TOPIC_PARTITIONS`, `ENCRYPTION_KEY` and `COOKIE_SECRET`.
+- **The `openpanel` CLI replaces** the `./setup`, `./start` and `./update` scripts for Docker Compose installs.
+
+The full list is in the [self-hosting changelog](/docs/self-hosting/changelog#300).
+
+## Before you start
+
+- **Back up your data.** At least the Postgres and ClickHouse volumes.
+- **Drain the old event queue.** v2 queues events in Redis, and v3 does not move them to Redpanda. Stop sending events (or accept losing the last few seconds of them) and wait until the v2 worker's logs show it has stopped processing events.
+
+## Docker Compose
+
+The CLI makes every change for you and shows each one before it writes anything:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Openpanel-dev/openpanel/main/self-hosting/install.sh | sh
+openpanel upgrade
+```
+
+`upgrade` asks you to confirm the old queue has drained. In scripts, pass `--queue-drained` (`--yes` does not answer it). Afterwards, `openpanel doctor` checks the install and `openpanel doctor --fix` repairs what it can.
+
+## Coolify
+
+Coolify keeps your data in volumes named after the volumes in the compose file, and it keeps the secrets it generated for the service. So the upgrade is: replace the compose file, keep the volume names, redeploy.
+
+<Steps>
+<Step>
+### Back up and drain
+
+Back up the Postgres database (see [Backup and Restore](/docs/self-hosting/deploy-coolify#backup-and-restore)) and drain the old queue as described [above](#before-you-start).
+</Step>
+
+<Step>
+### Replace the compose file
+
+Open your OpenPanel service in Coolify, choose **Edit Compose File**, and replace its contents with [`self-hosting/coolify.yml`](https://github.com/Openpanel-dev/openpanel/blob/main/self-hosting/coolify.yml).
+
+If you installed OpenPanel from Coolify's one-click template, the service and volume names already match. If your services are named `opapi`, `opdb`, `opch` and so on (an older template from our repository), keep your **volume** names, or Coolify starts you on empty databases:
+
+| Service in the new file | Its volume in the new file | Rename it to your old volume |
+|---|---|---|
+| `postgres` | `openpanel_postgres_data` | `opdb-data` |
+| `redis` | `openpanel_redis_data` | `opkv-data` |
+| `clickhouse` | `openpanel_clickhouse_data` | `opch-data` |
+
+`redpanda` is new, so its volume needs no rename.
+</Step>
+
+<Step>
+### Check the settings
+
+Save the file. Coolify generates the secrets the new file asks for (`ENCRYPTION_KEY`, the queue dashboard's `ADMIN_USERNAME` and `ADMIN_PASSWORD`) and keeps the existing ones. `AUTH_SECRET` reuses your `COOKIE_SECRET`, so everyone stays signed in.
+
+Then check that:
+
+- the domains for **openpanel-dashboard** and **openpanel-api** are still the ones you had
+- the server has enough memory: Redpanda takes 2GB by default. Set `OPENPANEL_REDPANDA_MEMORY` (for example `1G`) on a small server
+
+Supporter? Swap the images now, see [Using the supporter images](/docs/self-hosting/deploy-coolify#using-the-supporter-images).
+</Step>
+
+<Step>
+### Deploy
+
+Click **Redeploy**. The API runs the Postgres migrations before it starts and the ClickHouse migrations once it is listening, so the dashboard comes up while those finish. On a large dataset they can take a while; follow them in the **openpanel-api** logs.
+
+When every service is healthy, open the dashboard and send a test event: it should show up in the real-time view.
+</Step>
+</Steps>
+
+## Any issues with migrations?
+
+If you run into problems, reach out on [Discord](https://go.openpanel.dev/discord) and we'll help you out.
