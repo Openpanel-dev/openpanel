@@ -107,16 +107,19 @@ export function SelectDashboard({
           </Button>
         </div>
       ) : (
-        <div className="row flex-wrap gap-2">
+        <div className="row max-h-56 flex-wrap gap-2 overflow-y-auto p-0.5">
           {dashboards.map((dashboard) => (
             <Button
+              aria-label={dashboard.name}
               aria-pressed={value === dashboard.id}
+              className="max-w-[260px]"
               key={dashboard.id}
               onClick={() => onChange(dashboard.id)}
+              title={dashboard.name}
               type="button"
               variant={value === dashboard.id ? 'default' : 'outline'}
             >
-              {dashboard.name}
+              <span className="truncate">{dashboard.name}</span>
             </Button>
           ))}
           <Button
