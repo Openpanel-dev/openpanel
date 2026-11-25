@@ -1016,6 +1016,7 @@ export async function queryEventsCore(
 export interface UpdateEventMetaInput {
   projectId: string;
   name: string;
+  displayName?: string | null;
   icon?: string;
   color?: string;
   conversion?: boolean;
@@ -1023,7 +1024,14 @@ export interface UpdateEventMetaInput {
 
 export async function updateEventMeta(
   deps: ServiceDeps,
-  { projectId, name, icon, color, conversion }: UpdateEventMetaInput
+  {
+    projectId,
+    name,
+    displayName,
+    icon,
+    color,
+    conversion,
+  }: UpdateEventMetaInput
 ) {
   await getEventMetasCached.clear(deps, projectId);
   return deps.db.eventMeta.upsert({
@@ -1033,8 +1041,8 @@ export async function updateEventMeta(
         projectId,
       },
     },
-    create: { projectId, name, icon, color, conversion },
-    update: { icon, color, conversion },
+    create: { projectId, name, displayName, icon, color, conversion },
+    update: { displayName, icon, color, conversion },
   });
 }
 

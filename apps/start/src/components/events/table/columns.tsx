@@ -30,36 +30,41 @@ export function useColumns() {
       header: 'Name',
       cell({ row }) {
         const { name, path, revenue } = row.original;
+        const displayName = row.original.meta?.displayName;
+        const label = displayName || name.replace(/_/g, ' ');
+        const revenueLabel = `${displayName || name} (${number.currency((revenue ?? 0) / 100)})`;
         const fullTitle =
           name === 'screen_view'
             ? path
             : name === 'revenue' && revenue
-              ? `${name} (${number.currency(revenue / 100)})`
-              : name.replace(/_/g, ' ');
+              ? revenueLabel
+              : label;
 
         const renderName = () => {
           if (name === 'screen_view') {
-            if (path.includes('/')) {
+            if (path.includes('/') && !displayName) {
               return path;
             }
 
             return (
               <>
-                <span className="text-muted-foreground">Screen: </span>
+                <span className="text-muted-foreground">
+                  {displayName || 'Screen'}:{' '}
+                </span>
                 {path}
               </>
             );
           }
 
           if (name === 'revenue' && revenue) {
-            return `${name} (${number.currency(revenue / 100)})`;
+            return revenueLabel;
           }
 
           if (name.startsWith('ai_')) {
             const model = row.original.properties?.ai_model;
             return (
               <>
-                {name.replace(/_/g, ' ')}
+                {label}
                 {typeof model === 'string' && model && (
                   <span className="ml-2 text-muted-foreground">{model}</span>
                 )}
@@ -67,7 +72,7 @@ export function useColumns() {
             );
           }
 
-          return name.replace(/_/g, ' ');
+          return label;
         };
 
         return (

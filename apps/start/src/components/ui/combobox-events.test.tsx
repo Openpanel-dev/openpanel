@@ -246,3 +246,109 @@ describe('ComboboxEvents', () => {
     expect(onChange).toHaveBeenCalledWith('add_to_cart');
   });
 });
+
+type PickerItem = Parameters<typeof getEventRows>[0]['items'][number];
+
+function renamedItem(name: string, displayName: string | null): PickerItem {
+  const now = new Date();
+  return {
+    name,
+    count: 5,
+    meta: {
+      id: 'meta_1',
+      name,
+      displayName,
+      conversion: null,
+      color: null,
+      icon: null,
+      projectId: 'proj_1',
+      createdAt: now,
+      updatedAt: now,
+    },
+  };
+}
+
+describe('getEventRows with a display name', () => {
+  const renamed = [renamedItem('signup', 'Account created')];
+
+  test('matches an event by its display name, ignoring case', () => {
+    const result = rows({ items: renamed, search: 'ACCOUNT' });
+    expect(result.map((row) => row.key)).toContain('event:signup');
+  });
+
+  test('still matches by the raw name', () => {
+    const result = rows({ items: renamed, search: 'sign' });
+    expect(result.map((row) => row.key)).toContain('event:signup');
+  });
+
+  test('keys rows on the raw name', () => {
+    const result = rows({ items: renamed });
+    expect(result.map((row) => row.key)).toEqual(['event:signup']);
+  });
+
+  test('does not offer an add row for a known display name', () => {
+    for (const search of ['Account created', 'account created']) {
+      const result = rows({ items: renamed, search });
+      expect(result.some((row) => row.kind === 'add')).toBe(false);
+    }
+  });
+
+  test('still offers an add row for a partial display name', () => {
+    const result = rows({ items: renamed, search: 'Account' });
+    expect(result.map((row) => row.key)).toEqual([
+      'event:signup',
+      'add:Account',
+    ]);
+  });
+});
+
+describe('ComboboxEvents with a display name', () => {
+  afterEach(cleanup);
+
+  const renamed = [renamedItem('signup', 'Account created')];
+  const picker = (onChange = vi.fn(), value = '') => (
+    <ComboboxEvents
+      items={renamed}
+      onChange={onChange}
+      placeholder="Select event"
+      searchable
+      value={value}
+    />
+  );
+
+  test('the closed trigger shows the display name', () => {
+    render(picker(vi.fn(), 'signup'));
+    expect(screen.getByRole('combobox').textContent).toContain(
+      'Account created'
+    );
+  });
+
+  test('an open row shows the display name and the raw name', () => {
+    render(picker());
+    fireEvent.click(screen.getByRole('combobox'));
+    expect(screen.getByText('Account created')).toBeTruthy();
+    expect(screen.getByText('signup')).toBeTruthy();
+  });
+
+  test('selecting a renamed event emits the raw name', () => {
+    const onChange = vi.fn();
+    render(picker(onChange));
+    fireEvent.click(screen.getByRole('combobox'));
+    fireEvent.click(screen.getByText('Account created'));
+    expect(onChange).toHaveBeenCalledWith('signup');
+  });
+
+  test('an event without a display name shows its raw name once', () => {
+    render(
+      <ComboboxEvents
+        items={[renamedItem('signup', null)]}
+        onChange={vi.fn()}
+        placeholder="Select event"
+        searchable
+        value=""
+      />
+    );
+    fireEvent.click(screen.getByRole('combobox'));
+    expect(screen.getAllByText('signup')).toHaveLength(1);
+  });
+});

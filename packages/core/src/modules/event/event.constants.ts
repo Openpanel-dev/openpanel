@@ -34,6 +34,8 @@ export const EVENT_COLUMNS = [
 
 export type IEventColumn = (typeof EVENT_COLUMNS)[number];
 
+export const EVENT_DISPLAY_NAME_MAX_LENGTH = 100;
+
 /** Every column `getEventList` can project. */
 export const EVENT_LIST_COLUMNS = [
   'created_at',

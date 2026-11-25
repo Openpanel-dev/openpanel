@@ -111,6 +111,8 @@ export function getEventRows({
 }): Row[] {
   const matchesSearch = (name: string) =>
     search === '' || name.toLowerCase().includes(search.toLowerCase());
+  const matchesEvent = (item: EventOption) =>
+    matchesSearch(item.name) || matchesSearch(item.meta?.displayName ?? '');
   const knownNames = new Set(items.map((item) => item.name));
   const unseenSelectedNames = allowUnseenEvents
     ? selectedValues.filter((name) => name !== '' && !knownNames.has(name))
@@ -129,18 +131,20 @@ export function getEventRows({
       kind: 'unseen' as const,
       name,
     })),
-    ...items
-      .filter((item) => matchesSearch(item.name))
-      .map((item) => ({
-        key: `event:${item.name}`,
-        kind: 'event' as const,
-        item,
-      })),
+    ...items.filter(matchesEvent).map((item) => ({
+      key: `event:${item.name}`,
+      kind: 'event' as const,
+      item,
+    })),
   ];
 
   const typedName = search.trim();
+  const isTypedDisplayName = items.some(
+    (item) => item.meta?.displayName?.toLowerCase() === typedName.toLowerCase()
+  );
   const isTypedNameTaken =
     knownNames.has(typedName) ||
+    isTypedDisplayName ||
     unseenSelectedNames.includes(typedName) ||
     customEvents.some((customEvent) => customEvent.name === typedName);
   if (allowUnseenEvents && typedName !== '' && !isTypedNameTaken) {
@@ -257,7 +261,7 @@ export function ComboboxEvents<
 
     const firstValue = selectedValues[0];
     const item = firstValue ? find(firstValue) : null;
-    let label = item?.name || firstValue;
+    let label = item?.meta?.displayName || item?.name || firstValue;
 
     if (multiple && selectedValues.length > 1) {
       label += ` +${selectedValues.length - 1}`;
@@ -386,6 +390,7 @@ export function ComboboxEvents<
                   );
                 }
                 const { item } = row;
+                const displayName = item.meta?.displayName;
                 const isSelected =
                   !currentCustomEvent &&
                   selectedValues.includes(item.name as T);
@@ -406,8 +411,17 @@ export function ComboboxEvents<
                     ) : (
                       <EventIcon meta={item.meta} name={item.name} size="sm" />
                     )}
-                    <span className="flex-1 truncate font-medium">
-                      {item.name === '*' ? 'Any events' : item.name}
+                    <span className="flex flex-1 items-baseline gap-2 truncate">
+                      <span className="truncate font-medium">
+                        {item.name === '*'
+                          ? 'Any events'
+                          : displayName || item.name}
+                      </span>
+                      {displayName && (
+                        <span className="truncate text-muted-foreground text-xs">
+                          {item.name}
+                        </span>
+                      )}
                     </span>
                     <span className="font-medium text-muted-foreground tabular-nums">
                       {number.short(item.count)}

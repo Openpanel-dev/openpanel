@@ -11,6 +11,7 @@ import type {
   ITimeToConvertAggregation,
 } from '../report/report.constants';
 import { mergeGlobalFilters, onlyReportEvents } from '../report/src/series';
+import { applyEventDisplayNames } from './src/event-display-names';
 import { collectBreakdownCohortIds } from './src/field-resolution';
 import {
   EMPTY_BREAKDOWN_LABEL,
@@ -361,9 +362,10 @@ export async function getFunnel(
     withStepTimes: timeToConvertAggregation !== undefined,
   });
 
-  const [funnelData, timeToConvertBySerie] = await Promise.all([
+  const [funnelData, timeToConvertBySerie, eventSeries] = await Promise.all([
     runQuery<FunnelRow>(deps, funnelChartQuery(base), base.timezone),
     getTimeToConvertBySerie(deps, base, timeToConvertAggregation),
+    applyEventDisplayNames(deps, projectId, base.eventSeries),
   ]);
 
   return toSeries(funnelData, base.breakdowns, limit)
@@ -372,7 +374,7 @@ export async function getFunnel(
       const timeToConvert = timeToConvertBySerie.get(id);
       const { steps, totalSessions } = toFunnelSteps(
         data,
-        base.eventSeries,
+        eventSeries,
         timeToConvert
       );
       return {

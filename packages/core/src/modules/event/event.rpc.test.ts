@@ -7,6 +7,7 @@ import {
 } from '../../../test/rpc-fixtures';
 import { makeTrpcContext } from '../../rpc/base';
 import type { CookieOptions } from '../../shared/cookie';
+import { EVENT_DISPLAY_NAME_MAX_LENGTH } from './event.constants';
 import { eventRouter } from './event.rpc';
 
 const COOKIE_OPTIONS: CookieOptions = {
@@ -84,5 +85,16 @@ test('events rejects a malformed filter at the input boundary', async () => {
   const caller = await memberCaller();
   await expect(
     caller.events({ ...PROJECT, filters: [{ bogus: true }] as never })
+  ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
+});
+
+test('updateEventMeta rejects a display name over the length limit', async () => {
+  const caller = await memberCaller();
+  await expect(
+    caller.updateEventMeta({
+      ...PROJECT,
+      name: 'signup',
+      displayName: 'x'.repeat(EVENT_DISPLAY_NAME_MAX_LENGTH + 1),
+    })
   ).rejects.toMatchObject({ code: 'BAD_REQUEST' });
 });

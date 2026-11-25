@@ -1,6 +1,23 @@
-import { describe, expect, test } from 'bun:test';
+import { describe, expect, mock, test } from 'bun:test';
 import type { ChatToolContext } from '../context';
-import { buildReportConfig, summarizeChartData } from './charts';
+
+const getFunnel = mock(async (..._args: unknown[]) => ({
+  totalSessions: 0,
+  steps: [],
+}));
+const executeChart = mock(async (..._args: unknown[]) => ({ series: [] }));
+const executeAggregateChart = mock(async (..._args: unknown[]) => ({
+  series: [],
+}));
+mock.module('../../../chart/funnel.service', () => ({ getFunnel }));
+mock.module('../../../chart/chart.service', () => ({
+  executeChart,
+  executeAggregateChart,
+}));
+
+const { buildReportConfig, runReportConfig, summarizeChartData } = await import(
+  './charts'
+);
 
 const ctx = { projectId: 'p1', timezone: 'UTC' } as ChatToolContext;
 
@@ -149,5 +166,60 @@ describe('summarizeChartData', () => {
   test('anything else is passed through as capped JSON', () => {
     const summary = summarizeChartData({ nodes: [], links: [] });
     expect(typeof summary.raw).toBe('string');
+  });
+});
+
+describe('runReportConfig event display names', () => {
+  const run = async (
+    engine: ReturnType<typeof mock>,
+    chartType: string,
+    series: unknown[]
+  ) => {
+    engine.mockClear();
+    await runReportConfig(ctx, {
+      projectId: 'p1',
+      chartType,
+      interval: 'day',
+      range: 'custom',
+      startDate: '2026-10-01',
+      endDate: '2026-10-19',
+      breakdowns: [],
+      series,
+    } as unknown as Parameters<typeof runReportConfig>[1]);
+    const input = engine.mock.calls[0]?.[1] as {
+      series: Record<string, unknown>[];
+    };
+    return input?.series ?? [];
+  };
+
+  test('funnel: an unnamed event series gets its raw name as displayName', async () => {
+    const sent = await run(getFunnel, 'funnel', [
+      { type: 'event', id: 'A', name: 'signup' },
+    ]);
+    expect(getFunnel).toHaveBeenCalledTimes(1);
+    expect(sent[0]?.displayName).toBe('signup');
+  });
+
+  test('funnel: an existing displayName is kept', async () => {
+    const sent = await run(getFunnel, 'funnel', [
+      { type: 'event', id: 'A', name: 'signup', displayName: 'Sign up' },
+    ]);
+    expect(getFunnel).toHaveBeenCalledTimes(1);
+    expect(sent[0]?.displayName).toBe('Sign up');
+  });
+
+  test('funnel: a formula series is passed through unchanged', async () => {
+    const formula = { type: 'formula', id: 'C', formula: 'B / A * 100' };
+    const sent = await run(getFunnel, 'funnel', [formula]);
+    expect(getFunnel).toHaveBeenCalledTimes(1);
+    expect(sent[0]).toEqual(formula);
+  });
+
+  test('linear: an unnamed event series gets its raw name as displayName', async () => {
+    const sent = await run(executeChart, 'linear', [
+      { type: 'event', id: 'A', name: 'signup' },
+    ]);
+    expect(executeChart).toHaveBeenCalledTimes(1);
+    expect(sent[0]?.displayName).toBe('signup');
   });
 });
