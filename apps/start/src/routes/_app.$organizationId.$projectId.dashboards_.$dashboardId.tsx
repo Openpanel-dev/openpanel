@@ -383,7 +383,7 @@ function Component() {
               <div className="relative">
                 <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  className="w-[180px] pl-8 sm:w-[220px]"
+                  className="w-[180px] pl-8 xl:w-[220px]"
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search reports..."
                   type="search"
@@ -404,8 +404,12 @@ function Component() {
             </LinkButton>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                  <MoreHorizontal />
+                <Button
+                  aria-label="Dashboard actions"
+                  className="w-9 px-0"
+                  variant="outline"
+                >
+                  <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[200px]">
