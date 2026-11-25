@@ -1,13 +1,16 @@
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
-import { rm } from 'node:fs/promises';
+import { rm, utimes } from 'node:fs/promises';
+import { join } from 'node:path';
 import {
   type DiagnosticsRequest,
+  diagnosticsDirectory,
   requestDiagnostics,
   startDiagnosticsListener,
 } from './diagnostics';
 import type { GarbageCollectionResult, MemorySnapshot } from './memory';
 
 const TIMEOUT_MS = 10_000;
+const ELEVEN_MINUTES_MS = 11 * 60 * 1000;
 
 const info = mock((_object: object, _message?: string) => undefined);
 const warn = mock((_object: object, _message?: string) => undefined);
@@ -84,4 +87,28 @@ test('an invalid request is answered with an error instead of hanging', async ()
 
   await expect(ask(invalid)).rejects.toThrow();
   expect(warn).toHaveBeenCalledTimes(1);
+});
+
+test('answers nobody collected expire on the next request', async () => {
+  const directory = diagnosticsDirectory(process.pid);
+  const abandoned = join(directory, 'abandoned.response');
+  const fresh = join(directory, 'fresh.response');
+  await Bun.write(abandoned, 'late heap snapshot');
+  await Bun.write(fresh, 'still being read');
+  const elevenMinutesAgo = new Date(Date.now() - ELEVEN_MINUTES_MS);
+  await utimes(abandoned, elevenMinutesAgo, elevenMinutesAgo);
+
+  await ask({ command: 'gc' });
+
+  expect(await Bun.file(abandoned).exists()).toBe(false);
+  expect(await Bun.file(fresh).exists()).toBe(true);
+  await rm(fresh);
+});
+
+test('a stopped listener is refused, not signalled', async () => {
+  stopListening();
+
+  await expect(
+    requestDiagnostics(process.pid, { command: 'gc' }, TIMEOUT_MS)
+  ).rejects.toThrow('not listening for diagnostics');
 });

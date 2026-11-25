@@ -3,6 +3,7 @@
 // answer is written next to it. Whoever can exec into the container can already
 // read this process's memory, so the files are the only gate.
 
+import { rmSync } from 'node:fs';
 import { mkdir, readdir, rename, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,6 +19,7 @@ export const DIAGNOSTICS_SIGNAL = 'SIGUSR2';
 const MAX_TOP_OBJECT_TYPES = 200;
 const PRIVATE_DIRECTORY_MODE = 0o700;
 const POLL_INTERVAL_MS = 100;
+const ANSWER_TTL_MS = 10 * 60 * 1000;
 const REQUEST_SUFFIX = '.request.json';
 const RESPONSE_SUFFIX = '.response';
 const ERROR_SUFFIX = '.error';
@@ -115,6 +117,29 @@ async function handleRequestFile(
   }
 }
 
+/** Answers whose caller timed out are never read, so they expire here. */
+async function removeExpiredAnswers(
+  directory: string,
+  fileNames: string[]
+): Promise<void> {
+  const expiredBefore = Date.now() - ANSWER_TTL_MS;
+  for (const fileName of fileNames) {
+    if (
+      !(fileName.endsWith(RESPONSE_SUFFIX) || fileName.endsWith(ERROR_SUFFIX))
+    ) {
+      continue;
+    }
+    const path = join(directory, fileName);
+    try {
+      if ((await stat(path)).mtimeMs < expiredBefore) {
+        await rm(path, { force: true });
+      }
+    } catch {
+      // The caller read and removed it meanwhile.
+    }
+  }
+}
+
 /**
  * Answers diagnostics requests sent to this process. Call once at boot, in
  * every role; returns the function that stops listening.
@@ -123,9 +148,6 @@ export async function startDiagnosticsListener(
   logger: DiagnosticsLogger
 ): Promise<() => void> {
   const directory = diagnosticsDirectory(process.pid);
-  await rm(directory, { recursive: true, force: true });
-  await mkdir(directory, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
-
   let draining = false;
   let signalledWhileDraining = false;
 
@@ -138,7 +160,9 @@ export async function startDiagnosticsListener(
     try {
       do {
         signalledWhileDraining = false;
-        const requests = (await readdir(directory)).filter((name) =>
+        const fileNames = await readdir(directory);
+        await removeExpiredAnswers(directory, fileNames);
+        const requests = fileNames.filter((name) =>
           name.endsWith(REQUEST_SUFFIX)
         );
         for (const fileName of requests) {
@@ -155,8 +179,17 @@ export async function startDiagnosticsListener(
   const onSignal = () => {
     drain();
   };
+  // Handler first: the directory tells callers it is safe to signal.
   process.on(DIAGNOSTICS_SIGNAL, onSignal);
+  try {
+    await rm(directory, { recursive: true, force: true });
+    await mkdir(directory, { recursive: true, mode: PRIVATE_DIRECTORY_MODE });
+  } catch (error) {
+    process.off(DIAGNOSTICS_SIGNAL, onSignal);
+    throw error;
+  }
   return () => {
+    rmSync(directory, { recursive: true, force: true });
     process.off(DIAGNOSTICS_SIGNAL, onSignal);
   };
 }

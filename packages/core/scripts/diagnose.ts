@@ -40,19 +40,26 @@ if (!parsed.success) {
   process.exit(2);
 }
 
-const pid = values.pid ? Number(values.pid) : DEFAULT_PID;
-const timeoutSeconds = values.timeout
-  ? Number(values.timeout)
-  : DEFAULT_TIMEOUT_SECONDS;
+const pid = values.pid === undefined ? DEFAULT_PID : Number(values.pid);
+const timeoutMs =
+  values.timeout === undefined
+    ? DEFAULT_TIMEOUT_SECONDS * MS_PER_SECOND
+    : Number(values.timeout) * MS_PER_SECOND;
+const pidIsValid = Number.isSafeInteger(pid) && pid > 0;
+const timeoutIsValid =
+  values.timeout?.trim() !== '' && Number.isFinite(timeoutMs) && timeoutMs > 0;
+if (!(pidIsValid && timeoutIsValid)) {
+  console.error(USAGE);
+  process.exit(2);
+}
 
 try {
-  const responsePath = await requestDiagnostics(
-    pid,
-    parsed.data,
-    timeoutSeconds * MS_PER_SECOND
-  );
-  await Bun.write(Bun.stdout, Bun.file(responsePath));
-  await rm(responsePath, { force: true });
+  const responsePath = await requestDiagnostics(pid, parsed.data, timeoutMs);
+  try {
+    await Bun.write(Bun.stdout, Bun.file(responsePath));
+  } finally {
+    await rm(responsePath, { force: true });
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
