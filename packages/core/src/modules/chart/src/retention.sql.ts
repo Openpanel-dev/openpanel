@@ -299,11 +299,11 @@ export function retentionCohortQuery(
       GROUP BY cohort_interval
     )
     SELECT
-      interval_users.cohort_interval AS cohort_interval,
+      cs.cohort_interval AS cohort_interval,
       cs.total_first_event_count AS total_first_event_count,
       ${countsSelect}
-    FROM interval_users
-    LEFT JOIN cohort_sizes AS cs ON interval_users.cohort_interval = cs.cohort_interval
+    FROM cohort_sizes AS cs
+    LEFT JOIN interval_users ON cs.cohort_interval = interval_users.cohort_interval
     ORDER BY cohort_interval ASC
   `;
 }
