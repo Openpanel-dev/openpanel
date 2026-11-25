@@ -160,6 +160,20 @@ describe('env renames', () => {
     expect(env.has('BULLBOARD_USERNAME')).toBe(false);
     expect(env.has('BULLBOARD_PASSWORD')).toBe(false);
   });
+
+  test('EXPERIMENTAL_PROFILE_BACKFILL* become PROFILE_BACKFILL*', () => {
+    const dir = v1Copy();
+    editEnv(dir, (text) =>
+      text.concat(
+        'EXPERIMENTAL_PROFILE_BACKFILL="1"\nEXPERIMENTAL_PROFILE_BACKFILL_PROJECTS="p1,p2"\n'
+      )
+    );
+    const { env } = fixed(dir);
+    expect(env.get('PROFILE_BACKFILL')).toBe('1');
+    expect(env.get('PROFILE_BACKFILL_PROJECTS')).toBe('p1,p2');
+    expect(env.has('EXPERIMENTAL_PROFILE_BACKFILL')).toBe(false);
+    expect(env.has('EXPERIMENTAL_PROFILE_BACKFILL_PROJECTS')).toBe(false);
+  });
 });
 
 describe('compose version key', () => {

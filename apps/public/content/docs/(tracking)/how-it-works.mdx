@@ -88,6 +88,14 @@ if (!payload.profileId && payload.deviceId) {
 }
 ```
 
+### Identifying during a session
+
+A visitor often starts a session anonymously and logs in halfway through. The events before the login are stored under the device ID at the time they arrive. When that session ends, OpenPanel rewrites those earlier events to the identified profile, so the whole session — including `session_start` — belongs to one user in funnels, retention and on the profile page.
+
+Only events that were still anonymous are moved. If someone logs out and another user logs in within the same session, the first user's events stay where they are; the device's later anonymous events go to the most recent identify. Sessions that ended before the login are not changed.
+
+The rewrite runs within a minute of the session ending and needs ClickHouse 25.8 or newer. Self-hosted installs can turn it off with `PROFILE_BACKFILL=0`, or limit it to some projects with `PROFILE_BACKFILL_PROJECTS=<id>,<id>`.
+
 ## Client Events vs Server Events
 
 OpenPanel distinguishes between **client events** and **server events** based on the User-Agent header.

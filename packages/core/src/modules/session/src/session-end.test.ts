@@ -84,6 +84,30 @@ describe('createSessionEnd', () => {
     });
   });
 
+  test('queues the identified session for backfill with its own time span', async () => {
+    const identified = fixtureSession({ profile_id: 'usr-1' });
+    const { deps } = makeDeps(identified);
+
+    await createSessionEnd({ event: payload, snapshot: identified }, deps);
+
+    expect(deps.profileBackfill.add).toHaveBeenCalledTimes(1);
+    expect(deps.profileBackfill.add).toHaveBeenCalledWith({
+      projectId: 'proj-1',
+      sessionId: 'sess-1',
+      profileId: 'usr-1',
+      startedAt: '2026-06-08 10:30:00',
+      endedAt: '2026-06-08 11:00:00',
+    });
+  });
+
+  test('an anonymous session has nothing to backfill', async () => {
+    const { deps } = makeDeps(snapshot);
+
+    await createSessionEnd({ event: payload, snapshot }, deps);
+
+    expect(deps.profileBackfill.add).not.toHaveBeenCalled();
+  });
+
   test('skips when the session was extended after the close was enqueued', async () => {
     const { deps, sessions, createEvent } = makeDeps(
       fixtureSession({ ended_at: '2026-06-08 11:05:00' })
