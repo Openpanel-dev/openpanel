@@ -36,9 +36,7 @@ import {
   interceptProcessOutput,
   type KafkaConsumerHandle,
   kafkaLogger,
-  MEMORY_ROUTES_BASE_PATH,
   markEventsActivity,
-  memoryRoutes,
   opsRoutes,
   publicApiRoutes,
   type QueueDefinition,
@@ -56,6 +54,7 @@ import {
   setBooting,
   setShuttingDown,
   startCodeMigrations,
+  startDiagnosticsListener,
   startKafkaEventsConsumer,
   startSchedulers,
   startWorkers,
@@ -399,14 +398,6 @@ async function buildHttpApp(deps: AppDeps) {
     logger.info('Debug routes enabled at /debug/cron');
   }
 
-  if (config.core.adminAuth) {
-    app.use(memoryRoutes(deps, config.core.adminAuth));
-    logger.info(
-      { path: MEMORY_ROUTES_BASE_PATH },
-      'Memory diagnostics mounted'
-    );
-  }
-
   if (roleConsumes && !config.DISABLE_BULLBOARD) {
     // The board can add, retry and clean jobs, so a dashboard session alone
     // is not enough to reach it (GHSA-r627-6vrh-65p9): without operator
@@ -469,6 +460,7 @@ async function main() {
   const deps = buildDeps();
 
   registerDefaultMetrics();
+  await startDiagnosticsListener(logger);
   if (roleConsumes) {
     registerConsumerMetrics(deps);
   }

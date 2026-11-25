@@ -1,7 +1,7 @@
 // `CORS_OPERATOR_PATHS` (Basic-authenticated operator tooling) is readable
 // from no other origin: a browser replays cached Basic credentials on a
-// credentialed cross-origin request, so echoing the origin would hand a heap
-// snapshot to any page. `CORS_PRIVATE_PATHS` is the allowlist: a request
+// credentialed cross-origin request, so echoing the origin would hand the queue
+// board to any page. `CORS_PRIVATE_PATHS` is the allowlist: a request
 // under one of those prefixes is only allowed from a configured dashboard
 // origin; everything else (`/track`,
 // `/export`, `/insights`, `/import`, `/manage`, `/profile`, `/event`, `/tools`)
@@ -14,7 +14,6 @@
 
 import { cors } from '@elysiajs/cors';
 import { BULL_BOARD_BASE_PATH } from './bull-board';
-import { MEMORY_ROUTES_BASE_PATH } from './memory.routes';
 
 const DEBUG_ROUTES_BASE_PATH = '/debug';
 
@@ -29,9 +28,8 @@ export const CORS_PRIVATE_PATHS = [
   '/ai',
 ] as const;
 
-/** Operator-only prefixes: memory diagnostics, the queue board, dev debug routes. */
+/** Operator-only prefixes: the queue board and dev debug routes. */
 export const CORS_OPERATOR_PATHS = [
-  MEMORY_ROUTES_BASE_PATH,
   BULL_BOARD_BASE_PATH,
   DEBUG_ROUTES_BASE_PATH,
 ] as const;

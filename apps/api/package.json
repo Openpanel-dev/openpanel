@@ -7,6 +7,7 @@
     "testing": "API_PORT=3333 bun run dev",
     "dev:worker": "ROLE=worker dotenv -e ../../.env -- bun --watch src/main.ts",
     "start": "bun run src/main.ts",
+    "diagnose": "bun ../../packages/core/scripts/diagnose.ts",
     "test:manage": "bun scripts/test-manage-api.ts",
     "e2e:sessions": "LOG_LEVEL=warn dotenv -e ../../.env -- bun e2e/session-e2e.ts",
     "e2e:sessions:stress": "LOG_LEVEL=warn dotenv -e ../../.env -- bun e2e/session-stress.ts",

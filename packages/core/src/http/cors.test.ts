@@ -7,8 +7,8 @@ const OTHER_ORIGIN = 'https://evil.example.com';
 
 const app = new Elysia()
   .use(corsDelegator({ dashboardOrigins: [DASHBOARD_ORIGIN] }))
-  .get('/admin/memory/heap-snapshot', () => 'snapshot')
   .get('/bullboard', () => 'board')
+  .get('/debug/cron', () => 'cron')
   .get('/trpc/x', () => 'trpc')
   .get('/track', () => 'track');
 
@@ -20,7 +20,7 @@ async function allowedOrigin(path: string, origin: string) {
 }
 
 test('operator routes are readable from no other origin, not even the dashboard', async () => {
-  for (const path of ['/admin/memory/heap-snapshot', '/bullboard']) {
+  for (const path of ['/bullboard', '/debug/cron']) {
     for (const origin of [DASHBOARD_ORIGIN, OTHER_ORIGIN]) {
       expect(await allowedOrigin(path, origin)).toBeNull();
     }
