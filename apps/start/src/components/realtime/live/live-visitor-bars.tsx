@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRealtimeFilters } from './use-realtime-filters';
 import { Bar } from '@/components/charts/bar';
 import { BarChart } from '@/components/charts/bar-chart';
 import { OPChartTooltip } from '@/components/charts/op-tooltip';
@@ -27,8 +28,9 @@ function formatMinute(minute: string) {
 export function LiveVisitorBars({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
   const number = useNumber();
+  const { filters } = useRealtimeFilters();
   const { data } = useQuery(
-    trpc.realtime.histogram.queryOptions({ projectId })
+    trpc.realtime.histogram.queryOptions({ projectId, filters })
   );
   const points: MinutePoint[] = (data?.minutes ?? []).map((point) => ({
     ...point,

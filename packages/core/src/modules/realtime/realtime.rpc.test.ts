@@ -70,3 +70,18 @@ test('histogram rejects an unauthenticated caller before querying ClickHouse', a
     { code: 'UNAUTHORIZED' }
   );
 });
+
+for (const procedure of [
+  'activePeople',
+  'activeGroups',
+  'topPages',
+  'onlineCount',
+  'filterOptions',
+] as const) {
+  test(`${procedure} rejects an unauthenticated caller before querying ClickHouse`, async () => {
+    const caller = await anonCaller();
+    await expect(
+      caller[procedure]({ projectId: 'proj_1' })
+    ).rejects.toMatchObject({ code: 'UNAUTHORIZED' });
+  });
+}

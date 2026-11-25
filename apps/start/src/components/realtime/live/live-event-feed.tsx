@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { FEED_CLOCK_MS } from './live-constants';
 import { formatAge, LiveFeed, LiveFeedItem } from './live-feed';
 import { useLiveFeed, useNow } from './use-live-feed';
+import { useRealtimeFilters } from './use-realtime-filters';
 import { EventIcon } from '@/components/events/event-icon';
 import { SerieIcon } from '@/components/report-chart/common/serie-icon';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -14,14 +15,15 @@ const SESSION_EVENTS = new Set(['session_start', 'session_end']);
 
 export function LiveEventFeed({ projectId }: { projectId: string }) {
   const trpc = useTRPC();
+  const { filters, filtersKey } = useRealtimeFilters();
   const query = useQuery(
-    trpc.realtime.activeSessions.queryOptions({ projectId })
+    trpc.realtime.activeSessions.queryOptions({ projectId, filters })
   );
   const visibleEvents = useMemo(
     () => query.data?.filter((event) => !SESSION_EVENTS.has(event.name)),
     [query.data]
   );
-  const events = useLiveFeed(visibleEvents);
+  const events = useLiveFeed(visibleEvents, filtersKey);
   const now = useNow(FEED_CLOCK_MS);
 
   return (
@@ -33,7 +35,10 @@ export function LiveEventFeed({ projectId }: { projectId: string }) {
           <LiveFeedItem
             detail={event.city || getCountry(event.country)}
             icon={<EventIcon className="size-4" name={event.name} size="xs" />}
-            sessionId={event.sessionId}
+            link={{
+              to: '/sessions/$sessionId',
+              params: { sessionId: event.sessionId },
+            }}
             title={isPageView ? event.path || '/' : event.name}
             trailing={
               <>

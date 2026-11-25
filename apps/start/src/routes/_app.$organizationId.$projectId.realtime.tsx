@@ -2,6 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { Fullscreen, FullscreenClose } from '@/components/fullscreen-toggle';
 import { RealtimeLiveOverlays } from '@/components/realtime/live/realtime-live-overlays';
+import { useRealtimeFilters } from '@/components/realtime/live/use-realtime-filters';
 import RealtimeMap from '@/components/realtime/map';
 import RealtimeReloader from '@/components/realtime/realtime-reloader';
 import { useTRPC } from '@/integrations/trpc/react';
@@ -25,10 +26,12 @@ export const Route = createFileRoute(
 function Component() {
   const { projectId } = Route.useParams();
   const trpc = useTRPC();
+  const { filters } = useRealtimeFilters();
   const coordinatesQuery = useQuery(
     trpc.realtime.coordinates.queryOptions(
       {
         projectId,
+        filters,
       },
       {
         placeholderData: keepPreviousData,

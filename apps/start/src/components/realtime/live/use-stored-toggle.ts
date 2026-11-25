@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { readStorage, writeStorage } from './live-storage';
 
 /**
  * A boolean remembered in localStorage. It starts at the default and reads
@@ -9,7 +10,7 @@ export function useStoredToggle(key: string, defaultValue: boolean) {
   const [value, setValue] = useState(defaultValue);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(key);
+    const stored = readStorage(key);
     if (stored !== null) {
       setValue(stored === 'true');
     }
@@ -18,7 +19,7 @@ export function useStoredToggle(key: string, defaultValue: boolean) {
   const toggle = useCallback(() => {
     setValue((previous) => {
       const next = !previous;
-      window.localStorage.setItem(key, String(next));
+      writeStorage(key, String(next));
       return next;
     });
   }, [key]);

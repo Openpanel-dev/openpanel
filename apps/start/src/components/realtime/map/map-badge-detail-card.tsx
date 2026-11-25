@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { XIcon } from 'lucide-react';
 import type { RefObject } from 'react';
+import { useRealtimeFilters } from '../live/use-realtime-filters';
 import type { DisplayMarker } from './map-types';
 import { getBadgeOverlayPosition, getProfileDisplayName } from './map-utils';
 import { ProjectLink } from '@/components/links';
@@ -23,10 +24,12 @@ export function MapBadgeDetailCard({
   size: { width: number; height: number };
 }) {
   const trpc = useTRPC();
+  const { filters } = useRealtimeFilters();
   const input = {
     detailScope: marker.detailScope,
     projectId,
     locations: marker.locations,
+    filters,
   };
   const query = useQuery(
     trpc.realtime.mapBadgeDetails.queryOptions(input, {
@@ -125,10 +128,7 @@ export function MapBadgeDetailCard({
                           <div className="flex min-w-0 items-center gap-2">
                             <SerieIcon name={item.referrerName} />
                             <span className="truncate">
-                              {item.referrerName
-                                .replaceAll('https://', '')
-                                .replaceAll('http://', '')
-                                .replaceAll('www.', '') || '(Not set)'}
+                              {item.referrerName || '(Not set)'}
                             </span>
                           </div>
                           <span className="tabular-nums">{item.count}</span>

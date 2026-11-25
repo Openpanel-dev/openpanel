@@ -25,6 +25,7 @@ export function LiveFeed<T extends { id: string }>({
   storageKey,
   items,
   renderItem,
+  emptyText,
   className,
 }: {
   title: string;
@@ -32,6 +33,8 @@ export function LiveFeed<T extends { id: string }>({
   storageKey: string;
   items: T[];
   renderItem: (item: T) => React.ReactNode;
+  /** Shown once loaded with nothing to list; a feed that fills up needs none. */
+  emptyText?: string;
   className?: string;
 }) {
   const [isOpen, toggleOpen] = useStoredToggle(
@@ -70,6 +73,9 @@ export function LiveFeed<T extends { id: string }>({
           />
         </button>
       </h2>
+      {isOpen && items.length === 0 && emptyText ? (
+        <p className="text-muted-foreground text-xs">{emptyText}</p>
+      ) : null}
       {isOpen ? (
         <ul className="flex flex-col gap-1">
           {items.map((item) => (
@@ -83,25 +89,24 @@ export function LiveFeed<T extends { id: string }>({
   );
 }
 
+const FEED_ITEM_CLASS =
+  'flex h-7 items-center gap-2 rounded-md border bg-card/70 px-2 text-xs backdrop-blur-md';
+
 export function LiveFeedItem({
-  sessionId,
+  link,
   icon,
   title,
   detail,
   trailing,
 }: {
-  sessionId: string;
+  link?: { to: string; params: Record<string, string> };
   icon: React.ReactNode;
   title: string;
   detail?: string;
   trailing?: React.ReactNode;
 }) {
-  return (
-    <ProjectLink
-      className="pointer-events-auto flex h-7 items-center gap-2 rounded-md border bg-card/70 px-2 text-xs backdrop-blur-md transition-colors hover:bg-card"
-      params={{ sessionId }}
-      to="/sessions/$sessionId"
-    >
+  const content = (
+    <>
       <span className="flex size-4 shrink-0 items-center justify-center">
         {icon}
       </span>
@@ -114,6 +119,22 @@ export function LiveFeedItem({
           {trailing}
         </span>
       ) : null}
+    </>
+  );
+
+  if (!link) {
+    return <div className={FEED_ITEM_CLASS}>{content}</div>;
+  }
+
+  return (
+    <ProjectLink
+      {...link}
+      className={cn(
+        FEED_ITEM_CLASS,
+        'pointer-events-auto transition-colors hover:bg-card'
+      )}
+    >
+      {content}
     </ProjectLink>
   );
 }
