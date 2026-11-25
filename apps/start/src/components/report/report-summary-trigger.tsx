@@ -68,6 +68,13 @@ export const ReportSummaryTrigger = forwardRef<HTMLButtonElement, Props>(
     const series = useSelector((state) => state.report.series);
     const globalFilters = useSelector((state) => state.report.globalFilters);
     const breakdowns = useSelector((state) => state.report.breakdowns);
+    const options = useSelector((state) => state.report.options);
+    const chartType = useSelector((state) => state.report.chartType);
+    const holdProperties =
+      (chartType === 'funnel' || chartType === 'conversion') &&
+      options?.type === 'funnel'
+        ? (options.holdProperties ?? [])
+        : [];
 
     if (series.length === 0) {
       return (
@@ -92,6 +99,9 @@ export const ReportSummaryTrigger = forwardRef<HTMLButtonElement, Props>(
     }
     if (breakdowns.length > 0) {
       details.push(`by ${breakdowns.map((item) => item.name).join(', ')}`);
+    }
+    if (holdProperties.length > 0) {
+      details.push(`holding ${holdProperties.join(', ')} constant`);
     }
 
     return (

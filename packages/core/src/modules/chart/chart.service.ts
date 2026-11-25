@@ -701,6 +701,7 @@ export interface FunnelStepProfilesRequest {
   showDropoffs?: boolean;
   funnelWindow?: number;
   funnelGroup?: string;
+  holdProperties?: string[];
   breakdowns?: { name: string }[];
   breakdownValues?: string[];
   range: IChartRange;
@@ -724,6 +725,7 @@ export async function getFunnelStepProfiles(
     showDropoffs = false,
     funnelWindow,
     funnelGroup,
+    holdProperties,
     breakdowns: inputBreakdowns = [],
     breakdownValues = [],
   } = input;
@@ -737,6 +739,7 @@ export async function getFunnelStepProfiles(
     breakdowns: inputBreakdowns,
     funnelWindow,
     funnelGroup,
+    holdProperties,
     timezone,
     // stepIndex is 0-based, level is 1-based.
     targetLevel: stepIndex + 1,

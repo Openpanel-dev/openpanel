@@ -3,6 +3,7 @@ import { ReportGlobalFilters } from './ReportGlobalFilters';
 import { ReportSeries } from './ReportSeries';
 import { ReportSettings } from './ReportSettings';
 import { ReportFixedEvents } from './report-fixed-events';
+import { ReportHoldProperties } from './report-hold-properties';
 import { Button } from '@/components/ui/button';
 import {
   SheetClose,
@@ -17,6 +18,8 @@ export function ReportSidebar() {
   const { chartType, options } = useSelector((state) => state.report);
   const showBreakdown = chartType !== 'retention' && chartType !== 'sankey';
   const showFixedEvents = chartType === 'sankey';
+  const showHoldProperties =
+    chartType === 'funnel' || chartType === 'conversion';
   return (
     <>
       <SheetHeader>
@@ -39,6 +42,7 @@ export function ReportSidebar() {
         )}
         <ReportGlobalFilters />
         {showBreakdown && <ReportBreakdowns />}
+        {showHoldProperties && <ReportHoldProperties />}
         <ReportSettings />
       </div>
       <SheetFooter>
