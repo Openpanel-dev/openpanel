@@ -14,9 +14,6 @@ export type IPublishChannels = {
   notification: {
     created: Prisma.NotificationUncheckedCreateInput;
   };
-  ops: {
-    garbage_collect: { requestedAt: string };
-  };
 };
 
 export function getSubscribeChannel<Channel extends keyof IPublishChannels>(
