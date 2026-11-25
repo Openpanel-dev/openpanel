@@ -11,6 +11,8 @@ import type { GarbageCollectionResult, MemorySnapshot } from './memory';
 
 const TIMEOUT_MS = 10_000;
 const ELEVEN_MINUTES_MS = 11 * 60 * 1000;
+// Serialising the whole test process's heap takes >5 s on CI runners.
+const HEAP_SNAPSHOT_TEST_TIMEOUT_MS = 30_000;
 
 const info = mock((_object: object, _message?: string) => undefined);
 const warn = mock((_object: object, _message?: string) => undefined);
@@ -24,11 +26,14 @@ afterAll(() => {
   stopListening();
 });
 
-async function ask(request: DiagnosticsRequest): Promise<string> {
+async function ask(
+  request: DiagnosticsRequest,
+  timeoutMs = TIMEOUT_MS
+): Promise<string> {
   const responsePath = await requestDiagnostics(
     process.pid,
     request,
-    TIMEOUT_MS
+    timeoutMs
   );
   const body = await Bun.file(responsePath).text();
   await rm(responsePath);
@@ -61,13 +66,19 @@ test('a gc reports allocator numbers before and after', async () => {
   expect(result.durationMs).toBeGreaterThanOrEqual(0);
 });
 
-test('a heap snapshot comes back in the V8 format', async () => {
-  const snapshot = JSON.parse(await ask({ command: 'heap-snapshot' })) as {
-    snapshot?: unknown;
-  };
+test(
+  'a heap snapshot comes back in the V8 format',
+  async () => {
+    const snapshot = JSON.parse(
+      await ask({ command: 'heap-snapshot' }, HEAP_SNAPSHOT_TEST_TIMEOUT_MS)
+    ) as {
+      snapshot?: unknown;
+    };
 
-  expect(snapshot.snapshot).toBeDefined();
-});
+    expect(snapshot.snapshot).toBeDefined();
+  },
+  HEAP_SNAPSHOT_TEST_TIMEOUT_MS
+);
 
 test('a process without the listener is refused, never signalled', async () => {
   const bystander = Bun.spawn(['bun', '-e', 'setTimeout(() => {}, 10_000)']);
