@@ -16,8 +16,8 @@ export function PageHeader({
   actions,
 }: PageHeaderProps) {
   return (
-    <div className={cn('col md:row gap-2', className)}>
-      <div className={'flex-1 space-y-1'}>
+    <div className={cn('col md:row gap-2 md:flex-wrap', className)}>
+      <div className="flex-1 space-y-1 md:min-w-64">
         <h1 className="font-semibold text-xl">{title}</h1>
         {description && (
           <p className="font-medium text-base text-muted-foreground">
@@ -26,7 +26,9 @@ export function PageHeader({
         )}
         {children}
       </div>
-      <div className="row flex-wrap gap-2">{actions}</div>
+      <div className="row flex-wrap items-center gap-2 md:self-start">
+        {actions}
+      </div>
     </div>
   );
 }
