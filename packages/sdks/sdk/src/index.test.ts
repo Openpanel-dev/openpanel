@@ -6,7 +6,9 @@ const DEVICELESS_IDS = { deviceId: '', sessionId: '' };
 
 function createSdk() {
   const sdk = new OpenPanel({ clientId: 'test-client' });
-  const fetch = mock(async () => TRACKED_IDS);
+  const fetch = mock(
+    async (): Promise<typeof TRACKED_IDS | null> => TRACKED_IDS
+  );
   sdk.api.fetch = fetch as unknown as typeof sdk.api.fetch;
   return { sdk, fetch };
 }
@@ -32,6 +34,31 @@ describe('ids from /track', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(sdk.getDeviceId()).toBe('device-1');
     expect(sdk.getSessionId()).toBe('session-1');
+  });
+
+  test('a failed request keeps known ids and allows subsequent replays', async () => {
+    const { sdk, fetch } = createSdk();
+    await sdk.track('signup');
+    fetch.mockResolvedValueOnce(null);
+
+    await sdk.track('failed');
+
+    expect(sdk.getDeviceId()).toBe('device-1');
+    expect(sdk.getSessionId()).toBe('session-1');
+
+    await sdk.send({
+      type: 'replay',
+      payload: {
+        chunk_index: 0,
+        events_count: 0,
+        is_full_snapshot: true,
+        started_at: '2026-01-01T00:00:00Z',
+        ended_at: '2026-01-01T00:00:00Z',
+        payload: '[]',
+      },
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 
   test('an ai event on a fresh sdk adopts no ids', async () => {
