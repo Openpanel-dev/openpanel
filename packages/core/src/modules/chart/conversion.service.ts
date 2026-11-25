@@ -252,14 +252,15 @@ function toSeries(
 
   const series = data.reduce(
     (acc, row) => {
-      if (limit && Object.keys(acc).length >= limit) {
-        return acc;
-      }
-
       const key =
         breakdowns.map((_, index) => row[`b_${index}`]).join('|') ||
         NOT_SET_VALUE;
       if (!acc[key]) {
+        // Rows are ordered by day, so the limit may only reject new series:
+        // later rows of a kept series are its later days.
+        if (limit && Object.keys(acc).length >= limit) {
+          return acc;
+        }
         acc[key] = {
           id: key,
           breakdowns: breakdowns.map(
