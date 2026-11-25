@@ -43,7 +43,13 @@ import {
 } from './ingest.constants';
 import { isBot } from './src/bots/detect';
 import { applyBotSuspicion, stripBotProperties } from './src/bots/suspicion';
-import { isDuplicatedEvent } from './src/deduplicate';
+import {
+  claimEventId,
+  confirmEventId,
+  eventIdState,
+  isDuplicatedEvent,
+  releaseEventId,
+} from './src/deduplicate';
 import { getDeviceId } from './src/device-id';
 import type {
   IncomingEventPayload,
@@ -65,7 +71,13 @@ export {
   type IngestAuthOutcome,
   validateIngestRequest,
 } from './src/client-auth';
-export { isDuplicatedEvent } from './src/deduplicate';
+export {
+  claimEventId,
+  confirmEventId,
+  eventIdState,
+  isDuplicatedEvent,
+  releaseEventId,
+} from './src/deduplicate';
 export { getDeviceId } from './src/device-id';
 export type {
   IncomingEventPayload,
@@ -258,7 +270,9 @@ export type TrackOutcome =
   | { status: 'missing-project-id' }
   | { status: 'replay-missing-session-id' }
   | { status: 'profile-not-found' }
-  | { status: 'profile-property-not-a-number' };
+  | { status: 'profile-property-not-a-number' }
+  | { status: 'duplicate' }
+  | { status: 'in-progress' };
 
 async function buildContext(
   deps: IngestScope,
@@ -335,7 +349,8 @@ async function buildContext(
 async function handleTrack(
   payload: ITrackPayload,
   context: TrackContext,
-  transport: IngestTransport
+  transport: IngestTransport,
+  onProduced?: () => void
 ): Promise<void> {
   const { projectId, deviceId, geo, headers, timestamp, sessionId } = context;
 
@@ -378,9 +393,18 @@ async function handleTrack(
 
   const partitionKey = groupId || generateId();
 
-  promises.push(transport.produceIncomingEvent(queueData, partitionKey));
+  promises.push(
+    transport.produceIncomingEvent(queueData, partitionKey).then(onProduced)
+  );
 
-  await Promise.all(promises);
+  // Wait for both: when identification fails first, the caller still has to
+  // learn whether the event was produced before it decides about a retry.
+  const failed = (await Promise.allSettled(promises)).find(
+    (result) => result.status === 'rejected'
+  );
+  if (failed) {
+    throw failed.reason;
+  }
 }
 
 /**
@@ -556,9 +580,49 @@ export async function ingestTrack(
   );
 
   switch (body.type) {
-    case 'track':
-      await handleTrack(body.payload, context, transport);
+    case 'track': {
+      const eventId = body.payload.id;
+      if (!eventId) {
+        await handleTrack(body.payload, context, transport);
+        break;
+      }
+      const claim = await claimEventId(context.projectId, eventId);
+      if (!claim) {
+        // Only an accepted event is final; one still in flight may yet fail
+        // and release its claim, so the sender has to retry.
+        const state = await eventIdState(context.projectId, eventId);
+        return { status: state === 'accepted' ? 'duplicate' : 'in-progress' };
+      }
+      // The event is already produced, so a failure here must not reach the
+      // sender as an error it would retry; the claim still covers retries for
+      // its remaining TTL.
+      const confirm = () =>
+        confirmEventId(context.projectId, eventId, claim).catch(
+          (error: unknown) => {
+            transport.deps.logger.warn(
+              { err: error, projectId: context.projectId },
+              'could not confirm event id; the claim covers retries until it expires'
+            );
+          }
+        );
+      let produced = false;
+      try {
+        await handleTrack(body.payload, context, transport, () => {
+          produced = true;
+        });
+      } catch (error) {
+        // Identification can fail after the event went out. The id stays
+        // taken then, or the sender's retry would store the event twice.
+        if (produced) {
+          await confirm();
+        } else {
+          await releaseEventId(context.projectId, eventId, claim);
+        }
+        throw error;
+      }
+      await confirm();
       break;
+    }
     case 'identify':
       await handleIdentify(transport.deps, body.payload, context);
       break;
@@ -897,6 +961,7 @@ export async function isDuplicateIngestRequest(request: {
   const ip = request.clientIp;
   const origin = headerValue(request.headers, 'origin');
   const clientId = headerValue(request.headers, 'openpanel-client-id');
+
   const isReplay = isTrackBody(request) && request.body.type === 'replay';
   const shouldCheck = ip && origin && clientId && !isReplay;
 

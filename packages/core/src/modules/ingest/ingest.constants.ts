@@ -159,6 +159,8 @@ export interface ITrackPayload {
   properties?: Record<string, unknown>;
   profileId?: IProfileId;
   groups?: string[] | null;
+  /** Sender-chosen idempotency key; a retry reusing it is not stored twice. */
+  id?: string;
 }
 
 export interface IIdentifyPayload {
@@ -233,6 +235,16 @@ export const zTrackPayload = z
     properties: z.record(z.string(), z.unknown()).optional(),
     profileId: zProfileId.optional(),
     groups: zEventGroupIds.nullish(),
+    /**
+     * Optional sender-chosen id (an "insert id"). A retry that reuses it is
+     * acknowledged but not stored twice. Up to 128 printable characters.
+     */
+    id: z
+      .string()
+      .min(1)
+      .max(128)
+      .regex(/^[\x21-\x7e]+$/, 'id must be printable ASCII without spaces')
+      .optional(),
   })
   .refine(
     (data) => !(RESERVED_EVENT_NAMES as readonly string[]).includes(data.name),
