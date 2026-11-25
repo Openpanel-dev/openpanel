@@ -852,6 +852,7 @@ export interface ChartBucketProfilesInput {
   limit: number;
 }
 
+/** Matches `intervalBucket`'s Monday weeks; the timezone travels as `session_timezone`. */
 function bucketEquals(
   interval: IInterval,
   bucketDate: string,
@@ -866,7 +867,7 @@ function bucketEquals(
     case 'day':
       return sql`toStartOfDay(${column}) = toDate(${date})`;
     case 'week':
-      return sql`toStartOfWeek(toDateTime(${column})) = toDate(${date})`;
+      return sql`toStartOfWeek(toDateTime(${column}), 1) = toDate(${date})`;
     case 'month':
       return sql`toStartOfMonth(toDateTime(${column})) = toDate(${date})`;
     default:

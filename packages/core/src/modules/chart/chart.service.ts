@@ -667,6 +667,7 @@ export async function getChartBucketProfiles(
     throw new Error('Series must be an event');
   }
 
+  const { timezone } = await getSettingsForProject(deps, input.projectId);
   const rows = await runQuery<{ profile_id: string }>(
     deps,
     chartBucketProfilesQuery({
@@ -676,7 +677,8 @@ export async function getChartBucketProfiles(
       event: serie,
       breakdowns: input.breakdowns ?? {},
       limit: BUCKET_PROFILES_LIMIT,
-    })
+    }),
+    timezone
   );
   const ids = rows.map((row) => row.profile_id).filter(Boolean);
   if (ids.length === 0) {
