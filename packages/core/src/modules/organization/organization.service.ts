@@ -35,6 +35,7 @@ import {
   DEFAULT_TIMEZONE,
   type InvitableRole,
   type IProjectAccessGrant,
+  type IPutManagedMember,
   isValidTimezone,
   normalizeOrganizationRole,
   type OrganizationRole,
@@ -1051,21 +1052,33 @@ async function assertProjectsInOrganization(
   organizationId: string,
   access: { projectId: string }[]
 ) {
+  const unknown = await findProjectsOutsideOrganization(
+    deps,
+    organizationId,
+    access
+  );
+  if (unknown.length > 0) {
+    throw new TRPCBadRequestError(
+      `Project not in this organization: ${unknown.join(', ')}`
+    );
+  }
+}
+
+async function findProjectsOutsideOrganization(
+  deps: ServiceDeps,
+  organizationId: string,
+  access: { projectId: string }[]
+): Promise<string[]> {
   const projectIds = [...new Set(access.map((grant) => grant.projectId))];
   if (projectIds.length === 0) {
-    return;
+    return [];
   }
   const found = await deps.db.project.findMany({
     where: { id: { in: projectIds }, organizationId },
     select: { id: true },
   });
-  if (found.length !== projectIds.length) {
-    const known = new Set(found.map((project) => project.id));
-    const unknown = projectIds.filter((id) => !known.has(id));
-    throw new TRPCBadRequestError(
-      `Project not in this organization: ${unknown.join(', ')}`
-    );
-  }
+  const known = new Set(found.map((project) => project.id));
+  return projectIds.filter((id) => !known.has(id));
 }
 
 export async function updateOrganizationMemberAccess(
@@ -1103,6 +1116,167 @@ export async function updateOrganizationMemberAccess(
   });
 }
 
+export interface IManagedMember {
+  email: string;
+  userId: string;
+  role: OrganizationRole;
+  projectScope: ProjectScope;
+  projects: IProjectAccessGrant[];
+}
+
+export type PutManagedMemberResult =
+  | { ok: true; member: IManagedMember }
+  | { ok: false; reason: 'owner' }
+  | { ok: false; reason: 'unknown_projects'; projectIds: string[] };
+
+export type RemoveManagedMemberResult =
+  | { ok: true }
+  | { ok: false; reason: 'owner' | 'not_found' };
+
+const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
+function toManagedMember(member: IServiceMember): IManagedMember {
+  return {
+    email: member.user?.email ?? member.email,
+    userId: member.userId ?? '',
+    role: member.role,
+    projectScope: member.projectScope,
+    projects: member.projects.map((grant) => ({
+      projectId: grant.projectId,
+      level: grant.level === 'read' ? 'read' : 'write',
+    })),
+  };
+}
+
+function findUserByEmail(deps: ServiceDeps, email: string) {
+  return deps.db.user.findFirst({
+    where: { email: { equals: email, mode: 'insensitive' } },
+  });
+}
+
+export async function listManagedMembers(
+  deps: ServiceDeps,
+  organizationId: string
+): Promise<IManagedMember[]> {
+  const members = await getMembers(deps, organizationId);
+  return members
+    .map(toManagedMember)
+    .sort((a, b) => a.email.localeCompare(b.email));
+}
+
+/**
+ * The caller vouches for the email, so the user is marked verified: a single
+ * sign-on with that email then links to it. Self-hosted only, where the root
+ * client belongs to the operator.
+ */
+export async function putManagedMember(
+  deps: ServiceDeps,
+  input: IPutManagedMember & { organizationId: string; email: string }
+): Promise<PutManagedMemberResult> {
+  const { db } = deps;
+  const { organizationId } = input;
+  const email = normalizeEmail(input.email);
+  const access = input.projectScope === 'all' ? [] : input.projects;
+  const unknownProjects = await findProjectsOutsideOrganization(
+    deps,
+    organizationId,
+    access
+  );
+  if (unknownProjects.length > 0) {
+    return {
+      ok: false,
+      reason: 'unknown_projects',
+      projectIds: unknownProjects,
+    };
+  }
+
+  const existingUser = await findUserByEmail(deps, email);
+  const existingMember = existingUser
+    ? await db.member.findFirst({
+        where: { organizationId, userId: existingUser.id },
+      })
+    : null;
+  if (
+    existingMember &&
+    normalizeOrganizationRole(existingMember.role) === 'owner'
+  ) {
+    return { ok: false, reason: 'owner' };
+  }
+
+  const name = [input.firstName, input.lastName].filter(Boolean).join(' ');
+  const user = existingUser
+    ? await db.user.update({
+        where: { id: existingUser.id },
+        data: { emailVerified: true },
+      })
+    : await db.user.create({
+        data: {
+          email,
+          emailVerified: true,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          name: name || email,
+        },
+      });
+
+  // A new member starts with no project, so a crash before the grants land
+  // leaves no access instead of the organization-wide default.
+  const member =
+    existingMember ??
+    (await db.member.create({
+      data: {
+        organizationId,
+        userId: user.id,
+        email: user.email,
+        role: input.role,
+        projectScope: 'selected',
+      },
+    }));
+  await db.$transaction([
+    db.member.update({
+      where: { id: member.id },
+      data: { role: input.role },
+    }),
+    ...writeMemberProjects(deps, member.id, input.projectScope, access),
+  ]);
+  await clearMemberAccessCache(deps, { userId: user.id, organizationId });
+
+  return {
+    ok: true,
+    member: {
+      email: user.email,
+      userId: user.id,
+      role: input.role,
+      projectScope: input.projectScope,
+      projects: access,
+    },
+  };
+}
+
+export async function removeManagedMember(
+  deps: ServiceDeps,
+  input: { organizationId: string; email: string }
+): Promise<RemoveManagedMemberResult> {
+  const user = await findUserByEmail(deps, normalizeEmail(input.email));
+  const member = user
+    ? await deps.db.member.findFirst({
+        where: { organizationId: input.organizationId, userId: user.id },
+      })
+    : null;
+  if (!(user && member)) {
+    return { ok: false, reason: 'not_found' };
+  }
+  if (normalizeOrganizationRole(member.role) === 'owner') {
+    return { ok: false, reason: 'owner' };
+  }
+  await deps.db.member.delete({ where: { id: member.id } });
+  await clearMemberAccessCache(deps, {
+    userId: user.id,
+    organizationId: input.organizationId,
+  });
+  return { ok: true };
+}
+
 export function createOrganizationService(
   deps: ServiceDeps,
   _services: () => Services
@@ -1137,6 +1311,14 @@ export function createOrganizationService(
     ): Promise<void> => updateOrganizationMemberAccess(deps, input),
     members: (organizationId: string): Promise<IServiceMember[]> =>
       getMembers(deps, organizationId),
+    listManagedMembers: (organizationId: string): Promise<IManagedMember[]> =>
+      listManagedMembers(deps, organizationId),
+    putManagedMember: (
+      input: Parameters<typeof putManagedMember>[1]
+    ): Promise<PutManagedMemberResult> => putManagedMember(deps, input),
+    removeManagedMember: (
+      input: Parameters<typeof removeManagedMember>[1]
+    ): Promise<RemoveManagedMemberResult> => removeManagedMember(deps, input),
     invitations: (organizationId: string): Promise<IServiceInvite[]> =>
       getInvites(deps, organizationId),
     getInvite: (inviteId: string): ReturnType<typeof getInviteById> =>

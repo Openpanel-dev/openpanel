@@ -85,6 +85,23 @@ export const zUpdateMemberAccess = z.object({
   access: z.array(zProjectAccessGrant),
 });
 
+/**
+ * A member as the Manage API writes it, keyed by email so a directory outside
+ * OpenPanel can keep the organization in sync.
+ */
+export const zPutManagedMember = z.object({
+  role: zInvitableRole,
+  projectScope: zProjectScope,
+  projects: z.array(zProjectAccessGrant).default([]),
+  firstName: z.string().max(MAX_NAME).optional(),
+  lastName: z.string().max(MAX_NAME).optional(),
+});
+export type IPutManagedMember = z.infer<typeof zPutManagedMember>;
+
+export const zManagedMemberParams = z.object({
+  email: z.string().max(MAX_EMAIL).email(),
+});
+
 export const DEFAULT_TIMEZONE = 'UTC';
 
 /** True when the runtime's ICU knows the zone (accepts aliases like `Etc/UTC`, `utc`). */

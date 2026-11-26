@@ -57,6 +57,9 @@ const DOCUMENTED_MANAGE_ROUTES = [
   ['DELETE', '/manage/references/r1'],
   ['GET', '/manage/projects/p1/dashboards'],
   ['GET', '/manage/projects/p1/dashboards/d1/reports'],
+  ['GET', '/manage/members'],
+  ['PUT', '/manage/members/ada@example.com'],
+  ['DELETE', '/manage/members/ada@example.com'],
 ] as const;
 const NOT_FOUND_STATUS = 404;
 

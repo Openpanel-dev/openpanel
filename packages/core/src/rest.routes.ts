@@ -18,6 +18,7 @@ import { ingestRoutes } from './modules/ingest/ingest.routes';
 import { integrationRoutes } from './modules/integration/integration.routes';
 import { mcpRoutes } from './modules/mcp/mcp.routes';
 import { miscRoutes } from './modules/misc/misc.routes';
+import { organizationRoutes } from './modules/organization/organization.routes';
 import { profileRoutes } from './modules/profile/profile.routes';
 import { projectRoutes } from './modules/project/project.routes';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
@@ -49,6 +50,7 @@ export const publicApiRoutes = (deps: AppDeps) =>
     .use(ingestRoutes(deps))
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
+    .use(organizationRoutes(deps))
     .use(clientRoutes(deps))
     .use(referenceRoutes(deps))
     .use(manageDashboardRoutes(deps))
