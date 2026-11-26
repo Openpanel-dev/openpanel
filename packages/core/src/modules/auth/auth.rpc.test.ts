@@ -40,6 +40,8 @@ test('providers reports which OAuth features are configured, as booleans only', 
     google: false,
     github: false,
     gsc: false,
+    oidc: null,
+    password: true,
     devLogin: false,
   });
 
@@ -68,6 +70,8 @@ test('providers reports which OAuth features are configured, as booleans only', 
     google: true,
     github: false,
     gsc: true,
+    oidc: null,
+    password: true,
     devLogin: false,
   });
   expect(JSON.stringify(providers)).not.toContain('secret');
@@ -109,6 +113,8 @@ test('Search Console can remain configured while Google sign-in is hidden', asyn
     google: false,
     github: false,
     gsc: true,
+    oidc: null,
+    password: true,
     devLogin: false,
   });
   config.auth.googleGsc.clientSecret = '';
@@ -126,6 +132,30 @@ test('providers says a dev login exists without reporting its credentials', asyn
   expect(providers.devLogin).toBe(true);
   expect(JSON.stringify(providers)).not.toContain('openpanel.local');
   expect(JSON.stringify(providers)).not.toContain('pw');
+});
+
+test('providers names the single sign-on button without its credentials', async () => {
+  const config = testCoreConfig();
+  config.auth.oidc = {
+    issuer: 'https://idp.example.com/realms/main',
+    clientId: 'oidc-id',
+    clientSecret: 'oidc-secret',
+    redirectUri: undefined,
+    displayName: 'Company SSO',
+  };
+  const providers = await (await anonCaller(config)).providers();
+  expect(providers.oidc).toBe('Company SSO');
+  expect(JSON.stringify(providers)).not.toContain('secret');
+  expect(JSON.stringify(providers)).not.toContain('idp.example.com');
+});
+
+test('turning off password sign-in also hides the dev login', async () => {
+  const config = testCoreConfig();
+  config.auth.allowPasswordLogin = false;
+  config.auth.devLogin = { email: 'admin@openpanel.local', password: 'pw' };
+  const providers = await (await anonCaller(config)).providers();
+  expect(providers.password).toBe(false);
+  expect(providers.devLogin).toBe(false);
 });
 
 test('signInDev is refused when DEV_LOGIN is not configured', async () => {

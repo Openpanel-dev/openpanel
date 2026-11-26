@@ -7,6 +7,7 @@ import type {
   CoreConfig,
   DevLoginConfig,
   KafkaSaslMechanism,
+  OidcClientConfig,
 } from '@openpanel/core';
 import { KAFKA_SASL_MECHANISMS, queues } from '@openpanel/core';
 import { z } from 'zod';
@@ -448,6 +449,12 @@ const rawSchema = z.object({
   GOOGLE_CLIENT_SECRET: stringWithDefault(''),
   GOOGLE_REDIRECT_URI: stringWithDefault(''),
   GSC_GOOGLE_REDIRECT_URI: stringWithDefault(''),
+  OIDC_ISSUER: optionalString,
+  OIDC_CLIENT_ID: optionalString,
+  OIDC_CLIENT_SECRET: optionalString,
+  OIDC_REDIRECT_URI: optionalString,
+  OIDC_DISPLAY_NAME: optionalString,
+  ALLOW_PASSWORD_LOGIN: optionalString,
   COOKIE_TLDS: tokenList,
   CUSTOM_COOKIE_DOMAIN: optionalString,
 
@@ -824,6 +831,23 @@ function deriveKafkaSecurity(raw: RawEnv): CoreConfig['kafka']['security'] {
   };
 }
 
+const DEFAULT_OIDC_DISPLAY_NAME = 'SSO';
+
+/** A partial OIDC setup cannot complete a sign-in, so it counts as absent. */
+function deriveOidcClient(raw: RawEnv): OidcClientConfig | undefined {
+  const { OIDC_ISSUER, OIDC_CLIENT_ID, OIDC_CLIENT_SECRET } = raw;
+  if (!(OIDC_ISSUER && OIDC_CLIENT_ID && OIDC_CLIENT_SECRET)) {
+    return undefined;
+  }
+  return {
+    issuer: OIDC_ISSUER,
+    clientId: OIDC_CLIENT_ID,
+    clientSecret: OIDC_CLIENT_SECRET,
+    redirectUri: raw.OIDC_REDIRECT_URI,
+    displayName: raw.OIDC_DISPLAY_NAME ?? DEFAULT_OIDC_DISPLAY_NAME,
+  };
+}
+
 function deriveCoreConfig(raw: RawEnv): CoreConfig {
   const isProduction = raw.NODE_ENV === PRODUCTION;
   const exporter =
@@ -881,6 +905,8 @@ function deriveCoreConfig(raw: RawEnv): CoreConfig {
       },
       google: { ...googleClient, redirectUri: raw.GOOGLE_REDIRECT_URI },
       googleGsc: { ...googleClient, redirectUri: raw.GSC_GOOGLE_REDIRECT_URI },
+      oidc: deriveOidcClient(raw),
+      allowPasswordLogin: raw.ALLOW_PASSWORD_LOGIN !== FALSE_STRING,
       devLogin: raw.DEV_LOGIN,
     },
     cookies: {

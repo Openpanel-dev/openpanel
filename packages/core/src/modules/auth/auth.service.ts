@@ -237,6 +237,9 @@ export interface ConfiguredProviders {
   google: boolean;
   github: boolean;
   gsc: boolean;
+  /** The sign-in button's name, or null without single sign-on. */
+  oidc: string | null;
+  password: boolean;
   devLogin: boolean;
 }
 
@@ -244,12 +247,15 @@ export interface ConfiguredProviders {
 export function getConfiguredProviders(
   config: CoreConfig
 ): ConfiguredProviders {
-  const { google, github, googleGsc, devLogin } = config.auth;
+  const { google, github, googleGsc, oidc, allowPasswordLogin, devLogin } =
+    config.auth;
   return {
     google: isOAuthClientConfigured(google),
     github: isOAuthClientConfigured(github),
     gsc: isOAuthClientConfigured(googleGsc),
-    devLogin: devLogin !== undefined,
+    oidc: oidc?.displayName ?? null,
+    password: allowPasswordLogin,
+    devLogin: devLogin !== undefined && allowPasswordLogin,
   };
 }
 

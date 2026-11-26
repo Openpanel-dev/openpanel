@@ -24,6 +24,17 @@ export interface OAuthClientConfig {
   redirectUri: string;
 }
 
+/** An OIDC client whose endpoints come from the issuer's discovery document. */
+export interface OidcClientConfig {
+  issuer: string;
+  clientId: string;
+  clientSecret: string;
+  /** Unset lets better-auth use `<api>/api/auth/callback/oidc`. */
+  redirectUri: string | undefined;
+  /** The name on the sign-in button. */
+  displayName: string;
+}
+
 export interface AuthConfig {
   /**
    * AUTH_SECRET, else COOKIE_SECRET. Signs better-auth's session cookie;
@@ -43,6 +54,10 @@ export interface AuthConfig {
   google: OAuthClientConfig;
   /** The same Google client, redirected at the Search Console callback. */
   googleGsc: OAuthClientConfig;
+  /** OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET: single sign-on. */
+  oidc: OidcClientConfig | undefined;
+  /** ALLOW_PASSWORD_LOGIN=false leaves only OAuth and OIDC sign-in. */
+  allowPasswordLogin: boolean;
   /**
    * DEV_LOGIN: a one-click sign-in for a local box, as `email/password`. The
    * loader refuses it under NODE_ENV=production, so it is never set there.
