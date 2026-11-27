@@ -22,6 +22,7 @@ import { profileRoutes } from './modules/profile/profile.routes';
 import { projectRoutes } from './modules/project/project.routes';
 import { realtimeRoutes } from './modules/realtime/realtime.routes';
 import { referenceRoutes } from './modules/reference/reference.routes';
+import { revenueCatRoutes } from './modules/revenuecat/revenuecat.routes';
 import { subscriptionRoutes } from './modules/subscription/subscription.routes';
 import { toolsRoutes } from './modules/tools/tools.routes';
 
@@ -47,6 +48,7 @@ export const publicApiRoutes = (deps: AppDeps) =>
     // the limit. The prefix table is in http/rate-limit.ts.
     .use(httpRateLimit(deps))
     .use(ingestRoutes(deps))
+    .use(revenueCatRoutes(deps))
     .use(importRoutes(deps))
     .use(projectRoutes(deps))
     .use(clientRoutes(deps))
