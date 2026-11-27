@@ -1,12 +1,15 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { ExternalLinkIcon, PlusIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { CheckCircleIcon, ExternalLinkIcon, Loader2Icon } from 'lucide-react';
+import { toast } from 'sonner';
 import CopyInput from '@/components/forms/copy-input';
+import { Skeleton } from '@/components/skeleton';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAppContext } from '@/hooks/use-app-context';
-import { pushModal } from '@/modals';
+import { useAppParams } from '@/hooks/use-app-params';
+import { useTRPC } from '@/integrations/trpc/react';
+import { showConfirm } from '@/modals';
 import { cn } from '@/utils/cn';
 
 export const Route = createFileRoute(
@@ -14,9 +17,6 @@ export const Route = createFileRoute(
 )({
   component: Component,
 });
-
-const DOCS_URL = 'https://openpanel.dev/docs/revenuecat';
-const AUTHORIZATION_PLACEHOLDER = 'Bearer base64(clientId:clientSecret)';
 
 const EVENTS: { revenuecat: string; openpanel: string }[] = [
   {
@@ -45,27 +45,60 @@ const EVENTS: { revenuecat: string; openpanel: string }[] = [
   { revenuecat: 'PRODUCT_CHANGE', openpanel: 'rc_product_change_event' },
 ];
 
-/** Built in the browser: the secret never leaves this page. */
-function revenueCatAuthorization(
-  clientId: string,
-  clientSecret: string
-): string | null {
-  const id = clientId.trim();
-  const secret = clientSecret.trim();
-  if (!(id && secret)) {
-    return null;
-  }
-  return `Bearer ${btoa(`${id}:${secret}`)}`;
+const DOCS_URL = 'https://openpanel.dev/docs/revenuecat';
+const MASKED_TAIL_LENGTH = 4;
+const WAITING_REFETCH_MS = 5000;
+
+function maskAuthorization(authorization: string): string {
+  return `Bearer rcwh_••••••••${authorization.slice(-MASKED_TAIL_LENGTH)}`;
 }
 
 function Component() {
   const { apiUrl } = useAppContext();
+  const { projectId } = useAppParams();
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const webhookUrl = `${apiUrl}/integrations/revenuecat`;
-  const clientIdField = useId();
-  const clientSecretField = useId();
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const authorization = revenueCatAuthorization(clientId, clientSecret);
+
+  const webhookQuery = useQuery(
+    trpc.revenueCat.get.queryOptions(
+      { projectId },
+      {
+        refetchInterval: (query) =>
+          query.state.data?.enabled && !query.state.data.lastEventAt
+            ? WAITING_REFETCH_MS
+            : false,
+      }
+    )
+  );
+  const webhook = webhookQuery.data;
+
+  const onSaved = (data: typeof webhook) => {
+    queryClient.setQueryData(trpc.revenueCat.get.queryKey({ projectId }), data);
+  };
+  const onFailed = (error: { message: string }) => toast.error(error.message);
+
+  const enable = useMutation(
+    trpc.revenueCat.enable.mutationOptions({
+      onSuccess: onSaved,
+      onError: onFailed,
+    })
+  );
+  const rotate = useMutation(
+    trpc.revenueCat.rotate.mutationOptions({
+      onSuccess: (data) => {
+        onSaved(data);
+        toast.success('New header made. Paste it in RevenueCat.');
+      },
+      onError: onFailed,
+    })
+  );
+  const disable = useMutation(
+    trpc.revenueCat.disable.mutationOptions({
+      onSuccess: onSaved,
+      onError: onFailed,
+    })
+  );
 
   return (
     <div className="col gap-6">
@@ -78,73 +111,114 @@ function Component() {
         </p>
       </div>
 
-      <ol className="col list-decimal gap-5 pl-5 text-sm">
-        <li className="col gap-2">
-          <div className="font-medium">Get a client of this project</div>
-          <p className="text-muted-foreground">
-            Use the client id and secret the app already sends events with, or
-            create a new client. The secret is only shown once, when the client
-            is created.
-          </p>
-          <div>
-            <Button
-              icon={PlusIcon}
-              onClick={() => pushModal('AddClient')}
-              variant="outline"
-            >
-              Create client
-            </Button>
-          </div>
-        </li>
+      <div className="col gap-4 rounded-lg border p-4">
+        {webhook === undefined && <Skeleton className="h-24 w-full" />}
 
-        <li className="col gap-3">
-          <div className="font-medium">Make the Authorization header</div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="col gap-1">
-              <Label htmlFor={clientIdField}>Client id</Label>
-              <Input
-                autoComplete="off"
-                id={clientIdField}
-                onChange={(event) => setClientId(event.target.value)}
-                placeholder="00000000-0000-4000-8000-000000000000"
-                value={clientId}
-              />
-            </div>
-            <div className="col gap-1">
-              <Label htmlFor={clientSecretField}>Client secret</Label>
-              <Input
-                autoComplete="off"
-                id={clientSecretField}
-                onChange={(event) => setClientSecret(event.target.value)}
-                placeholder="sec_..."
-                type="password"
-                value={clientSecret}
-              />
-            </div>
+        {webhook && !webhook.enabled && (
+          <div className="col gap-3 text-sm">
+            <p className="text-muted-foreground">
+              This project has no RevenueCat webhook yet. Turn it on to get a
+              webhook URL and the header RevenueCat sends with it.
+            </p>
+            {webhook.canWrite ? (
+              <div>
+                <Button
+                  loading={enable.isPending}
+                  onClick={() => enable.mutate({ projectId })}
+                >
+                  Turn on
+                </Button>
+              </div>
+            ) : (
+              <p className="text-muted-foreground">
+                Ask someone who can edit this project to turn it on.
+              </p>
+            )}
           </div>
-          <CopyInput
-            label="Authorization header"
-            value={authorization ?? AUTHORIZATION_PLACEHOLDER}
-          />
-          <p className="text-muted-foreground text-xs">
-            Made in your browser. Nothing you type here is sent to OpenPanel.
-          </p>
-        </li>
+        )}
 
-        <li className="col gap-3">
-          <div className="font-medium">Add the webhook in RevenueCat</div>
-          <p className="text-muted-foreground">
-            In RevenueCat, open <strong>Integrations → Webhooks</strong>, add a
-            webhook, and paste these two values. Then press{' '}
-            <strong>Send test event</strong>: OpenPanel answers 200.
-          </p>
-          <CopyInput label="Webhook URL" value={webhookUrl} />
-          <p className="text-muted-foreground text-xs">
-            Use one webhook per environment. A development project gets its own
-            webhook with its own client.
-          </p>
-        </li>
-      </ol>
+        {webhook?.enabled && (
+          <>
+            <WebhookStatus
+              lastEventAt={webhook.lastEventAt}
+              lastEventType={webhook.lastEventType}
+            />
+
+            <ol className="col list-decimal gap-4 pl-5 text-sm">
+              <li>
+                In RevenueCat, open <strong>Integrations → Webhooks</strong> and
+                add a webhook.
+              </li>
+              <li>
+                <div className="col gap-2">
+                  <span>Paste the webhook URL.</span>
+                  <CopyInput label="" value={webhookUrl} />
+                </div>
+              </li>
+              <li>
+                <div className="col gap-2">
+                  <span>
+                    Paste this as the{' '}
+                    <strong>Authorization header value</strong>.
+                  </span>
+                  {webhook.authorization ? (
+                    <CopyInput
+                      displayValue={maskAuthorization(webhook.authorization)}
+                      label=""
+                      value={webhook.authorization}
+                    />
+                  ) : (
+                    <p className="text-muted-foreground">
+                      Only people who can edit this project see the header.
+                    </p>
+                  )}
+                </div>
+              </li>
+              <li>
+                Press <strong>Send test event</strong>. The status above shows
+                it within a few seconds.
+              </li>
+            </ol>
+
+            <p className="text-muted-foreground text-xs">
+              The header only works for this project. Each environment, like
+              production and development, is its own project with its own
+              header.
+            </p>
+
+            {webhook.canWrite && (
+              <div className="row flex-wrap gap-2">
+                <Button
+                  loading={rotate.isPending}
+                  onClick={() =>
+                    showConfirm({
+                      title: 'Make a new header?',
+                      text: 'The current header stops working right away. RevenueCat fails until you paste the new one there.',
+                      onConfirm: () => rotate.mutate({ projectId }),
+                    })
+                  }
+                  variant="outline"
+                >
+                  Make a new header
+                </Button>
+                <Button
+                  loading={disable.isPending}
+                  onClick={() =>
+                    showConfirm({
+                      title: 'Turn off the RevenueCat webhook?',
+                      text: 'RevenueCat events stop arriving in this project. Remove the webhook in RevenueCat too.',
+                      onConfirm: () => disable.mutate({ projectId }),
+                    })
+                  }
+                  variant="outline"
+                >
+                  Turn off
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       <div className="col gap-2">
         <div className="font-medium">What you get</div>
@@ -197,6 +271,30 @@ function Component() {
         <ExternalLinkIcon className="h-4 w-4" />
         Read the RevenueCat docs
       </a>
+    </div>
+  );
+}
+
+function WebhookStatus({
+  lastEventAt,
+  lastEventType,
+}: {
+  lastEventAt: Date | string | null;
+  lastEventType: string | null;
+}) {
+  if (!lastEventAt) {
+    return (
+      <div className="row items-center gap-2 text-muted-foreground text-sm">
+        <Loader2Icon className="animate-spin" size={16} />
+        On. Waiting for the first event from RevenueCat.
+      </div>
+    );
+  }
+  return (
+    <div className="row items-center gap-2 text-sm">
+      <CheckCircleIcon className="text-emerald-600" size={16} />
+      Receiving. Last event: <code>{lastEventType}</code>,{' '}
+      {formatDistanceToNow(new Date(lastEventAt), { addSuffix: true })}.
     </div>
   );
 }

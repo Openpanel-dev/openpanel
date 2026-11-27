@@ -27,6 +27,7 @@ import { projectRouter } from './modules/project/project.rpc';
 import { realtimeRouter } from './modules/realtime/realtime.rpc';
 import { referenceRouter } from './modules/reference/reference.rpc';
 import { reportRouter } from './modules/report/report.rpc';
+import { revenueCatRouter } from './modules/revenuecat/revenuecat.rpc';
 import { sessionRouter } from './modules/session/session.rpc';
 import { shareRouter } from './modules/share/share.rpc';
 import { subscriptionRouter } from './modules/subscription/subscription.rpc';
@@ -46,6 +47,7 @@ export const appRouter = createTRPCRouter({
   user: userRouter,
   project: projectRouter,
   client: clientRouter,
+  revenueCat: revenueCatRouter,
   auth: authRouter,
   onboarding: onboardingRouter,
   realtime: realtimeRouter,

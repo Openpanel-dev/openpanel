@@ -1,20 +1,38 @@
 import type { ValidateIngestRequest } from '../../../http/client-auth';
 import { headerValue, type IngestHeaders } from '../../../shared/headers';
 import { validateIngestRequest } from '../../ingest/src/client-auth';
+import {
+  findRevenueCatWebhookByToken,
+  REVENUECAT_TOKEN_PREFIX,
+} from '../revenuecat.service';
 
 const AUTHORIZATION_SCHEME = /^(?:bearer|basic)\s+(\S+)$/i;
 
-/** `Bearer|Basic base64(clientId:clientSecret)`, the one header RevenueCat can send. */
+function authorizationValue(headers: IngestHeaders): string | null {
+  return (
+    AUTHORIZATION_SCHEME.exec(
+      headerValue(headers, 'authorization') ?? ''
+    )?.[1] ?? null
+  );
+}
+
+/** The token the project's RevenueCat tab hands out: `Bearer rcwh_…`. */
+export function webhookTokenFromAuthorization(
+  headers: IngestHeaders
+): string | null {
+  const value = authorizationValue(headers);
+  return value?.startsWith(REVENUECAT_TOKEN_PREFIX) ? value : null;
+}
+
+/** `Bearer|Basic base64(clientId:clientSecret)` of a project client, also accepted. */
 export function credentialsFromAuthorization(
   headers: IngestHeaders
 ): { clientId: string; clientSecret: string } | null {
-  const match = AUTHORIZATION_SCHEME.exec(
-    headerValue(headers, 'authorization') ?? ''
-  );
-  if (!match?.[1]) {
+  const value = authorizationValue(headers);
+  if (!value) {
     return null;
   }
-  const decoded = Buffer.from(match[1], 'base64').toString('utf8');
+  const decoded = Buffer.from(value, 'base64').toString('utf8');
   const separator = decoded.indexOf(':');
   if (separator <= 0 || separator === decoded.length - 1) {
     return null;
@@ -35,12 +53,34 @@ export const validateRevenueCatRequest: ValidateIngestRequest = async ({
   headers,
   clientIp,
 }) => {
+  const token = webhookTokenFromAuthorization(headers);
+  if (token) {
+    const webhook = await findRevenueCatWebhookByToken(deps, token);
+    if (!webhook) {
+      return {
+        ok: false,
+        message: 'RevenueCat: Unknown webhook token',
+        secretVerified: false,
+      };
+    }
+    return {
+      ok: true,
+      client: {
+        id: webhook.id,
+        projectId: webhook.projectId,
+        organizationId: webhook.organizationId,
+        type: 'write',
+      },
+      secretVerified: true,
+    };
+  }
+
   const credentials = credentialsFromAuthorization(headers);
   if (!credentials) {
     return {
       ok: false,
       message:
-        'RevenueCat: Authorization must be Bearer base64(clientId:clientSecret)',
+        'RevenueCat: Authorization must be the header from the RevenueCat tab of the project',
       payload: {},
       secretVerified: false,
     };

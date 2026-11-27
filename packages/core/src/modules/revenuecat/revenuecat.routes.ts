@@ -10,6 +10,7 @@ import {
   REVENUECAT_DEDUPE_SECONDS,
   zRevenueCatWebhook,
 } from './revenuecat.constants';
+import { recordRevenueCatDelivery } from './revenuecat.service';
 import { validateRevenueCatRequest } from './src/auth';
 import { mapRevenueCatEvent } from './src/map';
 
@@ -22,6 +23,9 @@ export const revenueCatRoutes = defineRoutes((app) =>
   app.post(
     '/integrations/revenuecat',
     async ({ body, client, ctx, status, timestamp }) => {
+      if (client.projectId) {
+        await recordRevenueCatDelivery(ctx, client.projectId, body.event.type);
+      }
       const tracks = mapRevenueCatEvent(body.event);
       if (tracks.length === 0) {
         return { tracked: 0 };
@@ -74,7 +78,7 @@ export const revenueCatRoutes = defineRoutes((app) =>
       detail: {
         tags: TAGS,
         description:
-          'Receive a RevenueCat webhook. Authorization: Bearer base64(clientId:clientSecret) of a project client.',
+          'Receive a RevenueCat webhook. Authorization: the header from the RevenueCat tab of the project, or Bearer base64(clientId:clientSecret) of a project client.',
       },
     }
   )
