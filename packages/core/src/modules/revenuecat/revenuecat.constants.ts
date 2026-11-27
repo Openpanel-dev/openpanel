@@ -1,36 +1,38 @@
 import { z } from 'zod';
 
 /**
- * The fields of a RevenueCat webhook event that OpenPanel reads. RevenueCat
- * adds fields over time, so everything else passes through untouched.
+ * The fields of a RevenueCat webhook event that OpenPanel reads. Only `id` and
+ * `type` are on every event: a transfer has no `app_user_id`, for one. A field
+ * that is missing or of an odd type reads as null, because RevenueCat retries
+ * anything but a 200 and the event would never get through.
  */
 export const zRevenueCatEvent = z
   .object({
     id: z.string().min(1),
     type: z.string().min(1),
-    app_user_id: z.string().min(1),
-    original_app_user_id: z.string().nullish(),
-    aliases: z.array(z.string()).nullish(),
-    event_timestamp_ms: z.number(),
-    product_id: z.string().nullish(),
-    period_type: z.string().nullish(),
-    purchased_at_ms: z.number().nullish(),
-    expiration_at_ms: z.number().nullish(),
-    environment: z.string().nullish(),
-    store: z.string().nullish(),
-    price: z.number().nullish(),
-    price_in_purchased_currency: z.number().nullish(),
-    currency: z.string().nullish(),
-    country_code: z.string().nullish(),
-    transaction_id: z.string().nullish(),
-    original_transaction_id: z.string().nullish(),
-    is_trial_conversion: z.boolean().nullish(),
-    cancel_reason: z.string().nullish(),
-    expiration_reason: z.string().nullish(),
-    renewal_number: z.number().nullish(),
-    entitlement_ids: z.array(z.string()).nullish(),
-    presented_offering_id: z.string().nullish(),
-    new_product_id: z.string().nullish(),
+    app_user_id: z.string().min(1).nullish().catch(null),
+    original_app_user_id: z.string().nullish().catch(null),
+    aliases: z.array(z.string()).nullish().catch(null),
+    event_timestamp_ms: z.number().nullish().catch(null),
+    product_id: z.string().nullish().catch(null),
+    period_type: z.string().nullish().catch(null),
+    purchased_at_ms: z.number().nullish().catch(null),
+    expiration_at_ms: z.number().nullish().catch(null),
+    environment: z.string().nullish().catch(null),
+    store: z.string().nullish().catch(null),
+    price: z.number().nullish().catch(null),
+    price_in_purchased_currency: z.number().nullish().catch(null),
+    currency: z.string().nullish().catch(null),
+    country_code: z.string().nullish().catch(null),
+    transaction_id: z.string().nullish().catch(null),
+    original_transaction_id: z.string().nullish().catch(null),
+    is_trial_conversion: z.boolean().nullish().catch(null),
+    cancel_reason: z.string().nullish().catch(null),
+    expiration_reason: z.string().nullish().catch(null),
+    renewal_number: z.number().nullish().catch(null),
+    entitlement_ids: z.array(z.string()).nullish().catch(null),
+    presented_offering_id: z.string().nullish().catch(null),
+    new_product_id: z.string().nullish().catch(null),
   })
   .passthrough();
 

@@ -49,7 +49,10 @@ const COUNTS_AS_REVENUE = new Set([
  * The user the app identified. RevenueCat starts with an anonymous id and
  * lists the app's own id among the aliases once the app logs the user in.
  */
-export function revenueCatProfileId(event: IRevenueCatEvent): string {
+export function revenueCatProfileId(event: IRevenueCatEvent): string | null {
+  if (!event.app_user_id) {
+    return null;
+  }
   if (!event.app_user_id.startsWith(ANONYMOUS_PREFIX)) {
     return event.app_user_id;
   }
@@ -79,13 +82,18 @@ const isoOrNull = (ms: number | null | undefined) =>
  * comes as a cancellation with a negative price; revenue cannot go below
  * zero, so it is flagged on the cancellation instead.
  */
-export function mapRevenueCatEvent(event: IRevenueCatEvent): RevenueCatTrack[] {
+export function mapRevenueCatEvent(
+  event: IRevenueCatEvent,
+  receivedAt: number = Date.now()
+): RevenueCatTrack[] {
   const name = eventName(event);
-  if (!name) {
+  const profileId = revenueCatProfileId(event);
+  if (!(name && profileId)) {
     return [];
   }
-  const profileId = revenueCatProfileId(event);
-  const timestamp = new Date(event.event_timestamp_ms).toISOString();
+  const timestamp = new Date(
+    event.event_timestamp_ms ?? receivedAt
+  ).toISOString();
   const price = event.price ?? null;
   const tracks: RevenueCatTrack[] = [
     {

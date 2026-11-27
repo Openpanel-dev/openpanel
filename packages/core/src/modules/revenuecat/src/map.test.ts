@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
-import type { IRevenueCatEvent } from '../revenuecat.constants';
+import {
+  type IRevenueCatEvent,
+  zRevenueCatWebhook,
+} from '../revenuecat.constants';
 import { credentialsFromAuthorization } from './auth';
 import { mapRevenueCatEvent, revenueCatProfileId } from './map';
 
@@ -195,5 +198,65 @@ describe('the Authorization header', () => {
     `Bearer ${Buffer.from(':no-id').toString('base64')}`,
   ])('refuses %s', (value) => {
     expect(credentialsFromAuthorization({ authorization: value })).toBeNull();
+  });
+});
+
+describe('events RevenueCat sends without every field', () => {
+  test('a transfer has no app_user_id and the webhook body still parses', () => {
+    const body = zRevenueCatWebhook.parse({
+      api_version: '1.0',
+      event: {
+        id: 'rc-transfer',
+        type: 'TRANSFER',
+        event_timestamp_ms: AT,
+        transferred_from: ['$RCAnonymousID:a'],
+        transferred_to: ['user-42'],
+      },
+    });
+    expect(body.event.app_user_id).toBeUndefined();
+    expect(mapRevenueCatEvent(body.event)).toEqual([]);
+  });
+
+  test('a recorded type without a user is skipped, not refused', () => {
+    expect(mapRevenueCatEvent(event({ app_user_id: undefined }))).toEqual([]);
+  });
+
+  test('a field of an odd type reads as null instead of failing the body', () => {
+    const body = zRevenueCatWebhook.parse({
+      event: {
+        ...event(),
+        price: '9.99',
+        aliases: 'user-42',
+        renewal_number: 'two',
+      },
+    });
+    expect(body.event.price).toBeNull();
+    expect(body.event.aliases).toBeNull();
+    expect(names(mapRevenueCatEvent(body.event))).toEqual([
+      'rc_initial_purchase_event',
+    ]);
+  });
+
+  test('an event without a time keeps the time it arrived', () => {
+    const receivedAt = Date.UTC(2026, 10, 27, 9, 0);
+    const [track] = mapRevenueCatEvent(
+      event({ event_timestamp_ms: undefined }),
+      receivedAt
+    );
+    expect(track?.properties.__timestamp).toBe(
+      new Date(receivedAt).toISOString()
+    );
+  });
+
+  test('only id and type are required', () => {
+    expect(
+      zRevenueCatWebhook.safeParse({ event: { type: 'TEST' } }).success
+    ).toBe(false);
+    expect(zRevenueCatWebhook.safeParse({ event: { id: 'x' } }).success).toBe(
+      false
+    );
+    expect(
+      zRevenueCatWebhook.safeParse({ event: { id: 'x', type: 'TEST' } }).success
+    ).toBe(true);
   });
 });
