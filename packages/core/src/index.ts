@@ -50,6 +50,7 @@ export {
   type DevLoginConfig,
   KAFKA_SASL_MECHANISMS,
   type KafkaSaslMechanism,
+  type OidcClientConfig,
 } from './config';
 export type {
   AppDeps,

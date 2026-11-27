@@ -72,7 +72,8 @@ function Component() {
   const { data: providers } = useSuspenseQuery(
     trpc.auth.providers.queryOptions()
   );
-  const hasOAuthProviders = providers.google || providers.github;
+  const hasOAuthProviders =
+    Boolean(providers.oidc) || providers.google || providers.github;
   const { data: invite } = useQuery(
     trpc.organization.getInvite.queryOptions(
       {
@@ -138,6 +139,14 @@ function Component() {
       {hasOAuthProviders && (
         <>
           <div className="col gap-3">
+            {providers.oidc && (
+              <SignInOAuth
+                inviteId={inviteId}
+                label={providers.oidc}
+                provider="oidc"
+                type="sign-up"
+              />
+            )}
             {providers.google && (
               <SignInOAuth
                 inviteId={inviteId}
@@ -153,11 +162,11 @@ function Component() {
               />
             )}
           </div>
-          <Or>or sign up with email</Or>
+          {providers.password && <Or>or sign up with email</Or>}
         </>
       )}
 
-      <SignUpEmailForm inviteId={inviteId} />
+      {providers.password && <SignUpEmailForm inviteId={inviteId} />}
 
       <p className="text-center text-muted-foreground text-xs leading-relaxed">
         By creating an account you agree to the{' '}

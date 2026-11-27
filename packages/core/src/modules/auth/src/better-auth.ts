@@ -9,20 +9,20 @@ import { createAuthMiddleware, getOAuthState } from 'better-auth/api';
 import { parseSetCookieHeader } from 'better-auth/cookies';
 import { makeSignature } from 'better-auth/crypto';
 import type { OAuth2Tokens } from 'better-auth/oauth2';
-import { lastLoginMethod, twoFactor } from 'better-auth/plugins';
+import { genericOAuth, lastLoginMethod, twoFactor } from 'better-auth/plugins';
 import {
   github as githubProvider,
   google as googleProvider,
 } from 'better-auth/social-providers';
 import { sendEmail } from '../../../clients/email';
-import type { CoreConfig } from '../../../config';
+import type { CoreConfig, OidcClientConfig } from '../../../config';
 import type { Db, RedisClient } from '../../../context';
 import type { Logger } from '../../../logger';
 import type { ISetCookie } from '../../../shared/cookie';
 import { connectUserToOrganization } from '../../organization/organization.service';
 import { INVITE_HEADER, PASSWORD_RESET_REQUIRED } from '../auth.constants';
 import { cookieOptions } from './constants';
-import { isOAuthClientConfigured } from './oauth';
+import { Arctic, isOAuthClientConfigured } from './oauth';
 import { hashPassword, verifyPasswordHash } from './password';
 import { getIsRegistrationAllowed } from './registration';
 import { generateSessionToken } from './token';
@@ -38,6 +38,10 @@ const INVITE_COOKIE = 'inviteId';
 /** Where a session can start, so where an invite is consumed. */
 const SIGN_IN_PATHS = ['/sign-in/', '/sign-up/', '/callback/', '/two-factor/'];
 const LAST_LOGIN_METHOD_COOKIE = 'last-auth-provider';
+export const OIDC_PROVIDER_ID = 'oidc';
+const OIDC_SCOPES = ['openid', 'email', 'profile'];
+const OIDC_DISCOVERY_PATH = '/.well-known/openid-configuration';
+const TRAILING_SLASHES = /\/+$/;
 
 const SESSION_EXPIRES_IN_SECONDS = 60 * 60 * 24 * 30;
 const SESSION_UPDATE_AGE_SECONDS = 60 * 60 * 24 * 15;
@@ -249,6 +253,72 @@ function socialProviders(config: CoreConfig) {
   };
 }
 
+interface OidcClaims {
+  sub?: unknown;
+  email?: unknown;
+  email_verified?: unknown;
+  name?: unknown;
+  given_name?: unknown;
+  family_name?: unknown;
+  picture?: unknown;
+}
+
+const claimString = (value: unknown): string | undefined =>
+  typeof value === 'string' && value.trim() ? value.trim() : undefined;
+
+/**
+ * The user from the id token, which the plugin has verified against the
+ * issuer's JWKS before this runs. Null unless the email is verified, for the
+ * same reason as `requireVerifiedEmail`.
+ */
+export function oidcUserFromClaims(claims: OidcClaims) {
+  const id = claimString(claims.sub);
+  const email = claimString(claims.email)?.toLowerCase();
+  if (!(id && email) || claims.email_verified !== true) {
+    return null;
+  }
+  const firstName = claimString(claims.given_name) ?? '';
+  const lastName = claimString(claims.family_name) ?? '';
+  return {
+    id,
+    sub: id,
+    email,
+    emailVerified: true,
+    name:
+      claimString(claims.name) ??
+      ([firstName, lastName].filter(Boolean).join(' ') || email),
+    image: claimString(claims.picture),
+    firstName,
+    lastName,
+  };
+}
+
+function oidcProvider(oidc: OidcClientConfig) {
+  return {
+    providerId: OIDC_PROVIDER_ID,
+    name: oidc.displayName,
+    discoveryUrl: `${oidc.issuer.replace(TRAILING_SLASHES, '')}${OIDC_DISCOVERY_PATH}`,
+    clientId: oidc.clientId,
+    clientSecret: oidc.clientSecret,
+    redirectURI: oidc.redirectUri,
+    scopes: OIDC_SCOPES,
+    pkce: true,
+    requireIdTokenVerification: true,
+    getUserInfo: async (tokens: OAuth2Tokens) => {
+      if (!tokens.idToken) {
+        return null;
+      }
+      return oidcUserFromClaims(
+        Arctic.decodeIdToken(tokens.idToken) as OidcClaims
+      );
+    },
+    mapProfileToUser: (profile: Record<string, unknown>) => ({
+      firstName: claimString(profile.firstName) ?? '',
+      lastName: claimString(profile.lastName) ?? '',
+    }),
+  };
+}
+
 function buildAuth(deps: AuthDeps, secret: string) {
   const { db, config, logger, redis } = deps;
   return betterAuth({
@@ -288,7 +358,7 @@ function buildAuth(deps: AuthDeps, secret: string) {
     },
     socialProviders: socialProviders(config),
     emailAndPassword: {
-      enabled: true,
+      enabled: config.auth.allowPasswordLogin,
       minPasswordLength: MIN_PASSWORD_LENGTH,
       maxPasswordLength: MAX_PASSWORD_LENGTH,
       resetPasswordTokenExpiresIn: RESET_PASSWORD_TOKEN_SECONDS,
@@ -350,6 +420,9 @@ function buildAuth(deps: AuthDeps, secret: string) {
     },
     plugins: [
       exposedPathsPlugin,
+      genericOAuth({
+        config: config.auth.oidc ? [oidcProvider(config.auth.oidc)] : [],
+      }),
       twoFactor({
         issuer: 'OpenPanel',
         twoFactorCookieMaxAge: TWO_FACTOR_CHALLENGE_SECONDS,

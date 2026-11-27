@@ -75,7 +75,8 @@ function LoginPage() {
   const { data: registrationAllowed } = useSuspenseQuery(
     trpc.auth.registrationAllowed.queryOptions({ inviteId })
   );
-  const hasOAuthProviders = providers.google || providers.github;
+  const hasOAuthProviders =
+    Boolean(providers.oidc) || providers.google || providers.github;
   const [lastProvider] = useCookieStore<null | string>(
     'last-auth-provider',
     null
@@ -127,6 +128,15 @@ function LoginPage() {
       {hasOAuthProviders && (
         <>
           <div className="col gap-3">
+            {providers.oidc && (
+              <SignInOAuth
+                inviteId={inviteId}
+                isLastUsed={lastProvider === 'oidc'}
+                label={providers.oidc}
+                provider="oidc"
+                type="sign-in"
+              />
+            )}
             {providers.google && (
               <SignInOAuth
                 inviteId={inviteId}
@@ -144,14 +154,16 @@ function LoginPage() {
               />
             )}
           </div>
-          <Or>or continue with email</Or>
+          {providers.password && <Or>or continue with email</Or>}
         </>
       )}
 
-      <SignInEmailForm
-        inviteId={inviteId}
-        isLastUsed={lastProvider === 'email'}
-      />
+      {providers.password && (
+        <SignInEmailForm
+          inviteId={inviteId}
+          isLastUsed={lastProvider === 'email'}
+        />
+      )}
 
       {providers.devLogin && (
         <>

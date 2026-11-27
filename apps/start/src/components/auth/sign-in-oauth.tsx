@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { KeyRoundIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { LastUsedBadge } from './last-used-badge';
@@ -6,11 +7,12 @@ import { useAppContext } from '@/hooks/use-app-context';
 import { unwrap, useAuthClient } from '@/integrations/auth/client';
 import { failureReason, trackFunnel } from '@/utils/funnel-tracking';
 
-export type OAuthProvider = 'google' | 'github';
+export type OAuthProvider = 'google' | 'github' | 'oidc';
 
 const PROVIDER_LABELS: Record<OAuthProvider, string> = {
   google: 'Google',
   github: 'GitHub',
+  oidc: 'SSO',
 };
 
 function GoogleIcon() {
@@ -55,13 +57,26 @@ function GithubIcon() {
   );
 }
 
+function ProviderIcon({ provider }: { provider: OAuthProvider }) {
+  if (provider === 'google') {
+    return <GoogleIcon />;
+  }
+  if (provider === 'github') {
+    return <GithubIcon />;
+  }
+  return <KeyRoundIcon aria-hidden="true" className="size-5 shrink-0" />;
+}
+
 export function SignInOAuth({
   provider,
+  label,
   type,
   inviteId,
   isLastUsed,
 }: {
   provider: OAuthProvider;
+  /** Overrides the provider's default name on the button. */
+  label?: string;
   type: 'sign-in' | 'sign-up';
   inviteId?: string;
   isLastUsed?: boolean;
@@ -104,8 +119,8 @@ export function SignInOAuth({
         size="xl"
         variant="outline"
       >
-        {provider === 'google' ? <GoogleIcon /> : <GithubIcon />}
-        {verb} with {PROVIDER_LABELS[provider]}
+        <ProviderIcon provider={provider} />
+        {verb} with {label ?? PROVIDER_LABELS[provider]}
       </Button>
       {isLastUsed && <LastUsedBadge />}
     </div>

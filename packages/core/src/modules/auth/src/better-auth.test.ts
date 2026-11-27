@@ -3,6 +3,7 @@
 // unmounted.
 
 import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
+import { generateKeyPairSync, type KeyObject, sign } from 'node:crypto';
 import { testCoreConfig } from '../../../../test/config-fixture';
 import { testServiceDeps } from '../../../../test/service-deps';
 import type { ServiceDeps } from '../../../services';
@@ -597,4 +598,268 @@ test('GitHub asks only for the scope users already granted', async () => {
   const params = new URL(url).searchParams;
   expect(params.get('scope')).toBe('user:email');
   expect(params.get('redirect_uri')).toBe(github.redirectUri);
+});
+
+const OIDC_ISSUER = 'https://idp.test/realms/main';
+const OIDC = {
+  issuer: OIDC_ISSUER,
+  clientId: 'openpanel',
+  clientSecret: 'oidc-secret',
+  redirectUri: 'http://api.test/api/auth/callback/oidc',
+  displayName: 'SSO',
+};
+const OIDC_KEY_ID = 'idp-key';
+const RSA_MODULUS_LENGTH = 2048;
+const idpKey = generateKeyPairSync('rsa', {
+  modulusLength: RSA_MODULUS_LENGTH,
+});
+const strangerKey = generateKeyPairSync('rsa', {
+  modulusLength: RSA_MODULUS_LENGTH,
+});
+
+interface OidcProfile {
+  sub: string;
+  email: string;
+  emailVerified?: boolean;
+  signingKey?: KeyObject;
+}
+
+function signedIdToken(claims: Record<string, unknown>, key: KeyObject) {
+  const encode = (value: unknown) =>
+    Buffer.from(JSON.stringify(value)).toString('base64url');
+  const signingInput = `${encode({ alg: 'RS256', typ: 'JWT', kid: OIDC_KEY_ID })}.${encode(claims)}`;
+  const signature = sign('RSA-SHA256', Buffer.from(signingInput), key);
+  return `${signingInput}.${signature.toString('base64url')}`;
+}
+
+/** A whole identity provider: discovery, JWKS and a token endpoint. */
+function stubIdp(
+  tokenClaims: () => { claims: Record<string, unknown>; key: KeyObject }
+) {
+  const realFetch = globalThis.fetch;
+  const routes: Record<string, () => unknown> = {
+    [`${OIDC_ISSUER}/.well-known/openid-configuration`]: () => ({
+      issuer: OIDC_ISSUER,
+      authorization_endpoint: `${OIDC_ISSUER}/auth`,
+      token_endpoint: `${OIDC_ISSUER}/token`,
+      jwks_uri: `${OIDC_ISSUER}/certs`,
+      id_token_signing_alg_values_supported: ['RS256'],
+    }),
+    [`${OIDC_ISSUER}/certs`]: () => ({
+      keys: [
+        {
+          ...idpKey.publicKey.export({ format: 'jwk' }),
+          kid: OIDC_KEY_ID,
+          alg: 'RS256',
+          use: 'sig',
+        },
+      ],
+    }),
+    [`${OIDC_ISSUER}/token`]: () => {
+      const { claims, key } = tokenClaims();
+      return {
+        access_token: 'access',
+        token_type: 'Bearer',
+        expires_in: 3600,
+        id_token: signedIdToken(claims, key),
+      };
+    },
+  };
+  globalThis.fetch = (async (
+    input: Request | string | URL,
+    init?: RequestInit
+  ) => {
+    const url = input instanceof Request ? input.url : String(input);
+    const route = routes[url.split('?')[0] ?? ''];
+    return route ? Response.json(route()) : realFetch(input, init);
+  }) as typeof fetch;
+  return () => {
+    globalThis.fetch = realFetch;
+  };
+}
+
+let idpAnswer: () => { claims: Record<string, unknown>; key: KeyObject } =
+  () => {
+    throw new Error('The identity provider got no profile for this test');
+  };
+
+function withIdp(run: () => Promise<void>) {
+  return async () => {
+    const restore = stubIdp(() => idpAnswer());
+    try {
+      await run();
+    } finally {
+      restore();
+    }
+  };
+}
+
+async function oidcSignIn(
+  auth: ReturnType<typeof authWith>,
+  {
+    emailVerified = true,
+    signingKey = idpKey.privateKey,
+    ...profile
+  }: OidcProfile
+): Promise<{ location: URL; response: Response }> {
+  const start = await call(auth, '/sign-in/social', {
+    provider: 'oidc',
+    callbackURL: DASHBOARD_URL,
+    errorCallbackURL: `${DASHBOARD_URL}/login`,
+  });
+  const { url } = (await start.json()) as { url: string };
+  const authorize = new URL(url);
+  const state = authorize.searchParams.get('state') ?? '';
+  const nonce = authorize.searchParams.get('nonce');
+  const cookie = start.headers
+    .getSetCookie()
+    .map((header) => header.slice(0, header.indexOf(';')))
+    .join('; ');
+  const now = Math.floor(Date.now() / 1000);
+  idpAnswer = () => ({
+    key: signingKey,
+    claims: {
+      ...profile,
+      email_verified: emailVerified,
+      given_name: 'Ada',
+      family_name: 'Lovelace',
+      iss: OIDC_ISSUER,
+      aud: OIDC.clientId,
+      iat: now,
+      exp: now + 3600,
+      ...(nonce ? { nonce } : {}),
+    },
+  });
+  const response = await auth.handler(
+    new Request(
+      `http://api.test${constants.AUTH_BASE_PATH}/callback/oidc?code=code&state=${state}`,
+      { headers: { cookie, [constants.TRUSTED_IP_HEADER]: '10.2.0.1' } }
+    )
+  );
+  return {
+    response,
+    location: new URL(response.headers.get('location') ?? '', DASHBOARD_URL),
+  };
+}
+
+test(
+  'single sign-on starts at the issuer with PKCE and the registered redirect URI',
+  withIdp(async () => {
+    const start = await call(authWith({ oidc: OIDC }), '/sign-in/social', {
+      provider: 'oidc',
+      callbackURL: DASHBOARD_URL,
+    });
+    const target = new URL(((await start.json()) as { url: string }).url);
+    expect(`${target.origin}${target.pathname}`).toBe(`${OIDC_ISSUER}/auth`);
+    expect(target.searchParams.get('redirect_uri')).toBe(OIDC.redirectUri);
+    expect(target.searchParams.get('code_challenge_method')).toBe('S256');
+    expect(target.searchParams.get('scope')?.split(' ')).toEqual(
+      expect.arrayContaining(['openid', 'email', 'profile'])
+    );
+  })
+);
+
+test(
+  'a verified user created ahead of time is linked on the first single sign-on',
+  withIdp(async () => {
+    const email = `${PREFIX}-oidc-provisioned@openpanel.test`;
+    const user = await deps.db.user.create({
+      data: { email, emailVerified: true, name: 'Ada' },
+    });
+
+    const { location, response } = await oidcSignIn(
+      authWith({ oidc: OIDC, allowRegistration: false }),
+      { sub: 'oidc-provisioned', email }
+    );
+
+    expect(location.toString()).toBe(`${DASHBOARD_URL}/`);
+    expect(lastLoginCookie(response)).toBe('oidc');
+    const account = await deps.db.account.findFirst({
+      where: { userId: user.id, provider: 'oidc' },
+    });
+    expect(account?.accountId).toBe('oidc-provisioned');
+  })
+);
+
+test(
+  'a password-only user is not joined by single sign-on with the same email',
+  withIdp(async () => {
+    const { location } = await oidcSignIn(authWith({ oidc: OIDC }), {
+      sub: 'oidc-existing',
+      email: EXISTING_EMAIL,
+    });
+
+    expect(location.pathname).toBe('/login');
+    expect(location.searchParams.get('error')).toBe('account_not_linked');
+    expect(
+      await deps.db.account.count({
+        where: { userId: EXISTING_ID, provider: 'oidc' },
+      })
+    ).toBe(0);
+  })
+);
+
+test(
+  'an unverified email from the identity provider signs nobody in',
+  withIdp(async () => {
+    const email = `${PREFIX}-oidc-unverified@openpanel.test`;
+    const user = await deps.db.user.create({
+      data: { email, emailVerified: true },
+    });
+
+    const { location } = await oidcSignIn(authWith({ oidc: OIDC }), {
+      sub: 'oidc-unverified',
+      email,
+      emailVerified: false,
+    });
+
+    expect(location.pathname).toBe('/login');
+    expect(location.searchParams.get('error')).toBe('unable_to_get_user_info');
+    expect(await deps.db.account.count({ where: { userId: user.id } })).toBe(0);
+  })
+);
+
+test(
+  'an id token not signed by the issuer signs nobody in',
+  withIdp(async () => {
+    const email = `${PREFIX}-oidc-forged@openpanel.test`;
+    const user = await deps.db.user.create({
+      data: { email, emailVerified: true },
+    });
+
+    const { location } = await oidcSignIn(authWith({ oidc: OIDC }), {
+      sub: 'oidc-forged',
+      email,
+      signingKey: strangerKey.privateKey,
+    });
+
+    expect(location.pathname).toBe('/login');
+    expect(await deps.db.account.count({ where: { userId: user.id } })).toBe(0);
+  })
+);
+
+test(
+  'a new single sign-on user is refused when registration is closed',
+  withIdp(async () => {
+    const email = `${PREFIX}-oidc-new@openpanel.test`;
+    const { location } = await oidcSignIn(
+      authWith({ oidc: OIDC, allowRegistration: false }),
+      { sub: 'oidc-new', email }
+    );
+
+    expect(location.pathname).toBe('/login');
+    expect(location.searchParams.get('error')).toBe('REGISTRATION_NOT_ALLOWED');
+    expect(await deps.db.user.findUnique({ where: { email } })).toBeNull();
+  })
+);
+
+test('turning off password sign-in refuses a correct password', async () => {
+  const response = await call(
+    authWith({ allowPasswordLogin: false }),
+    '/sign-in/email',
+    { email: EXISTING_EMAIL, password: PASSWORD }
+  );
+
+  expect(response.ok).toBe(false);
+  expect(cookieNames(response)).not.toContain(constants.AUTH_SESSION_COOKIE);
 });

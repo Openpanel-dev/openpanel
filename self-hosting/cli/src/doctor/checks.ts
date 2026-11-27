@@ -650,6 +650,61 @@ export const faviconFetchFlag: Check = (install) => {
   };
 };
 
+const OIDC_REQUIRED_KEYS = [
+  'OIDC_ISSUER',
+  'OIDC_CLIENT_ID',
+  'OIDC_CLIENT_SECRET',
+] as const;
+const OAUTH_REQUIRED_SUFFIXES = [
+  'CLIENT_ID',
+  'CLIENT_SECRET',
+  'REDIRECT_URI',
+] as const;
+
+const hasAll = (install: Install, keys: readonly string[]) =>
+  keys.every((key) => Boolean(install.env.get(key)));
+
+// The api hides a half-configured provider instead of failing boot.
+export const oidcPartial: Check = (install) => {
+  const missing = OIDC_REQUIRED_KEYS.filter((key) => !install.env.get(key));
+  if (missing.length === 0 || missing.length === OIDC_REQUIRED_KEYS.length) {
+    return null;
+  }
+  return {
+    id: 'env/oidc-partial',
+    severity: 'warn',
+    title: `Single sign-on is missing ${missing.join(', ')}`,
+    detail:
+      'Without all three the sign-in page shows no single sign-on button.',
+    manual: `Set ${missing.join(', ')}, or remove the other OIDC_ variables.`,
+  };
+};
+
+export const passwordLoginLockout: Check = (install) => {
+  if (install.env.get('ALLOW_PASSWORD_LOGIN') !== 'false') {
+    return null;
+  }
+  const hasOtherSignIn =
+    hasAll(install, OIDC_REQUIRED_KEYS) ||
+    ['GOOGLE', 'GITHUB'].some((provider) =>
+      hasAll(
+        install,
+        OAUTH_REQUIRED_SUFFIXES.map((suffix) => `${provider}_${suffix}`)
+      )
+    );
+  if (hasOtherSignIn) {
+    return null;
+  }
+  return {
+    id: 'env/password-login-lockout',
+    severity: 'error',
+    title: 'ALLOW_PASSWORD_LOGIN=false leaves no way to sign in',
+    detail: 'No single sign-on, Google or GitHub client is fully configured.',
+    manual:
+      'Configure OIDC_ISSUER, OIDC_CLIENT_ID and OIDC_CLIENT_SECRET first, or remove ALLOW_PASSWORD_LOGIN.',
+  };
+};
+
 export const automaticMigrations: Check = (install) => {
   const value = install.env.get('AUTOMATIC_MIGRATIONS');
   if (value === 'true' || value === '1') {
@@ -817,6 +872,8 @@ export const checks: Check[] = [
   adminCredentials,
   selfHosted,
   faviconFetchFlag,
+  oidcPartial,
+  passwordLoginLockout,
   automaticMigrations,
   enabledQueues,
   removedEnvVars,

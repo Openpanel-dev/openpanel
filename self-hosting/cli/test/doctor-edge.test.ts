@@ -308,3 +308,40 @@ test('flags DATABASE_URL_REPLICA, which v3 no longer reads', () => {
 
   expect(finding?.title).toContain('DATABASE_URL_REPLICA');
 });
+
+describe('single sign-on', () => {
+  const findingsFor = (env: Record<string, string>) => {
+    const install = loadInstall(V1_FIXTURE);
+    for (const [key, value] of Object.entries(env)) {
+      install.env.set(key, value);
+    }
+    return runDoctor(install).map((finding) => finding.id);
+  };
+  const OIDC = {
+    OIDC_ISSUER: 'https://idp.example.com/realms/main',
+    OIDC_CLIENT_ID: 'openpanel',
+    OIDC_CLIENT_SECRET: 'secret',
+  };
+
+  test('flags a half-configured provider', () => {
+    expect(findingsFor({ OIDC_ISSUER: OIDC.OIDC_ISSUER })).toContain(
+      'env/oidc-partial'
+    );
+  });
+
+  test('accepts a full provider', () => {
+    expect(findingsFor(OIDC)).not.toContain('env/oidc-partial');
+  });
+
+  test('refuses to turn off passwords with no other way to sign in', () => {
+    expect(findingsFor({ ALLOW_PASSWORD_LOGIN: 'false' })).toContain(
+      'env/password-login-lockout'
+    );
+  });
+
+  test('allows turning off passwords once single sign-on is set up', () => {
+    expect(
+      findingsFor({ ...OIDC, ALLOW_PASSWORD_LOGIN: 'false' })
+    ).not.toContain('env/password-login-lockout');
+  });
+});
