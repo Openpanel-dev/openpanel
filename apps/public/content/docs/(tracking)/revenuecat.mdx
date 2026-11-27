@@ -7,19 +7,15 @@ RevenueCat knows about subscription events your app never sees: a renewal at nig
 
 ## Set it up
 
-1. In OpenPanel, open your project settings and copy a client id and its secret. Use a client of the project the app sends its own events to.
-2. Make the Authorization value. It is `Bearer` and the base64 of `clientId:clientSecret`:
+1. In OpenPanel, open your project settings, go to the **RevenueCat** tab and press **Turn on**. Anyone who can edit the project can do this.
+2. In RevenueCat, open **Integrations → Webhooks** and add a webhook. Copy two values from the tab into it:
+   - **Webhook URL:** `https://api.openpanel.dev/integrations/revenuecat` (self-hosted: `<your api url>/integrations/revenuecat`)
+   - **Authorization header value:** the `Bearer rcwh_…` header the tab shows
+3. Press **Send test event**. The tab shows the test event within a few seconds. A test event records nothing.
 
-   ```bash
-   echo "Bearer $(printf '%s:%s' "$CLIENT_ID" "$CLIENT_SECRET" | base64)"
-   ```
+The header only works for its project. If your app has a separate OpenPanel project for development, turn the webhook on there too and add a second webhook in RevenueCat. **Make a new header** in the tab ends the old one at once, so paste the new one in RevenueCat right after.
 
-3. In RevenueCat, open **Integrations → Webhooks** and add a webhook:
-   - **URL:** `https://api.openpanel.dev/integrations/revenuecat` (self-hosted: `<your api url>/integrations/revenuecat`)
-   - **Authorization header:** the value from step 2
-4. Press **Send test event**. OpenPanel answers 200 and records nothing for a test.
-
-Use one webhook per environment. If your app has a separate OpenPanel project for development, give that project its own webhook and client.
+A project client's header, `Bearer` and the base64 of `clientId:clientSecret`, is also accepted.
 
 ## What you get
 
