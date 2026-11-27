@@ -32,6 +32,7 @@ import { createProjectService } from './modules/project/project.service';
 import { createRealtimeService } from './modules/realtime/realtime.service';
 import { createReferenceService } from './modules/reference/reference.service';
 import { createReportService } from './modules/report/report.service';
+import { createRevenueCatService } from './modules/revenuecat/revenuecat.service';
 import { createSaltService } from './modules/salt/salt.service';
 import { createSessionService } from './modules/session/session.service';
 import { createShareService } from './modules/share/share.service';
@@ -93,6 +94,7 @@ export interface Services {
   share: ReturnType<typeof createShareService>;
   reference: ReturnType<typeof createReferenceService>;
   client: ReturnType<typeof createClientService>;
+  revenueCat: ReturnType<typeof createRevenueCatService>;
   project: ReturnType<typeof createProjectService>;
   user: ReturnType<typeof createUserService>;
   subscription: ReturnType<typeof createSubscriptionService>;
@@ -141,6 +143,7 @@ export function createServices(deps: ServiceDeps): Services {
     share: createShareService(deps, services),
     reference: createReferenceService(deps, services),
     client: createClientService(deps, services),
+    revenueCat: createRevenueCatService(deps, services),
     project: createProjectService(deps, services),
     user: createUserService(deps, services),
     subscription: createSubscriptionService(deps, services),

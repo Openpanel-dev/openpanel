@@ -76,6 +76,7 @@ import { Route as AppOrganizationIdProjectIdEventsTabsIndexRouteImport } from '.
 import { Route as AppOrganizationIdProjectIdAiTabsIndexRouteImport } from './routes/_app.$organizationId.$projectId.ai._tabs.index'
 import { Route as AppOrganizationIdProjectIdSettingsTabsWidgetsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.widgets'
 import { Route as AppOrganizationIdProjectIdSettingsTabsTrackingRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.tracking'
+import { Route as AppOrganizationIdProjectIdSettingsTabsRevenuecatRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.revenuecat'
 import { Route as AppOrganizationIdProjectIdSettingsTabsMcpRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.mcp'
 import { Route as AppOrganizationIdProjectIdSettingsTabsImportsRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.imports'
 import { Route as AppOrganizationIdProjectIdSettingsTabsGscRouteImport } from './routes/_app.$organizationId.$projectId.settings._tabs.gsc'
@@ -564,6 +565,12 @@ const AppOrganizationIdProjectIdSettingsTabsTrackingRoute =
     path: '/tracking',
     getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
   } as any)
+const AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute =
+  AppOrganizationIdProjectIdSettingsTabsRevenuecatRouteImport.update({
+    id: '/revenuecat',
+    path: '/revenuecat',
+    getParentRoute: () => AppOrganizationIdProjectIdSettingsTabsRoute,
+  } as any)
 const AppOrganizationIdProjectIdSettingsTabsMcpRoute =
   AppOrganizationIdProjectIdSettingsTabsMcpRouteImport.update({
     id: '/mcp',
@@ -831,6 +838,7 @@ export interface FileRoutesByFullPath {
   '/$organizationId/$projectId/settings/gsc': typeof AppOrganizationIdProjectIdSettingsTabsGscRoute
   '/$organizationId/$projectId/settings/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   '/$organizationId/$projectId/settings/mcp': typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
+  '/$organizationId/$projectId/settings/revenuecat': typeof AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute
   '/$organizationId/$projectId/settings/tracking': typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   '/$organizationId/$projectId/settings/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/$organizationId/$projectId/ai/': typeof AppOrganizationIdProjectIdAiTabsIndexRoute
@@ -922,6 +930,7 @@ export interface FileRoutesByTo {
   '/$organizationId/$projectId/settings/gsc': typeof AppOrganizationIdProjectIdSettingsTabsGscRoute
   '/$organizationId/$projectId/settings/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   '/$organizationId/$projectId/settings/mcp': typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
+  '/$organizationId/$projectId/settings/revenuecat': typeof AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute
   '/$organizationId/$projectId/settings/tracking': typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   '/$organizationId/$projectId/settings/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/$organizationId/$projectId/cohorts/$cohortId/events': typeof AppOrganizationIdProjectIdCohortsCohortIdTabsEventsRoute
@@ -1024,6 +1033,7 @@ export interface FileRoutesById {
   '/_app/$organizationId/$projectId/settings/_tabs/gsc': typeof AppOrganizationIdProjectIdSettingsTabsGscRoute
   '/_app/$organizationId/$projectId/settings/_tabs/imports': typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   '/_app/$organizationId/$projectId/settings/_tabs/mcp': typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
+  '/_app/$organizationId/$projectId/settings/_tabs/revenuecat': typeof AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute
   '/_app/$organizationId/$projectId/settings/_tabs/tracking': typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   '/_app/$organizationId/$projectId/settings/_tabs/widgets': typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   '/_app/$organizationId/$projectId/ai/_tabs/': typeof AppOrganizationIdProjectIdAiTabsIndexRoute
@@ -1121,6 +1131,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/gsc'
     | '/$organizationId/$projectId/settings/imports'
     | '/$organizationId/$projectId/settings/mcp'
+    | '/$organizationId/$projectId/settings/revenuecat'
     | '/$organizationId/$projectId/settings/tracking'
     | '/$organizationId/$projectId/settings/widgets'
     | '/$organizationId/$projectId/ai/'
@@ -1212,6 +1223,7 @@ export interface FileRouteTypes {
     | '/$organizationId/$projectId/settings/gsc'
     | '/$organizationId/$projectId/settings/imports'
     | '/$organizationId/$projectId/settings/mcp'
+    | '/$organizationId/$projectId/settings/revenuecat'
     | '/$organizationId/$projectId/settings/tracking'
     | '/$organizationId/$projectId/settings/widgets'
     | '/$organizationId/$projectId/cohorts/$cohortId/events'
@@ -1313,6 +1325,7 @@ export interface FileRouteTypes {
     | '/_app/$organizationId/$projectId/settings/_tabs/gsc'
     | '/_app/$organizationId/$projectId/settings/_tabs/imports'
     | '/_app/$organizationId/$projectId/settings/_tabs/mcp'
+    | '/_app/$organizationId/$projectId/settings/_tabs/revenuecat'
     | '/_app/$organizationId/$projectId/settings/_tabs/tracking'
     | '/_app/$organizationId/$projectId/settings/_tabs/widgets'
     | '/_app/$organizationId/$projectId/ai/_tabs/'
@@ -1883,6 +1896,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsTrackingRouteImport
       parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
     }
+    '/_app/$organizationId/$projectId/settings/_tabs/revenuecat': {
+      id: '/_app/$organizationId/$projectId/settings/_tabs/revenuecat'
+      path: '/revenuecat'
+      fullPath: '/$organizationId/$projectId/settings/revenuecat'
+      preLoaderRoute: typeof AppOrganizationIdProjectIdSettingsTabsRevenuecatRouteImport
+      parentRoute: typeof AppOrganizationIdProjectIdSettingsTabsRoute
+    }
     '/_app/$organizationId/$projectId/settings/_tabs/mcp': {
       id: '/_app/$organizationId/$projectId/settings/_tabs/mcp'
       path: '/mcp'
@@ -2343,6 +2363,7 @@ interface AppOrganizationIdProjectIdSettingsTabsRouteChildren {
   AppOrganizationIdProjectIdSettingsTabsGscRoute: typeof AppOrganizationIdProjectIdSettingsTabsGscRoute
   AppOrganizationIdProjectIdSettingsTabsImportsRoute: typeof AppOrganizationIdProjectIdSettingsTabsImportsRoute
   AppOrganizationIdProjectIdSettingsTabsMcpRoute: typeof AppOrganizationIdProjectIdSettingsTabsMcpRoute
+  AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute: typeof AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute
   AppOrganizationIdProjectIdSettingsTabsTrackingRoute: typeof AppOrganizationIdProjectIdSettingsTabsTrackingRoute
   AppOrganizationIdProjectIdSettingsTabsWidgetsRoute: typeof AppOrganizationIdProjectIdSettingsTabsWidgetsRoute
   AppOrganizationIdProjectIdSettingsTabsIndexRoute: typeof AppOrganizationIdProjectIdSettingsTabsIndexRoute
@@ -2364,6 +2385,8 @@ const AppOrganizationIdProjectIdSettingsTabsRouteChildren: AppOrganizationIdProj
       AppOrganizationIdProjectIdSettingsTabsImportsRoute,
     AppOrganizationIdProjectIdSettingsTabsMcpRoute:
       AppOrganizationIdProjectIdSettingsTabsMcpRoute,
+    AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute:
+      AppOrganizationIdProjectIdSettingsTabsRevenuecatRoute,
     AppOrganizationIdProjectIdSettingsTabsTrackingRoute:
       AppOrganizationIdProjectIdSettingsTabsTrackingRoute,
     AppOrganizationIdProjectIdSettingsTabsWidgetsRoute:

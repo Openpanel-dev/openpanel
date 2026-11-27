@@ -6,7 +6,7 @@ import { expect, test } from 'bun:test';
 import type { Logger } from './logger';
 import { createServices, type ServiceDeps } from './services';
 
-const SERVICE_COUNT = 38;
+const SERVICE_COUNT = 39;
 
 function stubLogger(): Logger {
   const noop = () => undefined;

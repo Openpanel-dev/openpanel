@@ -1,0 +1,43 @@
+---
+title: RevenueCat
+description: Send RevenueCat subscription events and revenue to OpenPanel with a webhook.
+---
+
+RevenueCat knows about subscription events your app never sees: a renewal at night, a billing issue, an expiration while the app is closed. OpenPanel can receive them straight from RevenueCat, so you get them in your funnels and your revenue.
+
+## Set it up
+
+1. In OpenPanel, open your project settings, go to the **RevenueCat** tab and press **Turn on**. Anyone who can edit the project can do this.
+2. In RevenueCat, open **Integrations → Webhooks** and add a webhook. Copy two values from the tab into it:
+   - **Webhook URL:** `https://api.openpanel.dev/integrations/revenuecat` (self-hosted: `<your api url>/integrations/revenuecat`)
+   - **Authorization header value:** the `Bearer rcwh_…` header the tab shows
+3. Press **Send test event**. The tab shows the test event within a few seconds. A test event records nothing.
+
+The header only works for its project. If your app has a separate OpenPanel project for development, turn the webhook on there too and add a second webhook in RevenueCat. **Make a new header** in the tab ends the old one at once, so paste the new one in RevenueCat right after.
+
+A project client's header, `Bearer` and the base64 of `clientId:clientSecret`, is also accepted.
+
+## What you get
+
+The events use the names of RevenueCat's own analytics integrations, so charts you built on them keep working.
+
+| RevenueCat event | OpenPanel event |
+| --- | --- |
+| `INITIAL_PURCHASE` | `rc_initial_purchase_event`, or `rc_trial_started_event` for a trial |
+| `RENEWAL` | `rc_renewal_event`, or `rc_trial_converted_event` when a trial converts |
+| `CANCELLATION` | `rc_cancellation_event`, or `rc_trial_cancelled_event` for a trial |
+| `UNCANCELLATION` | `rc_uncancellation_event` |
+| `NON_RENEWING_PURCHASE` | `rc_non_subscription_purchase_event` |
+| `SUBSCRIPTION_PAUSED` | `rc_subscription_paused_event` |
+| `EXPIRATION` | `rc_expiration_event` |
+| `BILLING_ISSUE` | `rc_billing_issue_event` |
+| `PRODUCT_CHANGE` | `rc_product_change_event` |
+
+Other types, such as `TEST` and `TRANSFER`, are acknowledged and not recorded.
+
+- **User:** the event belongs to the RevenueCat app user id. While RevenueCat still uses an anonymous id, OpenPanel takes your own id from the aliases. Log the user in to RevenueCat with the same id you pass to `identify`.
+- **Time:** the event keeps the time RevenueCat reports, not the time the webhook arrived.
+- **Revenue:** a paid purchase, renewal or trial conversion in production also records a `revenue` event in US dollars, so it shows up in revenue charts. Sandbox purchases are recorded without revenue.
+- **Refunds:** a refund arrives as a cancellation with `refund: true`. Revenue never goes negative.
+- **Retries:** RevenueCat retries a failed delivery. OpenPanel remembers each event id for 7 days and records it once.
+- **Properties:** `product_id`, `period_type`, `store`, `environment`, `country_code`, `currency`, `price_in_purchased_currency`, `entitlement_ids`, `transaction_id` and the RevenueCat event id and type.

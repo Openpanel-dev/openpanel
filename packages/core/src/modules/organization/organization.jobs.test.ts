@@ -59,6 +59,7 @@ function stubJobCtx(
     share: {} as Services['share'],
     reference: {} as Services['reference'],
     client: {} as Services['client'],
+    revenueCat: {} as Services['revenueCat'],
     project: {} as Services['project'],
     user: {} as Services['user'],
     subscription: {} as Services['subscription'],

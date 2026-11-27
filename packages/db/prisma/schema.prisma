@@ -380,6 +380,7 @@ model Project {
   updatedAt     DateTime       @default(now()) @updatedAt
   conversations Conversation[]
 
+  revenueCatWebhook          RevenueCatWebhook?
   @@map("projects")
 }
 
@@ -879,4 +880,21 @@ model EmailUnsubscribe {
 
   @@unique([email, category])
   @@map("email_unsubscribes")
+}
+
+/// The webhook RevenueCat calls for one project. `token` is shown again to
+/// whoever may write the project, so it is kept encrypted; `tokenHash` finds
+/// the row on each call.
+model RevenueCatWebhook {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId      String    @unique
+  token          String
+  tokenHash      String    @unique
+  lastEventAt    DateTime?
+  lastEventType  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @default(now()) @updatedAt
+
+  @@map("revenuecat_webhooks")
 }
