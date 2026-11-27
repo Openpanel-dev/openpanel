@@ -44,6 +44,7 @@ function ProjectDashboard() {
     { id: 'clients', label: 'Clients / API keys' },
     { id: 'tracking', label: 'Tracking script' },
     { id: 'mcp', label: 'MCP' },
+    { id: 'revenuecat', label: 'RevenueCat' },
     { id: 'widgets', label: 'Widgets' },
     { id: 'imports', label: 'Imports' },
     { id: 'gsc', label: 'Google Search' },
